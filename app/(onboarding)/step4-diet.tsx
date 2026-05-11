@@ -16,7 +16,14 @@ const DIETS = [
 
 export default function Step4Diet() {
   const router = useRouter();
-  const params = useLocalSearchParams();
+  const params = useLocalSearchParams<{
+    goal: string;
+    gender: string;
+    dob: string;
+    heightCm: string;
+    weightKg: string;
+    activityLevel: string;
+  }>();
   const [selected, setSelected] = useState<string | null>(null);
 
   return (

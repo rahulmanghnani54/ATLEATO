@@ -17,15 +17,27 @@ export default function Step2Stats() {
   const [dob, setDob] = useState(''); // YYYY-MM-DD
   const [unit, setUnit] = useState<Unit>('metric');
   const [height, setHeight] = useState('');
+  const [heightFt, setHeightFt] = useState('');
+  const [heightIn, setHeightIn] = useState('');
   const [weight, setWeight] = useState('');
   const [error, setError] = useState('');
 
   const handleContinue = () => {
-    if (!dob || !height || !weight) { setError('Please fill in all fields.'); return; }
-    const dobDate = new Date(dob);
+    const heightMissing = unit === 'metric' ? !height : (!heightFt && !heightIn);
+    if (!dob || heightMissing || !weight) { setError('Please fill in all fields.'); return; }
+    const [y, m, d] = dob.split('-').map(Number);
+    const dobDate = new Date(y, m - 1, d);
     if (isNaN(dobDate.getTime())) { setError('Enter date as YYYY-MM-DD (e.g. 1995-06-15)'); return; }
 
-    const heightCm = unit === 'metric' ? parseFloat(height) : parseFloat(height) * 2.54;
+    const age = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+    if (age < 13 || age > 100) {
+      setError('Please enter a valid date of birth (age must be between 13 and 100).');
+      return;
+    }
+
+    const heightCm = unit === 'metric'
+      ? parseFloat(height)
+      : (parseFloat(heightFt || '0') * 12 + parseFloat(heightIn || '0')) * 2.54;
     const weightKg = unit === 'metric' ? parseFloat(weight) : parseFloat(weight) * 0.453592;
 
     if (heightCm < 100 || heightCm > 250 || weightKg < 30 || weightKg > 300) {
@@ -84,7 +96,7 @@ export default function Step2Stats() {
               <TouchableOpacity
                 key={u}
                 style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-                onPress={() => { setUnit(u); setHeight(''); setWeight(''); }}
+                onPress={() => { setUnit(u); setHeight(''); setHeightFt(''); setHeightIn(''); setWeight(''); }}
               >
                 <Text style={[styles.unitText, unit === u && styles.unitTextActive]}>
                   {u === 'metric' ? 'kg/cm' : 'lb/in'}
@@ -95,17 +107,44 @@ export default function Step2Stats() {
         </View>
 
         <View style={styles.row}>
-          <View style={styles.halfField}>
-            <Text style={styles.sublabel}>Height ({unit === 'metric' ? 'cm' : 'inches'})</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={unit === 'metric' ? '175' : '69'}
-              placeholderTextColor={Colors.textTertiary}
-              value={height}
-              onChangeText={setHeight}
-              keyboardType="decimal-pad"
-            />
-          </View>
+          {unit === 'metric' ? (
+            <View style={styles.halfField}>
+              <Text style={styles.sublabel}>Height (cm)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="175"
+                placeholderTextColor={Colors.textTertiary}
+                value={height}
+                onChangeText={setHeight}
+                keyboardType="decimal-pad"
+              />
+            </View>
+          ) : (
+            <>
+              <View style={styles.halfField}>
+                <Text style={styles.sublabel}>Feet</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="5"
+                  placeholderTextColor={Colors.textTertiary}
+                  value={heightFt}
+                  onChangeText={setHeightFt}
+                  keyboardType="number-pad"
+                />
+              </View>
+              <View style={styles.halfField}>
+                <Text style={styles.sublabel}>Inches</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="9"
+                  placeholderTextColor={Colors.textTertiary}
+                  value={heightIn}
+                  onChangeText={setHeightIn}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </>
+          )}
           <View style={styles.halfField}>
             <Text style={styles.sublabel}>Weight ({unit === 'metric' ? 'kg' : 'lbs'})</Text>
             <TextInput

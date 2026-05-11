@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
 import { Button, Tag } from '@/components/ui';
 import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
@@ -77,6 +77,7 @@ export default function Step5Program() {
     heightCm: string; weightKg: string; activityLevel: string; diet: string;
   }>();
   const { user, fetchProfile } = useAuthStore();
+  const router = useRouter();
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -88,7 +89,8 @@ export default function Step5Program() {
       const weightKg = parseFloat(params.weightKg);
       const heightCm = parseFloat(params.heightCm);
       const age = getAgeFromDOB(params.dob);
-      const bmr = calculateBMR(weightKg, heightCm, age, params.gender as 'male' | 'female');
+      const gender = (params.gender === 'male' || params.gender === 'female') ? params.gender : 'male';
+      const bmr = calculateBMR(weightKg, heightCm, age, gender);
       const tdee = calculateTDEE(bmr, params.activityLevel as ActivityLevel);
       const macros = calculateMacros(tdee, params.goal as Goal, weightKg);
 
@@ -114,7 +116,7 @@ export default function Step5Program() {
       if (error) throw error;
 
       await fetchProfile(user.id);
-      // Auth listener in _layout.tsx sees onboarding_complete = true and redirects to /(tabs)
+      router.replace('/(tabs)');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Setup failed. Please try again.';
       Alert.alert('Error', message);

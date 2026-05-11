@@ -28,10 +28,14 @@ export function calculateMacros(tdee: number, goal: Goal, weightKg: number) {
   const adjustedCalories =
     goal === 'lose_fat' ? tdee - 400
     : goal === 'build_muscle' ? tdee + 200
-    : tdee;
+    : goal === 'athletic_performance' ? tdee + 100
+    : tdee; // maintain
 
   const proteinG = Math.round(weightKg * 2.2);
-  const fatG = Math.round((adjustedCalories * 0.25) / 9);
+
+  // Athletic performance gets higher carb allocation (50% vs 25% fat split)
+  const fatPct = goal === 'athletic_performance' ? 0.20 : 0.25;
+  const fatG = Math.round((adjustedCalories * fatPct) / 9);
   const carbsG = Math.round((adjustedCalories - proteinG * 4 - fatG * 9) / 4);
 
   return {
@@ -43,10 +47,11 @@ export function calculateMacros(tdee: number, goal: Goal, weightKg: number) {
 }
 
 export function getAgeFromDOB(dob: string): number {
+  const [y, m, d] = dob.split('-').map(Number);
+  const birth = new Date(y, m - 1, d); // local time, avoids UTC midnight timezone shift
   const today = new Date();
-  const birth = new Date(dob);
   let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  const monthDiff = today.getMonth() - birth.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) age--;
   return age;
 }
