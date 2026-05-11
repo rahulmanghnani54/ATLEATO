@@ -24,7 +24,7 @@ function mapProduct(p: any): FoodItem {
     carbs100g: Number(p.nutriments?.carbohydrates_100g ?? 0),
     fat100g: Number(p.nutriments?.fat_100g ?? 0),
     fiber100g: p.nutriments?.fiber_100g != null ? Number(p.nutriments.fiber_100g) : undefined,
-    servingSizeG: Number(p.serving_quantity ?? 100),
+    servingSizeG: parseFloat(p.serving_quantity ?? '') || 100,
   };
 }
 

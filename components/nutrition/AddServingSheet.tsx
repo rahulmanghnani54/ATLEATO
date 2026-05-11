@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Alert } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
 import { BottomSheet, Button } from '@/components/ui';
 import { calculateMacrosForServing, type FoodItem } from '@/lib/api/openFoodFacts';
@@ -52,6 +52,7 @@ export function AddServingSheet({ visible, food, mealType, date, onClose, onLogg
 
     if (error) {
       console.error('Log food error:', error.message);
+      Alert.alert('Failed to Log', 'Could not save this food entry. Please try again.');
       return;
     }
 

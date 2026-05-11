@@ -54,8 +54,12 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
           </TouchableOpacity>
         </View>
 
-        {isFetching && query.length >= 2 && (
+        {isFetching && results.length === 0 && (
           <ActivityIndicator color={Colors.primary} style={styles.loader} />
+        )}
+
+        {query.length < 2 && (
+          <Text style={styles.empty}>Type at least 2 characters to search.</Text>
         )}
 
         {results.length === 0 && query.length >= 2 && !isFetching && (
@@ -76,6 +80,7 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
           )}
           style={styles.list}
           keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
         />
       </BottomSheet>
 
