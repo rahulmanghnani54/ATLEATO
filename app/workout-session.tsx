@@ -200,9 +200,17 @@ export default function WorkoutSession() {
           {workout.exercises.map((ex, exIdx) => (
             <Card key={ex.name} style={styles.exerciseCard}>
               <Text style={styles.exerciseName}>{ex.name}</Text>
-              {ex.tips.length > 0 && (
-                <Text style={styles.exerciseTips}>{ex.tips[0]}</Text>
-              )}
+              <View style={styles.exerciseHeaderRow}>
+                {ex.tips.length > 0 && (
+                  <Text style={[styles.exerciseTips, { flex: 1 }]}>{ex.tips[0]}</Text>
+                )}
+                <TouchableOpacity
+                  style={styles.formCoachBtn}
+                  onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name } } as any)}
+                >
+                  <Text style={styles.formCoachBtnText}>📷 Form</Text>
+                </TouchableOpacity>
+              </View>
               <ExerciseProgression exerciseName={ex.name} reps={ex.reps} />
 
               {/* Set rows */}
@@ -285,7 +293,7 @@ const styles = StyleSheet.create({
   exerciseName: { ...Typography.h3, marginBottom: 4 },
   exerciseTips: {
     ...Typography.caption, color: Colors.textSecondary,
-    marginBottom: Spacing.md, fontStyle: 'italic',
+    fontStyle: 'italic',
   },
   setHeader: { flexDirection: 'row', marginBottom: 4 },
   setCol: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, textAlign: 'center' },
@@ -296,6 +304,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8, fontFamily: 'Inter_400Regular', fontSize: 14,
     color: Colors.text, textAlign: 'center',
   },
+  exerciseHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.md },
+  formCoachBtn: {
+    backgroundColor: Colors.primaryLight ?? '#fff5f0',
+    borderRadius: Radius.sm, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  formCoachBtnText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: Colors.primary },
   doneBtn: {
     width: 40, height: 40, borderRadius: Radius.sm,
     backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center',
