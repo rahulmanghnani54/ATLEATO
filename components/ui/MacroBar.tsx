@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, DimensionValue } from 'react-native';
 import { Colors, Spacing } from '@/constants/theme';
 
 interface Props {
@@ -21,7 +21,7 @@ export function MacroBar({ label, consumed, goal, color, unit = 'g' }: Props) {
         </Text>
       </View>
       <View style={styles.track}>
-        <View style={[styles.fill, { width: `${progress * 100}%` as any, backgroundColor: color }]} />
+        <View style={[styles.fill, { width: `${progress * 100}%` as DimensionValue, backgroundColor: color }]} />
       </View>
     </View>
   );

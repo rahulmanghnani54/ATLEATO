@@ -12,14 +12,14 @@ export function DateNavigator({ date, onDateChange }: Props) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={() => onDateChange(subDays(date, 1))} style={styles.arrow} hitSlop={12}>
+      <TouchableOpacity onPress={() => onDateChange(subDays(date, 1))} style={styles.arrow} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
         <Text style={styles.arrowText}>‹</Text>
       </TouchableOpacity>
       <Text style={styles.dateLabel}>{label}</Text>
       <TouchableOpacity
         onPress={() => onDateChange(addDays(date, 1))}
         style={styles.arrow}
-        hitSlop={12}
+        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         disabled={isToday(date)}
       >
         <Text style={[styles.arrowText, isToday(date) && styles.disabled]}>›</Text>

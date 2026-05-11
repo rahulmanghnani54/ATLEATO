@@ -5,7 +5,7 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 interface Props {
   label: string;
-  onPress: () => void;
+  onPress?: () => void;
   variant?: Variant;
   loading?: boolean;
   disabled?: boolean;
@@ -25,13 +25,21 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
     : variant === 'secondary' ? Colors.primary
     : Colors.text;
 
+  const isDisabled = disabled || loading;
+
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={isDisabled}
+      accessibilityLabel={label}
+      accessibilityRole="button"
       style={[
         styles.base,
-        { backgroundColor: bg, width: fullWidth ? '100%' : undefined, opacity: disabled ? 0.5 : 1 },
+        {
+          backgroundColor: bg,
+          width: fullWidth ? '100%' : undefined,
+          opacity: isDisabled ? 0.5 : 1,
+        },
         style,
       ]}
       activeOpacity={0.8}

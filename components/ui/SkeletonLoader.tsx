@@ -6,6 +6,7 @@ import Animated, {
   withRepeat,
   withTiming,
   Easing,
+  cancelAnimation,
 } from 'react-native-reanimated';
 
 interface Props {
@@ -24,7 +25,10 @@ export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 8, 
       -1,
       true
     );
-  }, []);
+    return () => {
+      cancelAnimation(opacity);
+    };
+  }, [opacity]);
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 

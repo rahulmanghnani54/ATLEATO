@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 interface Props {
   score: number;
   size?: 'sm' | 'md' | 'lg';
+  style?: import('react-native').ViewStyle;
 }
 
 function getColor(score: number): { bg: string; text: string; label: string } {
@@ -19,12 +20,12 @@ const SIZES = {
   lg: { circle: 72, score: 24, label: 12 },
 };
 
-export function RecoveryBadge({ score, size = 'md' }: Props) {
+export function RecoveryBadge({ score, size = 'md', style }: Props) {
   const { bg, text, label } = getColor(score);
   const s = SIZES[size];
 
   return (
-    <View style={[styles.circle, { width: s.circle, height: s.circle, backgroundColor: bg }]}>
+    <View style={[styles.circle, { width: s.circle, height: s.circle, backgroundColor: bg }, style]}>
       <Text style={[styles.score, { color: text, fontSize: s.score }]}>{score}</Text>
       <Text style={[styles.label, { color: text, fontSize: s.label }]}>{label}</Text>
     </View>
@@ -33,6 +34,6 @@ export function RecoveryBadge({ score, size = 'md' }: Props) {
 
 const styles = StyleSheet.create({
   circle: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  score: { fontFamily: 'Inter_700Bold', lineHeight: 20 },
-  label: { fontFamily: 'Inter_500Medium', lineHeight: 13 },
+  score: { fontFamily: 'Inter_700Bold' },
+  label: { fontFamily: 'Inter_500Medium' },
 });
