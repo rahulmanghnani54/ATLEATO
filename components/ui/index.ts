@@ -7,3 +7,4 @@ export { DateNavigator } from './DateNavigator';
 export { SkeletonLoader } from './SkeletonLoader';
 export { RecoveryBadge } from './RecoveryBadge';
 export { BottomSheet } from './BottomSheet';
+export { OnboardingProgress } from './OnboardingProgress';
