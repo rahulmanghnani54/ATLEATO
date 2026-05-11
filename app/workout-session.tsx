@@ -13,6 +13,7 @@ import { ProgressionBadge } from '@/components/workout/ProgressionBadge';
 import { useExerciseHistory } from '@/hooks/useProgression';
 import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
 import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { detectAndSavePRs } from '@/lib/prDetector';
 
 interface SetEntry {
   weight: string;
@@ -150,6 +151,13 @@ export default function WorkoutSession() {
     await (supabase.from('workout_logs') as any)
       .update(updatePayload)
       .eq('id', workoutLog.id);
+
+    // Detect PRs
+    const newPRs = await detectAndSavePRs(user.id, workoutLog.id);
+    if (newPRs.length > 0) {
+      const prText = newPRs.map((pr) => `🏆 ${pr.exerciseName}: ${pr.weightKg}kg × ${pr.reps} (e1RM: ${pr.oneRepMaxKg}kg)`).join('\n');
+      Alert.alert('New Personal Records! 🎉', prText);
+    }
 
     router.back();
   };
