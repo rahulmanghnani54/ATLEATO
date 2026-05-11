@@ -21,6 +21,11 @@ export default function Login() {
       setError('Please enter your email and password.');
       return;
     }
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
     setError('');
     setLoading(true);
     const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
@@ -36,7 +41,14 @@ export default function Login() {
       setError('Enter your email first, then tap Forgot Password.');
       return;
     }
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_RE.test(email.trim())) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    setLoading(true);
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim());
+    setLoading(false);
     if (resetError) {
       setError(resetError.message);
     } else {

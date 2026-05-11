@@ -32,11 +32,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ user: null, session: null, profile: null });
   },
   fetchProfile: async (userId: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .single();
-    if (data) set({ profile: data });
+    if (__DEV__ && error) console.warn('[authStore] fetchProfile error:', error.message);
+    set({ profile: data ?? null });
   },
 }));

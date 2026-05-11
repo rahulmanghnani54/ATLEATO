@@ -8,10 +8,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui';
 import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
-import type { Database } from '@/types/database';
-
-type ProfileInsert = Database['public']['Tables']['profiles']['Insert'];
-
 export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -48,28 +44,21 @@ export default function Signup() {
     }
 
     if (data.user) {
-      // Create initial profile row
-      const newProfile: ProfileInsert = {
+      const insertPayload = {
         id: data.user.id,
         full_name: fullName.trim(),
-        avatar_url: null,
-        goal: 'build_muscle',
-        gender: null,
-        date_of_birth: null,
-        height_cm: null,
-        weight_kg: null,
-        activity_level: 'moderately_active',
+        goal: 'build_muscle' as const,
+        activity_level: 'moderately_active' as const,
         selected_program: 'cbum_evolved',
-        tdee: null,
-        protein_g: null,
-        carbs_g: null,
-        fat_g: null,
         onboarding_complete: false,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: profileError } = await (supabase.from('profiles') as any).insert(newProfile);
+
+      const { error: profileError } = await supabase.from('profiles').insert(insertPayload as any);
       if (profileError) {
-        setError('Account created but profile setup failed. Please try signing in.');
+        await supabase.auth.signOut();
+        setLoading(false);
+        setError('Account setup failed. Please try again.');
+        return;
       }
     }
 

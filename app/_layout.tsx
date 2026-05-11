@@ -41,6 +41,8 @@ function RootNavigator() {
       if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
     } else if (profile?.onboarding_complete) {
       if (inAuth || inOnboarding) router.replace('/(tabs)');
+    } else if (user && !profile) {
+      if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
     }
   }, [user, profile, loading, segments]);
 
@@ -54,10 +56,11 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const loading = useAuthStore((s) => s.loading);
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    if (fontsLoaded && !loading) SplashScreen.hideAsync();
+  }, [fontsLoaded, loading]);
 
   if (!fontsLoaded) return null;
 
