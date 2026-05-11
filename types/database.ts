@@ -60,10 +60,10 @@ export interface Database {
           brand: string | null;
           barcode: string | null;
           serving_size_g: number | null;
-          calories: number | null;
-          protein_g: number | null;
-          carbs_g: number | null;
-          fat_g: number | null;
+          calories: number;
+          protein_g: number;
+          carbs_g: number;
+          fat_g: number;
           fiber_g: number | null;
           sugar_g: number | null;
           sodium_mg: number | null;
@@ -213,6 +213,43 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database['public']['Tables']['chat_messages']['Insert']>;
+      };
+      wearable_data: {
+        Row: {
+          id: string;
+          user_id: string;
+          date: string;
+          steps: number | null;
+          hrv_ms: number | null;
+          resting_hr: number | null;
+          sleep_hours: number | null;
+          active_calories: number | null;
+          source: string;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['wearable_data']['Row'], 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['wearable_data']['Insert']>;
+      };
+      form_sessions: {
+        Row: {
+          id: string;
+          user_id: string;
+          exercise_name: string;
+          duration_seconds: number | null;
+          average_form_score: number | null;
+          key_issues: string[] | null;
+          video_url: string | null;
+          thumbnail_url: string | null;
+          created_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['form_sessions']['Row'], 'id' | 'created_at'> & {
+          id?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['form_sessions']['Insert']>;
       };
     };
   };

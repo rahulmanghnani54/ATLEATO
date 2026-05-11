@@ -34,7 +34,16 @@ CREATE POLICY "workouts_own" ON workout_logs
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "sets_own" ON exercise_sets
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id AND
+    EXISTS (
+      SELECT 1 FROM workout_logs
+      WHERE workout_logs.id = exercise_sets.workout_log_id
+        AND workout_logs.user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "form_own" ON form_sessions
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);

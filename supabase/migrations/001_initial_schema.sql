@@ -6,18 +6,18 @@ CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT NOT NULL,
   avatar_url TEXT,
-  goal TEXT CHECK (goal IN ('lose_fat','build_muscle','maintain','athletic_performance')) DEFAULT 'build_muscle',
+  goal TEXT CHECK (goal IN ('lose_fat','build_muscle','maintain','athletic_performance')) NOT NULL DEFAULT 'build_muscle',
   gender TEXT CHECK (gender IN ('male','female','other')),
   date_of_birth DATE,
   height_cm NUMERIC(5,1),
   weight_kg NUMERIC(5,2),
-  activity_level TEXT CHECK (activity_level IN ('sedentary','lightly_active','moderately_active','very_active','extremely_active')) DEFAULT 'moderately_active',
-  selected_program TEXT DEFAULT 'cbum_evolved',
+  activity_level TEXT CHECK (activity_level IN ('sedentary','lightly_active','moderately_active','very_active','extremely_active')) NOT NULL DEFAULT 'moderately_active',
+  selected_program TEXT NOT NULL DEFAULT 'cbum_evolved',
   tdee INT,
   protein_g INT,
   carbs_g INT,
   fat_g INT,
-  onboarding_complete BOOLEAN DEFAULT FALSE,
+  onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -33,7 +33,7 @@ CREATE TABLE recovery_checkins (
   energy INT CHECK (energy BETWEEN 1 AND 5),
   stress INT CHECK (stress BETWEEN 1 AND 5),
   recovery_score INT CHECK (recovery_score BETWEEN 0 AND 100),
-  volume_modifier NUMERIC(4,2) DEFAULT 1.0,
+  volume_modifier NUMERIC(4,2) NOT NULL DEFAULT 1.0,
   notes TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, date)
@@ -49,7 +49,7 @@ CREATE TABLE wearable_data (
   resting_hr INT,
   sleep_hours NUMERIC(3,1),
   active_calories INT,
-  source TEXT DEFAULT 'manual',
+  source TEXT NOT NULL DEFAULT 'manual',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, date)
 );
@@ -64,10 +64,10 @@ CREATE TABLE nutrition_logs (
   brand TEXT,
   barcode TEXT,
   serving_size_g NUMERIC(8,2),
-  calories NUMERIC(8,2),
-  protein_g NUMERIC(8,2),
-  carbs_g NUMERIC(8,2),
-  fat_g NUMERIC(8,2),
+  calories NUMERIC(8,2) NOT NULL,
+  protein_g NUMERIC(8,2) NOT NULL,
+  carbs_g NUMERIC(8,2) NOT NULL,
+  fat_g NUMERIC(8,2) NOT NULL,
   fiber_g NUMERIC(8,2),
   sugar_g NUMERIC(8,2),
   sodium_mg NUMERIC(8,2),
@@ -110,7 +110,7 @@ CREATE TABLE exercise_sets (
   weight_kg NUMERIC(6,2),
   rpe NUMERIC(3,1),
   form_score INT CHECK (form_score BETWEEN 0 AND 100),
-  is_warmup BOOLEAN DEFAULT FALSE,
+  is_warmup BOOLEAN NOT NULL DEFAULT FALSE,
   completed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -120,7 +120,7 @@ CREATE TABLE form_sessions (
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   exercise_name TEXT NOT NULL,
   duration_seconds INT,
-  average_form_score INT,
+  average_form_score NUMERIC(5,2),
   key_issues TEXT[],
   video_url TEXT,
   thumbnail_url TEXT,
@@ -153,7 +153,8 @@ CREATE TABLE personal_records (
   reps INT NOT NULL,
   one_rep_max_kg NUMERIC(6,2),
   achieved_at DATE NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, exercise_name, achieved_at)
 );
 
 -- Progression suggestions
@@ -164,7 +165,7 @@ CREATE TABLE progression_suggestions (
   current_weight_kg NUMERIC(6,2),
   suggested_weight_kg NUMERIC(6,2),
   reasoning TEXT,
-  applied BOOLEAN DEFAULT FALSE,
+  applied BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -197,6 +198,7 @@ CREATE INDEX idx_chat_messages_user ON chat_messages(user_id, persona, created_a
 CREATE INDEX idx_water_logs_user_date ON water_logs(user_id, date);
 CREATE INDEX idx_personal_records_user ON personal_records(user_id, exercise_name);
 CREATE INDEX idx_progression_user ON progression_suggestions(user_id, exercise_name, applied);
+CREATE INDEX idx_exercise_sets_user_exercise ON exercise_sets(user_id, exercise_name, completed_at DESC);
 
 -- Updated_at trigger for profiles
 CREATE OR REPLACE FUNCTION update_updated_at()
