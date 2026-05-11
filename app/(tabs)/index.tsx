@@ -2,21 +2,23 @@ import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { format, isToday } from 'date-fns';
 import { CalorieRing, MacroBar, DateNavigator, Card, SkeletonLoader } from '@/components/ui';
+import { RecoveryBadge } from '@/components/ui/RecoveryBadge';
 import { WaterTracker } from '@/components/dashboard/WaterTracker';
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
+import { useRecoveryScore } from '@/hooks/useRecoveryScore';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors, Spacing, Typography } from '@/constants/theme';
 
 export default function Dashboard() {
   const [date, setDate] = useState(new Date());
-  const queryClient = useQueryClient();
   const profile = useAuthStore((s) => s.profile);
   const { data: nutrition, isLoading: nutritionLoading, refetch } = useDailyNutrition(date);
-  const { glasses, goalGlasses, totalMl, addGlass } = useWaterLog(date);
+  const { glasses, goalGlasses, totalMl, addGlass, isLoading: waterLoading, refetch: refetchWater } = useWaterLog(date);
+  const { data: recoveryCheckin } = useRecoveryScore();
 
   const goal = profile?.tdee ?? 2000;
   const proteinGoal = profile?.protein_g ?? 150;
@@ -36,7 +38,8 @@ export default function Dashboard() {
   useFocusEffect(
     useCallback(() => {
       refetch();
-    }, [refetch])
+      refetchWater();
+    }, [refetch, refetchWater])
   );
 
   return (
@@ -46,17 +49,22 @@ export default function Dashboard() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={nutritionLoading}
-            onRefresh={refetch}
+            refreshing={nutritionLoading || waterLoading}
+            onRefresh={() => { refetch(); refetchWater(); }}
             tintColor={Colors.primary}
           />
         }
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.greeting}>
-            {greeting}, {profile?.full_name?.split(' ')[0] ?? 'there'} 👋
-          </Text>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greeting}>
+              {greeting}, {profile?.full_name?.split(' ')[0] ?? 'there'} 👋
+            </Text>
+            {recoveryCheckin?.recovery_score != null && (
+              <RecoveryBadge score={recoveryCheckin.recovery_score} size="sm" />
+            )}
+          </View>
           <DateNavigator date={date} onDateChange={setDate} />
         </View>
 
@@ -111,7 +119,9 @@ export default function Dashboard() {
 
         {/* Meal breakdown summary */}
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Meals</Text>
+          <Text style={styles.sectionTitle}>
+            {isToday(date) ? "Today's Meals" : format(date, 'MMM d') + "'s Meals"}
+          </Text>
           {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((meal) => {
             const kcal = Math.round(nutrition?.byMeal[meal] ?? 0);
             return (
@@ -135,7 +145,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   content: { padding: Spacing.md, gap: Spacing.md, paddingBottom: Spacing.xxl },
   header: { marginBottom: 4 },
-  greeting: { ...Typography.h3, marginBottom: 4 },
+  greetingRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  greeting: { ...Typography.h3 },
   calorieCard: { padding: Spacing.md },
   ringRow: {
     flexDirection: 'row',

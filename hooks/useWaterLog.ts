@@ -15,7 +15,7 @@ export function useWaterLog(date: Date) {
   const dateStr = format(date, 'yyyy-MM-dd');
   const queryKey = ['water', user?.id, dateStr];
 
-  const { data: totalMl = 0, isLoading } = useQuery({
+  const { data: totalMl = 0, isLoading, refetch } = useQuery({
     queryKey,
     queryFn: async () => {
       if (!user) return 0;
@@ -34,12 +34,17 @@ export function useWaterLog(date: Date) {
   const addGlass = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await (supabase.from('water_logs') as any).insert({
+      const payload: WaterLogInsert = {
         user_id: user.id,
         date: dateStr,
         amount_ml: GLASS_ML,
-      } satisfies WaterLogInsert);
+      };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.from('water_logs') as any).insert(payload);
+      if (error) throw error;
+    },
+    onError: (err: Error) => {
+      console.warn('[useWaterLog] insert failed:', err.message);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
@@ -47,5 +52,5 @@ export function useWaterLog(date: Date) {
   const glasses = Math.floor(totalMl / GLASS_ML);
   const goalGlasses = Math.floor(DAILY_GOAL_ML / GLASS_ML);
 
-  return { totalMl, glasses, goalGlasses, isLoading, addGlass: addGlass.mutate };
+  return { totalMl, glasses, goalGlasses, isLoading, addGlass: addGlass.mutate, refetch };
 }
