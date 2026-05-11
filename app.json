@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "FitAI Pro",
+    "slug": "fitai-pro",
+    "version": "1.0.0",
+    "scheme": "fitaipro",
+    "platforms": ["ios", "android"],
+    "plugins": [
+      "expo-router",
+      "expo-camera",
+      ["expo-barcode-scanner", { "cameraPermission": "Allow FitAI Pro to access camera for form coaching and barcode scanning." }],
+      ["expo-notifications", { "icon": "./assets/notification-icon.png" }]
+    ],
+    "experiments": { "typedRoutes": true },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ff6b35"
+      }
+    },
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}
