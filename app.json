@@ -8,7 +8,6 @@
     "plugins": [
       "expo-router",
       "expo-camera",
-      ["expo-barcode-scanner", { "cameraPermission": "Allow FitAI Pro to access camera for form coaching and barcode scanning." }],
       ["expo-notifications", { "icon": "./assets/notification-icon.png" }]
     ],
     "experiments": { "typedRoutes": true },

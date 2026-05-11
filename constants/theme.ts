@@ -23,11 +23,11 @@ export const Radius = {
 } as const;
 
 export const Typography = {
-  h1: { fontSize: 28, fontFamily: 'Inter_700Bold', color: '#111827' },
-  h2: { fontSize: 22, fontFamily: 'Inter_700Bold', color: '#111827' },
-  h3: { fontSize: 18, fontFamily: 'Inter_600SemiBold', color: '#111827' },
-  body: { fontSize: 15, fontFamily: 'Inter_400Regular', color: '#111827' },
-  bodyMedium: { fontSize: 15, fontFamily: 'Inter_500Medium', color: '#111827' },
-  caption: { fontSize: 12, fontFamily: 'Inter_400Regular', color: '#6b7280' },
-  label: { fontSize: 13, fontFamily: 'Inter_500Medium', color: '#6b7280' },
+  h1: { fontSize: 28, fontFamily: 'Inter_700Bold', color: Colors.text },
+  h2: { fontSize: 22, fontFamily: 'Inter_700Bold', color: Colors.text },
+  h3: { fontSize: 18, fontFamily: 'Inter_600SemiBold', color: Colors.text },
+  body: { fontSize: 15, fontFamily: 'Inter_400Regular', color: Colors.text },
+  bodyMedium: { fontSize: 15, fontFamily: 'Inter_500Medium', color: Colors.text },
+  caption: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+  label: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
 } as const;
