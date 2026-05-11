@@ -73,18 +73,15 @@ export function useSaveProgression() {
       exerciseName: string;
       currentWeight: number;
       suggestedWeight: number;
-      reason: string;
-      programId: string;
+      reasoning: string;
     }) => {
       if (!user) throw new Error('Not authenticated');
       const { error } = await (supabase.from('progression_suggestions') as any).insert({
         user_id: user.id,
         exercise_name: params.exerciseName,
-        program_id: params.programId,
         suggested_weight_kg: params.suggestedWeight,
         current_weight_kg: params.currentWeight,
-        reason: params.reason,
-        date: new Date().toISOString().slice(0, 10),
+        reasoning: params.reasoning,
         applied: false,
       });
       if (error) throw error;
@@ -96,20 +93,19 @@ export function useSaveProgression() {
 }
 
 // Fetch all pending progression suggestions for the user
-export function usePendingProgressions(programId: string) {
+export function usePendingProgressions() {
   const user = useAuthStore((s) => s.user);
 
   return useQuery({
-    queryKey: ['progression_suggestions', user?.id, programId],
+    queryKey: ['progression_suggestions', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from('progression_suggestions')
         .select('*')
         .eq('user_id', user.id)
-        .eq('program_id', programId)
         .eq('applied', false)
-        .order('date', { ascending: false });
+        .order('created_at', { ascending: false });
       if (error) throw error;
       return data ?? [];
     },

@@ -9,6 +9,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { Button, Card } from '@/components/ui';
+import { ProgressionBadge } from '@/components/workout/ProgressionBadge';
+import { useExerciseHistory } from '@/hooks/useProgression';
+import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
 import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
 
 interface SetEntry {
@@ -16,6 +19,15 @@ interface SetEntry {
   reps: string;
   rpe: string;
   done: boolean;
+}
+
+function ExerciseProgression({ exerciseName, reps }: { exerciseName: string; reps: string }) {
+  const { data: history } = useExerciseHistory(exerciseName);
+  if (!history || history.sessions.length === 0) return null;
+  const [low, high] = parseRepsRange(reps);
+  const suggestion = analyzeProgression(history, low, high);
+  if (!suggestion) return null;
+  return <ProgressionBadge suggestion={suggestion} />;
 }
 
 export default function WorkoutSession() {
@@ -191,6 +203,7 @@ export default function WorkoutSession() {
               {ex.tips.length > 0 && (
                 <Text style={styles.exerciseTips}>{ex.tips[0]}</Text>
               )}
+              <ExerciseProgression exerciseName={ex.name} reps={ex.reps} />
 
               {/* Set rows */}
               <View style={styles.setHeader}>
