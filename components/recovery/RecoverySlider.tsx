@@ -14,23 +14,29 @@ interface Props {
 
 export function RecoverySlider({ label, value, min, max, step = 1, onChange, lowLabel, highLabel }: Props) {
   const steps = Math.round((max - min) / step) + 1;
-  const values = Array.from({ length: steps }, (_, i) => min + i * step);
+  // Use integer indices to avoid floating-point accumulation; convert to display values at render
+  const precision = step < 1 ? 1 : 0;
+  const roundTo = (n: number) => Math.round(n * 10 ** precision) / 10 ** precision;
+  const values = Array.from({ length: steps }, (_, i) => roundTo(min + i * step));
+  const roundedValue = roundTo(value);
 
   return (
     <View style={styles.container}>
       <View style={styles.labelRow}>
         <Text style={styles.label}>{label}</Text>
-        <Text style={styles.valueText}>{value % 1 === 0 ? value : value.toFixed(1)}</Text>
+        <Text style={styles.valueText}>{roundedValue % 1 === 0 ? roundedValue : roundedValue.toFixed(1)}</Text>
       </View>
       <View style={styles.track}>
         {values.map((v) => {
-          const active = Math.abs(v - value) < step * 0.5;
+          const active = v === roundedValue;
           return (
             <TouchableOpacity
               key={v}
               style={[styles.dot, active && styles.dotActive]}
               onPress={() => onChange(v)}
               hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              accessibilityLabel={String(v)}
+              accessibilityRole="button"
             />
           );
         })}

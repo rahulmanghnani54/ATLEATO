@@ -4,13 +4,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button, Card } from '@/components/ui';
 import { RecoverySlider } from '@/components/recovery/RecoverySlider';
-import { useSubmitRecovery } from '@/hooks/useRecoveryCheckin';
+import { useSubmitRecovery, useTodayRecovery } from '@/hooks/useRecoveryCheckin';
 import { calculateRecovery } from '@/lib/recoveryEngine';
 import { Colors, Spacing, Typography } from '@/constants/theme';
 
 export default function RecoveryCheckin() {
   const router = useRouter();
   const { mutateAsync, isPending } = useSubmitRecovery();
+  const { data: existingCheckin } = useTodayRecovery();
 
   const [sleepHours, setSleepHours] = useState(7.5);
   const [sleepQuality, setSleepQuality] = useState(3);
@@ -41,6 +42,14 @@ export default function RecoveryCheckin() {
         <Text style={styles.title}>Morning Check-In</Text>
         <Text style={styles.subtitle}>How are you feeling today?</Text>
 
+        {existingCheckin && (
+          <Card style={styles.updateBanner}>
+            <Text style={styles.updateText}>
+              ✏️ You've already checked in today (score: {existingCheckin.recovery_score}). Saving will update your entry.
+            </Text>
+          </Card>
+        )}
+
         {/* Live recovery score preview */}
         <Card style={styles.scoreCard}>
           <View style={styles.scoreRow}>
@@ -52,7 +61,10 @@ export default function RecoveryCheckin() {
             <View style={styles.modifierBox}>
               <Text style={styles.modifierLabel}>Volume</Text>
               <Text style={[styles.modifier, { color: scoreColor }]}>
-                {preview.volumeModifier >= 1 ? '+' : ''}{Math.round((preview.volumeModifier - 1) * 100)}%
+                {(() => {
+                  const pct = Math.round((preview.volumeModifier - 1) * 100);
+                  return pct > 0 ? `+${pct}%` : pct < 0 ? `${pct}%` : 'Normal';
+                })()}
               </Text>
             </View>
           </View>
@@ -149,4 +161,6 @@ const styles = StyleSheet.create({
   section: { padding: Spacing.md },
   sectionTitle: { ...Typography.bodyMedium, marginBottom: Spacing.md },
   submitBtn: { marginTop: Spacing.sm },
+  updateBanner: { padding: Spacing.sm, backgroundColor: '#fef9c3', borderColor: '#fde047', borderWidth: 1 },
+  updateText: { ...Typography.caption, color: '#92400e' },
 });

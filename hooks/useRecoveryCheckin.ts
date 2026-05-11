@@ -5,12 +5,12 @@ import { calculateRecovery, type RecoveryInputs } from '@/lib/recoveryEngine';
 
 export function useTodayRecovery() {
   const user = useAuthStore((s) => s.user);
-  const today = new Date().toISOString().slice(0, 10);
 
   return useQuery({
-    queryKey: ['recovery', user?.id, today],
+    queryKey: ['recovery', user?.id, 'today'],
     queryFn: async () => {
       if (!user) return null;
+      const today = new Date().toISOString().slice(0, 10);
       const { data, error } = await supabase
         .from('recovery_checkins')
         .select('*')
@@ -34,6 +34,7 @@ export function useSubmitRecovery() {
     mutationFn: async (inputs: RecoveryInputs) => {
       if (!user) throw new Error('Not authenticated');
       const result = calculateRecovery(inputs);
+      const today = new Date().toISOString().slice(0, 10);
 
       const payload = {
         user_id: user.id,
@@ -53,8 +54,10 @@ export function useSubmitRecovery() {
       if (error) throw error;
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['recovery'] });
+    onSuccess: (_result, _inputs, _context) => {
+      const today = new Date().toISOString().slice(0, 10);
+      queryClient.invalidateQueries({ queryKey: ['recovery', user?.id, 'today'] });
+      queryClient.invalidateQueries({ queryKey: ['recovery_checkins', user?.id, today] });
     },
   });
 }

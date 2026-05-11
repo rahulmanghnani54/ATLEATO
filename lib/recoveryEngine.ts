@@ -45,13 +45,13 @@ function normalizeInverse(v: number): number {
 }
 
 export function calculateRecovery(inputs: RecoveryInputs): RecoveryResult {
-  const score = Math.round(
+  const rawScore =
     normalizeSleepHours(inputs.sleepHours) * WEIGHTS.sleepHours +
     normalizeQuality(inputs.sleepQuality) * WEIGHTS.sleepQuality +
     normalizeEnergy(inputs.energy) * WEIGHTS.energy +
     normalizeInverse(inputs.soreness) * WEIGHTS.soreness +
-    normalizeInverse(inputs.stress) * WEIGHTS.stress,
-  );
+    normalizeInverse(inputs.stress) * WEIGHTS.stress;
+  const score = Math.min(100, Math.max(0, Math.round(rawScore)));
 
   let volumeModifier: number;
   let label: string;
