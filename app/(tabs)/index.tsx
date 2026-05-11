@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { format, isToday } from 'date-fns';
 import { CalorieRing, MacroBar, DateNavigator, Card, SkeletonLoader } from '@/components/ui';
 import { RecoveryBadge } from '@/components/ui/RecoveryBadge';
@@ -10,15 +10,19 @@ import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
 import { useRecoveryScore } from '@/hooks/useRecoveryScore';
+import { useTodayRecovery } from '@/hooks/useRecoveryCheckin';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors, Spacing, Typography } from '@/constants/theme';
 
 export default function Dashboard() {
+  const router = useRouter();
   const [date, setDate] = useState(new Date());
   const profile = useAuthStore((s) => s.profile);
   const { data: nutrition, isLoading: nutritionLoading, refetch } = useDailyNutrition(date);
   const { glasses, goalGlasses, totalMl, addGlass, isLoading: waterLoading, refetch: refetchWater } = useWaterLog(date);
   const { data: recoveryCheckin } = useRecoveryScore();
+  const { data: todayRecovery } = useTodayRecovery();
+  const hasCheckedInToday = !!todayRecovery;
 
   const goal = profile?.tdee ?? 2000;
   const proteinGoal = profile?.protein_g ?? 150;
@@ -104,6 +108,22 @@ export default function Dashboard() {
           </View>
         </Card>
 
+        {/* Recovery check-in prompt */}
+        {!hasCheckedInToday && (
+          <TouchableOpacity onPress={() => router.push('/recovery-checkin' as any)}>
+            <Card style={styles.checkinCard}>
+              <View style={styles.checkinRow}>
+                <Text style={styles.checkinEmoji}>🌅</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.checkinTitle}>Morning Check-In</Text>
+                  <Text style={styles.checkinSub}>Log your recovery to optimise today's training</Text>
+                </View>
+                <Text style={styles.checkinArrow}>›</Text>
+              </View>
+            </Card>
+          </TouchableOpacity>
+        )}
+
         {/* Today's Workout */}
         <TodayWorkoutCard />
 
@@ -177,4 +197,10 @@ const styles = StyleSheet.create({
   mealName: { ...Typography.body },
   mealKcal: { ...Typography.bodyMedium, color: Colors.text },
   mealEmpty: { color: Colors.textTertiary, fontFamily: 'Inter_400Regular' },
+  checkinCard: { padding: Spacing.md, borderLeftWidth: 3, borderLeftColor: Colors.primary },
+  checkinRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  checkinEmoji: { fontSize: 24 },
+  checkinTitle: { ...Typography.bodyMedium },
+  checkinSub: { ...Typography.caption, color: Colors.textSecondary },
+  checkinArrow: { fontSize: 22, color: Colors.textTertiary, fontFamily: 'Inter_400Regular' },
 });
