@@ -4,6 +4,7 @@ import {
   decryptPhoto,
   packEncryptedBlob,
   unpackEncryptedBlob,
+  toBase64,
   type EncryptedBlob,
 } from '@/lib/physiqueEncryption';
 
@@ -70,6 +71,17 @@ describe('physiqueEncryption', () => {
       const blob = await encryptPhoto(key, new Uint8Array(50));
       const packed = packEncryptedBlob(blob);
       expect(packed.length).toBe(12 + blob.ciphertext.length);
+    });
+  });
+
+  describe('toBase64', () => {
+    it('handles large arrays without stack overflow', () => {
+      // 200KB — larger than a compressed JPEG thumbnail
+      const large = new Uint8Array(200 * 1024).fill(0xAB);
+      expect(() => toBase64(large)).not.toThrow();
+      // Verify it round-trips
+      const decoded = Uint8Array.from(atob(toBase64(large)), (c) => c.charCodeAt(0));
+      expect(decoded).toEqual(large);
     });
   });
 });

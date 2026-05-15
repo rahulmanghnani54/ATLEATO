@@ -64,7 +64,7 @@ export async function decryptPhoto(key: CryptoKey, blob: EncryptedBlob): Promise
 export async function preparePhoto(uri: string, maxSize: number, quality: number): Promise<Uint8Array> {
   const result = await ImageManipulator.manipulateAsync(
     uri,
-    [{ resize: { width: maxSize, height: maxSize } }],
+    [{ resize: { width: maxSize } }],
     { compress: quality, format: ImageManipulator.SaveFormat.JPEG, base64: true },
   );
   if (!result.base64) throw new Error('preparePhoto: image manipulation returned no base64');
@@ -96,5 +96,10 @@ export function unpackEncryptedBlob(packed: Uint8Array): EncryptedBlob {
  * Encode a Uint8Array to base64 string (for sending to edge function).
  */
 export function toBase64(bytes: Uint8Array): string {
-  return btoa(String.fromCharCode(...bytes));
+  const CHUNK = 8192;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
 }
