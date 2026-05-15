@@ -81,3 +81,12 @@ export function calculateRecovery(inputs: RecoveryInputs): RecoveryResult {
 
   return { recoveryScore: score, volumeModifier, label, recommendation };
 }
+
+/** Maps a 0–100 recovery score to the human-readable label returned by calculateRecovery(). */
+export function scoreLabel(score: number): string {
+  if (score >= 85) return 'Excellent';
+  if (score >= 70) return 'Good';
+  if (score >= 50) return 'Moderate';
+  if (score >= 35) return 'Low';
+  return 'Poor';
+}

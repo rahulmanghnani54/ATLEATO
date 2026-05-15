@@ -5,7 +5,8 @@ import { useTodayRecovery } from '@/hooks/useRecoveryCheckin';
 import { useExerciseHistory } from '@/hooks/useProgression';
 import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
+import { scoreLabel } from '@/lib/recoveryEngine';
 
 // ─── Weight suggestion for a single exercise ────────────────────────────────
 function WeightSuggestion({ exerciseName, reps }: { exerciseName: string; reps: string }) {
@@ -48,16 +49,7 @@ function RecoveryCard({
       ? Colors.warn
       : Colors.error;
 
-  const scoreLabel =
-    score >= 85
-      ? 'EXCELLENT'
-      : score >= 70
-      ? 'GOOD'
-      : score >= 50
-      ? 'MODERATE'
-      : score >= 35
-      ? 'POOR'
-      : 'VERY POOR';
+  const label = scoreLabel(score).toUpperCase();
 
   return (
     <View style={[styles.recoveryCard, { borderColor: scoreColor + '44' }]}>
@@ -65,7 +57,7 @@ function RecoveryCard({
         <View>
           <Text style={styles.monoLabel}>RECOVERY SCORE</Text>
           <Text style={[styles.recoveryScore, { color: scoreColor }]}>{score}</Text>
-          <Text style={[styles.recoveryLabel, { color: scoreColor }]}>{scoreLabel}</Text>
+          <Text style={[styles.recoveryLabel, { color: scoreColor }]}>{label}</Text>
         </View>
         <View style={[styles.volumePill, { borderColor: pillColor + '88' }]}>
           <Text style={[styles.volumePillText, { color: pillColor }]}>{pillLabel}</Text>
@@ -120,7 +112,7 @@ export default function WorkoutLobby() {
             onPress={() =>
               router.push({
                 pathname: '/recovery-checkin',
-                params: { returnTo: '/workout-lobby?programId=' + (programId ?? 'cbum_evolved') + '&dayIndex=' + String(idx) },
+                params: { returnTo: `/workout-lobby?${new URLSearchParams({ programId: programId ?? 'cbum_evolved', dayIndex: String(idx) }).toString()}` },
               } as any)
             }
           >
