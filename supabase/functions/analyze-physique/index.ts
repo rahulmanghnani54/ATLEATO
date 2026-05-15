@@ -39,20 +39,29 @@ function buildImageContent(images: ImageSet): unknown[] {
   return content;
 }
 
-function parseScoreResponse(
-  text: string,
-): { fullness: number; leanness: number; symmetry: number; narrative: string } | null {
+function extractJsonAndNarrative(text: string): { jsonObj: Record<string, unknown>; narrative: string } | null {
   try {
-    const scoresMatch = text.match(/SCORES_JSON:\s*(\{[^}]+\})/);
+    // Find the JSON block after SCORES_JSON:
+    const jsonStart = text.indexOf('SCORES_JSON:');
+    if (jsonStart === -1) return null;
+    const afterLabel = text.slice(jsonStart + 'SCORES_JSON:'.length).trim();
+
+    // Extract balanced braces
+    let depth = 0;
+    let jsonEnd = -1;
+    for (let i = 0; i < afterLabel.length; i++) {
+      if (afterLabel[i] === '{') depth++;
+      else if (afterLabel[i] === '}') { depth--; if (depth === 0) { jsonEnd = i; break; } }
+    }
+    if (jsonEnd === -1) return null;
+    const jsonStr = afterLabel.slice(0, jsonEnd + 1);
+    const jsonObj = JSON.parse(jsonStr) as Record<string, unknown>;
+
+    // Extract NARRATIVE
     const narrativeMatch = text.match(/NARRATIVE:\s*([\s\S]+)/);
-    if (!scoresMatch || !narrativeMatch) return null;
-    const scores = JSON.parse(scoresMatch[1]);
-    return {
-      fullness: Math.min(10, Math.max(1, Math.round(Number(scores.fullness)))),
-      leanness: Math.min(10, Math.max(1, Math.round(Number(scores.leanness)))),
-      symmetry: Math.min(10, Math.max(1, Math.round(Number(scores.symmetry)))),
-      narrative: narrativeMatch[1].trim(),
-    };
+    if (!narrativeMatch) return null;
+
+    return { jsonObj, narrative: narrativeMatch[1].trim() };
   } catch {
     return null;
   }
@@ -138,20 +147,31 @@ serve(async (req) => {
       ];
 
       const raw = await callClaudeVision(systemPrompt, userContent, 300);
-      const parsed = parseScoreResponse(raw);
-      if (!parsed) return internalError();
+      const parsed = extractJsonAndNarrative(raw);
+      if (!parsed) return errorResponse('AI returned unrecognized format — please retry', 502);
+      const clamp = (n: unknown) => Math.min(10, Math.max(1, Math.round(Number(n))));
 
       return jsonResponse({
-        fullness: parsed.fullness,
-        leanness: parsed.leanness,
-        symmetry: parsed.symmetry,
+        fullness: clamp(parsed.jsonObj.fullness),
+        leanness: clamp(parsed.jsonObj.leanness),
+        symmetry: clamp(parsed.jsonObj.symmetry),
         narrative: parsed.narrative,
       });
     }
 
     // compare mode
-    const aImages = (body.checkinAImages ?? {}) as ImageSet;
-    const bImages = (body.checkinBImages ?? {}) as ImageSet;
+    const rawA = body.checkinAImages;
+    const rawB = body.checkinBImages;
+    const aImages: ImageSet = {
+      front: typeof (rawA as any)?.front === 'string' ? (rawA as any).front : undefined,
+      side: typeof (rawA as any)?.side === 'string' ? (rawA as any).side : undefined,
+      back: typeof (rawA as any)?.back === 'string' ? (rawA as any).back : undefined,
+    };
+    const bImages: ImageSet = {
+      front: typeof (rawB as any)?.front === 'string' ? (rawB as any).front : undefined,
+      side: typeof (rawB as any)?.side === 'string' ? (rawB as any).side : undefined,
+      back: typeof (rawB as any)?.back === 'string' ? (rawB as any).back : undefined,
+    };
     if (!aImages.front || !bImages.front) {
       return errorResponse(
         'checkinAImages.front and checkinBImages.front required for compare mode',
@@ -175,17 +195,15 @@ serve(async (req) => {
 
     const raw = await callClaudeVision(systemPrompt, userContent, 400);
 
-    const scoresMatch = raw.match(/SCORES_JSON:\s*(\{[^}]+\})/);
-    const narrativeMatch = raw.match(/NARRATIVE:\s*([\s\S]+)/);
-    if (!scoresMatch || !narrativeMatch) return internalError();
-
-    const s = JSON.parse(scoresMatch[1]);
+    const parsed = extractJsonAndNarrative(raw);
+    if (!parsed) return errorResponse('AI returned unrecognized format — please retry', 502);
     const clamp = (n: unknown) => Math.min(10, Math.max(1, Math.round(Number(n))));
+    const s = parsed.jsonObj;
 
     return jsonResponse({
       scoresA: { fullness: clamp(s.fullness_a), leanness: clamp(s.leanness_a), symmetry: clamp(s.symmetry_a) },
       scoresB: { fullness: clamp(s.fullness_b), leanness: clamp(s.leanness_b), symmetry: clamp(s.symmetry_b) },
-      narrative: narrativeMatch[1].trim(),
+      narrative: parsed.narrative,
     });
   } catch {
     return internalError();
