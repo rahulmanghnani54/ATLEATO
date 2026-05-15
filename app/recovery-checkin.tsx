@@ -1,15 +1,23 @@
 import { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Button, Card } from '@/components/ui';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { RecoverySlider } from '@/components/recovery/RecoverySlider';
 import { useSubmitRecovery, useTodayRecovery } from '@/hooks/useRecoveryCheckin';
 import { calculateRecovery } from '@/lib/recoveryEngine';
-import { Colors, Spacing, Typography } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
+
+function scoreColor(score: number) {
+  if (score >= 85) return Colors.success;
+  if (score >= 70) return Colors.good;
+  if (score >= 50) return Colors.warning;
+  if (score >= 35) return Colors.warn;
+  return Colors.error;
+}
 
 export default function RecoveryCheckin() {
   const router = useRouter();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { mutateAsync, isPending } = useSubmitRecovery();
   const { data: existingCheckin } = useTodayRecovery();
 
@@ -20,17 +28,21 @@ export default function RecoveryCheckin() {
   const [stress, setStress] = useState(2);
 
   const preview = calculateRecovery({ sleepHours, sleepQuality, soreness, energy, stress });
+  const color = scoreColor(preview.recoveryScore);
 
-  const scoreColor =
-    preview.recoveryScore >= 85 ? '#16a34a' :
-    preview.recoveryScore >= 70 ? '#65a30d' :
-    preview.recoveryScore >= 50 ? '#d97706' :
-    preview.recoveryScore >= 35 ? '#ea580c' : '#dc2626';
+  const pct = (() => {
+    const p = Math.round((preview.volumeModifier - 1) * 100);
+    return p > 0 ? `+${p}%` : p < 0 ? `${p}%` : 'NORMAL';
+  })();
 
   const handleSubmit = async () => {
     try {
       await mutateAsync({ sleepHours, sleepQuality, soreness, energy, stress });
-      router.back();
+      if (returnTo) {
+        router.replace(returnTo as any);
+      } else {
+        router.back();
+      }
     } catch {
       Alert.alert('Error', 'Could not save your check-in. Please try again.');
     }
@@ -38,42 +50,44 @@ export default function RecoveryCheckin() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>Morning Check-In</Text>
-        <Text style={styles.subtitle}>How are you feeling today?</Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.monoLabel}>MORNING CHECK-IN</Text>
+          <Text style={styles.headline}>HOW DID{'\n'}YOU SLEEP?</Text>
+        </View>
 
         {existingCheckin && (
-          <Card style={styles.updateBanner}>
+          <View style={styles.updateBanner}>
             <Text style={styles.updateText}>
-              ✏️ You've already checked in today (score: {existingCheckin.recovery_score}). Saving will update your entry.
+              Already checked in today (score: {existingCheckin.recovery_score}). Saving will update your entry.
             </Text>
-          </Card>
+          </View>
         )}
 
-        {/* Live recovery score preview */}
-        <Card style={styles.scoreCard}>
+        {/* Live score preview */}
+        <View style={[styles.scoreCard, { borderColor: color + '44' }]}>
           <View style={styles.scoreRow}>
             <View>
-              <Text style={styles.scoreLabel}>Recovery Score</Text>
-              <Text style={[styles.score, { color: scoreColor }]}>{preview.recoveryScore}</Text>
-              <Text style={[styles.scoreBadge, { color: scoreColor }]}>{preview.label}</Text>
+              <Text style={styles.scoreMono}>RECOVERY SCORE</Text>
+              <Text style={[styles.scoreNum, { color }]}>{preview.recoveryScore}</Text>
+              <Text style={[styles.scoreBadge, { color }]}>{preview.label.toUpperCase()}</Text>
             </View>
-            <View style={styles.modifierBox}>
-              <Text style={styles.modifierLabel}>Volume</Text>
-              <Text style={[styles.modifier, { color: scoreColor }]}>
-                {(() => {
-                  const pct = Math.round((preview.volumeModifier - 1) * 100);
-                  return pct > 0 ? `+${pct}%` : pct < 0 ? `${pct}%` : 'Normal';
-                })()}
-              </Text>
+            <View style={styles.modBox}>
+              <Text style={styles.scoreMono}>VOL MOD</Text>
+              <Text style={[styles.modNum, { color }]}>{pct}</Text>
             </View>
           </View>
+          <View style={styles.scoreBarTrack}>
+            <View style={[styles.scoreBarFill, { width: `${preview.recoveryScore}%` as any, backgroundColor: color }]} />
+          </View>
           <Text style={styles.recommendation}>{preview.recommendation}</Text>
-        </Card>
+        </View>
 
         {/* Sleep */}
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>😴 Sleep</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>SLEEP</Text>
           <RecoverySlider
             label="Hours slept"
             value={sleepHours}
@@ -93,11 +107,11 @@ export default function RecoveryCheckin() {
             lowLabel="Poor"
             highLabel="Excellent"
           />
-        </Card>
+        </View>
 
         {/* Physical */}
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>💪 Physical State</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>PHYSICAL STATE</Text>
           <RecoverySlider
             label="Muscle soreness"
             value={soreness}
@@ -116,11 +130,11 @@ export default function RecoveryCheckin() {
             lowLabel="Exhausted"
             highLabel="Energised"
           />
-        </Card>
+        </View>
 
         {/* Mental */}
-        <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>🧠 Mental State</Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>MENTAL STATE</Text>
           <RecoverySlider
             label="Stress level"
             value={stress}
@@ -130,15 +144,18 @@ export default function RecoveryCheckin() {
             lowLabel="Relaxed"
             highLabel="Very stressed"
           />
-        </Card>
+        </View>
 
-        <Button
-          label="Save Check-In"
+        <TouchableOpacity
+          style={[styles.submitBtn, isPending && { opacity: 0.6 }]}
           onPress={handleSubmit}
-          loading={isPending}
-          fullWidth
-          style={styles.submitBtn}
-        />
+          disabled={isPending}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.submitBtnText}>{isPending ? 'SAVING…' : 'SAVE CHECK-IN'}</Text>
+        </TouchableOpacity>
+
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -146,21 +163,41 @@ export default function RecoveryCheckin() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: Spacing.md, gap: Spacing.md, paddingBottom: Spacing.xxl },
-  title: { ...Typography.h1 },
-  subtitle: { ...Typography.body, color: Colors.textSecondary, marginTop: -Spacing.sm },
-  scoreCard: { padding: Spacing.md },
-  scoreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.sm },
-  scoreLabel: { ...Typography.caption, color: Colors.textSecondary },
-  score: { fontSize: 52, fontFamily: 'Inter_700Bold', lineHeight: 56 },
-  scoreBadge: { ...Typography.label, marginTop: 2 },
-  modifierBox: { alignItems: 'flex-end' },
-  modifierLabel: { ...Typography.caption, color: Colors.textSecondary },
-  modifier: { fontSize: 28, fontFamily: 'Inter_700Bold' },
-  recommendation: { ...Typography.caption, color: Colors.textSecondary, fontStyle: 'italic', lineHeight: 18 },
-  section: { padding: Spacing.md },
-  sectionTitle: { ...Typography.bodyMedium, marginBottom: Spacing.md },
-  submitBtn: { marginTop: Spacing.sm },
-  updateBanner: { padding: Spacing.sm, backgroundColor: '#fef9c3', borderColor: '#fde047', borderWidth: 1 },
-  updateText: { ...Typography.caption, color: '#92400e' },
+  scroll: { padding: 20, paddingTop: 14 },
+
+  header: { marginBottom: 20 },
+  monoLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
+  headline: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text, lineHeight: 34, letterSpacing: -1, marginTop: 6 },
+
+  updateBanner: {
+    backgroundColor: 'rgba(255,177,58,0.1)', borderWidth: 1,
+    borderColor: 'rgba(255,177,58,0.3)', borderRadius: 4, padding: 12, marginBottom: 12,
+  },
+  updateText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.warning },
+
+  scoreCard: {
+    backgroundColor: Colors.surface, borderWidth: 1,
+    borderRadius: 6, padding: 16, marginBottom: 12,
+  },
+  scoreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
+  scoreMono: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4, marginBottom: 4 },
+  scoreNum: { fontFamily: Fonts.display, fontSize: 52, lineHeight: 50 },
+  scoreBadge: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.2, marginTop: 4 },
+  modBox: { alignItems: 'flex-end' },
+  modNum: { fontFamily: Fonts.display, fontSize: 28 },
+  scoreBarTrack: { height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden', marginBottom: 10 },
+  scoreBarFill: { height: '100%', borderRadius: 2 },
+  recommendation: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, lineHeight: 18, fontStyle: 'italic' },
+
+  section: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 6, padding: 16, marginBottom: 10,
+  },
+  sectionLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8, marginBottom: 14 },
+
+  submitBtn: {
+    backgroundColor: Colors.primary, borderRadius: 4,
+    paddingVertical: 16, alignItems: 'center', marginTop: 8,
+  },
+  submitBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1 },
 });
