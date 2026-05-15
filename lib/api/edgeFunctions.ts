@@ -1,10 +1,17 @@
 import { supabase } from '@/lib/supabase';
 import type { ClaudeMessage } from './types';
 
+const TIMEOUT_MS = 30_000;
+
 async function invokeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
-  const { data, error } = await supabase.functions.invoke(name, { body });
-  if (error) throw error;
-  return data as T;
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('Request timed out. Please try again.')), TIMEOUT_MS)
+  );
+  const invokePromise = supabase.functions.invoke(name, { body }).then(({ data, error }) => {
+    if (error) throw error;
+    return data as T;
+  });
+  return Promise.race([invokePromise, timeoutPromise]);
 }
 
 export interface ChatResponse {
@@ -51,13 +58,16 @@ export async function generateMealPlan(preferences?: string, mealsPerDay?: numbe
 export interface FormFeedbackResponse {
   feedback: string;
   exerciseName: string;
+  persona: string;
 }
 
 export async function getFormFeedback(
   exerciseName: string,
   detectedIssues: string[],
+  persona: string,
+  angles: Record<string, number>,
 ): Promise<FormFeedbackResponse> {
-  return invokeFunction('form-feedback', { exerciseName, detectedIssues });
+  return invokeFunction('form-feedback', { exerciseName, detectedIssues, persona, angles });
 }
 
 export interface RecoveryPlanResponse {
