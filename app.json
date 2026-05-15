@@ -4,21 +4,59 @@
     "slug": "fitai-pro",
     "version": "1.0.0",
     "scheme": "fitaipro",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "plugins": [
       "expo-router",
-      "expo-camera",
-      ["expo-notifications", { "icon": "./assets/notification-icon.png" }]
+      "react-native-vision-camera",
+      "expo-file-system",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png"
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
-    "experiments": { "typedRoutes": true },
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ff6b35"
+    },
+    "experiments": {
+      "typedRoutes": true
+    },
     "android": {
+      "package": "com.madsales.fitaipro",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ff6b35"
-      }
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.madsales.fitaipro",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "FitAI Pro uses your camera to analyze your exercise form in real time and provide coaching feedback.",
+        "NSMicrophoneUsageDescription": "Microphone access is required by the camera framework but is not used by FitAI Pro.",
+        "NSHealthShareUsageDescription": "FitAI Pro does not access Apple Health data.",
+        "NSHealthUpdateUsageDescription": "FitAI Pro does not write to Apple Health.",
+        "NSHealthClinicalHealthRecordsShareUsageDescription": "FitAI Pro does not access clinical health records.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "6af17b44-55f2-4c23-bc68-978a70e1c26b"
+      }
     }
   }
 }
