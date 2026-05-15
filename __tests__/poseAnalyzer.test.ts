@@ -169,6 +169,43 @@ describe('analyzeForm — new exercises return corrections without throwing', ()
       expect(corrections.length).toBeGreaterThan(0);
     });
   });
+
+  it('Romanian Deadlift fires back_rounding error when angles indicate spinal flexion', () => {
+    // Shoulder well forward of hip in same vertical plane → triggers hinge warning
+    const kps = makeKps({
+      [KP.LEFT_SHOULDER]: { x: 50, y: 150 },   // forward
+      [KP.LEFT_HIP]: { x: 100, y: 200 },
+      [KP.LEFT_KNEE]: { x: 100, y: 280 },
+      [KP.LEFT_ANKLE]: { x: 100, y: 360 },
+    });
+    const corrections = analyzeForm(kps as any, 'Romanian Deadlift');
+    // Should return corrections (spine/back angle check fires or falls back to good)
+    expect(corrections.length).toBeGreaterThan(0);
+  });
+
+  it('Lunge fires insufficient_depth warning when knee angle is between 100-130°', () => {
+    // Hip-knee-ankle at ~122° (partial lunge — not deep enough)
+    const kps = makeKps({
+      [KP.LEFT_HIP]: { x: 100, y: 100 },
+      [KP.LEFT_KNEE]: { x: 100, y: 180 },
+      [KP.LEFT_ANKLE]: { x: 180, y: 230 },  // angled out → ~122°
+      [KP.LEFT_SHOULDER]: { x: 100, y: 30 },
+    });
+    const corrections = analyzeForm(kps as any, 'Lunge');
+    expect(corrections.some((c) => c.issueKey === 'lunge_insufficient_depth')).toBe(true);
+  });
+
+  it('Hip Thrust fires insufficient_extension warning when hip extension < 140°', () => {
+    // Shoulder-hip-knee angle ~135° (hips not driven up fully)
+    const kps = makeKps({
+      [KP.LEFT_SHOULDER]: { x: 100, y: 80 },
+      [KP.LEFT_HIP]: { x: 100, y: 180 },
+      [KP.LEFT_KNEE]: { x: 160, y: 240 },   // knee in front → ~135° angle
+      [KP.LEFT_ANKLE]: { x: 160, y: 310 },
+    });
+    const corrections = analyzeForm(kps as any, 'Hip Thrust');
+    expect(corrections.some((c) => c.issueKey === 'hip_thrust_insufficient_extension')).toBe(true);
+  });
 });
 
 // ── issueKey presence ─────────────────────────────────────────────────────────

@@ -76,7 +76,7 @@ export function analyzeBilateral(keypoints: Keypoint[]): PoseCorrection[] {
       const worse = leftKneeAngle > rightKneeAngle ? 'Right' : 'Left';
       corrections.push({
         severity: 'warning',
-        message: `${worse} knee is caving more than the other (${Math.round(diff)}° difference) — push both knees out equally.`,
+        message: `${worse} knee is bending more than the other (${Math.round(diff)}° depth difference) — check both legs are loaded evenly.`,
         issueKey: 'knee_angle_asymmetry',
       });
     }
@@ -87,11 +87,15 @@ export function analyzeBilateral(keypoints: Keypoint[]): PoseCorrection[] {
 
 // ─── Velocity helper ──────────────────────────────────────────────────────────
 
+/** Returns the maximum single-frame wrist descent (positive = moving downward / increasing Y).
+ *  Uses rolling max of consecutive differences to detect any fast burst, not just an average. */
 function wristDescentRate(wristYHistory: number[]): number {
   if (wristYHistory.length < 2) return 0;
-  const last = wristYHistory[wristYHistory.length - 1];
-  const first = wristYHistory[0];
-  return (last - first) / (wristYHistory.length - 1);
+  let max = 0;
+  for (let i = 1; i < wristYHistory.length; i++) {
+    max = Math.max(max, wristYHistory[i] - wristYHistory[i - 1]);
+  }
+  return max;
 }
 
 // ─── Exercise analyzers ───────────────────────────────────────────────────────
@@ -429,7 +433,7 @@ export function detectExerciseType(name: string): ExerciseType {
   if (n.includes('bench') || (n.includes('press') && n.includes('chest'))) return 'bench';
   if (n.includes('deadlift')) return 'deadlift';
   if (n.includes('overhead press') || n.includes('ohp') || n.includes('military press')) return 'ohp';
-  if (n.includes('barbell row') || n.includes('bent-over row') || n.includes('bentover row') || n === 'barbell row') return 'row';
+  if (n.includes('barbell row') || n.includes('bent-over row') || n.includes('bentover row')) return 'row';
   if (n.includes('lat pulldown') || n.includes('lat pull')) return 'lat_pulldown';
   if (n.includes('bicep curl') || n.includes('bicep')) return 'bicep_curl';
   if (n.includes('tricep pushdown') || n.includes('tricep')) return 'tricep_pushdown';
