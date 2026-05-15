@@ -8,11 +8,10 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
-import { Button, Card } from '@/components/ui';
 import { ProgressionBadge } from '@/components/workout/ProgressionBadge';
 import { useExerciseHistory } from '@/hooks/useProgression';
 import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { detectAndSavePRs } from '@/lib/prDetector';
 
 interface SetEntry {
@@ -33,7 +32,12 @@ function ExerciseProgression({ exerciseName, reps }: { exerciseName: string; rep
 
 export default function WorkoutSession() {
   const router = useRouter();
-  const { programId, dayIndex } = useLocalSearchParams<{ programId: string; dayIndex: string }>();
+  const { programId, dayIndex, volumeModifier: volumeModifierParam } = useLocalSearchParams<{
+    programId: string;
+    dayIndex: string;
+    volumeModifier?: string;
+  }>();
+  const volumeModifier = parseFloat(volumeModifierParam ?? '1.0') || 1.0;
   const user = useAuthStore((s) => s.user);
 
   const program = EXPERT_PROGRAMS[programId ?? 'cbum_evolved'] ?? EXPERT_PROGRAMS.cbum_evolved;
@@ -46,17 +50,18 @@ export default function WorkoutSession() {
   const [isSaving, setIsSaving] = useState(false);
   const [sets, setSets] = useState<SetEntry[][]>(
     workout.exercises.map((ex) =>
-      Array.from({ length: ex.sets }, () => ({ weight: '', reps: '', rpe: '7', done: false }))
+      Array.from(
+        { length: Math.max(1, Math.round(ex.sets * volumeModifier)) },
+        () => ({ weight: '', reps: '', rpe: '7', done: false })
+      )
     )
   );
 
-  // Elapsed timer
   useEffect(() => {
     const interval = setInterval(() => setElapsed(Math.floor((Date.now() - startTime.current) / 1000)), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Rest countdown
   useEffect(() => {
     if (restTimer === null || restTimer <= 0) {
       if (restTimer === 0) {
@@ -139,20 +144,14 @@ export default function WorkoutSession() {
 
     if (setRows.length > 0) {
       const { error: setsError } = await (supabase.from('exercise_sets') as any).insert(setRows);
-      if (setsError) {
-        console.error('exercise_sets insert error:', setsError.message);
-      }
+      if (setsError && __DEV__) console.error('exercise_sets insert error:', setsError.message);
     }
 
-    // Always update total volume; only update average_rpe when available
     const updatePayload: Record<string, number> = { total_volume_kg: totalVolume };
     if (rpeCount > 0) updatePayload.average_rpe = rpeSum / rpeCount;
 
-    await (supabase.from('workout_logs') as any)
-      .update(updatePayload)
-      .eq('id', workoutLog.id);
+    await (supabase.from('workout_logs') as any).update(updatePayload).eq('id', workoutLog.id);
 
-    // Detect PRs
     const newPRs = await detectAndSavePRs(user.id, workoutLog.id);
     if (newPRs.length > 0) {
       const prText = newPRs.map((pr) => `🏆 ${pr.exerciseName}: ${pr.weightKg}kg × ${pr.reps} (e1RM: ${pr.oneRepMaxKg}kg)`).join('\n');
@@ -174,6 +173,8 @@ export default function WorkoutSession() {
     );
   };
 
+  const restPct = restTimer !== null ? restTimer / restTotal : 0;
+
   return (
     <SafeAreaView style={styles.safe}>
       {/* Header */}
@@ -182,63 +183,86 @@ export default function WorkoutSession() {
           <Text style={styles.closeBtnText}>✕</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.workoutName}>{workout.name}</Text>
-          <Text style={styles.timer}>{formatTime(elapsed)}</Text>
+          <Text style={styles.workoutName}>{workout.name.toUpperCase()}</Text>
+          <View style={styles.timerRow}>
+            <Text style={styles.timer}>{formatTime(elapsed)}</Text>
+            {volumeModifier !== 1.0 && (
+              <View style={[
+                styles.recoveryPill,
+                { backgroundColor: volumeModifier > 1 ? 'rgba(57,224,138,0.15)' : 'rgba(255,177,58,0.15)' },
+              ]}>
+                <Text style={[
+                  styles.recoveryPillText,
+                  { color: volumeModifier > 1 ? Colors.success : Colors.warning },
+                ]}>
+                  {`VOL ${volumeModifier > 1 ? '+' : ''}${Math.round((volumeModifier - 1) * 100)}%`}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
-        <Button
-          label={isSaving ? '...' : 'Finish'}
+        <TouchableOpacity
+          style={[styles.finishBtn, isSaving && { opacity: 0.6 }]}
           onPress={handleFinish}
           disabled={isSaving}
-          style={styles.finishBtn}
-        />
+        >
+          <Text style={styles.finishBtnText}>{isSaving ? '…' : 'FINISH'}</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Rest timer banner */}
       {restTimer !== null && (
         <View style={styles.restBanner}>
-          <Text style={styles.restLabel}>Rest: {formatTime(restTimer)}</Text>
-          <TouchableOpacity onPress={() => setRestTimer(null)}>
-            <Text style={styles.skipRest}>Skip</Text>
-          </TouchableOpacity>
+          <View style={[styles.restProgress, { width: `${(1 - restPct) * 100}%` as any }]} />
+          <View style={styles.restContent}>
+            <Text style={styles.restLabel}>REST  {formatTime(restTimer)}</Text>
+            <TouchableOpacity onPress={() => setRestTimer(null)}>
+              <Text style={styles.skipRest}>SKIP</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {workout.exercises.map((ex, exIdx) => (
-            <Card key={ex.name} style={styles.exerciseCard}>
-              <Text style={styles.exerciseName}>{ex.name}</Text>
-              <View style={styles.exerciseHeaderRow}>
-                {ex.tips.length > 0 && (
-                  <Text style={[styles.exerciseTips, { flex: 1 }]}>{ex.tips[0]}</Text>
-                )}
+            <View key={ex.name} style={styles.exerciseCard}>
+              {/* Exercise header */}
+              <View style={styles.exerciseHeader}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.exerciseName}>{ex.name}</Text>
+                  {ex.tips.length > 0 && (
+                    <Text style={styles.exerciseTip}>{ex.tips[0]}</Text>
+                  )}
+                </View>
                 <TouchableOpacity
-                  style={styles.formCoachBtn}
+                  style={styles.formBtn}
                   onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name } } as any)}
                 >
-                  <Text style={styles.formCoachBtnText}>📷 Form</Text>
+                  <Text style={styles.formBtnText}>📷 FORM</Text>
                 </TouchableOpacity>
               </View>
+
               <ExerciseProgression exerciseName={ex.name} reps={ex.reps} />
 
-              {/* Set rows */}
+              {/* Set table header */}
               <View style={styles.setHeader}>
-                <Text style={[styles.setCol, { flex: 1 }]}>Set</Text>
-                <Text style={[styles.setCol, { flex: 2 }]}>Weight (kg)</Text>
-                <Text style={[styles.setCol, { flex: 2 }]}>Reps</Text>
-                <Text style={[styles.setCol, { flex: 1 }]}>RPE</Text>
-                <Text style={[styles.setCol, { width: 44 }]}>✓</Text>
+                <Text style={[styles.setHeaderCol, { flex: 1 }]}>SET</Text>
+                <Text style={[styles.setHeaderCol, { flex: 2 }]}>KG</Text>
+                <Text style={[styles.setHeaderCol, { flex: 2 }]}>REPS</Text>
+                <Text style={[styles.setHeaderCol, { flex: 1 }]}>RPE</Text>
+                <Text style={[styles.setHeaderCol, { width: 44, textAlign: 'center' }]}>✓</Text>
               </View>
 
               {sets[exIdx].map((s, setIdx) => (
                 <View key={setIdx} style={[styles.setRow, s.done && styles.setRowDone]}>
-                  <Text style={[styles.setCol, { flex: 1 }]}>{setIdx + 1}</Text>
+                  <Text style={[styles.setNum, { flex: 1 }]}>{setIdx + 1}</Text>
                   <TextInput
                     style={[styles.setInput, { flex: 2 }]}
                     value={s.weight}
                     onChangeText={(v) => updateSet(exIdx, setIdx, 'weight', v)}
                     keyboardType="decimal-pad"
-                    placeholder="kg"
+                    placeholder="0"
                     placeholderTextColor={Colors.textTertiary}
                     editable={!s.done}
                   />
@@ -261,16 +285,19 @@ export default function WorkoutSession() {
                     editable={!s.done}
                   />
                   <TouchableOpacity
-                    style={[styles.doneBtn, s.done && styles.doneBtnActive]}
+                    style={[styles.doneBtn, s.done && styles.doneBtnActive, { width: 44 }]}
                     onPress={() => !s.done && completeSet(exIdx, setIdx, ex.restSeconds)}
                     disabled={s.done}
                   >
-                    <Text style={styles.doneBtnText}>{s.done ? '✓' : '○'}</Text>
+                    <Text style={[styles.doneBtnText, s.done && { color: Colors.accentInk }]}>
+                      {s.done ? '✓' : '○'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               ))}
-            </Card>
+            </View>
           ))}
+          <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -279,49 +306,81 @@ export default function WorkoutSession() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
+
   header: {
-    flexDirection: 'row', alignItems: 'center', padding: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12,
     backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   closeBtn: { padding: 4 },
-  closeBtnText: { fontSize: 20, color: Colors.textSecondary },
+  closeBtnText: { fontSize: 18, color: Colors.textSecondary },
   headerCenter: { flex: 1, alignItems: 'center' },
-  workoutName: { ...Typography.bodyMedium },
-  timer: { fontSize: 20, fontFamily: 'Inter_700Bold', color: Colors.primary },
-  finishBtn: { height: 36, paddingHorizontal: 16 },
+  workoutName: { fontFamily: Fonts.display, fontSize: 13, color: Colors.text, letterSpacing: 0.5 },
+  timer: { fontFamily: Fonts.mono, fontSize: 18, color: Colors.primary, letterSpacing: 1, marginTop: 2 },
+  timerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  recoveryPill: {
+    borderRadius: 3, paddingHorizontal: 6, paddingVertical: 2,
+  },
+  recoveryPillText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1 },
+  finishBtn: {
+    backgroundColor: Colors.primary, borderRadius: 3,
+    paddingHorizontal: 14, paddingVertical: 7,
+  },
+  finishBtnText: { fontFamily: Fonts.display, fontSize: 11, color: Colors.accentInk, letterSpacing: 1 },
+
   restBanner: {
-    backgroundColor: Colors.primary, flexDirection: 'row',
+    backgroundColor: Colors.raised, height: 44,
+    borderBottomWidth: 1, borderBottomColor: Colors.border, overflow: 'hidden',
+  },
+  restProgress: {
+    position: 'absolute', left: 0, top: 0, bottom: 0,
+    backgroundColor: Colors.primaryLight,
+  },
+  restContent: {
+    flex: 1, height: 44, flexDirection: 'row',
     justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.lg, paddingVertical: 10,
+    paddingHorizontal: 16,
   },
-  restLabel: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
-  skipRest: { fontSize: 14, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.8)' },
-  content: { padding: Spacing.md, gap: Spacing.md, paddingBottom: Spacing.xxl },
-  exerciseCard: { padding: Spacing.md },
-  exerciseName: { ...Typography.h3, marginBottom: 4 },
-  exerciseTips: {
-    ...Typography.caption, color: Colors.textSecondary,
-    fontStyle: 'italic',
+  restLabel: { fontFamily: Fonts.mono, fontSize: 12, color: Colors.primary, letterSpacing: 1.4 },
+  skipRest: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1 },
+
+  content: { padding: 16, gap: 12 },
+
+  exerciseCard: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 6, overflow: 'hidden',
   },
-  setHeader: { flexDirection: 'row', marginBottom: 4 },
-  setCol: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, textAlign: 'center' },
-  setRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 },
-  setRowDone: { opacity: 0.5 },
+  exerciseHeader: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
+    padding: 14, borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  exerciseName: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text, marginBottom: 4 },
+  exerciseTip: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, lineHeight: 16, fontStyle: 'italic' },
+  formBtn: {
+    backgroundColor: Colors.primaryLight, borderRadius: 3,
+    paddingHorizontal: 10, paddingVertical: 6,
+  },
+  formBtnText: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 0.8 },
+
+  setHeader: {
+    flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8,
+    backgroundColor: Colors.background,
+  },
+  setHeaderCol: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1, textAlign: 'center' },
+
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 6 },
+  setRowDone: { opacity: 0.45 },
+  setNum: { fontFamily: Fonts.mono, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
   setInput: {
-    height: 40, backgroundColor: Colors.background, borderRadius: Radius.sm,
-    paddingHorizontal: 8, fontFamily: 'Inter_400Regular', fontSize: 14,
+    height: 40, backgroundColor: Colors.background, borderRadius: 3,
+    borderWidth: 1, borderColor: Colors.border,
+    paddingHorizontal: 8, fontFamily: Fonts.mono, fontSize: 14,
     color: Colors.text, textAlign: 'center',
   },
-  exerciseHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm, marginBottom: Spacing.md },
-  formCoachBtn: {
-    backgroundColor: Colors.primaryLight ?? '#fff5f0',
-    borderRadius: Radius.sm, paddingHorizontal: 10, paddingVertical: 6,
-  },
-  formCoachBtnText: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: Colors.primary },
   doneBtn: {
-    width: 40, height: 40, borderRadius: Radius.sm,
-    backgroundColor: Colors.background, alignItems: 'center', justifyContent: 'center',
+    height: 40, borderRadius: 3,
+    backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center', justifyContent: 'center',
   },
-  doneBtnActive: { backgroundColor: Colors.success },
-  doneBtnText: { fontSize: 18, color: Colors.text },
+  doneBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  doneBtnText: { fontSize: 16, color: Colors.textSecondary },
 });
