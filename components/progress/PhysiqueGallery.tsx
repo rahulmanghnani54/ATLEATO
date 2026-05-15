@@ -1,0 +1,261 @@
+import { useState, useEffect } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, FlatList,
+  Image, ActivityIndicator,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { usePhysiqueCheckins, decryptStorageBlob, type PhysiqueCheckin } from '@/hooks/usePhysiqueCheckins';
+import { useAuthStore } from '@/stores/authStore';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
+
+function dueDateLabel(lastDate: string, cadence: 'weekly' | 'biweekly' | 'monthly'): string {
+  const days = cadence === 'weekly' ? 7 : cadence === 'biweekly' ? 14 : 30;
+  const due = new Date(lastDate);
+  due.setDate(due.getDate() + days);
+  const now = new Date();
+  const diff = Math.ceil((due.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diff <= 0) return 'Check-in overdue';
+  if (diff === 1) return 'Check-in due tomorrow';
+  return `Next check-in in ${diff} days`;
+}
+
+function ThumbnailCell({
+  checkin,
+  selected,
+  onPress,
+}: {
+  checkin: PhysiqueCheckin;
+  selected: boolean;
+  onPress: () => void;
+}) {
+  const user = useAuthStore((s) => s.user);
+  const [uri, setUri] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    decryptStorageBlob(user.id, checkin.front_thumb)
+      .then((bytes) => {
+        const CHUNK = 8192;
+        let binary = '';
+        for (let i = 0; i < bytes.length; i += CHUNK) {
+          binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+        }
+        setUri(`data:image/jpeg;base64,${btoa(binary)}`);
+      })
+      .catch(() => {});
+  }, [checkin.front_thumb, user?.id]);
+
+  return (
+    <TouchableOpacity
+      style={[styles.cell, selected && styles.cellSelected]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      {uri ? (
+        <Image source={{ uri }} style={styles.thumbnail} resizeMode="cover" />
+      ) : (
+        <ActivityIndicator color={Colors.primary} style={styles.thumbnail} />
+      )}
+      <View style={styles.cellFooter}>
+        <Text style={styles.cellDate}>
+          {new Date(checkin.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        </Text>
+        {checkin.pose_count > 1 && (
+          <Text style={styles.poseBadge}>{checkin.pose_count} poses</Text>
+        )}
+      </View>
+      {selected && <View style={styles.selectedOverlay} />}
+    </TouchableOpacity>
+  );
+}
+
+export function PhysiqueGallery() {
+  const router = useRouter();
+  const { data: checkins = [], isLoading } = usePhysiqueCheckins();
+  const [selected, setSelected] = useState<string[]>([]);
+  const [cadence, setCadence] = useState<'weekly' | 'biweekly' | 'monthly'>('biweekly');
+
+  // Sync cadence from latest check-in
+  useEffect(() => {
+    if (checkins.length > 0) setCadence(checkins[0].cadence);
+  }, [checkins]);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) =>
+      prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : prev.length < 2 ? [...prev, id] : [prev[1], id]
+    );
+  };
+
+  const handleCompare = () => {
+    if (selected.length !== 2) return;
+    router.push({
+      pathname: '/physique-compare',
+      params: { checkinAId: selected[0], checkinBId: selected[1] },
+    } as any);
+  };
+
+  const latestCheckin = checkins[0];
+
+  const CADENCE_OPTIONS: Array<{ key: 'weekly' | 'biweekly' | 'monthly'; label: string }> = [
+    { key: 'weekly', label: 'Weekly' },
+    { key: 'biweekly', label: 'Bi-weekly' },
+    { key: 'monthly', label: 'Monthly' },
+  ];
+
+  if (isLoading) {
+    return <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />;
+  }
+
+  return (
+    <View style={styles.container}>
+      {/* Due date banner */}
+      {latestCheckin && (
+        <View style={styles.dueBanner}>
+          <Text style={styles.dueText}>
+            {dueDateLabel(latestCheckin.date, cadence)}
+          </Text>
+        </View>
+      )}
+
+      {/* Cadence selector */}
+      <View style={styles.cadenceRow}>
+        <Text style={styles.cadenceLabel}>CADENCE</Text>
+        <View style={styles.cadencePills}>
+          {CADENCE_OPTIONS.map((opt) => (
+            <TouchableOpacity
+              key={opt.key}
+              style={[styles.cadencePill, cadence === opt.key && styles.cadencePillActive]}
+              onPress={() => setCadence(opt.key)}
+            >
+              <Text style={[styles.cadencePillText, cadence === opt.key && styles.cadencePillTextActive]}>
+                {opt.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      {/* Photo grid */}
+      <FlatList
+        data={checkins}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        scrollEnabled={false}
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={[styles.cell, styles.newCheckinCell]}
+            onPress={() => router.push('/physique-checkin' as any)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.newCheckinPlus}>＋</Text>
+            <Text style={styles.newCheckinLabel}>NEW CHECK-IN</Text>
+          </TouchableOpacity>
+        }
+        renderItem={({ item }) => (
+          <ThumbnailCell
+            checkin={item}
+            selected={selected.includes(item.id)}
+            onPress={() => toggleSelect(item.id)}
+          />
+        )}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No check-ins yet. Tap ＋ to start your physique timeline.</Text>
+        }
+      />
+
+      {/* Compare button */}
+      {selected.length === 2 && (
+        <TouchableOpacity style={styles.compareBtn} onPress={handleCompare} activeOpacity={0.85}>
+          <Text style={styles.compareBtnText}>COMPARE SELECTED →</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+const CELL_SIZE = 160;
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  dueBanner: {
+    backgroundColor: 'rgba(223,255,31,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(223,255,31,0.15)',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 12,
+  },
+  dueText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.primary, letterSpacing: 1 },
+  cadenceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
+  cadenceLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4 },
+  cadencePills: { flexDirection: 'row', gap: 6 },
+  cadencePill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cadencePillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  cadencePillText: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 0.8 },
+  cadencePillTextActive: { color: Colors.accentInk },
+  row: { gap: 10, marginBottom: 10 },
+  cell: {
+    flex: 1,
+    height: CELL_SIZE,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 6,
+    overflow: 'hidden',
+  },
+  cellSelected: { borderColor: Colors.primary, borderWidth: 2 },
+  thumbnail: { flex: 1, width: '100%' },
+  cellFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  cellDate: { fontFamily: Fonts.mono, fontSize: 9, color: '#fff', letterSpacing: 0.5 },
+  poseBadge: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.primary },
+  selectedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    borderRadius: 5,
+  },
+  newCheckinCell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderStyle: 'dashed',
+  },
+  newCheckinPlus: { fontFamily: Fonts.display, fontSize: 32, color: Colors.primary, marginBottom: 6 },
+  newCheckinLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4 },
+  emptyText: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    color: Colors.textTertiary,
+    textAlign: 'center',
+    marginTop: 24,
+    lineHeight: 20,
+  },
+  compareBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 4,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  compareBtnText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 1 },
+});
