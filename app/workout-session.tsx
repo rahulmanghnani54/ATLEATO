@@ -243,7 +243,7 @@ export default function WorkoutSession() {
                 </View>
                 <TouchableOpacity
                   style={styles.formBtn}
-                  onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name } } as any)}
+                  onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved' } } as any)}
                 >
                   <Text style={styles.formBtnText}>📷 FORM</Text>
                 </TouchableOpacity>

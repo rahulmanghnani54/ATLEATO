@@ -5,37 +5,88 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { CameraView, useCameraPermissions, CameraType } from 'expo-camera';
+import { Camera, useCameraDevice, useCameraPermission, useFrameProcessor } from 'react-native-vision-camera';
+import { runOnJS } from 'react-native-worklets-core';
 import * as poseDetection from '@tensorflow-models/pose-detection';
-import { decodeJpeg } from '@tensorflow/tfjs-react-native';
-import * as FileSystem from 'expo-file-system';
 import { initTf } from '@/lib/tfSetup';
 import { analyzeForm, type PoseCorrection } from '@/lib/poseAnalyzer';
 import { SkeletonOverlay } from '@/components/formcoach/SkeletonOverlay';
-import { Colors, Spacing, Typography } from '@/constants/theme';
+import { getFormFeedback } from '@/lib/api/edgeFunctions';
+import { Colors, Spacing, Typography, Fonts } from '@/constants/theme';
 
-const FRAME_INTERVAL_MS = 333; // ~3fps — CPU inference limit
-const MODEL_INPUT_SIZE = 192; // MoveNet Lightning input
+const FRAME_INTERVAL_MS = 50;
+const MODEL_INPUT_SIZE = 192;
+const CLAUDE_COOLDOWN_MS = 15_000;
+const CUE_FADE_TIMEOUT_MS = 5_000;
+const VELOCITY_HISTORY_SIZE = 5;
+
+function programIdToPersona(programId: string): string {
+  if (programId.startsWith('cbum')) return 'cbum';
+  if (programId.startsWith('arnold')) return 'arnold';
+  if (programId.startsWith('nippard')) return 'nippard';
+  if (programId.startsWith('ct_fletcher')) return 'ct_fletcher';
+  if (programId.startsWith('dr_mike')) return 'dr_mike';
+  return 'cbum';
+}
+
+function extractAngles(kps: poseDetection.Keypoint[]): Record<string, number> {
+  const angles: Record<string, number> = {};
+  function kp(i: number) { return kps[i] ?? { x: 0, y: 0, score: 0 }; }
+  function angleDeg(a: {x:number,y:number}, b: {x:number,y:number}, c: {x:number,y:number}) {
+    const ab = { x: a.x - b.x, y: a.y - b.y };
+    const cb = { x: c.x - b.x, y: c.y - b.y };
+    const dot = ab.x * cb.x + ab.y * cb.y;
+    const mag = Math.sqrt(ab.x ** 2 + ab.y ** 2) * Math.sqrt(cb.x ** 2 + cb.y ** 2);
+    if (mag === 0) return 0;
+    return Math.round(Math.acos(Math.min(1, Math.max(-1, dot / mag))) * 180 / Math.PI);
+  }
+  const lShoulder = kp(5), lElbow = kp(7), lWrist = kp(9);
+  const lHip = kp(11), lKnee = kp(13), lAnkle = kp(15);
+  const rHip = kp(12), rKnee = kp(14);
+  angles['knee_angle_left'] = angleDeg(lHip, lKnee, lAnkle);
+  angles['knee_angle_right'] = angleDeg(rHip, rKnee, kp(16));
+  angles['torso_lean'] = angleDeg(lShoulder, lHip, lKnee);
+  angles['elbow_angle_left'] = angleDeg(lShoulder, lElbow, lWrist);
+  return angles;
+}
+
+const PERSONA_LABELS: Record<string, string> = {
+  cbum: 'CBUM SAYS',
+  arnold: 'ARNOLD SAYS',
+  nippard: 'NIPPARD SAYS',
+  ct_fletcher: 'CT SAYS',
+  dr_mike: 'DR MIKE SAYS',
+};
 
 export default function FormCoach() {
   const router = useRouter();
-  const { exerciseName } = useLocalSearchParams<{ exerciseName: string }>();
+  const { exerciseName, persona: personaParam } = useLocalSearchParams<{
+    exerciseName: string;
+    persona?: string;
+  }>();
   const { width: screenWidth } = useWindowDimensions();
-  const cameraHeight = screenWidth * 1.33; // 4:3
+  const cameraHeight = screenWidth * 1.33;
 
-  const [permission, requestPermission] = useCameraPermissions();
+  const persona = programIdToPersona(personaParam ?? 'cbum_evolved');
+  const claudePersonaLabel = PERSONA_LABELS[persona] ?? 'COACH SAYS';
+
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const [facing, setFacing] = useState<'front' | 'back'>('back');
+  const cameraDevice = useCameraDevice(facing);  // single declaration
+
   const [tfReady, setTfReady] = useState(false);
-  const [detector, setDetector] = useState<poseDetection.PoseDetector | null>(null);
   const [keypoints, setKeypoints] = useState<poseDetection.Keypoint[]>([]);
   const [corrections, setCorrections] = useState<PoseCorrection[]>([]);
-  const [facing, setFacing] = useState<CameraType>('back');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [claudeCue, setClaudeCue] = useState<string | null>(null);
 
-  const cameraRef = useRef<CameraView>(null);
+  const detectorRef = useRef<poseDetection.PoseDetector | null>(null);
   const processingRef = useRef(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastClaudeCallAt = useRef(0);
+  const cueTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wristYHistory = useRef<number[]>([]);
+  const lastFrameAt = useRef(0);
 
-  // Initialise TF.js + MoveNet
+  // Init TF.js + MoveNet
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -43,63 +94,87 @@ export default function FormCoach() {
       if (cancelled) return;
       const det = await poseDetection.createDetector(
         poseDetection.SupportedModels.MoveNet,
-        {
-          modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
-          enableSmoothing: true,
-        }
+        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING, enableSmoothing: true }
       );
       if (!cancelled) {
-        setDetector(det);
+        detectorRef.current = det;
         setTfReady(true);
       }
-    })().catch((err) => console.warn('[FormCoach] TF init error:', err));
+    })().catch((err) => { if (__DEV__) console.warn('[FormCoach] TF init:', err); });
     return () => { cancelled = true; };
   }, []);
 
-  const processFrame = useCallback(async () => {
-    if (processingRef.current || !detector || !cameraRef.current) return;
+  const processRawFrame = useCallback(async (
+    buffer: ArrayBuffer,
+    width: number,
+    height: number,
+  ) => {
+    if (!detectorRef.current) return;
     processingRef.current = true;
     try {
-      const photo = await cameraRef.current.takePictureAsync({
-        quality: 0.3,
-        base64: true,
-        skipProcessing: true,
-      });
-      if (!photo?.base64) return;
+      const bgra = new Uint8Array(buffer);
+      const rgb = new Uint8Array(width * height * 3);
+      for (let i = 0, j = 0; i < bgra.length; i += 4, j += 3) {
+        rgb[j]     = bgra[i + 2]; // R ← B channel in BGRA
+        rgb[j + 1] = bgra[i + 1]; // G
+        rgb[j + 2] = bgra[i];     // B ← R channel in BGRA
+      }
 
-      // Decode to tensor
-      const raw = Uint8Array.from(atob(photo.base64), (c) => c.charCodeAt(0));
-      const imageTensor = decodeJpeg(raw);
-      const poses = await detector.estimatePoses(imageTensor as any);
-      imageTensor.dispose();
+      const poses = await detectorRef.current.estimatePoses(
+        { data: rgb, width, height, channels: 3 } as any
+      );
 
       if (poses.length > 0) {
         const kps = poses[0].keypoints;
         setKeypoints(kps);
+
+        const lWrist = kps[9];
+        if (lWrist && (lWrist.score ?? 0) > 0.3) {
+          wristYHistory.current = [...wristYHistory.current, lWrist.y].slice(-VELOCITY_HISTORY_SIZE);
+        }
+
         const name = exerciseName ?? 'unknown';
-        setCorrections(analyzeForm(kps, name));
+        const newCorrections = analyzeForm(kps, name, wristYHistory.current);
+        setCorrections(newCorrections);
+
+        const hasError = newCorrections.some((c) => c.severity === 'error');
+        const now = Date.now();
+        if (hasError && now - lastClaudeCallAt.current > CLAUDE_COOLDOWN_MS) {
+          lastClaudeCallAt.current = now;
+          const errorIssues = newCorrections
+            .filter((c) => c.severity === 'error' && c.issueKey)
+            .map((c) => c.issueKey!);
+          const angles = extractAngles(kps);
+          getFormFeedback(name, errorIssues, persona, angles)
+            .then((res) => {
+              setClaudeCue(res.feedback);
+              if (cueTimeoutRef.current) clearTimeout(cueTimeoutRef.current);
+              cueTimeoutRef.current = setTimeout(() => setClaudeCue(null), CUE_FADE_TIMEOUT_MS);
+            })
+            .catch(() => {});
+        }
+
+        if (!hasError && cueTimeoutRef.current === null && claudeCue) {
+          cueTimeoutRef.current = setTimeout(() => setClaudeCue(null), CUE_FADE_TIMEOUT_MS);
+        }
       }
-    } catch (err) {
-      // Silently ignore frame errors — camera may not be ready
+    } catch {
+      // Silently ignore frame errors
     } finally {
       processingRef.current = false;
     }
-  }, [detector, exerciseName]);
+  }, [exerciseName, persona, claudeCue]);
 
-  // Start frame processing loop once detector is ready
-  useEffect(() => {
-    if (!tfReady || !permission?.granted) return;
-    intervalRef.current = setInterval(processFrame, FRAME_INTERVAL_MS);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [tfReady, permission?.granted, processFrame]);
+  const frameProcessor = useFrameProcessor((frame) => {
+    'worklet';
+    const now = Date.now();
+    if (processingRef.current || now - lastFrameAt.current < FRAME_INTERVAL_MS) return;
+    lastFrameAt.current = now;
+    const buf = frame.toArrayBuffer();
+    runOnJS(processRawFrame)(buf, frame.width, frame.height);
+  }, [processRawFrame]);
 
-  if (!permission) {
-    return <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>;
-  }
-
-  if (!permission.granted) {
+  if (!hasPermission) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
@@ -112,12 +187,12 @@ export default function FormCoach() {
     );
   }
 
-  // Scale factors to map model coordinates → screen coordinates
-  // MoveNet outputs in the input image size (192×192 for Lightning)
+  if (!cameraDevice) {
+    return <View style={styles.center}><ActivityIndicator color={Colors.primary} /></View>;
+  }
+
   const scaleX = screenWidth / MODEL_INPUT_SIZE;
   const scaleY = cameraHeight / MODEL_INPUT_SIZE;
-
-  const primaryCorrection = corrections[0];
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -135,12 +210,14 @@ export default function FormCoach() {
         </TouchableOpacity>
       </View>
 
-      {/* Camera + Skeleton */}
+      {/* Camera + Skeleton overlay */}
       <View style={[styles.cameraContainer, { height: cameraHeight }]}>
-        <CameraView
-          ref={cameraRef}
+        <Camera
           style={StyleSheet.absoluteFill}
-          facing={facing}
+          device={cameraDevice}
+          isActive={true}
+          frameProcessor={tfReady ? frameProcessor : undefined}
+          pixelFormat="bgra"
         />
         {keypoints.length > 0 && (
           <SkeletonOverlay
@@ -158,6 +235,14 @@ export default function FormCoach() {
           </View>
         )}
       </View>
+
+      {/* Claude persona cue overlay */}
+      {claudeCue && (
+        <View style={styles.claudeCueCard}>
+          <Text style={styles.claudeCueLabel}>✦ {claudePersonaLabel}</Text>
+          <Text style={styles.claudeCueText}>{claudeCue}</Text>
+        </View>
+      )}
 
       {/* Form corrections */}
       <ScrollView style={styles.feedbackPanel} contentContainerStyle={styles.feedbackContent}>
@@ -191,25 +276,45 @@ export default function FormCoach() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000' },
+
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.md, paddingVertical: 12, backgroundColor: '#000',
   },
   backBtn: { padding: 4 },
   backText: { fontSize: 20, color: '#fff' },
-  title: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: '#fff' },
+  title: { fontSize: 16, fontFamily: Fonts.display, color: '#fff' },
   flipBtn: { padding: 4 },
   flipText: { fontSize: 20 },
+
   cameraContainer: { width: '100%', overflow: 'hidden', position: 'relative' },
+
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center', justifyContent: 'center', gap: 12,
   },
-  loadingText: { color: '#fff', fontFamily: 'Inter_400Regular', fontSize: 14 },
+  loadingText: { color: '#fff', fontFamily: Fonts.body, fontSize: 14 },
+
+  claudeCueCard: {
+    backgroundColor: 'rgba(223,255,31,0.08)',
+    borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(223,255,31,0.2)',
+    paddingHorizontal: Spacing.md, paddingVertical: 10,
+  },
+  claudeCueLabel: {
+    fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary,
+    letterSpacing: 1.4, marginBottom: 4,
+  },
+  claudeCueText: {
+    fontFamily: Fonts.body, fontSize: 13, color: '#e5e7eb', lineHeight: 19,
+    fontStyle: 'italic',
+  },
+
   feedbackPanel: { flex: 1, backgroundColor: '#111' },
   feedbackContent: { padding: Spacing.md, gap: Spacing.sm, paddingBottom: Spacing.xxl },
-  waitingText: { color: '#6b7280', fontFamily: 'Inter_400Regular', textAlign: 'center', marginTop: Spacing.md },
+  waitingText: { color: '#6b7280', fontFamily: Fonts.body, textAlign: 'center', marginTop: Spacing.md },
+
   correction: {
     flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.sm,
     padding: Spacing.sm, borderRadius: 8,
@@ -218,9 +323,10 @@ const styles = StyleSheet.create({
   correctionWarning: { backgroundColor: 'rgba(245,158,11,0.15)', borderLeftWidth: 3, borderLeftColor: '#f59e0b' },
   correctionGood: { backgroundColor: 'rgba(22,163,74,0.15)', borderLeftWidth: 3, borderLeftColor: '#16a34a' },
   correctionIcon: { fontSize: 16, marginTop: 1 },
-  correctionText: { flex: 1, color: '#e5e7eb', fontFamily: 'Inter_400Regular', fontSize: 14, lineHeight: 20 },
+  correctionText: { flex: 1, color: '#e5e7eb', fontFamily: Fonts.body, fontSize: 14, lineHeight: 20 },
+
   disclaimer: { ...Typography.caption, color: '#6b7280', textAlign: 'center', marginTop: Spacing.md, fontStyle: 'italic' },
-  permissionText: { color: '#fff', textAlign: 'center', marginBottom: Spacing.md, fontFamily: 'Inter_400Regular' },
+  permissionText: { color: '#fff', textAlign: 'center', marginBottom: Spacing.md, fontFamily: Fonts.body },
   permissionBtn: { backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  permissionBtnText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  permissionBtnText: { color: '#000', fontFamily: Fonts.display },
 });
