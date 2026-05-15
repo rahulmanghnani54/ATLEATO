@@ -67,8 +67,9 @@ serve(async (req) => {
     const angles: Record<string, number> = {};
     if (body.angles && typeof body.angles === 'object') {
       for (const [k, v] of Object.entries(body.angles as Record<string, unknown>)) {
-        if (typeof v === 'number' && isFinite(v)) {
-          angles[String(k).slice(0, 40)] = Math.round(v * 10) / 10;
+        const safeKey = sanitize(String(k), 40);
+        if (safeKey && typeof v === 'number' && isFinite(v)) {
+          angles[safeKey] = Math.round(v * 10) / 10;
         }
       }
     }
