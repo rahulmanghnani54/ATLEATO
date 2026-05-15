@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, FlatList,
   Image, ActivityIndicator,
@@ -78,12 +78,6 @@ export function PhysiqueGallery() {
   const router = useRouter();
   const { data: checkins = [], isLoading } = usePhysiqueCheckins();
   const [selected, setSelected] = useState<string[]>([]);
-  const [cadence, setCadence] = useState<'weekly' | 'biweekly' | 'monthly'>('biweekly');
-
-  // Sync cadence from latest check-in
-  useEffect(() => {
-    if (checkins.length > 0) setCadence(checkins[0].cadence);
-  }, [checkins]);
 
   const toggleSelect = (id: string) => {
     setSelected((prev) =>
@@ -103,12 +97,6 @@ export function PhysiqueGallery() {
 
   const latestCheckin = checkins[0];
 
-  const CADENCE_OPTIONS: Array<{ key: 'weekly' | 'biweekly' | 'monthly'; label: string }> = [
-    { key: 'weekly', label: 'Weekly' },
-    { key: 'biweekly', label: 'Bi-weekly' },
-    { key: 'monthly', label: 'Monthly' },
-  ];
-
   if (isLoading) {
     return <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />;
   }
@@ -119,28 +107,10 @@ export function PhysiqueGallery() {
       {latestCheckin && (
         <View style={styles.dueBanner}>
           <Text style={styles.dueText}>
-            {dueDateLabel(latestCheckin.date, cadence)}
+            {dueDateLabel(latestCheckin.date, latestCheckin.cadence)}
           </Text>
         </View>
       )}
-
-      {/* Cadence selector */}
-      <View style={styles.cadenceRow}>
-        <Text style={styles.cadenceLabel}>CADENCE</Text>
-        <View style={styles.cadencePills}>
-          {CADENCE_OPTIONS.map((opt) => (
-            <TouchableOpacity
-              key={opt.key}
-              style={[styles.cadencePill, cadence === opt.key && styles.cadencePillActive]}
-              onPress={() => setCadence(opt.key)}
-            >
-              <Text style={[styles.cadencePillText, cadence === opt.key && styles.cadencePillTextActive]}>
-                {opt.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
 
       {/* Photo grid */}
       <FlatList
@@ -202,19 +172,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   dueText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.primary, letterSpacing: 1 },
-  cadenceRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 10 },
-  cadenceLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4 },
-  cadencePills: { flexDirection: 'row', gap: 6 },
-  cadencePill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cadencePillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  cadencePillText: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 0.8 },
-  cadencePillTextActive: { color: Colors.accentInk },
   row: { gap: 10, marginBottom: 10 },
   cell: {
     flex: 1,

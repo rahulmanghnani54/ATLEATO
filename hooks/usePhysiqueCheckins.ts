@@ -107,7 +107,7 @@ export function useSubmitCheckin() {
       const key = await getPhysiqueKey(user.id);
       const checkinId = crypto.randomUUID();
 
-      async function uploadEncrypted(uri: string, pose: string, size: number, quality: number): Promise<string> {
+      async function uploadEncrypted(uri: string, pose: string, size: number, quality: number): Promise<{ path: string; jpeg: Uint8Array }> {
         const jpeg = await preparePhoto(uri, size, quality);
         const blob = await encryptPhoto(key, jpeg);
         const packed = packEncryptedBlob(blob);
@@ -116,26 +116,25 @@ export function useSubmitCheckin() {
           .from('physique-photos')
           .upload(path, packed, { contentType: 'application/octet-stream', upsert: false });
         if (error) throw error;
-        return path;
+        return { path, jpeg };
       }
 
       // Upload full-size + thumbnails
-      const frontPath = await uploadEncrypted(params.frontUri, 'front', 1024, 0.8);
-      const frontThumb = await uploadEncrypted(params.frontUri, 'front-thumb', 200, 0.6);
-      const sidePath = params.sideUri ? await uploadEncrypted(params.sideUri, 'side', 1024, 0.8) : null;
-      const sideThumb = params.sideUri ? await uploadEncrypted(params.sideUri, 'side-thumb', 200, 0.6) : null;
-      const backPath = params.backUri ? await uploadEncrypted(params.backUri, 'back', 1024, 0.8) : null;
-      const backThumb = params.backUri ? await uploadEncrypted(params.backUri, 'back-thumb', 200, 0.6) : null;
+      const { path: frontPath, jpeg: frontJpeg } = await uploadEncrypted(params.frontUri, 'front', 1024, 0.8);
+      const frontThumb = (await uploadEncrypted(params.frontUri, 'front-thumb', 200, 0.6)).path;
+      const sideResult = params.sideUri ? await uploadEncrypted(params.sideUri, 'side', 1024, 0.8) : null;
+      const sidePath = sideResult?.path ?? null;
+      const sideThumb = params.sideUri ? (await uploadEncrypted(params.sideUri, 'side-thumb', 200, 0.6)).path : null;
+      const backResult = params.backUri ? await uploadEncrypted(params.backUri, 'back', 1024, 0.8) : null;
+      const backPath = backResult?.path ?? null;
+      const backThumb = params.backUri ? (await uploadEncrypted(params.backUri, 'back-thumb', 200, 0.6)).path : null;
 
       const poseCount = 1 + (sidePath ? 1 : 0) + (backPath ? 1 : 0);
 
-      // Auto-score via edge function (decrypt + send as base64)
-      const frontJpeg = await decryptStorageBlob(user.id, frontPath);
+      // Auto-score via edge function — reuse already-prepared jpeg bytes (no re-download needed)
       const frontB64 = toBase64(frontJpeg);
-      let sideB64: string | undefined;
-      let backB64: string | undefined;
-      if (sidePath) sideB64 = toBase64(await decryptStorageBlob(user.id, sidePath));
-      if (backPath) backB64 = toBase64(await decryptStorageBlob(user.id, backPath));
+      const sideB64 = sideResult ? toBase64(sideResult.jpeg) : undefined;
+      const backB64 = backResult ? toBase64(backResult.jpeg) : undefined;
 
       let scores: PhysiqueSingleResponse | null = null;
       try {

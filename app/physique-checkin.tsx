@@ -34,8 +34,9 @@ export default function PhysiqueCheckin() {
   const [result, setResult] = useState<{ fullness: number; leanness: number; symmetry: number; narrative: string } | null>(null);
 
   const selectedProgram = (profile as any)?.selected_program as string | undefined;
-  const persona = selectedProgram && EXPERT_PROGRAMS[selectedProgram]
-    ? EXPERT_PROGRAMS[selectedProgram].id.split('_')[0]
+  const persona = (profile as any)?.selected_program
+    ? (EXPERT_PROGRAMS[(profile as any).selected_program]?.id ?? 'cbum_evolved')
+        .replace(/_(?:evolved|blueprint|fundamentals|strength|mav)$/, '')
     : 'cbum';
 
   const pickPhoto = async (): Promise<string | null> => {
