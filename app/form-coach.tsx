@@ -101,7 +101,11 @@ export default function FormCoach() {
         setTfReady(true);
       }
     })().catch((err) => { if (__DEV__) console.warn('[FormCoach] TF init:', err); });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      detectorRef.current?.dispose();
+      detectorRef.current = null;
+    };
   }, []);
 
   const processRawFrame = useCallback(async (
@@ -149,13 +153,19 @@ export default function FormCoach() {
             .then((res) => {
               setClaudeCue(res.feedback);
               if (cueTimeoutRef.current) clearTimeout(cueTimeoutRef.current);
-              cueTimeoutRef.current = setTimeout(() => setClaudeCue(null), CUE_FADE_TIMEOUT_MS);
+              cueTimeoutRef.current = setTimeout(() => {
+                setClaudeCue(null);
+                cueTimeoutRef.current = null;
+              }, CUE_FADE_TIMEOUT_MS);
             })
             .catch(() => {});
         }
 
         if (!hasError && cueTimeoutRef.current === null && claudeCue) {
-          cueTimeoutRef.current = setTimeout(() => setClaudeCue(null), CUE_FADE_TIMEOUT_MS);
+          cueTimeoutRef.current = setTimeout(() => {
+            setClaudeCue(null);
+            cueTimeoutRef.current = null;
+          }, CUE_FADE_TIMEOUT_MS);
         }
       }
     } catch {
