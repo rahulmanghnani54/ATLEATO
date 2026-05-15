@@ -95,3 +95,51 @@ export interface WeeklySummaryResponse {
 export async function getWeeklySummary(): Promise<WeeklySummaryResponse> {
   return invokeFunction('weekly-summary', {});
 }
+
+export interface PhysiqueScores {
+  fullness: number;
+  leanness: number;
+  symmetry: number;
+}
+
+export interface PhysiqueSingleResponse extends PhysiqueScores {
+  narrative: string;
+}
+
+export interface PhysiqueCompareResponse {
+  scoresA: PhysiqueScores;
+  scoresB: PhysiqueScores;
+  narrative: string;
+}
+
+export async function analyzePhysiqueSingle(
+  persona: string,
+  frontImageBase64: string,
+  sideImageBase64?: string,
+  backImageBase64?: string,
+): Promise<PhysiqueSingleResponse> {
+  return invokeFunction('analyze-physique', {
+    mode: 'single',
+    persona,
+    frontImageBase64,
+    sideImageBase64,
+    backImageBase64,
+  });
+}
+
+export async function analyzePhysiqueCompare(
+  persona: string,
+  checkinAImages: { front?: string; side?: string; back?: string },
+  checkinBImages: { front?: string; side?: string; back?: string },
+  checkinADate: string,
+  checkinBDate: string,
+): Promise<PhysiqueCompareResponse> {
+  return invokeFunction('analyze-physique', {
+    mode: 'compare',
+    persona,
+    checkinAImages,
+    checkinBImages,
+    checkinADate,
+    checkinBDate,
+  });
+}
