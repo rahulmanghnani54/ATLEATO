@@ -33,8 +33,10 @@ function ThumbnailCell({
 
   useEffect(() => {
     if (!user) return;
+    let active = true;
     decryptStorageBlob(user.id, checkin.front_thumb)
       .then((bytes) => {
+        if (!active) return;
         const CHUNK = 8192;
         let binary = '';
         for (let i = 0; i < bytes.length; i += CHUNK) {
@@ -43,6 +45,7 @@ function ThumbnailCell({
         setUri(`data:image/jpeg;base64,${btoa(binary)}`);
       })
       .catch(() => {});
+    return () => { active = false; };
   }, [checkin.front_thumb, user?.id]);
 
   return (
@@ -68,6 +71,8 @@ function ThumbnailCell({
     </TouchableOpacity>
   );
 }
+
+type GalleryItem = { type: 'new' } | { type: 'checkin'; data: PhysiqueCheckin };
 
 export function PhysiqueGallery() {
   const router = useRouter();
@@ -139,28 +144,35 @@ export function PhysiqueGallery() {
 
       {/* Photo grid */}
       <FlatList
-        data={checkins}
-        keyExtractor={(item) => item.id}
+        data={[
+          { type: 'new' } as GalleryItem,
+          ...checkins.map((c) => ({ type: 'checkin' as const, data: c })),
+        ]}
+        keyExtractor={(item: GalleryItem) => item.type === 'new' ? 'new' : item.data.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
         scrollEnabled={false}
-        ListHeaderComponent={
-          <TouchableOpacity
-            style={[styles.cell, styles.newCheckinCell]}
-            onPress={() => router.push('/physique-checkin' as any)}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.newCheckinPlus}>＋</Text>
-            <Text style={styles.newCheckinLabel}>NEW CHECK-IN</Text>
-          </TouchableOpacity>
-        }
-        renderItem={({ item }) => (
-          <ThumbnailCell
-            checkin={item}
-            selected={selected.includes(item.id)}
-            onPress={() => toggleSelect(item.id)}
-          />
-        )}
+        renderItem={({ item }: { item: GalleryItem }) => {
+          if (item.type === 'new') {
+            return (
+              <TouchableOpacity
+                style={[styles.cell, styles.newCheckinCell]}
+                onPress={() => router.push('/physique-checkin' as any)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.newCheckinPlus}>＋</Text>
+                <Text style={styles.newCheckinLabel}>NEW CHECK-IN</Text>
+              </TouchableOpacity>
+            );
+          }
+          return (
+            <ThumbnailCell
+              checkin={item.data}
+              selected={selected.includes(item.data.id)}
+              onPress={() => toggleSelect(item.data.id)}
+            />
+          );
+        }}
         ListEmptyComponent={
           <Text style={styles.emptyText}>No check-ins yet. Tap ＋ to start your physique timeline.</Text>
         }
