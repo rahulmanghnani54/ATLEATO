@@ -186,19 +186,25 @@ export default function WorkoutSession() {
           <Text style={styles.workoutName}>{workout.name.toUpperCase()}</Text>
           <View style={styles.timerRow}>
             <Text style={styles.timer}>{formatTime(elapsed)}</Text>
-            {volumeModifier !== 1.0 && (
-              <View style={[
-                styles.recoveryPill,
-                { backgroundColor: volumeModifier > 1 ? 'rgba(57,224,138,0.15)' : 'rgba(255,177,58,0.15)' },
-              ]}>
-                <Text style={[
-                  styles.recoveryPillText,
-                  { color: volumeModifier > 1 ? Colors.success : Colors.warning },
+            {(() => {
+              const volPct = Math.round((volumeModifier - 1) * 100);
+              return volPct !== 0 ? (
+                <View style={[
+                  styles.recoveryPill,
+                  {
+                    backgroundColor: volPct > 0 ? 'rgba(57,224,138,0.15)' : 'rgba(255,177,58,0.15)',
+                    borderColor: volPct > 0 ? 'rgba(57,224,138,0.3)' : 'rgba(255,177,58,0.3)',
+                  },
                 ]}>
-                  {`VOL ${volumeModifier > 1 ? '+' : ''}${Math.round((volumeModifier - 1) * 100)}%`}
-                </Text>
-              </View>
-            )}
+                  <Text style={[
+                    styles.recoveryPillText,
+                    { color: volPct > 0 ? Colors.success : Colors.warning },
+                  ]}>
+                    {`VOL ${volPct > 0 ? '+' : ''}${volPct}%`}
+                  </Text>
+                </View>
+              ) : null;
+            })()}
           </View>
         </View>
         <TouchableOpacity
@@ -315,10 +321,10 @@ const styles = StyleSheet.create({
   closeBtnText: { fontSize: 18, color: Colors.textSecondary },
   headerCenter: { flex: 1, alignItems: 'center' },
   workoutName: { fontFamily: Fonts.display, fontSize: 13, color: Colors.text, letterSpacing: 0.5 },
-  timer: { fontFamily: Fonts.mono, fontSize: 18, color: Colors.primary, letterSpacing: 1, marginTop: 2 },
+  timer: { fontFamily: Fonts.mono, fontSize: 18, color: Colors.primary, letterSpacing: 1 },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   recoveryPill: {
-    borderRadius: 3, paddingHorizontal: 6, paddingVertical: 2,
+    borderRadius: 3, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1,
   },
   recoveryPillText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1 },
   finishBtn: {
