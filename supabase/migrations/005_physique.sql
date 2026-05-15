@@ -37,8 +37,15 @@ CREATE TABLE physique_analyses (
   narrative       TEXT NOT NULL,
   persona         TEXT NOT NULL DEFAULT 'cbum',
   created_at      TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT different_checkins CHECK (checkin_a_id <> checkin_b_id),
   UNIQUE(checkin_a_id, checkin_b_id)
 );
+
+-- Indexes
+CREATE INDEX physique_checkins_user_date_idx ON physique_checkins (user_id, date DESC);
+CREATE INDEX physique_analyses_user_idx ON physique_analyses (user_id);
+CREATE INDEX physique_analyses_checkin_a_idx ON physique_analyses (checkin_a_id);
+CREATE INDEX physique_analyses_checkin_b_idx ON physique_analyses (checkin_b_id);
 
 -- RLS
 ALTER TABLE physique_checkins ENABLE ROW LEVEL SECURITY;
@@ -48,7 +55,13 @@ CREATE POLICY "physique_checkins_own" ON physique_checkins
   FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "physique_analyses_own" ON physique_analyses
-  FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+  FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (
+    auth.uid() = user_id
+    AND EXISTS (SELECT 1 FROM physique_checkins WHERE id = checkin_a_id AND user_id = auth.uid())
+    AND EXISTS (SELECT 1 FROM physique_checkins WHERE id = checkin_b_id AND user_id = auth.uid())
+  );
 
 -- Storage bucket (run in Supabase dashboard or via CLI)
 -- INSERT INTO storage.buckets (id, name, public) VALUES ('physique-photos', 'physique-photos', false);
