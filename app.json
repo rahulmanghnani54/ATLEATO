@@ -37,15 +37,19 @@
       },
       "permissions": [
         "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
+        "android.permission.RECORD_AUDIO",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_EXTERNAL_STORAGE"
       ]
     },
     "ios": {
       "bundleIdentifier": "com.madsales.fitaipro",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "FitAI Pro uses your camera to analyze your exercise form in real time and provide coaching feedback.",
+        "NSCameraUsageDescription": "FitAI Pro uses your camera to analyze your exercise form in real time and to capture physique progress photos. Photos are encrypted on your device before upload.",
         "NSMicrophoneUsageDescription": "Microphone access is required by the camera framework but is not used by FitAI Pro.",
+        "NSPhotoLibraryUsageDescription": "FitAI Pro accesses your photo library so you can select physique progress photos. Photos are encrypted on your device before upload — we never see the originals.",
+        "NSPhotoLibraryAddUsageDescription": "FitAI Pro may save processed images to your photo library.",
         "NSHealthShareUsageDescription": "FitAI Pro does not access Apple Health data.",
         "NSHealthUpdateUsageDescription": "FitAI Pro does not write to Apple Health.",
         "NSHealthClinicalHealthRecordsShareUsageDescription": "FitAI Pro does not access clinical health records.",
