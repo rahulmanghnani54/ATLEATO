@@ -25,6 +25,7 @@
     "expo-av": "~16.0.8",
     "expo-camera": "~17.0.10",
     "expo-constants": "~18.0.13",
+    "expo-dev-client": "~6.0.21",
     "expo-file-system": "~19.0.22",
     "expo-haptics": "~15.0.8",
     "expo-image-manipulator": "^55.0.16",
@@ -44,7 +45,6 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "~15.12.1",
     "react-native-vision-camera": "^3.9.2",
-    "react-native-worklets-core": "^1.6.3",
     "victory-native": "^41.20.2",
     "zustand": "^5.0.13"
   },
