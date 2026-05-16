@@ -1,33 +1,56 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { callClaude, corsHeaders, jsonResponse, errorResponse } from '../_shared/claude.ts';
+import {
+  callClaude, corsHeaders, jsonResponse, errorResponse, internalError,
+  SUPABASE_URL, SUPABASE_ANON_KEY,
+} from '../_shared/claude.ts';
+import { checkRateLimit } from '../_shared/security.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
+  if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return errorResponse('Unauthorized', 401);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return errorResponse('Unauthorized', 401);
 
+    if (!checkRateLimit(user.id, 'weekly-summary', 3, 60_000)) {
+      return errorResponse('Too many requests. Please wait a moment.', 429);
+    }
+
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-    const [{ data: workouts }, { data: nutrition }, { data: recovery }, { data: profile }] = await Promise.all([
-      supabase.from('workout_logs').select('workout_name, duration_minutes, total_volume_kg, average_rpe').eq('user_id', user.id).gte('date', weekAgo),
-      supabase.from('nutrition_logs').select('calories, protein_g, carbs_g, fat_g, date').eq('user_id', user.id).gte('date', weekAgo),
-      supabase.from('recovery_checkins').select('recovery_score, sleep_hours').eq('user_id', user.id).gte('date', weekAgo),
-      supabase.from('profiles').select('goal, tdee, protein_g').eq('id', user.id).single(),
-    ]);
+    const [{ data: workouts }, { data: nutrition }, { data: recovery }, { data: profile }] =
+      await Promise.all([
+        supabase.from('workout_logs')
+          .select('workout_name, duration_minutes, total_volume_kg, average_rpe')
+          .eq('user_id', user.id)
+          .gte('date', weekAgo)
+          .limit(14),
+        supabase.from('nutrition_logs')
+          .select('calories, protein_g, date')
+          .eq('user_id', user.id)
+          .gte('date', weekAgo)
+          .limit(200),
+        supabase.from('recovery_checkins')
+          .select('recovery_score, sleep_hours')
+          .eq('user_id', user.id)
+          .gte('date', weekAgo)
+          .limit(7),
+        supabase.from('profiles')
+          .select('goal, tdee, protein_g')
+          .eq('id', user.id)
+          .single(),
+      ]);
 
     const workoutCount = workouts?.length ?? 0;
-    const totalVolume = (workouts ?? []).reduce((s: number, w: any) => s + (w.total_volume_kg ?? 0), 0);
+    const totalVolume  = (workouts ?? []).reduce((s: number, w: any) => s + (w.total_volume_kg ?? 0), 0);
     const avgRpe = workoutCount > 0
       ? (workouts ?? []).reduce((s: number, w: any) => s + (w.average_rpe ?? 7), 0) / workoutCount
       : 0;
@@ -78,8 +101,7 @@ Be personal, specific, and action-oriented.`;
       summary,
       stats: { workoutCount, totalVolume, avgCalories, avgProtein, avgRecovery, avgSleep, nutritionDays },
     });
-  } catch (err) {
-    console.error('[weekly-summary]', err);
-    return errorResponse((err as Error).message);
+  } catch {
+    return internalError();
   }
 });

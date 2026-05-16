@@ -1,3 +1,5 @@
+import { searchIndianFoods } from '@/lib/indianFoods';
+
 const BASE = 'https://world.openfoodfacts.org';
 
 export interface FoodItem {
@@ -30,13 +32,27 @@ function mapProduct(p: any): FoodItem {
 
 export async function searchFood(query: string): Promise<FoodItem[]> {
   if (!query.trim()) return [];
-  const url = `${BASE}/cgi/search.pl?search_terms=${encodeURIComponent(query.trim())}&search_simple=1&action=process&json=1&page_size=20&fields=id,code,product_name,brands,nutriments,serving_quantity`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('Food search failed');
-  const data = await res.json();
-  return (data.products ?? [])
-    .filter((p: any) => p.nutriments && p.product_name)
-    .map(mapProduct);
+
+  // Always include matching Indian foods first
+  const indianResults = searchIndianFoods(query);
+
+  try {
+    const url = `${BASE}/cgi/search.pl?search_terms=${encodeURIComponent(query.trim())}&search_simple=1&action=process&json=1&page_size=20&fields=id,code,product_name,brands,nutriments,serving_quantity`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8_000);
+    const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
+    if (!res.ok) return indianResults;
+    const data = await res.json();
+    const offResults: FoodItem[] = (data.products ?? [])
+      .filter((p: any) => p.nutriments && p.product_name)
+      .map(mapProduct);
+    // Indian results first, then OpenFoodFacts results (deduped by id)
+    const seen = new Set(indianResults.map((f) => f.id));
+    const merged = [...indianResults, ...offResults.filter((f) => !seen.has(f.id))];
+    return merged;
+  } catch {
+    return indianResults;
+  }
 }
 
 export async function getFoodByBarcode(barcode: string): Promise<FoodItem | null> {

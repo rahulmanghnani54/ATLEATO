@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert,
+  useWindowDimensions,
 } from 'react-native';
 import { BottomSheet } from '@/components/ui';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
@@ -21,6 +22,7 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
   const [query, setQuery] = useState('');
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const { data: results = [], isFetching } = useFoodSearch(query);
+  const { height: screenHeight } = useWindowDimensions();
 
   const handleScanBarcode = async () => {
     // Expo Camera barcode scanning is handled in the parent screen
@@ -78,7 +80,7 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
               <Text style={styles.kcal}>{Math.round(item.calories100g)} kcal/100g</Text>
             </TouchableOpacity>
           )}
-          style={styles.list}
+          style={[styles.list, { maxHeight: screenHeight * 0.45 }]}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled
         />
@@ -111,7 +113,7 @@ const styles = StyleSheet.create({
   scanIcon: { fontSize: 22 },
   loader: { marginVertical: Spacing.md },
   empty: { ...Typography.body, color: Colors.textSecondary, textAlign: 'center', marginVertical: Spacing.lg },
-  list: { maxHeight: 300 },
+  list: { flex: 1 },
   result: {
     flexDirection: 'row', alignItems: 'center', paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: Colors.border,

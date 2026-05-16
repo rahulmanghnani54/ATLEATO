@@ -1,6 +1,3 @@
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- Profiles (extends auth.users)
 CREATE TABLE profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
@@ -24,7 +21,7 @@ CREATE TABLE profiles (
 
 -- Recovery check-ins
 CREATE TABLE recovery_checkins (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   date DATE NOT NULL,
   sleep_hours NUMERIC(3,1),
@@ -41,7 +38,7 @@ CREATE TABLE recovery_checkins (
 
 -- Wearable data
 CREATE TABLE wearable_data (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   date DATE NOT NULL,
   steps INT,
@@ -56,7 +53,7 @@ CREATE TABLE wearable_data (
 
 -- Nutrition logs
 CREATE TABLE nutrition_logs (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   date DATE NOT NULL,
   meal_type TEXT CHECK (meal_type IN ('breakfast','lunch','dinner','snack')) NOT NULL,
@@ -76,7 +73,7 @@ CREATE TABLE nutrition_logs (
 
 -- Water logs
 CREATE TABLE water_logs (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   date DATE NOT NULL,
   amount_ml INT NOT NULL,
@@ -85,7 +82,7 @@ CREATE TABLE water_logs (
 
 -- Workout logs
 CREATE TABLE workout_logs (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   program_id TEXT NOT NULL,
   workout_name TEXT NOT NULL,
@@ -101,7 +98,7 @@ CREATE TABLE workout_logs (
 
 -- Exercise sets
 CREATE TABLE exercise_sets (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   workout_log_id UUID REFERENCES workout_logs(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   exercise_name TEXT NOT NULL,
@@ -116,7 +113,7 @@ CREATE TABLE exercise_sets (
 
 -- Form sessions (camera recordings)
 CREATE TABLE form_sessions (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   exercise_name TEXT NOT NULL,
   duration_seconds INT,
@@ -129,7 +126,7 @@ CREATE TABLE form_sessions (
 
 -- Measurements (body progress)
 CREATE TABLE measurements (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   date DATE NOT NULL,
   weight_kg NUMERIC(5,2),
@@ -146,7 +143,7 @@ CREATE TABLE measurements (
 
 -- Personal records
 CREATE TABLE personal_records (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   exercise_name TEXT NOT NULL,
   weight_kg NUMERIC(6,2) NOT NULL,
@@ -159,7 +156,7 @@ CREATE TABLE personal_records (
 
 -- Progression suggestions
 CREATE TABLE progression_suggestions (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   exercise_name TEXT NOT NULL,
   current_weight_kg NUMERIC(6,2),
@@ -171,7 +168,7 @@ CREATE TABLE progression_suggestions (
 
 -- User achievements
 CREATE TABLE user_achievements (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   achievement_key TEXT NOT NULL,
   achieved_at TIMESTAMPTZ DEFAULT NOW(),
@@ -180,7 +177,7 @@ CREATE TABLE user_achievements (
 
 -- AI chat messages
 CREATE TABLE chat_messages (
-  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE NOT NULL,
   persona TEXT NOT NULL,
   role TEXT CHECK (role IN ('user','assistant')) NOT NULL,

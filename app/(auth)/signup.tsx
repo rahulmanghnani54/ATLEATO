@@ -6,8 +6,8 @@ import {
 import { Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
+
 export default function Signup() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -18,69 +18,44 @@ export default function Signup() {
 
   const handleSignup = async () => {
     if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
-      setError('Please fill in all fields.');
-      return;
+      setError('Please fill in all fields.'); return;
     }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      return;
-    }
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
+    if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setError('');
     setLoading(true);
 
-    const { data, error: authError } = await supabase.auth.signUp({
+    const { error: authError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
+      options: { data: { full_name: fullName.trim() } },
     });
 
-    if (authError) {
-      setLoading(false);
-      setError(authError.message);
-      return;
-    }
-
-    if (data.user) {
-      const insertPayload = {
-        id: data.user.id,
-        full_name: fullName.trim(),
-        goal: 'build_muscle' as const,
-        activity_level: 'moderately_active' as const,
-        selected_program: 'cbum_evolved',
-        onboarding_complete: false,
-      };
-
-      const { error: profileError } = await supabase.from('profiles').insert(insertPayload as any);
-      if (profileError) {
-        await supabase.auth.signOut();
-        setLoading(false);
-        setError('Account setup failed. Please try again.');
-        return;
-      }
-    }
-
     setLoading(false);
+    if (authError) { setError(authError.message); return; }
     // Navigation handled by auth state listener
   };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.flex}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.logo}>
-            <Text style={styles.logoText}>FitAI Pro</Text>
+
+          {/* Logo */}
+          <View style={styles.logoArea}>
+            <Text style={styles.logoMono}>FITAI PRO</Text>
+            <Text style={styles.logoHero}>START YOUR{'\n'}JOURNEY.</Text>
           </View>
 
-          <Text style={styles.headline}>Create your account</Text>
-          <Text style={styles.subheadline}>Start your transformation today</Text>
+          {error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
 
-          {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
-
+          {/* Form */}
           <View style={styles.form}>
-            <Text style={styles.label}>Full Name</Text>
+            <Text style={styles.monoLabel}>FULL NAME</Text>
             <TextInput
               style={styles.input}
               placeholder="John Smith"
@@ -90,9 +65,10 @@ export default function Signup() {
               autoCapitalize="words"
               autoComplete="name"
               returnKeyType="next"
+              keyboardAppearance="dark"
             />
 
-            <Text style={[styles.label, { marginTop: Spacing.md }]}>Email</Text>
+            <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>EMAIL</Text>
             <TextInput
               style={styles.input}
               placeholder="you@example.com"
@@ -103,9 +79,10 @@ export default function Signup() {
               autoCapitalize="none"
               autoComplete="email"
               returnKeyType="next"
+              keyboardAppearance="dark"
             />
 
-            <Text style={[styles.label, { marginTop: Spacing.md }]}>Password</Text>
+            <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>PASSWORD</Text>
             <TextInput
               style={styles.input}
               placeholder="Min. 8 characters"
@@ -114,9 +91,10 @@ export default function Signup() {
               onChangeText={setPassword}
               secureTextEntry
               returnKeyType="next"
+              keyboardAppearance="dark"
             />
 
-            <Text style={[styles.label, { marginTop: Spacing.md }]}>Confirm Password</Text>
+            <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>CONFIRM PASSWORD</Text>
             <TextInput
               style={styles.input}
               placeholder="••••••••"
@@ -126,16 +104,23 @@ export default function Signup() {
               secureTextEntry
               returnKeyType="done"
               onSubmitEditing={handleSignup}
+              keyboardAppearance="dark"
             />
           </View>
 
-          <Button label="Create Account" onPress={handleSignup} loading={loading} fullWidth style={styles.btn} />
+          <TouchableOpacity
+            style={[styles.primaryBtn, loading && { opacity: 0.5 }]}
+            onPress={handleSignup}
+            disabled={loading}
+          >
+            <Text style={styles.primaryBtnText}>{loading ? '...' : 'CREATE ACCOUNT'}</Text>
+          </TouchableOpacity>
 
           <View style={styles.signinRow}>
             <Text style={styles.signinPrompt}>Already have an account? </Text>
             <Link href="/(auth)/login" asChild>
               <TouchableOpacity>
-                <Text style={styles.signinLink}>Sign In</Text>
+                <Text style={styles.signinLink}>SIGN IN</Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -147,34 +132,28 @@ export default function Signup() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
-  flex: { flex: 1 },
-  content: { flexGrow: 1, padding: Spacing.lg, justifyContent: 'center' },
-  logo: { alignItems: 'center', marginBottom: Spacing.xl },
-  logoText: { fontSize: 36, fontFamily: 'Inter_700Bold', color: Colors.primary },
-  headline: { ...Typography.h2, marginBottom: 4 },
-  subheadline: { ...Typography.body, color: Colors.textSecondary, marginBottom: Spacing.lg },
+  content: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', paddingBottom: 40 },
+  logoArea: { marginBottom: 40 },
+  logoMono: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 2.4 },
+  logoHero: { fontFamily: Fonts.display, fontSize: 44, color: Colors.text, lineHeight: 42, letterSpacing: -1.2, marginTop: 6 },
   errorBox: {
-    backgroundColor: '#fef2f2',
-    borderRadius: Radius.sm,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
+    backgroundColor: 'rgba(255,91,58,0.1)', borderWidth: 1, borderColor: 'rgba(255,91,58,0.3)',
+    borderRadius: Radius.sm, padding: Spacing.md, marginBottom: Spacing.md,
   },
-  errorText: { color: Colors.error, fontFamily: 'Inter_400Regular', fontSize: 14 },
-  form: { marginBottom: Spacing.lg },
-  label: { ...Typography.label, marginBottom: 6 },
+  errorText: { color: Colors.error, fontFamily: Fonts.body, fontSize: 13 },
+  form: { marginBottom: 24 },
+  monoLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6, marginBottom: 8 },
   input: {
-    height: 52,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    fontFamily: 'Inter_400Regular',
-    fontSize: 15,
-    color: Colors.text,
+    height: 52, backgroundColor: Colors.surface, borderRadius: Radius.sm,
+    paddingHorizontal: 16, borderWidth: 1, borderColor: Colors.border,
+    fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
   },
-  btn: { marginBottom: Spacing.lg },
+  primaryBtn: {
+    height: 56, backgroundColor: Colors.primary, borderRadius: Radius.sm,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+  },
+  primaryBtnText: { fontFamily: Fonts.display, fontSize: 15, color: Colors.accentInk, letterSpacing: 0.8 },
   signinRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
-  signinPrompt: { ...Typography.body, color: Colors.textSecondary },
-  signinLink: { color: Colors.primary, fontFamily: 'Inter_600SemiBold', fontSize: 15 },
+  signinPrompt: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary },
+  signinLink: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.primary, letterSpacing: 1 },
 });

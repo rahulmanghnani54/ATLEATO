@@ -3,8 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
-import { Button, Tag } from '@/components/ui';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Colors, Fonts } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { calculateBMR, calculateTDEE, calculateMacros, getAgeFromDOB } from '@/lib/tdee';
@@ -19,10 +18,10 @@ const PROGRAMS = [
     name: "Arnold's Blueprint",
     expert: 'Arnold Schwarzenegger',
     emoji: '🏆',
-    difficulty: 'Advanced',
-    days: '6 days/week',
-    focus: 'Hypertrophy',
-    color: '#1a1a2e',
+    difficulty: 'ADVANCED',
+    days: '6D/WK',
+    focus: 'HYPERTROPHY',
+    hue: '#ffb13a',
     description: "The legendary double-split that built the greatest physique of all time.",
   },
   {
@@ -30,10 +29,10 @@ const PROGRAMS = [
     name: 'CBum Evolved',
     expert: 'Chris Bumstead',
     emoji: '⭐',
-    difficulty: 'Intermediate',
-    days: '5 days/week',
-    focus: 'Classic Physique',
-    color: '#7c3aed',
+    difficulty: 'INTERMEDIATE',
+    days: '5D/WK',
+    focus: 'CLASSIC PHYSIQUE',
+    hue: '#dfff1f',
     description: "5× Classic Physique Olympia champion's proven hypertrophy system.",
   },
   {
@@ -41,10 +40,10 @@ const PROGRAMS = [
     name: 'Science Fundamentals',
     expert: 'Jeff Nippard',
     emoji: '🔬',
-    difficulty: 'Beginner–Intermediate',
-    days: '4 days/week',
-    focus: 'Evidence-Based',
-    color: '#0369a1',
+    difficulty: 'BEGINNER',
+    days: '4D/WK',
+    focus: 'EVIDENCE-BASED',
+    hue: '#5b8cff',
     description: "Research-backed program optimised for maximum muscle growth per unit of time.",
   },
   {
@@ -52,10 +51,10 @@ const PROGRAMS = [
     name: 'ISYMFS Strength',
     expert: 'CT Fletcher',
     emoji: '💥',
-    difficulty: 'Advanced',
-    days: '5 days/week',
-    focus: 'Strength + Mass',
-    color: '#991b1b',
+    difficulty: 'ADVANCED',
+    days: '5D/WK',
+    focus: 'STRENGTH + MASS',
+    hue: '#ff5b3a',
     description: "Brutal high-intensity training forged on the streets of Compton.",
   },
   {
@@ -63,10 +62,10 @@ const PROGRAMS = [
     name: 'MAV Hypertrophy',
     expert: 'Dr. Mike Israetel',
     emoji: '📊',
-    difficulty: 'Intermediate',
-    days: '5 days/week',
-    focus: 'RP Method',
-    color: '#065f46',
+    difficulty: 'INTERMEDIATE',
+    days: '5D/WK',
+    focus: 'RP METHOD',
+    hue: '#39e08a',
     description: "Renaissance Periodization: train at Maximum Adaptive Volume for optimal gains.",
   },
 ];
@@ -84,7 +83,6 @@ export default function Step5Program() {
   const handleComplete = async () => {
     if (!selected || !user) return;
     setLoading(true);
-
     try {
       const weightKg = parseFloat(params.weightKg);
       const heightCm = parseFloat(params.heightCm);
@@ -110,16 +108,13 @@ export default function Step5Program() {
       };
 
       const { error } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
-        .update(updatePayload)
-        .eq('id', user.id);
+        .update(updatePayload).eq('id', user.id);
 
       if (error) throw error;
-
       await fetchProfile(user.id);
       router.replace('/(tabs)');
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Setup failed. Please try again.';
-      Alert.alert('Error', message);
+      Alert.alert('Error', e instanceof Error ? e.message : 'Setup failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -127,46 +122,61 @@ export default function Step5Program() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         <OnboardingProgress current={5} total={5} />
-        <Text style={styles.headline}>Choose your program</Text>
-        <Text style={styles.sub}>Pick the expert whose approach resonates with you</Text>
+
+        <View style={styles.header}>
+          <Text style={styles.monoLabel}>STEP 5 OF 5</Text>
+          <Text style={styles.headline}>PICK YOUR{'\n'}COACH.</Text>
+          <Text style={styles.sub}>Choose the expert whose approach resonates with you.</Text>
+        </View>
 
         <View style={styles.cards}>
-          {PROGRAMS.map((p) => (
-            <TouchableOpacity
-              key={p.id}
-              style={[styles.card, selected === p.id && styles.cardSelected]}
-              onPress={() => setSelected(p.id)}
-              activeOpacity={0.85}
-            >
-              <View style={[styles.expertBadge, { backgroundColor: p.color }]}>
-                <Text style={styles.expertEmoji}>{p.emoji}</Text>
-              </View>
-              <View style={styles.cardBody}>
-                <Text style={[styles.programName, selected === p.id && styles.programNameSelected]}>{p.name}</Text>
-                <Text style={styles.expertName}>{p.expert}</Text>
-                <Text style={styles.desc}>{p.description}</Text>
-                <View style={styles.tags}>
-                  <Tag label={p.difficulty} color="#6b7280" bgColor="#f3f4f6" />
-                  <Tag label={p.days} color="#6b7280" bgColor="#f3f4f6" />
-                  <Tag label={p.focus} color={Colors.primary} bgColor={Colors.primaryLight} />
+          {PROGRAMS.map((p) => {
+            const isSelected = selected === p.id;
+            return (
+              <TouchableOpacity
+                key={p.id}
+                style={[styles.card, isSelected && { borderColor: p.hue }]}
+                onPress={() => setSelected(p.id)}
+                activeOpacity={0.85}
+              >
+                <View style={[styles.accentBar, { backgroundColor: p.hue }]} />
+                <View style={styles.cardBody}>
+                  <View style={styles.cardTopRow}>
+                    <Text style={styles.programName}>{p.name}</Text>
+                    <Text style={styles.emoji}>{p.emoji}</Text>
+                  </View>
+                  <Text style={[styles.expertName, { color: p.hue }]}>{p.expert}</Text>
+                  <Text style={styles.desc}>{p.description}</Text>
+                  <View style={styles.tagRow}>
+                    <View style={styles.tag}><Text style={styles.tagText}>{p.difficulty}</Text></View>
+                    <View style={styles.tag}><Text style={styles.tagText}>{p.days}</Text></View>
+                    <View style={[styles.tag, { borderColor: p.hue + '55' }]}>
+                      <Text style={[styles.tagText, { color: p.hue }]}>{p.focus}</Text>
+                    </View>
+                  </View>
                 </View>
-              </View>
-              {selected === p.id && <View style={styles.check}><Text style={styles.checkText}>✓</Text></View>}
-            </TouchableOpacity>
-          ))}
+                {isSelected && (
+                  <View style={[styles.check, { backgroundColor: p.hue }]}>
+                    <Text style={styles.checkText}>✓</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button
-          label="Complete Setup 🚀"
+        <TouchableOpacity
+          style={[styles.continueBtn, (!selected || loading) && styles.continueBtnDisabled]}
           onPress={handleComplete}
-          disabled={!selected}
-          loading={loading}
-          fullWidth
-        />
+          disabled={!selected || loading}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.continueBtnText}>{loading ? 'SETTING UP…' : 'COMPLETE SETUP'}</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -174,24 +184,43 @@ export default function Step5Program() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
-  content: { flexGrow: 1, padding: Spacing.lg, paddingTop: Spacing.xl },
-  headline: { ...Typography.h1, marginBottom: 8 },
-  sub: { ...Typography.body, color: Colors.textSecondary, marginBottom: Spacing.xl },
-  cards: { gap: Spacing.md },
+  scroll: { flexGrow: 1, padding: 20, paddingTop: 14 },
+
+  header: { marginBottom: 24 },
+  monoLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
+  headline: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text, lineHeight: 34, letterSpacing: -1, marginTop: 6, marginBottom: 8 },
+  sub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+
+  cards: { gap: 8 },
   card: {
-    flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    padding: Spacing.md, borderWidth: 2, borderColor: 'transparent', gap: Spacing.md, alignItems: 'flex-start',
+    flexDirection: 'row', alignItems: 'flex-start',
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 6, overflow: 'hidden',
   },
-  cardSelected: { borderColor: Colors.primary },
-  expertBadge: { width: 48, height: 48, borderRadius: Radius.md, alignItems: 'center', justifyContent: 'center' },
-  expertEmoji: { fontSize: 22 },
-  cardBody: { flex: 1 },
-  programName: { ...Typography.bodyMedium, marginBottom: 2 },
-  programNameSelected: { color: Colors.primary },
-  expertName: { ...Typography.caption, color: Colors.primary, marginBottom: 4 },
-  desc: { ...Typography.caption, marginBottom: 8, lineHeight: 18 },
-  tags: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  check: { width: 24, height: 24, borderRadius: 12, backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: 4 },
-  checkText: { color: '#fff', fontSize: 13, fontFamily: 'Inter_700Bold' },
-  footer: { padding: Spacing.lg, paddingBottom: Spacing.xl },
+  accentBar: { width: 3, alignSelf: 'stretch' },
+  cardBody: { flex: 1, padding: 14 },
+  cardTopRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 },
+  programName: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, flex: 1 },
+  emoji: { fontSize: 18 },
+  expertName: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2, marginBottom: 6 },
+  desc: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, lineHeight: 18, marginBottom: 10 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  tag: {
+    borderWidth: 1, borderColor: Colors.border, borderRadius: 2,
+    paddingHorizontal: 6, paddingVertical: 2,
+  },
+  tagText: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 0.8 },
+  check: {
+    width: 22, height: 22, borderRadius: 11, margin: 14, marginLeft: 0,
+    alignItems: 'center', justifyContent: 'center', alignSelf: 'center',
+  },
+  checkText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.accentInk },
+
+  footer: { padding: 20, paddingBottom: 28 },
+  continueBtn: {
+    backgroundColor: Colors.primary, borderRadius: 4,
+    paddingVertical: 16, alignItems: 'center',
+  },
+  continueBtnDisabled: { opacity: 0.35 },
+  continueBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1 },
 });

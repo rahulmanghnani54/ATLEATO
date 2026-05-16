@@ -2,7 +2,18 @@ import { useEffect } from 'react';
 import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { SplashScreen } from 'expo-router';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
+import {
+  useFonts,
+  Inter_400Regular,
+  Inter_500Medium,
+  Inter_600SemiBold,
+  Inter_700Bold,
+} from '@expo-google-fonts/inter';
+import { ArchivoBlack_400Regular } from '@expo-google-fonts/archivo-black';
+import {
+  JetBrainsMono_400Regular,
+  JetBrainsMono_500Medium,
+} from '@expo-google-fonts/jetbrains-mono';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -58,6 +69,9 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    ArchivoBlack_400Regular,
+    JetBrainsMono_400Regular,
+    JetBrainsMono_500Medium,
   });
   const loading = useAuthStore((s) => s.loading);
 
@@ -70,7 +84,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, backgroundColor: '#0a0b0d' }}>
           <OfflineBanner />
           <RootNavigator />
         </View>

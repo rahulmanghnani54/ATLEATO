@@ -1,44 +1,83 @@
-import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { useState, useMemo } from 'react';
+import {
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Modal,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
 import { Button } from '@/components/ui';
+import { PickerModal, type PickerOption } from '@/components/ui/PickerModal';
 import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
 
 type Gender = 'male' | 'female';
 type Unit = 'metric' | 'imperial';
+
+function range(from: number, to: number, step = 1): number[] {
+  const arr: number[] = [];
+  for (let v = from; v <= to; v += step) arr.push(parseFloat(v.toFixed(1)));
+  return arr;
+}
+
+const metricHeights: PickerOption[] = range(100, 250).map((v) => ({ label: `${v} cm`, value: String(v) }));
+const metricWeights: PickerOption[] = range(30, 300, 0.5).map((v) => ({ label: `${v} kg`, value: String(v) }));
+const imperialFt: PickerOption[] = range(4, 7).map((v) => ({ label: `${v} ft`, value: String(v) }));
+const imperialIn: PickerOption[] = range(0, 11).map((v) => ({ label: `${v} in`, value: String(v) }));
+const imperialWeights: PickerOption[] = range(66, 660).map((v) => ({ label: `${v} lbs`, value: String(v) }));
+
+const MIN_AGE = 13;
+const MAX_AGE = 100;
+const maxDob = new Date();
+maxDob.setFullYear(maxDob.getFullYear() - MIN_AGE);
+const minDob = new Date();
+minDob.setFullYear(minDob.getFullYear() - MAX_AGE);
+const defaultDob = new Date(maxDob);
+defaultDob.setFullYear(defaultDob.getFullYear() - 7); // default ~20 years old
 
 export default function Step2Stats() {
   const router = useRouter();
   const { goal } = useLocalSearchParams<{ goal: string }>();
 
   const [gender, setGender] = useState<Gender>('male');
-  const [dob, setDob] = useState(''); // YYYY-MM-DD
+  const [dob, setDob] = useState<Date>(defaultDob);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const [unit, setUnit] = useState<Unit>('metric');
-  const [height, setHeight] = useState('');
-  const [heightFt, setHeightFt] = useState('');
-  const [heightIn, setHeightIn] = useState('');
-  const [weight, setWeight] = useState('');
+  const [heightCmVal, setHeightCmVal] = useState('170');
+  const [heightFtVal, setHeightFtVal] = useState('5');
+  const [heightInVal, setHeightInVal] = useState('9');
+  const [weightVal, setWeightVal] = useState(unit === 'metric' ? '70' : '154');
+
+  const [openPicker, setOpenPicker] = useState<'heightCm' | 'heightFt' | 'heightIn' | 'weight' | null>(null);
+
   const [error, setError] = useState('');
 
+  const dobLabel = useMemo(() => {
+    return dob.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  }, [dob]);
+
+  const weightOptions = unit === 'metric' ? metricWeights : imperialWeights;
+
+  const handleDateChange = (_: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === 'android') setShowDatePicker(false);
+    if (date) setDob(date);
+  };
+
+  const switchUnit = (u: Unit) => {
+    setUnit(u);
+    setWeightVal(u === 'metric' ? '70' : '154');
+    setHeightCmVal('170');
+    setHeightFtVal('5');
+    setHeightInVal('9');
+  };
+
   const handleContinue = () => {
-    const heightMissing = unit === 'metric' ? !height : (!heightFt && !heightIn);
-    if (!dob || heightMissing || !weight) { setError('Please fill in all fields.'); return; }
-    const [y, m, d] = dob.split('-').map(Number);
-    const dobDate = new Date(y, m - 1, d);
-    if (isNaN(dobDate.getTime())) { setError('Enter date as YYYY-MM-DD (e.g. 1995-06-15)'); return; }
-
-    const age = Math.floor((Date.now() - dobDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-    if (age < 13 || age > 100) {
-      setError('Please enter a valid date of birth (age must be between 13 and 100).');
-      return;
-    }
-
     const heightCm = unit === 'metric'
-      ? parseFloat(height)
-      : (parseFloat(heightFt || '0') * 12 + parseFloat(heightIn || '0')) * 2.54;
-    const weightKg = unit === 'metric' ? parseFloat(weight) : parseFloat(weight) * 0.453592;
+      ? parseFloat(heightCmVal)
+      : (parseFloat(heightFtVal) * 12 + parseFloat(heightInVal)) * 2.54;
+    const weightKg = unit === 'metric'
+      ? parseFloat(weightVal)
+      : parseFloat(weightVal) * 0.453592;
 
     if (heightCm < 100 || heightCm > 250 || weightKg < 30 || weightKg > 300) {
       setError('Please enter realistic height and weight values.');
@@ -46,9 +85,10 @@ export default function Step2Stats() {
     }
 
     setError('');
+    const dobStr = `${dob.getFullYear()}-${String(dob.getMonth() + 1).padStart(2, '0')}-${String(dob.getDate()).padStart(2, '0')}`;
     router.push({
       pathname: '/(onboarding)/step3-activity',
-      params: { goal, gender, dob, heightCm: heightCm.toFixed(1), weightKg: weightKg.toFixed(2) },
+      params: { goal, gender, dob: dobStr, heightCm: heightCm.toFixed(1), weightKg: weightKg.toFixed(2) },
     });
   };
 
@@ -61,7 +101,7 @@ export default function Step2Stats() {
 
         {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
 
-        {/* Gender toggle */}
+        {/* Gender */}
         <Text style={styles.label}>Gender</Text>
         <View style={styles.toggle}>
           {(['male', 'female'] as Gender[]).map((g) => (
@@ -79,14 +119,50 @@ export default function Step2Stats() {
 
         {/* Date of birth */}
         <Text style={styles.label}>Date of Birth</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="YYYY-MM-DD (e.g. 1995-06-15)"
-          placeholderTextColor={Colors.textTertiary}
-          value={dob}
-          onChangeText={setDob}
-          keyboardType="numbers-and-punctuation"
-        />
+        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowDatePicker(true)}>
+          <Text style={styles.pickerBtnIcon}>📅</Text>
+          <Text style={styles.pickerBtnText}>{dobLabel}</Text>
+          <Text style={styles.pickerChevron}>›</Text>
+        </TouchableOpacity>
+
+        {/* iOS inline calendar */}
+        {showDatePicker && Platform.OS === 'ios' && (
+          <Modal transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
+            <TouchableOpacity style={styles.dateBackdrop} activeOpacity={1} onPress={() => setShowDatePicker(false)} />
+            <View style={styles.dateSheet}>
+              <View style={styles.dateHeader}>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.dateCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.dateTitle}>Date of Birth</Text>
+                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                  <Text style={styles.dateDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker
+                value={dob}
+                mode="date"
+                display="spinner"
+                maximumDate={maxDob}
+                minimumDate={minDob}
+                onChange={handleDateChange}
+                textColor={Colors.text}
+              />
+            </View>
+          </Modal>
+        )}
+
+        {/* Android date picker (shows native dialog) */}
+        {showDatePicker && Platform.OS === 'android' && (
+          <DateTimePicker
+            value={dob}
+            mode="date"
+            display="calendar"
+            maximumDate={maxDob}
+            minimumDate={minDob}
+            onChange={handleDateChange}
+          />
+        )}
 
         {/* Unit toggle */}
         <View style={styles.unitRow}>
@@ -96,7 +172,7 @@ export default function Step2Stats() {
               <TouchableOpacity
                 key={u}
                 style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-                onPress={() => { setUnit(u); setHeight(''); setHeightFt(''); setHeightIn(''); setWeight(''); }}
+                onPress={() => switchUnit(u)}
               >
                 <Text style={[styles.unitText, unit === u && styles.unitTextActive]}>
                   {u === 'metric' ? 'kg/cm' : 'lb/in'}
@@ -106,55 +182,40 @@ export default function Step2Stats() {
           </View>
         </View>
 
+        {/* Height pickers */}
         <View style={styles.row}>
           {unit === 'metric' ? (
             <View style={styles.halfField}>
-              <Text style={styles.sublabel}>Height (cm)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="175"
-                placeholderTextColor={Colors.textTertiary}
-                value={height}
-                onChangeText={setHeight}
-                keyboardType="decimal-pad"
-              />
+              <Text style={styles.sublabel}>Height</Text>
+              <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('heightCm')}>
+                <Text style={styles.pickerBtnText}>{heightCmVal} cm</Text>
+                <Text style={styles.pickerChevron}>›</Text>
+              </TouchableOpacity>
             </View>
           ) : (
             <>
               <View style={styles.halfField}>
                 <Text style={styles.sublabel}>Feet</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="5"
-                  placeholderTextColor={Colors.textTertiary}
-                  value={heightFt}
-                  onChangeText={setHeightFt}
-                  keyboardType="number-pad"
-                />
+                <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('heightFt')}>
+                  <Text style={styles.pickerBtnText}>{heightFtVal} ft</Text>
+                  <Text style={styles.pickerChevron}>›</Text>
+                </TouchableOpacity>
               </View>
               <View style={styles.halfField}>
                 <Text style={styles.sublabel}>Inches</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="9"
-                  placeholderTextColor={Colors.textTertiary}
-                  value={heightIn}
-                  onChangeText={setHeightIn}
-                  keyboardType="decimal-pad"
-                />
+                <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('heightIn')}>
+                  <Text style={styles.pickerBtnText}>{heightInVal} in</Text>
+                  <Text style={styles.pickerChevron}>›</Text>
+                </TouchableOpacity>
               </View>
             </>
           )}
           <View style={styles.halfField}>
-            <Text style={styles.sublabel}>Weight ({unit === 'metric' ? 'kg' : 'lbs'})</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={unit === 'metric' ? '80' : '176'}
-              placeholderTextColor={Colors.textTertiary}
-              value={weight}
-              onChangeText={setWeight}
-              keyboardType="decimal-pad"
-            />
+            <Text style={styles.sublabel}>Weight</Text>
+            <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('weight')}>
+              <Text style={styles.pickerBtnText}>{weightVal} {unit === 'metric' ? 'kg' : 'lbs'}</Text>
+              <Text style={styles.pickerChevron}>›</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -162,6 +223,46 @@ export default function Step2Stats() {
       <View style={styles.footer}>
         <Button label="Continue" onPress={handleContinue} fullWidth />
       </View>
+
+      {/* Height cm picker */}
+      <PickerModal
+        visible={openPicker === 'heightCm'}
+        title="Height (cm)"
+        options={metricHeights}
+        selectedValue={heightCmVal}
+        onSelect={setHeightCmVal}
+        onClose={() => setOpenPicker(null)}
+      />
+
+      {/* Height ft picker */}
+      <PickerModal
+        visible={openPicker === 'heightFt'}
+        title="Feet"
+        options={imperialFt}
+        selectedValue={heightFtVal}
+        onSelect={setHeightFtVal}
+        onClose={() => setOpenPicker(null)}
+      />
+
+      {/* Height in picker */}
+      <PickerModal
+        visible={openPicker === 'heightIn'}
+        title="Inches"
+        options={imperialIn}
+        selectedValue={heightInVal}
+        onSelect={setHeightInVal}
+        onClose={() => setOpenPicker(null)}
+      />
+
+      {/* Weight picker */}
+      <PickerModal
+        visible={openPicker === 'weight'}
+        title={`Weight (${unit === 'metric' ? 'kg' : 'lbs'})`}
+        options={weightOptions}
+        selectedValue={weightVal}
+        onSelect={setWeightVal}
+        onClose={() => setOpenPicker(null)}
+      />
     </SafeAreaView>
   );
 }
@@ -175,11 +276,6 @@ const styles = StyleSheet.create({
   errorText: { color: Colors.error, fontSize: 14, fontFamily: 'Inter_400Regular' },
   label: { ...Typography.label, marginBottom: 8, marginTop: Spacing.md },
   sublabel: { ...Typography.label, marginBottom: 6 },
-  input: {
-    height: 52, backgroundColor: Colors.surface, borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md, borderWidth: 1, borderColor: Colors.border,
-    fontFamily: 'Inter_400Regular', fontSize: 15, color: Colors.text,
-  },
   toggle: { flexDirection: 'row', gap: Spacing.sm },
   toggleBtn: {
     flex: 1, height: 48, borderRadius: Radius.md, borderWidth: 2,
@@ -189,6 +285,14 @@ const styles = StyleSheet.create({
   toggleBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
   toggleText: { fontFamily: 'Inter_500Medium', fontSize: 15, color: Colors.textSecondary },
   toggleTextActive: { color: Colors.primary },
+  pickerBtn: {
+    height: 52, backgroundColor: Colors.surface, borderRadius: Radius.md,
+    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row',
+    alignItems: 'center', paddingHorizontal: Spacing.md,
+  },
+  pickerBtnIcon: { fontSize: 18, marginRight: 8 },
+  pickerBtnText: { flex: 1, fontSize: 15, fontFamily: 'Inter_400Regular', color: Colors.text },
+  pickerChevron: { fontSize: 20, color: Colors.textSecondary, fontFamily: 'Inter_400Regular' },
   unitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   unitToggle: { flexDirection: 'row', backgroundColor: '#f3f4f6', borderRadius: Radius.md, padding: 3 },
   unitBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: Radius.sm },
@@ -198,4 +302,19 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: Spacing.md },
   halfField: { flex: 1 },
   footer: { padding: Spacing.lg, paddingBottom: Spacing.xl },
+  dateBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
+  dateSheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+  },
+  dateHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  },
+  dateTitle: { ...Typography.bodyMedium },
+  dateCancel: { fontSize: 16, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+  dateDone: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: Colors.primary },
 });

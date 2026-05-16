@@ -1,37 +1,44 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { callClaude, corsHeaders, jsonResponse, errorResponse } from '../_shared/claude.ts';
+import {
+  callClaude, corsHeaders, jsonResponse, errorResponse, internalError,
+  SUPABASE_URL, SUPABASE_ANON_KEY,
+} from '../_shared/claude.ts';
+import { checkRateLimit, isValidUUID } from '../_shared/security.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
+  if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return errorResponse('Unauthorized', 401);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return errorResponse('Unauthorized', 401);
 
-    const { workoutLogId } = await req.json() as { workoutLogId: string };
-    if (!workoutLogId) return errorResponse('workoutLogId required', 400);
+    if (!checkRateLimit(user.id, 'analyze-workout', 10, 60_000)) {
+      return errorResponse('Too many requests. Please wait a moment.', 429);
+    }
 
-    // Fetch workout + sets
+    const body = await req.json() as { workoutLogId?: unknown };
+    if (!isValidUUID(body.workoutLogId)) return errorResponse('Invalid workoutLogId', 400);
+
     const { data: workoutLog } = await supabase
       .from('workout_logs')
       .select('*, exercise_sets(*)')
-      .eq('id', workoutLogId)
-      .eq('user_id', user.id)
+      .eq('id', body.workoutLogId)
+      .eq('user_id', user.id)  // explicit ownership check beyond RLS
       .single();
 
     if (!workoutLog) return errorResponse('Workout not found', 404);
 
     const setsText = (workoutLog.exercise_sets as any[])
       .filter((s) => !s.is_warmup)
+      .slice(0, 50) // cap rows to prevent prompt bloat
       .map((s) => `${s.exercise_name}: Set ${s.set_number} — ${s.weight_kg}kg × ${s.reps} reps (RPE ${s.rpe ?? '?'})`)
       .join('\n');
 
@@ -59,9 +66,8 @@ Be specific and actionable. Use the actual numbers.`;
       600,
     );
 
-    return jsonResponse({ analysis, workoutLogId });
-  } catch (err) {
-    console.error('[analyze-workout]', err);
-    return errorResponse((err as Error).message);
+    return jsonResponse({ analysis, workoutLogId: body.workoutLogId });
+  } catch {
+    return internalError();
   }
 });

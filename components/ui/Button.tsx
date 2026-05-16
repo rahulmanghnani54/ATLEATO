@@ -1,5 +1,5 @@
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Radius, Typography } from '@/constants/theme';
+import { Colors, Radius, Fonts } from '@/constants/theme';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
@@ -17,13 +17,18 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
   const bg =
     variant === 'primary' ? Colors.primary
     : variant === 'danger' ? Colors.error
-    : variant === 'secondary' ? Colors.primaryLight
+    : variant === 'secondary' ? 'transparent'
     : 'transparent';
 
   const textColor =
-    variant === 'primary' || variant === 'danger' ? '#fff'
-    : variant === 'secondary' ? Colors.primary
+    variant === 'primary' ? Colors.accentInk
+    : variant === 'danger' ? '#fff'
     : Colors.text;
+
+  const borderColor =
+    variant === 'secondary' ? Colors.borderStrong
+    : variant === 'ghost' ? Colors.border
+    : 'transparent';
 
   const isDisabled = disabled || loading;
 
@@ -35,18 +40,15 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       accessibilityRole="button"
       style={[
         styles.base,
-        {
-          backgroundColor: bg,
-          width: fullWidth ? '100%' : undefined,
-          opacity: isDisabled ? 0.5 : 1,
-        },
+        { backgroundColor: bg, borderColor, width: fullWidth ? '100%' : undefined, opacity: isDisabled ? 0.4 : 1 },
+        variant === 'secondary' || variant === 'ghost' ? styles.outlined : null,
         style,
       ]}
       activeOpacity={0.8}
     >
       {loading
         ? <ActivityIndicator color={textColor} size="small" />
-        : <Text style={[Typography.bodyMedium, { color: textColor }]}>{label}</Text>
+        : <Text style={[styles.label, { color: textColor }]}>{label}</Text>
       }
     </TouchableOpacity>
   );
@@ -55,9 +57,17 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
 const styles = StyleSheet.create({
   base: {
     height: 52,
-    borderRadius: Radius.md,
+    borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  outlined: {
+    borderWidth: 1,
+  },
+  label: {
+    fontFamily: Fonts.display,
+    fontSize: 14,
+    letterSpacing: 0.5,
   },
 });

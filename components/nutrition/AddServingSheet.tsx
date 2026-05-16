@@ -51,8 +51,8 @@ export function AddServingSheet({ visible, food, mealType, date, onClose, onLogg
     setLoading(false);
 
     if (error) {
-      console.error('Log food error:', error.message);
-      Alert.alert('Failed to Log', 'Could not save this food entry. Please try again.');
+      console.error('Log food error:', error.message, error.code, error.details);
+      Alert.alert('Failed to Log', `Could not save this food entry.\n\n${error.message}`);
       return;
     }
 

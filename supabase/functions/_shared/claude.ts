@@ -10,32 +10,35 @@ export interface ClaudeResponse {
   content: Array<{ type: string; text: string }>;
 }
 
+// Validate required env vars at cold-start, not lazily at request time.
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+
+if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY env var is required');
+if (!SUPABASE_URL)      throw new Error('SUPABASE_URL env var is required');
+if (!SUPABASE_ANON_KEY) throw new Error('SUPABASE_ANON_KEY env var is required');
+
+export { SUPABASE_URL, SUPABASE_ANON_KEY };
+
 export async function callClaude(
   systemPrompt: string,
   messages: ClaudeMessage[],
   maxTokens = 1024,
 ): Promise<string> {
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY');
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not set');
-
   const response = await fetch(ANTHROPIC_API_URL, {
     method: 'POST',
     headers: {
-      'x-api-key': apiKey,
+      'x-api-key': ANTHROPIC_API_KEY!,
       'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
     },
-    body: JSON.stringify({
-      model: CLAUDE_MODEL,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages,
-    }),
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: maxTokens, system: systemPrompt, messages }),
   });
 
   if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`Claude API error ${response.status}: ${err}`);
+    // Do not forward Anthropic's error body to the client — it may contain key details.
+    throw new Error(`Claude API error ${response.status}`);
   }
 
   const data: ClaudeResponse = await response.json();
@@ -44,8 +47,12 @@ export async function callClaude(
 
 export function corsHeaders() {
   return {
+    // Wildcard origin is required for the Supabase JS client from native mobile and
+    // web. Real access control is enforced by JWT on every request — not by CORS.
     'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Max-Age': '86400',
     'Content-Type': 'application/json',
   };
 }
@@ -56,4 +63,9 @@ export function jsonResponse(data: unknown, status = 200) {
 
 export function errorResponse(message: string, status = 500) {
   return new Response(JSON.stringify({ error: message }), { status, headers: corsHeaders() });
+}
+
+// Use this in catch blocks so internal details never reach the client.
+export function internalError() {
+  return errorResponse('An internal error occurred. Please try again.', 500);
 }

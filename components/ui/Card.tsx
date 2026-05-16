@@ -6,10 +6,15 @@ interface Props {
   style?: ViewStyle;
   onPress?: () => void;
   padding?: number;
+  raised?: boolean;
 }
 
-export function Card({ children, style, onPress, padding = Spacing.md }: Props) {
-  const content = <View style={[styles.card, { padding }, style]}>{children}</View>;
+export function Card({ children, style, onPress, padding = Spacing.md, raised }: Props) {
+  const content = (
+    <View style={[styles.card, raised && styles.cardRaised, { padding }, style]}>
+      {children}
+    </View>
+  );
   if (onPress) {
     return (
       <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
@@ -23,11 +28,11 @@ export function Card({ children, style, onPress, padding = Spacing.md }: Props) 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  cardRaised: {
+    backgroundColor: Colors.raised,
   },
 });

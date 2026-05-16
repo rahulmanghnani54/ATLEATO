@@ -1,6 +1,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { callClaude, corsHeaders, jsonResponse, errorResponse, type ClaudeMessage } from '../_shared/claude.ts';
+import {
+  callClaude, corsHeaders, jsonResponse, errorResponse, internalError,
+  SUPABASE_URL, SUPABASE_ANON_KEY, type ClaudeMessage,
+} from '../_shared/claude.ts';
+import { checkRateLimit, sanitize, ALLOWED_PERSONAS } from '../_shared/security.ts';
+
+const MAX_MESSAGE_LEN = 2_000;
+const MAX_HISTORY_TURNS = 10;
+const RATE_LIMIT_REQUESTS = 15;
+const RATE_LIMIT_WINDOW_MS = 60_000;
 
 const EXPERT_PERSONAS: Record<string, string> = {
   arnold: `You are Arnold Schwarzenegger — 7x Mr. Olympia, legendary bodybuilder, and motivator.
@@ -31,45 +40,64 @@ Be intellectually rigorous but approachable. Occasionally make nerdy jokes.`,
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
+  if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
   try {
-    // JWT verification
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return errorResponse('Unauthorized', 401);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return errorResponse('Unauthorized', 401);
 
-    const { persona, message, conversationHistory = [] } = await req.json() as {
-      persona: string;
-      message: string;
-      conversationHistory: ClaudeMessage[];
+    if (!checkRateLimit(user.id, 'ai-coach-chat', RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW_MS)) {
+      return errorResponse('Too many requests. Please wait a moment.', 429);
+    }
+
+    const body = await req.json() as {
+      persona?: unknown;
+      message?: unknown;
+      conversationHistory?: unknown;
     };
 
-    if (!persona || !message) return errorResponse('persona and message are required', 400);
+    if (typeof body.message !== 'string' || !body.message.trim()) {
+      return errorResponse('message is required', 400);
+    }
+    if (typeof body.persona !== 'string' || !ALLOWED_PERSONAS.has(body.persona)) {
+      return errorResponse('Invalid persona', 400);
+    }
 
-    const systemPrompt = EXPERT_PERSONAS[persona] ?? EXPERT_PERSONAS.cbum;
+    const message = sanitize(body.message, MAX_MESSAGE_LEN);
+    const persona = body.persona;
+
+    const rawHistory = Array.isArray(body.conversationHistory) ? body.conversationHistory : [];
+    const conversationHistory: ClaudeMessage[] = rawHistory
+      .slice(-MAX_HISTORY_TURNS)
+      .filter((m): m is ClaudeMessage =>
+        m !== null &&
+        typeof m === 'object' &&
+        (m.role === 'user' || m.role === 'assistant') &&
+        typeof m.content === 'string',
+      )
+      .map((m) => ({ role: m.role, content: sanitize(m.content, MAX_MESSAGE_LEN) }));
+
+    const systemPrompt = EXPERT_PERSONAS[persona];
     const messages: ClaudeMessage[] = [
-      ...conversationHistory.slice(-10), // keep last 10 turns for context
+      ...conversationHistory,
       { role: 'user', content: message },
     ];
 
     const reply = await callClaude(systemPrompt, messages, 512);
 
-    // Persist to chat_messages table
     await supabase.from('chat_messages').insert([
       { user_id: user.id, persona, role: 'user', content: message },
       { user_id: user.id, persona, role: 'assistant', content: reply },
     ]);
 
     return jsonResponse({ reply, persona });
-  } catch (err) {
-    console.error('[ai-coach-chat]', err);
-    return errorResponse((err as Error).message);
+  } catch {
+    return internalError();
   }
 });
