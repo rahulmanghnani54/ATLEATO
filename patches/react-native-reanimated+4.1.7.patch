@@ -1,0 +1,24 @@
+diff --git a/node_modules/react-native-reanimated/android/build.gradle b/node_modules/react-native-reanimated/android/build.gradle
+index 6b73a69..4dc36c3 100644
+--- a/node_modules/react-native-reanimated/android/build.gradle
++++ b/node_modules/react-native-reanimated/android/build.gradle
+@@ -48,15 +48,10 @@ def resolveReactNativeWorkletsDirectory() {
+         return file(reactNativeWorkletsLocation)
+     }
+ 
+-    // Fallback to node resolver for custom directory structures like monorepos.
+-    def reactNativeWorkletsPackage = file(
+-        providers.exec {
+-            workingDir(rootDir)
+-            commandLine("node", "--print", "require.resolve('react-native-worklets/package.json')")
+-        }.standardOutput.asText.get().trim()
+-    )
+-    if (reactNativeWorkletsPackage.exists()) {
+-        return reactNativeWorkletsPackage.parentFile
++    // Fallback: resolve relative to rootDir (avoids node exec which fails on EAS Build with Gradle 8.14+)
++    def reactNativeWorkletsDir = new File(rootDir, "../node_modules/react-native-worklets")
++    if (reactNativeWorkletsDir.exists()) {
++        return reactNativeWorkletsDir
+     }
+ 
+     throw new GradleException(
