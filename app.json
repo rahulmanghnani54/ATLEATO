@@ -9,6 +9,7 @@
       "android"
     ],
     "plugins": [
+      "./plugins/withReanimatedWorkletsPath",
       "expo-router",
       "react-native-vision-camera",
       "expo-file-system",
