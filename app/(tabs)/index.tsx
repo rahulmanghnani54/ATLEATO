@@ -36,6 +36,7 @@ import { TomorrowCommitmentCard } from '@/components/dashboard/TomorrowCommitmen
 import { WitnessNudgeCard } from '@/components/dashboard/WitnessNudgeCard';
 import { ChainCalendarCard } from '@/components/dashboard/ChainCalendarCard';
 import { LeaderboardCard } from '@/components/dashboard/LeaderboardCard';
+import { TerritoryCard } from '@/components/dashboard/TerritoryCard';
 import { useTrainedToday } from '@/hooks/useTrainedToday';
 import { useSessionsThisWeek } from '@/hooks/useSessionsThisWeek';
 import { useStreakFreezes } from '@/hooks/useStreakFreezes';
@@ -442,6 +443,9 @@ export default function Dashboard() {
               SECTION 5 · COMMUNITY  (chain, leaderboard, accountability)
               ═════════════════════════════════════════════════════════════ */}
           <SectionHeader label="COMMUNITY" accent={persona.accent} />
+
+          {/* Territory — run-to-claim grid conquest */}
+          <TerritoryCard persona={persona} />
 
           {/* Chain Calendar — Seinfeld "don't break the chain" strip */}
           <ChainCalendarCard persona={persona} />
