@@ -288,6 +288,16 @@ export default function ProfileScreen() {
           />
         </SettingsGroup>
 
+        {/* ── Accountability ── */}
+        <SettingsGroup title="ACCOUNTABILITY">
+          <SettingsRow
+            label="🤝  Accountability witness"
+            sub="One person who gets notified if you skip a week"
+            trail="→"
+            onPress={() => router.push('/social-stake' as any)}
+          />
+        </SettingsGroup>
+
         {/* ── Coach Calls & Voice ── */}
         <SettingsGroup title="COACH CALLS">
           <SettingsRow

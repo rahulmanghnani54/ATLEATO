@@ -11,10 +11,12 @@
 import { View, Text, StyleSheet } from 'react-native';
 import { getStreakStatus } from '@/lib/streakEngine';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
+import { useStreakFreezes } from '@/hooks/useStreakFreezes';
 import { Colors, Fonts } from '@/constants/theme';
 
 export function StreakHero({ days, persona }: { days: number; persona: PersonaTheme }) {
   const status = getStreakStatus(days, persona);
+  const { freezes, maxFreezes } = useStreakFreezes();
 
   // Day 0 → render an "INVITATION" card instead — no flame, just a CTA tone
   if (days === 0) {
@@ -60,6 +62,23 @@ export function StreakHero({ days, persona }: { days: number; persona: PersonaTh
             </Text>
           </View>
         )}
+      </View>
+
+      {/* Streak Freezes inventory — Duolingo-style ice cubes */}
+      <View style={styles.freezeRow}>
+        {Array.from({ length: maxFreezes }).map((_, i) => {
+          const owned = i < freezes;
+          return (
+            <Text key={i} style={[styles.freezeIcon, !owned && styles.freezeIconEmpty]}>
+              {owned ? '🧊' : '·'}
+            </Text>
+          );
+        })}
+        <Text style={styles.freezeLabel}>
+          {freezes > 0
+            ? `${freezes} streak freeze${freezes === 1 ? '' : 's'} — auto-saves a missed day`
+            : 'Earn a freeze every 7 days — auto-saves a missed day'}
+        </Text>
       </View>
 
       {/* Coach voice line */}
@@ -124,6 +143,20 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   milestoneBadgeText: { fontFamily: Fonts.display, fontSize: 10, letterSpacing: 0.8 },
+
+  // Freeze inventory row (between top + subline)
+  freezeRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingVertical: 8, marginBottom: 6,
+    borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: 'rgba(255,255,255,0.06)',
+  },
+  freezeIcon:      { fontSize: 16 },
+  freezeIconEmpty: { fontSize: 16, color: Colors.textTertiary, opacity: 0.4 },
+  freezeLabel: {
+    flex: 1, fontFamily: Fonts.mono, fontSize: 9,
+    color: Colors.textSecondary, letterSpacing: 0.8, marginLeft: 4,
+  },
 
   subline: {
     fontFamily: Fonts.body, fontSize: 13, color: Colors.text,

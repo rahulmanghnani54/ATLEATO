@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
 } from 'react-native';
@@ -5,6 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Fonts } from '@/constants/theme';
+import { ImplementationIntentionSheet } from '@/components/dashboard/ImplementationIntentionSheet';
+import { getPersona, type PersonaId } from '@/lib/personaTheme';
+import { getTomorrowIntention } from '@/lib/implementationIntention';
+import { format } from 'date-fns';
 
 function SendIcon() {
   return (
@@ -51,6 +56,21 @@ export default function PostWorkout() {
   const tut          = params.tut          ?? '24';
   const coachId      = params.coachId      ?? 'cbum';
   const hasPR        = params.newPR === 'true';
+
+  // Habit-chain: right after the user finishes a workout, prompt them to
+  // pre-commit to tomorrow's session. Only if no commitment exists yet.
+  // Delay 1.5s so they see the post-workout summary first.
+  const persona      = getPersona(coachId as PersonaId);
+  const [intentionSheetOpen, setIntentionSheetOpen] = useState(false);
+  const tomorrowISO  = format(new Date(Date.now() + 86_400_000), 'yyyy-MM-dd');
+  useEffect(() => {
+    let cancelled = false;
+    const id = setTimeout(async () => {
+      const existing = await getTomorrowIntention();
+      if (!cancelled && !existing) setIntentionSheetOpen(true);
+    }, 1500);
+    return () => { cancelled = true; clearTimeout(id); };
+  }, []);
   const prExercise   = params.prExercise   ?? 'Incline DB Press';
   const prNewRM      = params.prNewRM      ?? '42.8';
   const prPrevRM     = params.prPrevRM     ?? '40.1';
@@ -233,6 +253,14 @@ export default function PostWorkout() {
         </View>
 
       </ScrollView>
+
+      {/* Auto-triggered pre-commit sheet (habit chain) */}
+      <ImplementationIntentionSheet
+        visible={intentionSheetOpen}
+        onClose={() => setIntentionSheetOpen(false)}
+        dateISO={tomorrowISO}
+        persona={persona}
+      />
     </SafeAreaView>
   );
 }

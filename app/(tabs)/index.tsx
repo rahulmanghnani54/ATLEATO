@@ -18,7 +18,10 @@ import { MorningBriefCard } from '@/components/dashboard/MorningBriefCard';
 import { StreakHero } from '@/components/dashboard/StreakHero';
 import { StreakNudge } from '@/components/dashboard/StreakNudge';
 import { PRShelf } from '@/components/dashboard/PRShelf';
+import { TomorrowCommitmentCard } from '@/components/dashboard/TomorrowCommitmentCard';
+import { WitnessNudgeCard } from '@/components/dashboard/WitnessNudgeCard';
 import { useTrainedToday } from '@/hooks/useTrainedToday';
+import { useSessionsThisWeek } from '@/hooks/useSessionsThisWeek';
 
 // ── Calorie ring (SVG) ────────────────────────────────────────
 function CalorieArc({ eaten, goal, color = Colors.primary }: { eaten: number; goal: number; color?: string }) {
@@ -71,6 +74,7 @@ export default function Dashboard() {
   const { data: todayRecovery } = useTodayRecovery();
   const { data: streak = 0 } = useWorkoutStreak();
   const { data: trainedToday = false } = useTrainedToday();
+  const { data: sessionsThisWeek = 0 } = useSessionsThisWeek();
   const { data: weekVolume = 0 } = useThisWeekVolume();
   const { data: schedule = [] } = useProgramSchedule();
   const programWeek = useProgramWeek();
@@ -228,6 +232,12 @@ export default function Dashboard() {
 
         {/* ── PR Shelf — your top trophies, in coach's color ── */}
         <PRShelf persona={persona} />
+
+        {/* ── Tomorrow's Commitment — pre-commit for tomorrow's workout ── */}
+        <TomorrowCommitmentCard persona={persona} />
+
+        {/* ── Witness Nudge — Sunday/Monday only, if behind on weekly sessions ── */}
+        <WitnessNudgeCard sessionsThisWeek={sessionsThisWeek} persona={persona} />
 
         {/* ── Stat strip (streak now lives in StreakHero above) ── */}
         <View style={styles.statStrip}>

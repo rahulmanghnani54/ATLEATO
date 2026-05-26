@@ -3,8 +3,18 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import type { WorkoutDay } from '@/constants/experts';
+import {
+  consumeFreezeForDate, checkAndAwardFreeze, isFrozen, resetFrozenDates,
+} from '@/lib/streakFreezes';
 
-// ── Streak ────────────────────────────────────────────────────────────────────
+// ── Streak (now freeze-aware) ─────────────────────────────────────────────────
+//
+// Walks the user's training history backward from today. For each MISSED day:
+//   - If a freeze was previously applied to that date → streak continues
+//   - Else if a freeze is available → consume one, streak continues
+//   - Else → streak breaks
+//
+// After computing, awards a freeze if user crossed a new 7-day milestone.
 export function useWorkoutStreak() {
   const user = useAuthStore((s) => s.user);
 
@@ -21,27 +31,42 @@ export function useWorkoutStreak() {
 
       if (error || !data?.length) return 0;
 
-      const dates = [...new Set(data.map((r: { date: string }) => r.date))].sort().reverse();
+      // Set of dates the user trained — O(1) lookup
+      const trainedDates = new Set<string>(
+        data.map((r: { date: string }) => r.date),
+      );
       const today = new Date().toISOString().slice(0, 10);
 
-      // Start counting: if no workout today, start from yesterday
-      let streak = 0;
-      let expected = dates[0] >= today ? today : (() => {
-        const d = new Date();
-        d.setDate(d.getDate() - 1);
-        return d.toISOString().slice(0, 10);
-      })();
+      // Cursor: today if trained today, else yesterday
+      const cursor = new Date();
+      if (!trainedDates.has(today)) cursor.setDate(cursor.getDate() - 1);
 
-      for (const date of dates) {
-        if (date === expected) {
+      let streak = 0;
+      for (let i = 0; i < 90; i++) {
+        const dateISO = cursor.toISOString().slice(0, 10);
+
+        if (trainedDates.has(dateISO)) {
           streak++;
-          const d = new Date(expected);
-          d.setDate(d.getDate() - 1);
-          expected = d.toISOString().slice(0, 10);
-        } else if (date < expected) {
-          break;
+        } else {
+          // Missed this day — try to save with a freeze
+          const alreadyFrozen = await isFrozen(dateISO);
+          if (!alreadyFrozen) {
+            const used = await consumeFreezeForDate(dateISO);
+            if (!used) break; // no freeze available → streak ends here
+          }
+          // Frozen day: streak continues across but does NOT increment
         }
+        cursor.setDate(cursor.getDate() - 1);
       }
+
+      if (streak === 0) {
+        // Streak fully broke — clear old frozen-dates so they don't carry over
+        await resetFrozenDates();
+      } else {
+        // Check if we just earned a new freeze
+        await checkAndAwardFreeze(streak);
+      }
+
       return streak;
     },
     enabled: !!user,
