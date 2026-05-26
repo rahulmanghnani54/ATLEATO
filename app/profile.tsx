@@ -161,7 +161,7 @@ export default function ProfileScreen() {
           <View style={styles.heroTop}>
             <View>
               <View style={[styles.proBadge, { borderColor: programColor }]}>
-                <Text style={[styles.proBadgeText, { color: programColor }]}>● PRO MEMBER</Text>
+                <Text style={[styles.proBadgeText, { color: programColor }]}>● FOUNDING MEMBER</Text>
               </View>
               {editingName ? (
                 <View style={styles.nameEditRow}>

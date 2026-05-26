@@ -167,7 +167,10 @@ export default function Dashboard() {
           isRestDay={!!todaySchedule?.isRest}
           persona={persona}
           onTrainPress={() => {
-            if (!todayWorkout) return;
+            if (!todayWorkout) {
+              router.push('/(tabs)/workouts' as any);
+              return;
+            }
             const dow = new Date().getDay();
             const programDay = dow === 0 ? 6 : dow - 1;
             router.push({
@@ -184,7 +187,16 @@ export default function Dashboard() {
         <TouchableOpacity
           style={[styles.heroCard, { backgroundColor: persona.accent }]}
           onPress={() => {
-            if (todaySchedule?.isRest || !todayWorkout) return;
+            // Rest day → route to recovery check-in so the tap still does something
+            if (todaySchedule?.isRest) {
+              router.push('/recovery-checkin' as any);
+              return;
+            }
+            // No workout loaded yet → bounce to workouts tab to pick one
+            if (!todayWorkout) {
+              router.push('/(tabs)/workouts' as any);
+              return;
+            }
             const dow = new Date().getDay(); // 0=Sun
             const programDay = dow === 0 ? 6 : dow - 1;
             router.push({
@@ -195,7 +207,7 @@ export default function Dashboard() {
               },
             } as any);
           }}
-          activeOpacity={todaySchedule?.isRest ? 1 : 0.85}
+          activeOpacity={0.85}
         >
           <View style={[styles.tag, { borderColor: persona.ink }]}>
             <Text style={[styles.tagText, { color: persona.ink }]}>
