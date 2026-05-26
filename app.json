@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "FitAI Pro",
+    "name": "Atleato",
     "slug": "fitai-pro",
     "version": "1.0.0",
-    "scheme": "fitaipro",
+    "scheme": "atleato",
     "platforms": [
       "ios",
       "android"
@@ -25,13 +25,13 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ff6b35"
+      "backgroundColor": "#0d0d0d"
     },
     "experiments": {
       "typedRoutes": true
     },
     "android": {
-      "package": "com.madsales.fitaipro",
+      "package": "com.madsales.atleato",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ff6b35"
@@ -40,20 +40,24 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_EXTERNAL_STORAGE"
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.USE_FULL_SCREEN_INTENT",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.WAKE_LOCK"
       ]
     },
     "ios": {
-      "bundleIdentifier": "com.madsales.fitaipro",
+      "bundleIdentifier": "com.madsales.atleato",
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "FitAI Pro uses your camera to analyze your exercise form in real time and to capture physique progress photos. Photos are encrypted on your device before upload.",
-        "NSMicrophoneUsageDescription": "Microphone access is required by the camera framework but is not used by FitAI Pro.",
-        "NSPhotoLibraryUsageDescription": "FitAI Pro accesses your photo library so you can select physique progress photos. Photos are encrypted on your device before upload — we never see the originals.",
-        "NSPhotoLibraryAddUsageDescription": "FitAI Pro may save processed images to your photo library.",
-        "NSHealthShareUsageDescription": "FitAI Pro does not access Apple Health data.",
-        "NSHealthUpdateUsageDescription": "FitAI Pro does not write to Apple Health.",
-        "NSHealthClinicalHealthRecordsShareUsageDescription": "FitAI Pro does not access clinical health records.",
+        "NSCameraUsageDescription": "Atleato uses your camera to analyze your exercise form in real time and to capture physique progress photos. Photos are encrypted on your device before upload.",
+        "NSMicrophoneUsageDescription": "Microphone access is required by the camera framework but is not used by Atleato.",
+        "NSPhotoLibraryUsageDescription": "Atleato accesses your photo library so you can select physique progress photos. Photos are encrypted on your device before upload — we never see the originals.",
+        "NSPhotoLibraryAddUsageDescription": "Atleato may save processed images to your photo library.",
+        "NSHealthShareUsageDescription": "Atleato does not access Apple Health data.",
+        "NSHealthUpdateUsageDescription": "Atleato does not write to Apple Health.",
+        "NSHealthClinicalHealthRecordsShareUsageDescription": "Atleato does not access clinical health records.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },

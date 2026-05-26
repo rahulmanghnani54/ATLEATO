@@ -15,10 +15,23 @@ import {
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import {
+  configureNotificationHandler, setupAndroidChannels, setupCallActionCategory,
+  declineCoachCall, cancelRingingChain,
+} from '@/lib/coachCallScheduler';
+import {
+  setupCallChannel, registerCallEventHandler,
+} from '@/lib/notifeeCallScheduler';
+import type { PersonaId } from '@/lib/personaTheme';
+import type { CallKind } from '@/lib/coachCallScheduler';
+
+// Configure how foreground notifications behave (banner + sound).
+configureNotificationHandler();
 
 SplashScreen.preventAutoHideAsync();
 
@@ -42,6 +55,55 @@ function RootNavigator() {
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  // One-time setup: notification channels + Notifee call handler.
+  // Wrapped so any setup failure can never block the app from rendering.
+  useEffect(() => {
+    let unsub: (() => void) | undefined;
+    (async () => {
+      try { await setupAndroidChannels(); } catch { /* ignore */ }
+      try { await setupCallActionCategory(); } catch { /* ignore */ }
+      try { await setupCallChannel(); } catch { /* ignore */ }
+      try {
+        unsub = registerCallEventHandler((kind, personaId) => {
+          router.push({
+            pathname: '/incoming-call',
+            params: { kind, personaId },
+          } as any);
+        });
+      } catch { /* ignore */ }
+    })();
+    return () => { try { unsub?.(); } catch { /* ignore */ } };
+  }, [router]);
+
+  // Handle taps on Coach Call notifications.
+  // - ANSWER (or notification body)  → silence ring, open the right screen
+  // - DECLINE                          → silence ring, coach speaks "no excuses"
+  //                                       via TTS + fires angry follow-up
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const data = response.notification.request.content.data as {
+        kind?: CallKind; personaId?: PersonaId;
+      };
+      const actionId = response.actionIdentifier;
+
+      if (!data?.kind || !data?.personaId) return;
+
+      if (actionId === 'DECLINE') {
+        declineCoachCall({ kind: data.kind, personaId: data.personaId });
+        return;
+      }
+
+      // ANSWER, body-tap, or default response — open the full-screen
+      // incoming-call UI. It handles the rest (answer / decline) and
+      // cancels the ring chain on mount.
+      router.push({
+        pathname: '/incoming-call',
+        params: { kind: data.kind, personaId: data.personaId },
+      } as any);
+    });
+    return () => sub.remove();
+  }, [router]);
 
   useEffect(() => {
     if (loading) return;
