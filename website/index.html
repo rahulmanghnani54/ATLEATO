@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Atleato™ — Train. Fuel. Rise.</title>
+<meta name="description" content="Atleato is the only fitness app where you train under a legend. Live form correction, persona-driven coaching, real wake-up calls from CBUM, Arnold, Nippard, CT Fletcher, or Dr Mike Israetel." />
+
+<!-- Open Graph / social share -->
+<meta property="og:title" content="Atleato™ — Train. Fuel. Rise." />
+<meta property="og:description" content="The only fitness app where you train under a legend. Live form correction, daily wake-up calls from your coach, persona-driven workouts." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://atleato.com" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg: #0a0b0d;
+    --surface: #15171b;
+    --raised: #1d2026;
+    --border: rgba(255,255,255,0.10);
+    --text: #fafafa;
+    --text-secondary: #9ca3af;
+    --text-tertiary: #6b7280;
+    --lime: #dfff1f;
+    --ink: #0a0b0d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', sans-serif; line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+  /* ── NAV ── */
+  nav {
+    padding: 20px 0; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: rgba(10,11,13,0.85);
+    backdrop-filter: blur(12px); z-index: 10;
+  }
+  .nav-inner { display: flex; justify-content: space-between; align-items: center; }
+  .wordmark {
+    font-family: 'Archivo Black', sans-serif; font-size: 22px;
+    letter-spacing: -0.5px; display: flex; align-items: baseline; gap: 4px;
+  }
+  .wordmark .a { color: #ff6b35; }
+  .wordmark .tm { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-tertiary); }
+  nav a { color: var(--text-secondary); text-decoration: none; font-size: 13px; font-weight: 500; }
+  nav a:hover { color: var(--lime); }
+
+  /* ── HERO ── */
+  .hero { padding: 120px 0 100px; position: relative; overflow: hidden; }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text-tertiary); letter-spacing: 2.4px; margin-bottom: 18px;
+  }
+  .hero-headline {
+    font-family: 'Archivo Black', sans-serif; font-size: clamp(48px, 9vw, 96px);
+    line-height: 0.95; letter-spacing: -2px; margin-bottom: 24px;
+  }
+  .hero-headline span { color: var(--lime); }
+  .hero-sub {
+    font-size: clamp(16px, 1.8vw, 20px); color: var(--text-secondary);
+    max-width: 580px; line-height: 1.55; margin-bottom: 36px;
+  }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .cta-primary {
+    background: var(--lime); color: var(--ink);
+    padding: 16px 28px; border-radius: 6px; border: none;
+    font-family: 'Archivo Black', sans-serif; font-size: 14px;
+    letter-spacing: 1.2px; cursor: pointer; text-decoration: none;
+    display: inline-block;
+  }
+  .cta-primary:hover { transform: translateY(-1px); }
+  .cta-secondary {
+    border: 1px solid var(--border); color: var(--text);
+    padding: 16px 24px; border-radius: 6px;
+    font-family: 'Archivo Black', sans-serif; font-size: 13px;
+    letter-spacing: 1px; text-decoration: none; display: inline-block;
+  }
+
+  /* ── COACH BAR ── */
+  .coaches {
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+    padding: 36px 0; background: var(--surface);
+  }
+  .coaches-eyebrow {
+    text-align: center; font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--text-tertiary); letter-spacing: 2px; margin-bottom: 20px;
+  }
+  .coach-row {
+    display: flex; justify-content: center; align-items: center; gap: 40px;
+    flex-wrap: wrap;
+  }
+  .coach-chip {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Archivo Black', sans-serif; font-size: 13px;
+    letter-spacing: 0.6px;
+  }
+  .coach-dot { width: 8px; height: 8px; border-radius: 4px; }
+
+  /* ── FEATURES ── */
+  .features { padding: 100px 0 60px; }
+  .section-eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text-tertiary); letter-spacing: 2.4px; margin-bottom: 12px;
+  }
+  .section-headline {
+    font-family: 'Archivo Black', sans-serif; font-size: clamp(34px, 5vw, 56px);
+    line-height: 1; letter-spacing: -1.2px; margin-bottom: 50px;
+  }
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 18px; margin-bottom: 36px;
+  }
+  .feature-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 24px;
+  }
+  .feature-emoji { font-size: 28px; margin-bottom: 16px; }
+  .feature-title {
+    font-family: 'Archivo Black', sans-serif; font-size: 17px;
+    letter-spacing: -0.2px; margin-bottom: 10px;
+  }
+  .feature-title .tm {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    color: var(--lime); margin-left: 4px; vertical-align: super;
+  }
+  .feature-body { color: var(--text-secondary); font-size: 14px; line-height: 1.55; }
+
+  /* ── DIFFERENTIATOR ── */
+  .diff { padding: 80px 0; border-top: 1px solid var(--border); background: var(--surface); }
+  .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 720px) { .diff-grid { grid-template-columns: 1fr; } }
+  .diff-card {
+    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 28px;
+  }
+  .diff-card.them { opacity: 0.85; }
+  .diff-card.us { border-left: 3px solid var(--lime); }
+  .diff-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 1.8px; margin-bottom: 14px;
+  }
+  .diff-card.them .diff-label { color: var(--text-tertiary); }
+  .diff-card.us .diff-label { color: var(--lime); }
+  .diff-list { list-style: none; }
+  .diff-list li {
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+    color: var(--text-secondary); font-size: 14px;
+  }
+  .diff-list li:last-child { border-bottom: none; }
+  .diff-card.us .diff-list li { color: var(--text); }
+  .diff-list li::before {
+    content: '— '; color: var(--text-tertiary);
+  }
+  .diff-card.us .diff-list li::before { content: '✓ '; color: var(--lime); }
+
+  /* ── CTA STRIP ── */
+  .cta-strip { padding: 100px 0; text-align: center; }
+  .cta-strip h2 {
+    font-family: 'Archivo Black', sans-serif; font-size: clamp(38px, 6vw, 64px);
+    line-height: 1; letter-spacing: -1.2px; margin-bottom: 18px;
+  }
+  .cta-strip p {
+    color: var(--text-secondary); font-size: 17px; margin-bottom: 32px;
+  }
+
+  /* ── EMAIL FORM ── */
+  .email-form {
+    display: flex; gap: 8px; max-width: 460px; margin: 0 auto;
+  }
+  .email-form input {
+    flex: 1; background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 14px 16px; font-size: 14px; font-family: inherit;
+  }
+  .email-form input::placeholder { color: var(--text-tertiary); }
+  .email-form button {
+    background: var(--lime); color: var(--ink); border: none;
+    padding: 14px 22px; border-radius: 6px; font-family: 'Archivo Black', sans-serif;
+    font-size: 13px; letter-spacing: 1px; cursor: pointer;
+  }
+  .form-note { font-size: 11px; color: var(--text-tertiary); margin-top: 12px; }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border); padding: 40px 0 32px;
+    color: var(--text-tertiary);
+  }
+  .footer-inner {
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;
+    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+  }
+  .footer-legal {
+    margin-top: 28px; font-size: 10px; line-height: 1.5; text-align: center;
+    font-style: italic; color: var(--text-tertiary);
+    border-top: 1px solid var(--border); padding-top: 24px;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav-inner">
+    <div class="wordmark"><span class="a">A</span>TLEATO<span class="tm">™</span></div>
+    <a href="#features">Features</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">TRAIN  ·  FUEL  ·  RISE</div>
+    <h1 class="hero-headline">Train under<br/>a <span>legend.</span></h1>
+    <p class="hero-sub">
+      Atleato is the only fitness app where you don't just track workouts —
+      you train under a coach. Five world-class personas. Live form correction.
+      Real wake-up calls. Persona-driven everything.
+    </p>
+    <div class="cta-row">
+      <a href="#waitlist" class="cta-primary">JOIN THE WAITLIST  →</a>
+      <a href="#features" class="cta-secondary">SEE FEATURES</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── COACH BAR ── -->
+<section class="coaches">
+  <div class="container">
+    <div class="coaches-eyebrow">CHOOSE YOUR COACH</div>
+    <div class="coach-row">
+      <div class="coach-chip"><span class="coach-dot" style="background:#dfff1f"></span>CBUM</div>
+      <div class="coach-chip"><span class="coach-dot" style="background:#f5b942"></span>ARNOLD</div>
+      <div class="coach-chip"><span class="coach-dot" style="background:#5b8cff"></span>NIPPARD</div>
+      <div class="coach-chip"><span class="coach-dot" style="background:#ff4d2e"></span>CT FLETCHER</div>
+      <div class="coach-chip"><span class="coach-dot" style="background:#00e0a4"></span>DR MIKE</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-eyebrow">WHAT MAKES IT DIFFERENT</div>
+    <h2 class="section-headline">No other fitness app<br/>does this.</h2>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-emoji">📞</div>
+        <div class="feature-title">Coach Calls<span class="tm">TM</span></div>
+        <p class="feature-body">
+          Your coach rings you in the morning like an actual phone call. Full-screen
+          incoming-call UI. Persona-voice greeting. Say "no"? They call back angry.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">📷</div>
+        <div class="feature-title">Live Form Coach</div>
+        <p class="feature-body">
+          Camera watches your reps in real time. MoveNet pose detection + expert
+          biomechanics database. CT shouts "KNEES CAVING IN!" the moment they do.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">🌅</div>
+        <div class="feature-title">Morning Brief<span class="tm">TM</span></div>
+        <p class="feature-body">
+          30-second daily ritual. Sleep × intent → workout volume auto-adjusts.
+          Charged? +20% volume. Wrecked? Coach pulls you back to protect form.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">🔥</div>
+        <div class="feature-title">Streak Hero<span class="tm">TM</span></div>
+        <p class="feature-body">
+          6 streak tiers from FRESH to MOUNTAIN. Coach's voice scales with success.
+          Arnold whispers wisdom at day 30. CT screams about it.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">🏆</div>
+        <div class="feature-title">PR Shelf<span class="tm">TM</span></div>
+        <p class="feature-body">
+          Your top 3 personal records as trophies in your coach's accent color.
+          Pride visible every time you open the app. Made for sharing.
+        </p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-emoji">💪</div>
+        <div class="feature-title">Coach Hub<span class="tm">TM</span></div>
+        <p class="feature-body">
+          Your coach's office. Training philosophy. Signature lifts.
+          Nutrition macros. Daily quote. Inline chat. Five complete worlds — pick one.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DIFFERENTIATOR ── -->
+<section class="diff">
+  <div class="container">
+    <div class="section-eyebrow">VS EVERY OTHER FITNESS APP</div>
+    <h2 class="section-headline" style="margin-bottom:36px">Pick your side.</h2>
+    <div class="diff-grid">
+      <div class="diff-card them">
+        <div class="diff-label">EVERY OTHER APP</div>
+        <ul class="diff-list">
+          <li>"Time to work out!" push notification</li>
+          <li>Generic voice telling you to squat</li>
+          <li>Streak counter you forget about</li>
+          <li>The app is a tracker, not a relationship</li>
+          <li>Hopes you'll come back tomorrow</li>
+        </ul>
+      </div>
+      <div class="diff-card us">
+        <div class="diff-label">ATLEATO™</div>
+        <ul class="diff-list">
+          <li>CBUM calls you on your phone like a friend</li>
+          <li>CT yells "FIX THOSE KNEES!" mid-squat</li>
+          <li>Streak Hero — Arnold pep-talks each milestone</li>
+          <li>The app is your coach. You train under them</li>
+          <li>If you skip, the coach calls back angry</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA STRIP ── -->
+<section class="cta-strip" id="waitlist">
+  <div class="container">
+    <div class="section-eyebrow">EARLY ACCESS</div>
+    <h2>Be the first to<br/>train under a legend.</h2>
+    <p>Drop your email. We'll text you the day Atleato hits the Play Store.</p>
+
+    <!-- Replace action= with your Formspree / Tally / Buttondown URL once you set one up.
+         For now this opens the user's mail client to send you their email — works offline,
+         zero backend needed. -->
+    <form class="email-form" action="mailto:atleato@gmail.com" method="GET">
+      <input type="email" name="subject" placeholder="your@email.com" required />
+      <button type="submit">JOIN  →</button>
+    </form>
+    <p class="form-note">No spam. One email when we launch. Promise.</p>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="container">
+    <div class="footer-inner">
+      <div>© <script>document.write(new Date().getFullYear())</script> Atleato.  All rights reserved.</div>
+      <div>atleato.com  ·  TRAIN.FUEL.RISE.</div>
+    </div>
+    <p class="footer-legal">
+      Atleato™, Coach Calls™, Coach Hub™, PR Shelf™, Morning Brief™, and Streak Hero™ are
+      trademarks of Atleato. All persona theming, voice routing, and form-coach biomechanics
+      analysis are proprietary. Coach personas are stylistic interpretations and not affiliated
+      with the named individuals.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
