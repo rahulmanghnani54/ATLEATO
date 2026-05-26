@@ -50,3 +50,4 @@ supabase/.temp/
 
 # local web work
 web/
+build.log
