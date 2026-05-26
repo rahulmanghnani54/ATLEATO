@@ -1,4 +1,5 @@
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTodayRecovery } from '@/hooks/useRecoveryCheckin';
@@ -145,6 +146,18 @@ export default function WorkoutLobby() {
                     )}
                   </Text>
                   <WeightSuggestion exerciseName={ex.name} reps={ex.reps} />
+                  <TouchableOpacity
+                    style={styles.demoLink}
+                    onPress={() => {
+                      const persona = programIdToPersona(programId);
+                      Linking.openURL(getProDemoUrl(ex.name, persona));
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.demoLinkText}>
+                      ▶  {getProDemoLabel(programIdToPersona(programId))}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <Text style={styles.exerciseRepsRight}>{ex.reps}</Text>
               </View>
@@ -210,6 +223,12 @@ const styles = StyleSheet.create({
   exerciseSetsBase: { color: Colors.textTertiary },
   exerciseRepsRight: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textTertiary, marginLeft: 10 },
   weightSuggestion: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, marginTop: 3, letterSpacing: 0.3 },
+  demoLink: {
+    marginTop: 6, alignSelf: 'flex-start',
+    paddingHorizontal: 8, paddingVertical: 4,
+    backgroundColor: '#ff0000', borderRadius: 3,
+  },
+  demoLinkText: { fontFamily: Fonts.display, fontSize: 9, color: '#fff', letterSpacing: 0.6 },
 
   beginBtn: {
     backgroundColor: Colors.primary, borderRadius: 4,

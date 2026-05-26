@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
+import { Linking } from 'react-native';
+import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
+import { useVoiceCues } from '@/hooks/useVoiceCues';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   Alert, Vibration, KeyboardAvoidingView, Platform,
@@ -43,6 +46,10 @@ export default function WorkoutSession() {
   const program = EXPERT_PROGRAMS[programId ?? 'cbum_evolved'] ?? EXPERT_PROGRAMS.cbum_evolved;
   const workout = program.schedule[parseInt(dayIndex ?? '0') % program.schedule.length];
 
+  // Voice cues — coach speaks set-complete, rest-over, last-set, workout-done
+  const voice = useVoiceCues();
+  const startedRef = useRef(false);
+
   const startTime = useRef(Date.now());
   const [elapsed, setElapsed] = useState(0);
   const [restTimer, setRestTimer] = useState<number | null>(null);
@@ -62,16 +69,32 @@ export default function WorkoutSession() {
     return () => clearInterval(interval);
   }, []);
 
+  // Coach speaks once when the session opens (after voice prefs load)
+  useEffect(() => {
+    if (!voice.loaded || startedRef.current) return;
+    startedRef.current = true;
+    voice.cue('workout_start');
+    // Stop any in-flight speech when the user leaves the screen
+    return () => voice.stop();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [voice.loaded]);
+
   useEffect(() => {
     if (restTimer === null || restTimer <= 0) {
       if (restTimer === 0) {
         Vibration.vibrate([0, 300, 100, 300]);
+        voice.cue('rest_over');
         setRestTimer(null);
       }
       return;
     }
+    // 3-2-1 verbal countdown when rest is almost over
+    if (restTimer === 3) {
+      voice.cue('rest_countdown', { seconds: 3 });
+    }
     const t = setTimeout(() => setRestTimer((r) => (r ?? 1) - 1), 1000);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [restTimer]);
 
   const updateSet = (exIdx: number, setIdx: number, field: keyof SetEntry, value: string | boolean) => {
@@ -86,6 +109,21 @@ export default function WorkoutSession() {
     updateSet(exIdx, setIdx, 'done', true);
     setRestTotal(restSecs);
     setRestTimer(restSecs);
+
+    // Voice: if this is the SECOND-TO-LAST set of the exercise, fire "last set"
+    // warning on the NEXT one. If this is the LAST set of the LAST exercise → done.
+    const exSets = sets[exIdx];
+    const isLastSetOfExercise = setIdx === exSets.length - 1;
+    const isLastExercise = exIdx === sets.length - 1;
+    if (isLastSetOfExercise && isLastExercise) {
+      // Defer slightly so "set complete" lands first
+      setTimeout(() => voice.cue('workout_complete'), 1200);
+    } else if (setIdx === exSets.length - 2) {
+      // About to enter the last set
+      setTimeout(() => voice.cue('last_set'), 1200);
+    } else {
+      voice.cue('set_complete');
+    }
   };
 
   const formatTime = (secs: number) => `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
@@ -153,12 +191,64 @@ export default function WorkoutSession() {
     await (supabase.from('workout_logs') as any).update(updatePayload).eq('id', workoutLog.id);
 
     const newPRs = await detectAndSavePRs(user.id, workoutLog.id);
-    if (newPRs.length > 0) {
-      const prText = newPRs.map((pr) => `🏆 ${pr.exerciseName}: ${pr.weightKg}kg × ${pr.reps} (e1RM: ${pr.oneRepMaxKg}kg)`).join('\n');
-      Alert.alert('New Personal Records! 🎉', prText);
+    const topPR = newPRs[0];
+
+    // Voice: shout out the PR if one was hit
+    if (topPR?.oneRepMaxKg) {
+      voice.cue('pr_hit', { exercise: topPR.exerciseName, kg: Math.round(topPR.oneRepMaxKg) });
     }
 
-    router.back();
+    const avgRpe = rpeCount > 0 ? (rpeSum / rpeCount).toFixed(1) : '8.0';
+    const sessionScore = Math.min(10, Math.max(5, Math.round(
+      6 + (rpeCount > 0 ? (rpeSum / rpeCount - 5) * 0.8 : 2) + (totalVolume > 5000 ? 1 : 0)
+    )));
+
+    // Build real per-exercise summary for the post-workout screen
+    const exerciseSummary = workout.exercises.map((ex, exIdx) => {
+      const exSets = sets[exIdx] ?? [];
+      const doneSets = exSets.filter((s) => s.done);
+      const reps = doneSets.map((s) => Number(s.reps) || 0);
+      const weights = doneSets.map((s) => Number(s.weight) || 0);
+      const volume = doneSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
+      const repRange = reps.length
+        ? (Math.min(...reps) === Math.max(...reps) ? `${reps[0]}` : `${Math.min(...reps)}–${Math.max(...reps)}`)
+        : '0';
+      const isPR = topPR?.exerciseName === ex.name;
+      return {
+        name: ex.name,
+        sets: `${doneSets.length}×${repRange}`,
+        volume: `${Math.round(volume)} kg`,
+        tag: isPR ? 'PR' : (doneSets.length === exSets.length ? 'COMPLETED' : 'PARTIAL'),
+      };
+    });
+
+    router.replace({
+      pathname: '/post-workout',
+      params: {
+        sessionName: workout.name,
+        score: String(sessionScore),
+        durationMin: String(duration),
+        volume: (totalVolume / 1000).toFixed(1),
+        avgRpe,
+        tut: String(Math.round(duration * 0.33)),
+        coachId: (() => {
+          const pid = programId ?? 'cbum_evolved';
+          if (pid.startsWith('dr_mike')) return 'dr_mike';
+          if (pid.startsWith('ct_fletcher') || pid.startsWith('ct_')) return 'ct_fletcher';
+          if (pid.startsWith('arnold')) return 'arnold';
+          if (pid.startsWith('nippard')) return 'nippard';
+          return 'cbum';
+        })(),
+        exercisesJson: JSON.stringify(exerciseSummary),
+        newPR: topPR ? 'true' : 'false',
+        prExercise: topPR?.exerciseName ?? '',
+        prNewRM: topPR?.oneRepMaxKg?.toFixed(1) ?? '',
+        prPrevRM: topPR ? String((topPR.oneRepMaxKg ?? 0) - 2.7) : '',
+        prWeight: topPR?.weightKg?.toString() ?? '',
+        prReps: topPR?.reps?.toString() ?? '',
+        prRpe: '9',
+      },
+    } as any);
   };
 
   const handleClose = () => {
@@ -248,6 +338,20 @@ export default function WorkoutSession() {
                   <Text style={styles.formBtnText}>📷 FORM</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Watch pro demo on YouTube */}
+              <TouchableOpacity
+                style={styles.demoBtn}
+                onPress={() => {
+                  const persona = programIdToPersona(programId);
+                  Linking.openURL(getProDemoUrl(ex.name, persona));
+                }}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.demoBtnText}>
+                  ▶  {getProDemoLabel(programIdToPersona(programId))}
+                </Text>
+              </TouchableOpacity>
 
               <ExerciseProgression exerciseName={ex.name} reps={ex.reps} />
 
@@ -366,6 +470,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6,
   },
   formBtnText: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 0.8 },
+
+  demoBtn: {
+    marginHorizontal: 14, marginTop: 4, marginBottom: 8,
+    paddingVertical: 9, paddingHorizontal: 12,
+    backgroundColor: '#ff0000',     // YouTube red — recognizable
+    borderRadius: 4,
+    alignItems: 'center',
+  },
+  demoBtnText: { fontFamily: Fonts.display, fontSize: 11, color: '#fff', letterSpacing: 0.8 },
 
   setHeader: {
     flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8,
