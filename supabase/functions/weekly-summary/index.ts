@@ -70,7 +70,25 @@ serve(async (req) => {
       ? (recovery ?? []).reduce((s: number, r: any) => s + r.sleep_hours, 0) / recovery!.length
       : 0;
 
-    const prompt = `Weekly fitness summary for an athlete (goal: ${profile?.goal}):
+    // ── Refuse to fabricate a review from nothing ──
+    // No workouts AND no nutrition AND no recovery = no real data to summarize
+    if (workoutCount === 0 && nutritionDays === 0 && (recovery?.length ?? 0) === 0) {
+      return jsonResponse({
+        summary:
+          "Not enough data this week to generate a meaningful review. " +
+          "Log at least one workout, a few days of nutrition, or recovery check-ins " +
+          "and try again.",
+        stats: { workoutCount, totalVolume, avgCalories, avgProtein, avgRecovery, avgSleep, nutritionDays },
+        insufficient_data: true,
+      });
+    }
+
+    const prompt = `Weekly fitness summary for an athlete (goal: ${profile?.goal}).
+
+IMPORTANT: Only reference the ACTUAL numbers below. Do not invent specific exercises, weights, PRs,
+or metrics that aren't in the data. If a metric is 0 or missing, acknowledge it honestly rather
+than making something up. Be concise and grounded in the real numbers.
+
 
 TRAINING:
 - Workouts completed: ${workoutCount}/7

@@ -1,4 +1,7 @@
 import { searchIndianFoods } from '@/lib/indianFoods';
+import { searchGlobalFoods } from '@/lib/globalFoodsDB';
+import { searchUsdaFoods } from '@/lib/api/usda';
+import { searchCustomFoods } from '@/lib/customFoods';
 
 const BASE = 'https://world.openfoodfacts.org';
 
@@ -30,28 +33,60 @@ function mapProduct(p: any): FoodItem {
   };
 }
 
+/**
+ * Aggregated food search across FIVE sources, in priority order:
+ *   1. Custom foods (user's own, AsyncStorage) — always wins
+ *   2. Indian dishes (local, instant)
+ *   3. Global dishes (local, instant) — 240+ dishes across 12 cuisines + whole foods
+ *   4. USDA FoodData Central (network) — 500K+ foods, prepared dishes + whole foods
+ *   5. OpenFoodFacts (network) — 1.2M+ packaged products globally
+ *
+ * Local sources render instantly; network sources fire in parallel.
+ * Any source can fail silently — degrades gracefully.
+ */
 export async function searchFood(query: string): Promise<FoodItem[]> {
   if (!query.trim()) return [];
 
-  // Always include matching Indian foods first
-  const indianResults = searchIndianFoods(query);
+  // Local DBs (fast — custom is async via AsyncStorage but cached after first load)
+  const [customResults, indianResults, globalResults] = await Promise.all([
+    searchCustomFoods(query),
+    Promise.resolve(searchIndianFoods(query)),
+    Promise.resolve(searchGlobalFoods(query)),
+  ]);
 
+  // Both network sources fire in parallel — single round-trip latency
+  const [usdaResults, offResults] = await Promise.all([
+    searchUsdaFoods(query),
+    searchOpenFoodFacts(query),
+  ]);
+
+  // Merge: Custom → Indian → Global → USDA → OFF (deduped by id)
+  const seen = new Set<string>();
+  const merged: FoodItem[] = [];
+  for (const src of [customResults, indianResults, globalResults, usdaResults, offResults]) {
+    for (const f of src) {
+      if (seen.has(f.id)) continue;
+      seen.add(f.id);
+      merged.push(f);
+    }
+  }
+  return merged;
+}
+
+/** Just the OpenFoodFacts search — extracted so the aggregator above stays clean. */
+async function searchOpenFoodFacts(query: string): Promise<FoodItem[]> {
   try {
     const url = `${BASE}/cgi/search.pl?search_terms=${encodeURIComponent(query.trim())}&search_simple=1&action=process&json=1&page_size=20&fields=id,code,product_name,brands,nutriments,serving_quantity`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 8_000);
     const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
-    if (!res.ok) return indianResults;
+    if (!res.ok) return [];
     const data = await res.json();
-    const offResults: FoodItem[] = (data.products ?? [])
-      .filter((p: any) => p.nutriments && p.product_name)
+    return (data.products ?? [])
+      .filter((p: any) => p.nutriments && p.product_name && Number(p.nutriments['energy-kcal_100g']) > 0)
       .map(mapProduct);
-    // Indian results first, then OpenFoodFacts results (deduped by id)
-    const seen = new Set(indianResults.map((f) => f.id));
-    const merged = [...indianResults, ...offResults.filter((f) => !seen.has(f.id))];
-    return merged;
   } catch {
-    return indianResults;
+    return [];
   }
 }
 
