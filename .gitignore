@@ -39,3 +39,14 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# debugging / dev tools
+bundle_check.txt
+bundle_out.txt
+supabase.exe
+supabase/.temp/
+.claude/
+.superpowers/
+
+# local web work
+web/
