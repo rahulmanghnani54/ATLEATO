@@ -6,9 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
-import { Button } from '@/components/ui';
 import { PickerModal, type PickerOption } from '@/components/ui/PickerModal';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Colors, Spacing, Radius, Typography, Fonts } from '@/constants/theme';
 
 type Gender = 'male' | 'female';
 type Unit = 'metric' | 'imperial';
@@ -96,8 +95,9 @@ export default function Step2Stats() {
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <OnboardingProgress current={2} total={5} />
-        <Text style={styles.headline}>Your stats</Text>
-        <Text style={styles.sub}>We need this to calculate your nutrition targets</Text>
+        <Text style={styles.eyebrow}>STEP 2 OF 5</Text>
+        <Text style={styles.headline}>TELL US{'\n'}ABOUT YOU.</Text>
+        <Text style={styles.sub}>Calorie targets, training load, recovery — all calibrated from these numbers.</Text>
 
         {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
 
@@ -221,7 +221,9 @@ export default function Step2Stats() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Continue" onPress={handleContinue} fullWidth />
+        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} activeOpacity={0.85}>
+          <Text style={styles.continueBtnText}>CONTINUE  →</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Height cm picker */}
@@ -269,39 +271,51 @@ export default function Step2Stats() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
-  content: { flexGrow: 1, padding: Spacing.lg, paddingTop: Spacing.xl },
-  headline: { ...Typography.h1, marginBottom: 8 },
-  sub: { ...Typography.body, color: Colors.textSecondary, marginBottom: Spacing.xl },
-  errorBox: { backgroundColor: '#fef2f2', borderRadius: Radius.sm, padding: Spacing.md, marginBottom: Spacing.md },
-  errorText: { color: Colors.error, fontSize: 14, fontFamily: 'Inter_400Regular' },
-  label: { ...Typography.label, marginBottom: 8, marginTop: Spacing.md },
-  sublabel: { ...Typography.label, marginBottom: 6 },
-  toggle: { flexDirection: 'row', gap: Spacing.sm },
+  content: { flexGrow: 1, padding: 20, paddingTop: 14, paddingBottom: 24 },
+
+  eyebrow:  { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6, marginTop: 4 },
+  headline: { fontFamily: Fonts.display, fontSize: 42, color: Colors.text, lineHeight: 42, letterSpacing: -1.4, marginTop: 8, marginBottom: 10 },
+  sub:      { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, lineHeight: 20, marginBottom: 22 },
+
+  errorBox: { backgroundColor: 'rgba(239,68,68,0.10)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', borderRadius: Radius.sm, padding: Spacing.md, marginBottom: Spacing.md },
+  errorText: { color: '#fca5a5', fontSize: 13, fontFamily: Fonts.body },
+  label: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4, marginBottom: 8, marginTop: 16 },
+  sublabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginBottom: 6 },
+
+  continueBtn: {
+    backgroundColor: Colors.primary, borderRadius: 6,
+    paddingVertical: 16, alignItems: 'center',
+  },
+  continueBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1.2 },
+  toggle: { flexDirection: 'row', gap: 8 },
   toggleBtn: {
-    flex: 1, height: 48, borderRadius: Radius.md, borderWidth: 2,
+    flex: 1, height: 52, borderRadius: 8, borderWidth: 1.5,
     borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
     backgroundColor: Colors.surface,
   },
-  toggleBtnActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
-  toggleText: { fontFamily: 'Inter_500Medium', fontSize: 15, color: Colors.textSecondary },
+  toggleBtnActive: { borderColor: Colors.primary, backgroundColor: 'rgba(223,255,31,0.08)' },
+  toggleText: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.textSecondary, letterSpacing: 0.2 },
   toggleTextActive: { color: Colors.primary },
   pickerBtn: {
-    height: 52, backgroundColor: Colors.surface, borderRadius: Radius.md,
+    height: 52, backgroundColor: Colors.surface, borderRadius: 8,
     borderWidth: 1, borderColor: Colors.border, flexDirection: 'row',
-    alignItems: 'center', paddingHorizontal: Spacing.md,
+    alignItems: 'center', paddingHorizontal: 14,
   },
   pickerBtnIcon: { fontSize: 18, marginRight: 8 },
-  pickerBtnText: { flex: 1, fontSize: 15, fontFamily: 'Inter_400Regular', color: Colors.text },
-  pickerChevron: { fontSize: 20, color: Colors.textSecondary, fontFamily: 'Inter_400Regular' },
-  unitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  unitToggle: { flexDirection: 'row', backgroundColor: '#f3f4f6', borderRadius: Radius.md, padding: 3 },
-  unitBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: Radius.sm },
-  unitBtnActive: { backgroundColor: Colors.surface },
-  unitText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
-  unitTextActive: { color: Colors.text },
-  row: { flexDirection: 'row', gap: Spacing.md },
+  pickerBtnText: { flex: 1, fontSize: 15, fontFamily: Fonts.bodySemi, color: Colors.text },
+  pickerChevron: { fontSize: 22, color: Colors.textTertiary, fontFamily: Fonts.body },
+  unitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
+  unitToggle: {
+    flexDirection: 'row', backgroundColor: Colors.background, borderRadius: 6, padding: 3,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  unitBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 4 },
+  unitBtnActive: { backgroundColor: Colors.primary },
+  unitText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1 },
+  unitTextActive: { color: Colors.accentInk },
+  row: { flexDirection: 'row', gap: 10, marginTop: 4 },
   halfField: { flex: 1 },
-  footer: { padding: Spacing.lg, paddingBottom: Spacing.xl },
+  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 },
   dateBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   dateSheet: {
     backgroundColor: Colors.surface,
