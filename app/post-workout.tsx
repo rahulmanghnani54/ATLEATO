@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, Fonts } from '@/constants/theme';
 import { ImplementationIntentionSheet } from '@/components/dashboard/ImplementationIntentionSheet';
+import { RewardChestModal } from '@/components/dashboard/RewardChestModal';
 import { getPersona, type PersonaId } from '@/lib/personaTheme';
 import { getTomorrowIntention } from '@/lib/implementationIntention';
 import { format } from 'date-fns';
@@ -62,15 +63,25 @@ export default function PostWorkout() {
   // Delay 1.5s so they see the post-workout summary first.
   const persona      = getPersona(coachId as PersonaId);
   const [intentionSheetOpen, setIntentionSheetOpen] = useState(false);
+  const [chestOpen, setChestOpen] = useState(false);
   const tomorrowISO  = format(new Date(Date.now() + 86_400_000), 'yyyy-MM-dd');
+
+  // Post-workout choreography:
+  // 1.2s after mount → open Reward Chest (variable-reward Skinner box)
+  // After chest closes → if no tomorrow-intention exists, open commit sheet
   useEffect(() => {
     let cancelled = false;
-    const id = setTimeout(async () => {
-      const existing = await getTomorrowIntention();
-      if (!cancelled && !existing) setIntentionSheetOpen(true);
-    }, 1500);
+    const id = setTimeout(() => {
+      if (!cancelled) setChestOpen(true);
+    }, 1200);
     return () => { cancelled = true; clearTimeout(id); };
   }, []);
+
+  const handleChestClose = async () => {
+    setChestOpen(false);
+    const existing = await getTomorrowIntention();
+    if (!existing) setIntentionSheetOpen(true);
+  };
   const prExercise   = params.prExercise   ?? 'Incline DB Press';
   const prNewRM      = params.prNewRM      ?? '42.8';
   const prPrevRM     = params.prPrevRM     ?? '40.1';
@@ -254,7 +265,14 @@ export default function PostWorkout() {
 
       </ScrollView>
 
-      {/* Auto-triggered pre-commit sheet (habit chain) */}
+      {/* Variable-reward chest (always opens after summary) */}
+      <RewardChestModal
+        visible={chestOpen}
+        persona={persona}
+        onClose={handleChestClose}
+      />
+
+      {/* Auto-triggered pre-commit sheet (habit chain) — opens after chest */}
       <ImplementationIntentionSheet
         visible={intentionSheetOpen}
         onClose={() => setIntentionSheetOpen(false)}

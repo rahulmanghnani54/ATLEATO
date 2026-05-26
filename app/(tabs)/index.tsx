@@ -20,6 +20,8 @@ import { StreakNudge } from '@/components/dashboard/StreakNudge';
 import { PRShelf } from '@/components/dashboard/PRShelf';
 import { TomorrowCommitmentCard } from '@/components/dashboard/TomorrowCommitmentCard';
 import { WitnessNudgeCard } from '@/components/dashboard/WitnessNudgeCard';
+import { ChainCalendarCard } from '@/components/dashboard/ChainCalendarCard';
+import { LeaderboardCard } from '@/components/dashboard/LeaderboardCard';
 import { useTrainedToday } from '@/hooks/useTrainedToday';
 import { useSessionsThisWeek } from '@/hooks/useSessionsThisWeek';
 
@@ -232,6 +234,12 @@ export default function Dashboard() {
 
         {/* ── PR Shelf — your top trophies, in coach's color ── */}
         <PRShelf persona={persona} />
+
+        {/* ── Chain Calendar — Seinfeld "don't break the chain" 6-week strip ── */}
+        <ChainCalendarCard persona={persona} />
+
+        {/* ── Global Leaderboard — anonymous weekly ranks (top 3 + you) ── */}
+        <LeaderboardCard persona={persona} />
 
         {/* ── Tomorrow's Commitment — pre-commit for tomorrow's workout ── */}
         <TomorrowCommitmentCard persona={persona} />
