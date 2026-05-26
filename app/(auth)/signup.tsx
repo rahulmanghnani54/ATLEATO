@@ -43,8 +43,13 @@ export default function Signup() {
 
           {/* Logo */}
           <View style={styles.logoArea}>
-            <Text style={styles.logoMono}>FITAI PRO</Text>
-            <Text style={styles.logoHero}>START YOUR{'\n'}JOURNEY.</Text>
+            <View style={styles.wordmark}>
+              <Text style={styles.wordmarkA}>A</Text>
+              <Text style={styles.wordmarkRest}>TLEATO</Text>
+              <Text style={styles.tmSymbol}>™</Text>
+            </View>
+            <View style={styles.wordmarkBar} />
+            <Text style={styles.logoHero}>TRAIN.FUEL.RISE.</Text>
           </View>
 
           {error ? (
@@ -133,9 +138,13 @@ export default function Signup() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
   content: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', paddingBottom: 40 },
-  logoArea: { marginBottom: 40 },
-  logoMono: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 2.4 },
-  logoHero: { fontFamily: Fonts.display, fontSize: 44, color: Colors.text, lineHeight: 42, letterSpacing: -1.2, marginTop: 6 },
+  logoArea:     { marginBottom: 40, alignItems: 'center' },
+  wordmark:     { flexDirection: 'row', alignItems: 'baseline' },
+  wordmarkA:    { fontFamily: Fonts.display, fontSize: 48, color: '#ff6b35', letterSpacing: -1 },
+  wordmarkRest: { fontFamily: Fonts.display, fontSize: 48, color: Colors.text, letterSpacing: -1 },
+  tmSymbol:     { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textTertiary, marginLeft: 3, marginBottom: 28 },
+  wordmarkBar:  { height: 4, backgroundColor: '#ff6b35', borderRadius: 2, marginTop: 4, marginBottom: 8, alignSelf: 'stretch' },
+  logoHero:     { fontFamily: Fonts.mono, fontSize: 13, color: Colors.textSecondary, letterSpacing: 2, marginTop: 8 },
   errorBox: {
     backgroundColor: 'rgba(255,91,58,0.1)', borderWidth: 1, borderColor: 'rgba(255,91,58,0.3)',
     borderRadius: Radius.sm, padding: Spacing.md, marginBottom: Spacing.md,
