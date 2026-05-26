@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Atleato — Home Redesign Mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;700;900&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0d;
+    --surface: #131418;
+    --surface-2: #1c1e23;
+    --border: rgba(255,255,255,0.06);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #f5f5f4;
+    --text-secondary: #a8a8a3;
+    --text-tertiary: #6a6a66;
+    --primary: #c8ff3d;
+    --accent-cbum: #c8ff3d;
+    --accent-mike: #7be38c;
+    --accent-arnold: #f5b942;
+    --good: #7be38c;
+    --warning: #f5b942;
+    --danger: #ef4444;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: #050608;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+  .page-head {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .page-head h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .page-head p {
+    color: var(--text-secondary);
+    font-size: 13px;
+    margin-top: 6px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .phones {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .phone-wrap {
+    width: 380px;
+  }
+  .phone-label {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .phone-label .letter {
+    display: inline-block;
+    background: var(--primary);
+    color: var(--bg);
+    width: 28px;
+    height: 28px;
+    line-height: 28px;
+    border-radius: 50%;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    margin-right: 8px;
+  }
+  .phone-label .name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: 0.4px;
+  }
+  .phone-label .desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .phone {
+    width: 380px;
+    height: 760px;
+    background: var(--bg);
+    border-radius: 36px;
+    border: 6px solid #18191c;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.04),
+      0 30px 80px rgba(0,0,0,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    overflow: hidden;
+    position: relative;
+  }
+  .notch {
+    width: 100px;
+    height: 22px;
+    background: #000;
+    border-radius: 0 0 14px 14px;
+    margin: 0 auto;
+  }
+  .phone-screen {
+    height: calc(100% - 22px);
+    overflow-y: auto;
+    padding: 18px 20px 60px;
+  }
+  .phone-screen::-webkit-scrollbar { display: none; }
+
+  /* Shared utility */
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .display { font-family: 'Space Grotesk', sans-serif; }
+
+  /* ──────────────────────────────────────────────────────────────────────── */
+  /* OPTION A — WHOOP NOIR */
+  /* ──────────────────────────────────────────────────────────────────────── */
+  .a .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .a .brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+  .a .brand sup {
+    font-size: 8px;
+    color: var(--text-tertiary);
+    margin-left: 2px;
+  }
+  .a .avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--accent-mike);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--accent-mike);
+  }
+  .a .streak-dots {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 20px;
+  }
+  .a .streak-dots span {
+    width: 36px; height: 4px;
+    background: var(--accent-mike);
+    border-radius: 1px;
+  }
+  .a .streak-dots span.empty {
+    background: rgba(255,255,255,0.08);
+  }
+  .a .hero-score {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 20px;
+    margin-bottom: 14px;
+    background: linear-gradient(180deg, rgba(123,227,140,0.04) 0%, rgba(123,227,140,0) 100%);
+  }
+  .a .hero-score .num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 96px;
+    line-height: 0.85;
+    letter-spacing: -4px;
+    color: var(--accent-mike);
+  }
+  .a .hero-score .num-after {
+    color: var(--text-tertiary);
+    font-size: 18px;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+  .a .hero-score hr {
+    border: 0;
+    height: 1px;
+    background: var(--border-strong);
+    margin: 14px 0 10px;
+    width: 24px;
+  }
+  .a .hero-score .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2.4px;
+    color: var(--accent-mike);
+  }
+  .a .hero-score .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.8px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+  }
+  .a .hero-score .body {
+    font-size: 13px;
+    color: var(--text);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+  .a .kpis {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .a .kpi {
+    border: 1px solid var(--border);
+    padding: 14px 12px 12px;
+    border-radius: 6px;
+  }
+  .a .kpi .v {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--text);
+    letter-spacing: -0.4px;
+  }
+  .a .kpi .l {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.4px;
+    margin-top: 4px;
+  }
+  .a .cta {
+    border-radius: 10px;
+    padding: 22px 18px;
+    background: var(--accent-mike);
+    color: var(--bg);
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .a .cta .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.6px;
+    opacity: 0.6;
+  }
+  .a .cta .title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 30px;
+    letter-spacing: -1px;
+    margin-top: 6px;
+  }
+  .a .cta .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    opacity: 0.8;
+    margin-top: 6px;
+  }
+  .a .cta .arrow {
+    position: absolute;
+    bottom: 18px; right: 18px;
+    font-size: 24px;
+    font-weight: 300;
+  }
+  .a .accord {
+    border-top: 1px solid var(--border);
+    padding: 14px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .a .accord .left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .a .accord .ico {
+    font-size: 14px;
+    width: 20px;
+    text-align: center;
+  }
+  .a .accord .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.4px;
+  }
+  .a .accord .right {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    color: var(--accent-mike);
+  }
+  .a .accord .small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────── */
+  /* OPTION B — APPLE FITNESS GLASS */
+  /* ──────────────────────────────────────────────────────────────────────── */
+  .b {
+    background:
+      radial-gradient(ellipse at top right, rgba(245,185,66,0.22), transparent 50%),
+      radial-gradient(ellipse at bottom left, rgba(123,227,140,0.18), transparent 50%),
+      var(--bg);
+    height: 100%;
+    margin: -18px -20px -60px;
+    padding: 18px 20px 60px;
+  }
+  .b .greeting {
+    margin-bottom: 18px;
+  }
+  .b .greeting h1 {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 28px;
+    letter-spacing: -0.7px;
+  }
+  .b .greeting h1 b {
+    font-weight: 800;
+  }
+  .b .greeting .day {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.2px;
+    margin-top: 4px;
+  }
+  .b .rings-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .b .rings {
+    width: 120px; height: 120px;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .b .rings svg {
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+  }
+  .b .rings .center-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .b .rings .center-label .num {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 1;
+  }
+  .b .rings .center-label .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 7px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.4px;
+    margin-top: 3px;
+  }
+  .b .ring-meta { flex: 1; }
+  .b .ring-meta .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .b .ring-meta .row .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .b .ring-meta .row .text {
+    font-size: 13px;
+    color: var(--text);
+  }
+  .b .ring-meta .row .text b {
+    font-weight: 700;
+  }
+  .b .ring-meta .row .text small {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    margin-left: 4px;
+  }
+  .b .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.8px;
+    margin-bottom: 8px;
+    margin-top: 18px;
+  }
+  .b .today {
+    background: linear-gradient(135deg, var(--accent-mike) 0%, #5ec97e 100%);
+    border-radius: 16px;
+    padding: 18px;
+    color: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+  .b .today::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top right, rgba(255,255,255,0.18), transparent 60%);
+    pointer-events: none;
+  }
+  .b .today .head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.4px;
+    opacity: 0.8;
+  }
+  .b .today .title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.7px;
+    margin-top: 6px;
+  }
+  .b .today .sub {
+    font-size: 12px;
+    opacity: 0.85;
+    margin-top: 6px;
+  }
+  .b .today .play {
+    margin-top: 14px;
+    background: var(--bg);
+    color: var(--accent-mike);
+    padding: 10px 16px;
+    display: inline-block;
+    border-radius: 100px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.6px;
+  }
+  .b .glass-quote {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 14px;
+  }
+  .b .glass-quote .head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .b .glass-quote .avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--accent-mike);
+    color: var(--bg);
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .b .glass-quote .name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.4px;
+    color: var(--text-tertiary);
+  }
+  .b .glass-quote .body {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    font-style: italic;
+    color: var(--text);
+  }
+  .b .icon-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .b .icon-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+  .b .icon-card .ico { font-size: 22px; }
+  .b .icon-card .lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.4px;
+    margin-top: 6px;
+  }
+  .b .icon-card .val {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    margin-top: 2px;
+  }
+
+  /* ──────────────────────────────────────────────────────────────────────── */
+  /* OPTION C — STRAVA SPORT */
+  /* ──────────────────────────────────────────────────────────────────────── */
+  .c { padding: 0 0 60px; margin: -18px -20px -60px; }
+  .c .hero-photo {
+    height: 220px;
+    background:
+      linear-gradient(180deg, rgba(10,11,13,0) 0%, rgba(10,11,13,0.4) 50%, rgba(10,11,13,0.92) 100%),
+      linear-gradient(135deg, #2b2421 0%, #1c1614 100%);
+    position: relative;
+    padding: 20px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .c .hero-photo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(circle at 30% 40%, rgba(245,185,66,0.18), transparent 60%),
+      radial-gradient(circle at 70% 30%, rgba(245,185,66,0.10), transparent 50%);
+    pointer-events: none;
+  }
+  .c .hero-photo .top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    position: relative; z-index: 2;
+  }
+  .c .hero-photo .brand {
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.4px;
+  }
+  .c .hero-photo .brand sup {
+    font-size: 8px;
+    opacity: 0.7;
+    margin-left: 2px;
+  }
+  .c .hero-photo .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent-arnold);
+    color: #1a1208;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .c .hero-photo .bottom {
+    position: relative; z-index: 2;
+  }
+  .c .hero-photo .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.6px;
+    color: var(--accent-arnold);
+  }
+  .c .hero-photo .title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 900;
+    font-size: 32px;
+    letter-spacing: -1px;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .c .hero-photo .sub {
+    font-size: 12px;
+    opacity: 0.7;
+    margin-top: 6px;
+  }
+  .c .c-body { padding: 20px; }
+  .c .start-btn {
+    background: var(--accent-arnold);
+    color: #1a1208;
+    padding: 18px;
+    border-radius: 100px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: 0.6px;
+    margin-bottom: 22px;
+  }
+  .c .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.8px;
+    margin-bottom: 10px;
+  }
+  .c .week {
+    margin-bottom: 22px;
+  }
+  .c .week .progress-bar {
+    height: 8px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.06);
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .c .week .progress-bar .fill {
+    height: 100%;
+    background: var(--accent-arnold);
+    width: 66%;
+  }
+  .c .week .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .c .week .row .lab {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .c .week .row .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+  .c .week .vol {
+    margin-top: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+  }
+  .c .week .vol small {
+    font-weight: 400;
+    color: var(--text-secondary);
+    font-size: 12px;
+    margin-left: 6px;
+  }
+  .c .ldb {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 22px;
+  }
+  .c .ldb-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .c .ldb-head .l {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--accent-arnold);
+    letter-spacing: 1.6px;
+  }
+  .c .ldb-head .r {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-tertiary);
+  }
+  .c .ldb .row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .c .ldb .row.you {
+    color: var(--accent-arnold);
+    font-weight: 700;
+  }
+  .c .ldb .row .rk {
+    width: 36px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+  }
+  .c .ldb .row .nm { flex: 1; }
+  .c .ldb .row .vl {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+  }
+  .c .ldb .row .vl small {
+    color: var(--text-tertiary);
+    font-weight: 400;
+    font-size: 10px;
+  }
+  .c .feed {
+    margin-bottom: 22px;
+  }
+  .c .feed-item {
+    padding: 14px 0;
+    border-top: 1px solid var(--border);
+  }
+  .c .feed-item .head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .c .feed-item .ico {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(245,185,66,0.16);
+    color: var(--accent-arnold);
+    font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .c .feed-item .tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-tertiary);
+    letter-spacing: 1.4px;
+  }
+  .c .feed-item .body {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>Atleato — Home Screen Redesign</h1>
+  <p>3 directions · pick one and I&rsquo;ll build it for real</p>
+</div>
+
+<div class="phones">
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- OPTION A — WHOOP NOIR -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="letter">A</span>
+      <span class="name">WHOOP NOIR</span>
+      <div class="desc">DATA-CULT · MONOCHROME · HUGE TYPE</div>
+    </div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="phone-screen a">
+        <div class="topbar">
+          <div class="brand">ATLEATO<sup>™</sup></div>
+          <div class="avatar">DM</div>
+        </div>
+
+        <div class="streak-dots">
+          <span></span><span></span><span></span><span></span>
+          <span class="empty"></span><span class="empty"></span><span class="empty"></span>
+        </div>
+
+        <div class="hero-score">
+          <div class="num">78<span class="num-after">/100</span></div>
+          <hr>
+          <div class="label">RECOVERY · OPTIMAL</div>
+          <div class="meta">VS 7-DAY AVG: +6</div>
+          <div class="body">Train at full volume today. Your readiness is in the productive zone.</div>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="v">12.4k</div>
+            <div class="l">WEEK · KG</div>
+          </div>
+          <div class="kpi">
+            <div class="v">4</div>
+            <div class="l">STREAK · DAYS</div>
+          </div>
+          <div class="kpi">
+            <div class="v">3</div>
+            <div class="l">FREEZES</div>
+          </div>
+        </div>
+
+        <div class="cta">
+          <div class="label">TODAY · 62 MIN</div>
+          <div class="title">PUSH<br>DAY 2</div>
+          <div class="sub">8 LIFTS · 24 SETS · COACHED BY DR MIKE</div>
+          <div class="arrow">→</div>
+        </div>
+
+        <div class="accord">
+          <div class="left">
+            <span class="ico">🏆</span>
+            <span class="name">LEADERBOARD</span>
+          </div>
+          <div class="right">#47 <span class="small">of 1.2k</span></div>
+        </div>
+        <div class="accord">
+          <div class="left">
+            <span class="ico">📅</span>
+            <span class="name">CHAIN</span>
+          </div>
+          <div class="right">28/42 <span class="small">days</span></div>
+        </div>
+        <div class="accord">
+          <div class="left">
+            <span class="ico">✦</span>
+            <span class="name">QUOTE</span>
+          </div>
+          <div class="right" style="font-size: 14px">expand</div>
+        </div>
+        <div class="accord">
+          <div class="left">
+            <span class="ico">🎯</span>
+            <span class="name">TOMORROW</span>
+          </div>
+          <div class="right" style="color: var(--warning); font-size: 11px">unset</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- OPTION B — APPLE FITNESS GLASS -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="letter">B</span>
+      <span class="name">APPLE FITNESS GLASS</span>
+      <div class="desc">GRADIENT · RINGS · FROSTED CARDS</div>
+    </div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="phone-screen">
+        <div class="b">
+          <div class="greeting">
+            <h1>Good morning, <b>Rahul</b></h1>
+            <div class="day">TUESDAY · WEEK 3</div>
+          </div>
+
+          <div class="rings-card">
+            <div class="rings">
+              <svg viewBox="0 0 100 100">
+                <!-- outermost ring: move -->
+                <circle cx="50" cy="50" r="44" stroke="rgba(245,185,66,0.15)" stroke-width="6" fill="none"/>
+                <circle cx="50" cy="50" r="44" stroke="#f5b942" stroke-width="6" fill="none"
+                  stroke-dasharray="276" stroke-dashoffset="55" stroke-linecap="round"/>
+                <!-- middle ring: protein -->
+                <circle cx="50" cy="50" r="34" stroke="rgba(123,227,140,0.15)" stroke-width="6" fill="none"/>
+                <circle cx="50" cy="50" r="34" stroke="#7be38c" stroke-width="6" fill="none"
+                  stroke-dasharray="213" stroke-dashoffset="64" stroke-linecap="round"/>
+                <!-- inner ring: recovery -->
+                <circle cx="50" cy="50" r="24" stroke="rgba(93,211,250,0.18)" stroke-width="6" fill="none"/>
+                <circle cx="50" cy="50" r="24" stroke="#5DD3FA" stroke-width="6" fill="none"
+                  stroke-dasharray="150" stroke-dashoffset="20" stroke-linecap="round"/>
+              </svg>
+              <div class="center-label">
+                <div class="num">78</div>
+                <div class="label">SCORE</div>
+              </div>
+            </div>
+            <div class="ring-meta">
+              <div class="row"><div class="dot" style="background:#f5b942"></div><div class="text"><b>12.4k</b> <small>kg moved</small></div></div>
+              <div class="row"><div class="dot" style="background:#7be38c"></div><div class="text"><b>142</b> <small>g protein</small></div></div>
+              <div class="row"><div class="dot" style="background:#5DD3FA"></div><div class="text"><b>4-day</b> <small>streak</small></div></div>
+            </div>
+          </div>
+
+          <div class="section-label">TODAY</div>
+
+          <div class="today">
+            <div class="head">PUSH · DAY 2 · 62 MIN</div>
+            <div class="title">Let's grow.</div>
+            <div class="sub">8 lifts · 24 sets · coached by Dr Mike</div>
+            <div class="play">▶  START WORKOUT</div>
+          </div>
+
+          <div class="glass-quote">
+            <div class="head">
+              <div class="avatar">DM</div>
+              <div class="name">DR MIKE SAYS</div>
+            </div>
+            <div class="body">"MEV maintained, stimulus-to-fatigue ratio positive. Productive volume hits MAV at set 8."</div>
+          </div>
+
+          <div class="icon-cards">
+            <div class="icon-card">
+              <div class="ico">🏆</div>
+              <div class="lbl">RANK</div>
+              <div class="val">#47</div>
+            </div>
+            <div class="icon-card">
+              <div class="ico">📅</div>
+              <div class="lbl">CHAIN</div>
+              <div class="val">28/42</div>
+            </div>
+            <div class="icon-card">
+              <div class="ico">🧊</div>
+              <div class="lbl">FREEZES</div>
+              <div class="val">3</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- OPTION C — STRAVA SPORT -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="phone-wrap">
+    <div class="phone-label">
+      <span class="letter">C</span>
+      <span class="name">STRAVA SPORT</span>
+      <div class="desc">PHOTO HERO · SOCIAL · BIG BUTTONS</div>
+    </div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="phone-screen">
+        <div class="c">
+          <div class="hero-photo">
+            <div class="top">
+              <div class="brand">Atleato<sup>™</sup></div>
+              <div class="avatar">AR</div>
+            </div>
+            <div class="bottom">
+              <div class="tag">TODAY · WEEK 3</div>
+              <div class="title">PUSH<br>DAY 2</div>
+              <div class="sub">62 min · 8 lifts · coached by Arnold</div>
+            </div>
+          </div>
+
+          <div class="c-body">
+            <div class="start-btn">▶  START WORKOUT</div>
+
+            <div class="week">
+              <div class="section-label">THIS WEEK</div>
+              <div class="row">
+                <div class="lab">SESSIONS</div>
+                <div class="num">4 / 6</div>
+              </div>
+              <div class="progress-bar"><div class="fill"></div></div>
+              <div class="vol">12.4k<small>kg moved</small></div>
+            </div>
+
+            <div class="ldb">
+              <div class="ldb-head">
+                <div class="l">🏆  GLOBAL THIS WEEK</div>
+                <div class="r">SEE ALL →</div>
+              </div>
+              <div class="row">
+                <div class="rk">🥇</div>
+                <div class="nm">Lifter #4729</div>
+                <div class="vl">18,240<small> kg</small></div>
+              </div>
+              <div class="row">
+                <div class="rk">🥈</div>
+                <div class="nm">Lifter #1583</div>
+                <div class="vl">16,720<small> kg</small></div>
+              </div>
+              <div class="row">
+                <div class="rk">🥉</div>
+                <div class="nm">Lifter #9201</div>
+                <div class="vl">15,400<small> kg</small></div>
+              </div>
+              <div class="row you">
+                <div class="rk">#47</div>
+                <div class="nm">You</div>
+                <div class="vl">12,400<small> kg</small></div>
+              </div>
+            </div>
+
+            <div class="feed">
+              <div class="section-label">ACTIVITY</div>
+              <div class="feed-item">
+                <div class="head">
+                  <div class="ico">💬</div>
+                  <div class="tag">ARNOLD SAYS · 7:30 AM</div>
+                </div>
+                <div class="body">"The mind is the muscle. Train both. Today we hit chest with intent."</div>
+              </div>
+              <div class="feed-item">
+                <div class="head">
+                  <div class="ico">🔥</div>
+                  <div class="tag">STREAK · 4 DAYS</div>
+                </div>
+                <div class="body">3 more days for a Streak Freeze.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
