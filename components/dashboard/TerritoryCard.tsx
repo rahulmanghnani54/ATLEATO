@@ -50,7 +50,11 @@ export function TerritoryCard({ persona }: { persona: PersonaTheme }) {
   }
 
   return (
-    <View style={[styles.card, { borderColor: persona.accent, backgroundColor: persona.accentSoft }]}>
+    <TouchableOpacity
+      style={[styles.card, { borderColor: persona.accent, backgroundColor: persona.accentSoft }]}
+      onPress={() => router.push('/territory-map' as any)}
+      activeOpacity={0.88}
+    >
       <View style={styles.headRow}>
         <Text style={[styles.label, { color: persona.accent }]}>
           🌍 {styleText(persona, 'TERRITORY')}
@@ -75,16 +79,23 @@ export function TerritoryCard({ persona }: { persona: PersonaTheme }) {
         </View>
       </View>
 
-      <TouchableOpacity
-        style={[styles.runAgainBtn, { borderColor: persona.accent }]}
-        onPress={() => router.push('/run' as any)}
-        activeOpacity={0.85}
-      >
-        <Text style={[styles.runAgainText, { color: persona.accent }]}>
-          ▶  RUN AGAIN
-        </Text>
-      </TouchableOpacity>
-    </View>
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          style={[styles.actionBtn, { borderColor: persona.accent }]}
+          onPress={() => router.push('/territory-map' as any)}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.actionText, { color: persona.accent }]}>🗺  VIEW MAP</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionBtn, { backgroundColor: persona.accent, borderColor: persona.accent }]}
+          onPress={() => router.push('/run' as any)}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.actionText, { color: persona.ink }]}>▶  RUN AGAIN</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
   );
 }
 
@@ -112,6 +123,11 @@ const styles = StyleSheet.create({
   // CTA buttons
   cta:        { paddingVertical: 14, borderRadius: 100, alignItems: 'center', marginTop: 4 },
   ctaText:    { fontFamily: Fonts.display, fontWeight: '700', fontSize: 13, letterSpacing: 0.9 },
-  runAgainBtn:{ borderWidth: 1, paddingVertical: 12, borderRadius: 100, alignItems: 'center', marginTop: 6 },
-  runAgainText:{ fontFamily: Fonts.display, fontWeight: '700', fontSize: 12, letterSpacing: 0.9 },
+
+  actionRow:  { flexDirection: 'row', gap: 8, marginTop: 6 },
+  actionBtn:  {
+    flex: 1, borderWidth: 1, paddingVertical: 12, borderRadius: 100,
+    alignItems: 'center',
+  },
+  actionText: { fontFamily: Fonts.display, fontWeight: '700', fontSize: 11, letterSpacing: 0.9 },
 });

@@ -32,9 +32,14 @@ export default function TerritoryLeaderboardScreen() {
         <Text style={[styles.title, { color: persona.accent }]}>
           🌍 {styleText(persona, 'TERRITORY')}
         </Text>
-        <TouchableOpacity onPress={() => router.push('/run' as any)}>
-          <Text style={[styles.runLink, { color: persona.accent }]}>RUN →</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 14 }}>
+          <TouchableOpacity onPress={() => router.push('/territory-map' as any)}>
+            <Text style={[styles.runLink, { color: persona.accent }]}>MAP</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/run' as any)}>
+            <Text style={[styles.runLink, { color: persona.accent }]}>RUN →</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={[styles.banner, { backgroundColor: persona.accentSoft, borderColor: persona.accent }]}>

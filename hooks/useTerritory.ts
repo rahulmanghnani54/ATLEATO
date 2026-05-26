@@ -86,3 +86,58 @@ export async function claimCells(
   const row = (data ?? [])[0] as ClaimResult | undefined;
   return row ?? { cells_total: 0, cells_new: 0, cells_stolen: 0, run_id: '' };
 }
+
+// ── Map viewport hook ────────────────────────────────────────────────────────
+
+export interface CellInBbox {
+  cell_id:         string;
+  is_current_user: boolean;
+  anon_handle:     string;
+  claimed_at:      string;
+}
+
+export interface BBox {
+  latMin: number;
+  latMax: number;
+  lonMin: number;
+  lonMax: number;
+}
+
+/**
+ * Cells whose SW corner lies inside the requested viewport.
+ * Caller is expected to debounce / quantise the bbox so we don't refetch
+ * on every map pan frame — query key is rounded to 0.005° (~500m).
+ */
+export function useCellsInBbox(bbox: BBox | null, limit = 800) {
+  const user = useAuthStore((s) => s.user);
+  // Quantise the bbox so small pans don't refetch
+  const key = bbox
+    ? [
+        Math.round(bbox.latMin * 200) / 200,
+        Math.round(bbox.latMax * 200) / 200,
+        Math.round(bbox.lonMin * 200) / 200,
+        Math.round(bbox.lonMax * 200) / 200,
+      ]
+    : null;
+
+  return useQuery({
+    queryKey: ['cells_in_bbox', user?.id, key, limit],
+    queryFn: async (): Promise<CellInBbox[]> => {
+      if (!user || !bbox) return [];
+      const { data, error } = await (supabase.rpc as any)('cells_in_bbox', {
+        p_lat_min: bbox.latMin,
+        p_lat_max: bbox.latMax,
+        p_lon_min: bbox.lonMin,
+        p_lon_max: bbox.lonMax,
+        p_limit:   limit,
+      });
+      if (error) {
+        if (__DEV__) console.warn('[territory] cells_in_bbox:', error.message);
+        return [];
+      }
+      return (data ?? []) as CellInBbox[];
+    },
+    enabled: !!user && !!bbox,
+    staleTime: 15 * 1000,
+  });
+}
