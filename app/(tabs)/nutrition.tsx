@@ -9,6 +9,7 @@ import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { personaFromProgramId, nutritionTipOfTheDay, styleText } from '@/lib/personaTheme';
 import type { MealType } from '@/types/index';
 
 const MEALS: { key: MealType; label: string; time: string }[] = [
@@ -18,7 +19,7 @@ const MEALS: { key: MealType; label: string; time: string }[] = [
   { key: 'dinner',    label: 'DINNER',    time: '19:00' },
 ];
 
-function MacroRing({ eaten, goal, size = 140 }: { eaten: number; goal: number; size?: number }) {
+function MacroRing({ eaten, goal, size = 140, color = Colors.primary }: { eaten: number; goal: number; size?: number; color?: string }) {
   const r = 58, cx = 70, cy = 70;
   const circ = 2 * Math.PI * r;
   const pct = Math.min(eaten / Math.max(goal, 1), 1);
@@ -27,7 +28,7 @@ function MacroRing({ eaten, goal, size = 140 }: { eaten: number; goal: number; s
       <Circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.06)" strokeWidth={11} fill="none" />
       <Circle
         cx={cx} cy={cy} r={r}
-        stroke={Colors.primary} strokeWidth={11} fill="none"
+        stroke={color} strokeWidth={11} fill="none"
         strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round"
       />
     </Svg>
@@ -52,25 +53,42 @@ export default function Nutrition() {
   const carbs = Math.round(nutrition?.carbsG ?? 0);
   const fat = Math.round(nutrition?.fatG ?? 0);
 
+  // Persona-driven nutrition philosophy
+  const persona = personaFromProgramId(profile?.selected_program);
+  const nutritionTip = nutritionTipOfTheDay(persona);
+
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
 
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header */}
+        {/* Header — persona-aware */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <Text style={styles.monoLabel}>{format(date, 'EEE').toUpperCase()} · {format(date, 'HH:mm')}</Text>
-            <Text style={[styles.monoLabel, { color: Colors.primary }]}>TDEE {goal}</Text>
+            <Text style={styles.monoLabel}>{format(date, 'EEE').toUpperCase()} · {persona.shortName} PROTOCOL</Text>
+            <Text style={[styles.monoLabel, { color: persona.accent }]}>TDEE {goal}</Text>
           </View>
-          <Text style={styles.headline}>EAT TO{'\n'}GROW.</Text>
+          <Text style={styles.headline}>
+            {styleText(persona, persona.nutrition.headline)}
+          </Text>
+          <Text style={styles.philosophyLine}>
+            {styleText(persona, persona.nutrition.style)}
+          </Text>
+        </View>
+
+        {/* Persona nutrition tip of the day */}
+        <View style={[styles.tipCard, { borderLeftColor: persona.accent, backgroundColor: persona.accentSoft }]}>
+          <Text style={[styles.tipLabel, { color: persona.accent }]}>
+            ✦ {styleText(persona, `${persona.shortName} SAYS`)}
+          </Text>
+          <Text style={styles.tipText}>{nutritionTip}</Text>
         </View>
 
         {/* Big calorie ring + macros */}
         <View style={styles.ringSection}>
           <View style={styles.ringWrap}>
-            <MacroRing eaten={consumed} goal={goal} />
+            <MacroRing eaten={consumed} goal={goal} color={persona.accent} />
             <View style={styles.ringCenter}>
               <Text style={styles.ringNum}>{consumed}</Text>
               <Text style={styles.ringMeta}>/ {goal} KCAL</Text>
@@ -98,14 +116,11 @@ export default function Nutrition() {
           </View>
         </View>
 
-        {/* Search row */}
-        <TouchableOpacity style={styles.searchRow} onPress={() => setActiveMeal('snack')}>
+        {/* Search row — quick-add to lunch by default; meal buttons below let user pick */}
+        <TouchableOpacity style={styles.searchRow} onPress={() => setActiveMeal('lunch')} activeOpacity={0.7}>
           <View style={styles.searchInput}>
             <Text style={styles.searchIcon}>🔍</Text>
-            <Text style={styles.searchPlaceholder}>Search 1.2M+ foods…</Text>
-          </View>
-          <View style={styles.barcodeBtn}>
-            <Text style={{ fontSize: 18 }}>▦</Text>
+            <Text style={styles.searchPlaceholder}>Search Indian & global foods…</Text>
           </View>
         </TouchableOpacity>
 
@@ -115,7 +130,7 @@ export default function Nutrition() {
           <View style={{ flex: 1 }}>
             <Text style={styles.waterLabel}>WATER</Text>
             <View style={styles.waterBars}>
-              {Array.from({ length: goalGlasses }).map((_, i) => (
+              {Array.from({ length: goalGlasses || 8 }).map((_, i) => (
                 <View key={i} style={[styles.waterBar, { backgroundColor: i < glasses ? Colors.info : Colors.border }]} />
               ))}
             </View>
@@ -129,6 +144,13 @@ export default function Nutrition() {
         {/* Meal cards */}
         {MEALS.map((meal) => {
           const mealKcal = Math.round(nutrition?.byMeal[meal.key] ?? 0);
+          // Compute per-meal macro split proportional to its share of total calories
+          const totalKcal = Math.max(1, Math.round(nutrition?.calories ?? 0));
+          const share = mealKcal / totalKcal;
+          const mP = Math.round((nutrition?.proteinG ?? 0) * share);
+          const mC = Math.round((nutrition?.carbsG ?? 0)   * share);
+          const mF = Math.round((nutrition?.fatG ?? 0)     * share);
+          const macroLine = mealKcal > 0 ? `${mP}P · ${mC}C · ${mF}F` : '— · — · —';
           return (
             <View key={meal.key} style={styles.mealCard}>
               <TouchableOpacity style={styles.mealHeader} onPress={() => setActiveMeal(meal.key)} activeOpacity={0.7}>
@@ -138,7 +160,7 @@ export default function Nutrition() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.mealLabel}>{meal.label}</Text>
-                  <Text style={styles.mealMacro}>— · — · —</Text>
+                  <Text style={styles.mealMacro}>{macroLine}</Text>
                 </View>
                 <View style={styles.mealRight}>
                   <Text style={[styles.mealKcal, mealKcal > 0 && { color: Colors.primary }]}>
@@ -188,7 +210,13 @@ const styles = StyleSheet.create({
   header: { marginBottom: 20 },
   headerRow: { flexDirection: 'row', justifyContent: 'space-between' },
   monoLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
-  headline: { fontFamily: Fonts.display, fontSize: 40, color: Colors.text, lineHeight: 38, letterSpacing: -1, marginTop: 6 },
+  headline: { fontFamily: Fonts.display, fontSize: 28, color: Colors.text, lineHeight: 32, letterSpacing: -0.6, marginTop: 6 },
+  philosophyLine: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 6, lineHeight: 18, fontStyle: 'italic' },
+  tipCard: {
+    borderLeftWidth: 3, borderRadius: 4, padding: 12, marginBottom: 16,
+  },
+  tipLabel: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 5 },
+  tipText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.text, lineHeight: 18, fontStyle: 'italic' },
 
   ringSection: { flexDirection: 'row', alignItems: 'center', gap: 18, marginBottom: 16 },
   ringWrap: { width: 140, height: 140, position: 'relative', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

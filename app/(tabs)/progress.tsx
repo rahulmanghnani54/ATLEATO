@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { VolumeChart } from '@/components/progress/VolumeChart';
 import { PhysiqueGallery } from '@/components/progress/PhysiqueGallery';
 import { PhysiquePrivacyCard } from '@/components/progress/PhysiquePrivacyCard';
@@ -14,6 +15,7 @@ function Epley1RM(weightKg: number, reps: number): number {
 }
 
 export default function Progress() {
+  const router = useRouter();
   const { data: weeklyVolume = [], isLoading: volumeLoading } = useWeeklyVolume(8);
   const { data: prs = [], isLoading: prsLoading } = usePersonalRecords();
   const { data: achievements = [], isLoading: achievementsLoading } = useAchievements();
@@ -22,7 +24,21 @@ export default function Progress() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'stats' | 'physique'>('stats');
 
+  // ── Data-gating: don't generate a review when there's nothing to review ──
+  // Current week's volume is the LAST entry in the weeklyVolume array (most recent week)
+  const thisWeekVolume = weeklyVolume.length > 0 ? (weeklyVolume[weeklyVolume.length - 1]?.totalVolumeKg ?? 0) : 0;
+  const hasAnyWorkoutThisWeek = thisWeekVolume > 0;
+
+  // 0 = Sunday … 6 = Saturday. Reviews are most meaningful mid-week onward.
+  const dayOfWeek = new Date().getDay();
+  const dayLabel = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][dayOfWeek];
+  // Treat Mon-Tue (1-2) as "too early" for a meaningful review unless ≥2 workouts already in
+  const tooEarlyInWeek = dayOfWeek >= 1 && dayOfWeek <= 2 && thisWeekVolume < 1000;
+
+  const canGenerateSummary = hasAnyWorkoutThisWeek && !tooEarlyInWeek;
+
   const handleGetSummary = async () => {
+    if (!canGenerateSummary) return;
     setSummaryLoading(true);
     try {
       const res: WeeklySummaryResponse = await getWeeklySummary();
@@ -36,7 +52,7 @@ export default function Progress() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Tab toggle */}
+      {/* Tab toggle + profile gear */}
       <View style={styles.tabRow}>
         <TouchableOpacity
           style={[styles.tabBtn, activeTab === 'stats' && styles.tabBtnActive]}
@@ -49,6 +65,12 @@ export default function Progress() {
           onPress={() => setActiveTab('physique')}
         >
           <Text style={[styles.tabBtnText, activeTab === 'physique' && styles.tabBtnTextActive]}>PHYSIQUE</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.profileBtn}
+          onPress={() => router.push('/profile' as any)}
+        >
+          <Text style={styles.profileBtnText}>⚙</Text>
         </TouchableOpacity>
       </View>
       {activeTab === 'stats' ? (
@@ -70,7 +92,7 @@ export default function Progress() {
           )}
         </View>
 
-        {/* AI Weekly Summary */}
+        {/* AI Weekly Summary — gated on real data */}
         <View style={styles.aiCard}>
           <View style={styles.aiCardHeader}>
             <Text style={{ fontSize: 14 }}>✦</Text>
@@ -78,19 +100,36 @@ export default function Progress() {
           </View>
           {summary ? (
             <Text style={styles.summaryText}>{summary}</Text>
+          ) : !hasAnyWorkoutThisWeek ? (
+            <Text style={styles.summaryPrompt}>
+              No workouts logged this week yet. Train at least once to unlock your AI review.
+            </Text>
+          ) : tooEarlyInWeek ? (
+            <Text style={styles.summaryPrompt}>
+              It&apos;s only {dayLabel} — too early for a meaningful weekly review.
+              Come back from Wednesday onwards, or after 2+ workouts.
+            </Text>
           ) : (
-            <Text style={styles.summaryPrompt}>Get a personalised AI analysis of your training week.</Text>
+            <Text style={styles.summaryPrompt}>
+              Get a personalised AI analysis of your training week.
+            </Text>
           )}
           <TouchableOpacity
-            style={[styles.summaryBtn, summaryLoading && { opacity: 0.6 }]}
+            style={[styles.summaryBtn, (summaryLoading || !canGenerateSummary) && { opacity: 0.4 }]}
             onPress={handleGetSummary}
-            disabled={summaryLoading}
+            disabled={summaryLoading || !canGenerateSummary}
             activeOpacity={0.8}
           >
             {summaryLoading ? (
               <ActivityIndicator size="small" color={Colors.accentInk} />
             ) : (
-              <Text style={styles.summaryBtnText}>{summary ? 'REFRESH SUMMARY' : 'GENERATE SUMMARY'}</Text>
+              <Text style={styles.summaryBtnText}>
+                {!canGenerateSummary
+                  ? 'LOCKED — TRAIN MORE'
+                  : summary
+                    ? 'REFRESH SUMMARY'
+                    : 'GENERATE SUMMARY'}
+              </Text>
             )}
           </TouchableOpacity>
         </View>
@@ -232,4 +271,8 @@ const styles = StyleSheet.create({
   tabBtnActive: { borderBottomColor: Colors.primary },
   tabBtnText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
   tabBtnTextActive: { color: Colors.primary },
+  profileBtn: {
+    marginLeft: 'auto', paddingVertical: 12, paddingHorizontal: 10,
+  },
+  profileBtnText: { fontSize: 18, color: Colors.textSecondary },
 });

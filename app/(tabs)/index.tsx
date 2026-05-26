@@ -10,11 +10,18 @@ import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
 import { useRecoveryScore } from '@/hooks/useRecoveryScore';
 import { useTodayRecovery } from '@/hooks/useRecoveryCheckin';
+import { useWorkoutStreak, useThisWeekVolume, useProgramSchedule, useProgramWeek } from '@/hooks/useDashboardStats';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors, Fonts, Spacing, Typography } from '@/constants/theme';
+import { personaFromProgramId, quoteOfTheDay, styleText } from '@/lib/personaTheme';
+import { MorningBriefCard } from '@/components/dashboard/MorningBriefCard';
+import { StreakHero } from '@/components/dashboard/StreakHero';
+import { StreakNudge } from '@/components/dashboard/StreakNudge';
+import { PRShelf } from '@/components/dashboard/PRShelf';
+import { useTrainedToday } from '@/hooks/useTrainedToday';
 
 // ── Calorie ring (SVG) ────────────────────────────────────────
-function CalorieArc({ eaten, goal }: { eaten: number; goal: number }) {
+function CalorieArc({ eaten, goal, color = Colors.primary }: { eaten: number; goal: number; color?: string }) {
   const r = 28, cx = 32, cy = 32;
   const circ = 2 * Math.PI * r;
   const pct = Math.min(eaten / Math.max(goal, 1), 1);
@@ -23,7 +30,7 @@ function CalorieArc({ eaten, goal }: { eaten: number; goal: number }) {
       <Circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.08)" strokeWidth={6} fill="none" />
       <Circle
         cx={cx} cy={cy} r={r}
-        stroke={Colors.primary}
+        stroke={color}
         strokeWidth={6} fill="none"
         strokeDasharray={`${circ * pct} ${circ}`}
         strokeLinecap="round"
@@ -62,6 +69,11 @@ export default function Dashboard() {
   const { glasses, goalGlasses, addGlass, refetch: refetchWater } = useWaterLog(date);
   const { data: recoveryCheckin } = useRecoveryScore();
   const { data: todayRecovery } = useTodayRecovery();
+  const { data: streak = 0 } = useWorkoutStreak();
+  const { data: trainedToday = false } = useTrainedToday();
+  const { data: weekVolume = 0 } = useThisWeekVolume();
+  const { data: schedule = [] } = useProgramSchedule();
+  const programWeek = useProgramWeek();
   const hasCheckedInToday = !!todayRecovery;
 
   const goal = profile?.tdee ?? 2000;
@@ -74,9 +86,25 @@ export default function Dashboard() {
   const carbs = Math.round(nutrition?.carbsG ?? 0);
   const fat = Math.round(nutrition?.fatG ?? 0);
 
-  const recoveryScore = recoveryCheckin?.recovery_score ?? null;
-  const firstName = profile?.full_name?.split(' ')[0]?.toUpperCase() ?? 'THERE';
-  const dayLabel = format(date, 'EEE').toUpperCase() + ' · WEEK 1';
+  // Prefer today's check-in; fall back to yesterday's score from useRecoveryScore
+  const recoveryScore = (todayRecovery as any)?.recovery_score ?? recoveryCheckin?.recovery_score ?? null;
+  const firstNameRaw = profile?.full_name?.split(' ')[0] ?? 'there';
+  const firstName = firstNameRaw.toUpperCase();
+  const dayLabel = format(date, 'EEE').toUpperCase() + ` · WEEK ${programWeek}`;
+
+  // ── Persona theme (drives accent color, greeting, quote, vibe) ─────────────
+  const persona = personaFromProgramId(profile?.selected_program);
+  const greeting = persona.greeting(firstNameRaw);
+  const todayQuote = quoteOfTheDay(persona);
+
+  // Today's workout from program schedule
+  const todaySchedule = schedule.find((d) => d.isToday);
+  const todayWorkoutName = todaySchedule?.isRest ? 'REST DAY' : (todaySchedule?.name ?? 'LOADING…');
+  const todayWorkout = todaySchedule?.workout;
+  const todayDuration = todayWorkout?.estimatedMinutes ?? 60;
+  const todayExercises = todayWorkout?.exercises ?? [];
+  const totalSets = todayExercises.reduce((s, e) => s + e.sets, 0);
+  const upcomingDays = schedule.filter((d) => !d.isToday).slice(0, 3);
 
   useFocusEffect(useCallback(() => {
     refetch();
@@ -96,42 +124,120 @@ export default function Dashboard() {
           />
         }
       >
-        {/* ── Header ── */}
+        {/* ── Header (persona-aware greeting) ── */}
         <View style={styles.header}>
-          <View>
+          <View style={{ flex: 1 }}>
+            <View style={styles.coachStripe}>
+              <View style={[styles.coachDot, { backgroundColor: persona.accent }]} />
+              <Text style={[styles.coachStripeText, { color: persona.accent }]}>
+                {persona.shortName} · {persona.vibe}
+              </Text>
+            </View>
             <Text style={styles.dayLabel}>{dayLabel}</Text>
-            <Text style={styles.greeting}>HOWDY, {firstName}</Text>
+            <Text style={styles.greeting}>{styleText(persona, greeting)}</Text>
+            <Text style={[styles.coachMotivation, { color: persona.accent }]}>
+              {styleText(persona, persona.motivation)}
+            </Text>
           </View>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{firstName.slice(0, 2)}</Text>
-          </View>
+          <TouchableOpacity
+            style={[styles.avatar, { borderColor: persona.accent }]}
+            onPress={() => router.push('/profile' as any)}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.avatarText, { color: persona.accent }]}>{persona.initials}</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* ── Today's workout hero ── */}
+        {/* ── Morning Brief: 30-second ritual with your coach ── */}
+        <MorningBriefCard persona={persona} />
+
+        {/* ── Streak Hero: visible flame, big number, milestone progress ── */}
+        <StreakHero days={streak} persona={persona} />
+
+        {/* ── Streak Nudge: "don't break the chain" (only shows when applicable) ── */}
+        <StreakNudge
+          streak={streak}
+          trainedToday={trainedToday}
+          isRestDay={!!todaySchedule?.isRest}
+          persona={persona}
+          onTrainPress={() => {
+            if (!todayWorkout) return;
+            const dow = new Date().getDay();
+            const programDay = dow === 0 ? 6 : dow - 1;
+            router.push({
+              pathname: '/workout-lobby',
+              params: {
+                programId: profile?.selected_program ?? 'cbum_evolved',
+                dayIndex: String(programDay),
+              },
+            } as any);
+          }}
+        />
+
+        {/* ── Today's workout hero (persona accent) ── */}
         <TouchableOpacity
-          style={styles.heroCard}
-          onPress={() => router.push('/workouts' as any)}
-          activeOpacity={0.85}
+          style={[styles.heroCard, { backgroundColor: persona.accent }]}
+          onPress={() => {
+            if (todaySchedule?.isRest || !todayWorkout) return;
+            const dow = new Date().getDay(); // 0=Sun
+            const programDay = dow === 0 ? 6 : dow - 1;
+            router.push({
+              pathname: '/workout-lobby',
+              params: {
+                programId: profile?.selected_program ?? 'cbum_evolved',
+                dayIndex: String(programDay),
+              },
+            } as any);
+          }}
+          activeOpacity={todaySchedule?.isRest ? 1 : 0.85}
         >
-          <Tag color={Colors.accentInk}>TODAY · 60 MIN</Tag>
-          <Text style={styles.heroTitle}>{"PUSH\nDAY 1"}</Text>
-          <Text style={styles.heroSub}>5 lifts · 18 sets · CBum Classic</Text>
-          <View style={styles.heroBtn}>
-            <Text style={styles.heroBtnText}>▶  START SESSION</Text>
+          <View style={[styles.tag, { borderColor: persona.ink }]}>
+            <Text style={[styles.tagText, { color: persona.ink }]}>
+              {todaySchedule?.isRest ? 'REST · RECOVER' : `TODAY · ${todayDuration} MIN`}
+            </Text>
           </View>
-          {/* decorative numeral */}
-          <Text style={styles.heroDecor}>01</Text>
+          <Text style={[styles.heroTitle, { color: persona.ink }]} numberOfLines={2}>
+            {todayWorkoutName.replace(' ', '\n')}
+          </Text>
+          <Text style={[styles.heroSub, { color: persona.ink, opacity: 0.75 }]}>
+            {todaySchedule?.isRest
+              ? 'Active recovery or full rest'
+              : `${todayExercises.length} lifts · ${totalSets} sets · COACHED BY ${persona.shortName}`
+            }
+          </Text>
+          {!todaySchedule?.isRest && (
+            <View style={[styles.heroBtn, { borderColor: persona.ink }]}>
+              <Text style={[styles.heroBtnText, { color: persona.ink }]}>
+                ▶  {styleText(persona, persona.workoutCTA)}
+              </Text>
+            </View>
+          )}
+          {/* decorative — workout focus short label */}
+          <Text style={[styles.heroDecor, { color: persona.ink, opacity: 0.15 }]}>
+            {String(schedule.findIndex((d) => d.isToday) + 1).padStart(2, '0')}
+          </Text>
         </TouchableOpacity>
 
-        {/* ── Stat strip ── */}
+        {/* ── Coach's daily quote ── */}
+        <View style={[styles.quoteCard, { borderLeftColor: persona.accent, backgroundColor: persona.accentSoft }]}>
+          <Text style={[styles.quoteAttrib, { color: persona.accent }]}>
+            ✦ {styleText(persona, `${persona.shortName} SAYS`)}
+          </Text>
+          <Text style={styles.quoteText}>"{todayQuote}"</Text>
+        </View>
+
+        {/* ── PR Shelf — your top trophies, in coach's color ── */}
+        <PRShelf persona={persona} />
+
+        {/* ── Stat strip (streak now lives in StreakHero above) ── */}
         <View style={styles.statStrip}>
-          <StatCard label="STREAK" value="1" unit="days" />
           <StatCard
             label="RECOVERY"
             value={recoveryScore !== null ? String(recoveryScore) : '—'}
             unit="%"
           />
-          <StatCard label="WEEK VOL" value="0" unit="k kg" />
+          <StatCard label="WEEK VOL" value={weekVolume > 0 ? String(weekVolume) : '0'} unit="k kg" />
+          <StatCard label="WEEK" value={String(programWeek)} unit="of program" />
         </View>
 
         {/* ── Recovery ── */}
@@ -185,7 +291,7 @@ export default function Dashboard() {
                 </View>
               </View>
               <View style={styles.ringWrap}>
-                <CalorieArc eaten={consumed} goal={goal} />
+                <CalorieArc eaten={consumed} goal={goal} color={persona.accent} />
                 <View style={styles.ringCenter}>
                   <Text style={styles.ringPct}>
                     {goal > 0 ? Math.round((consumed / goal) * 100) : 0}%
@@ -241,21 +347,21 @@ export default function Dashboard() {
         </View>
 
         {/* ── Upcoming ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>UPCOMING</Text>
-          <View style={styles.upcomingRow}>
-            {[
-              { d: 'WED', n: 'PULL · 1' },
-              { d: 'THU', n: 'LEGS · 1' },
-              { d: 'FRI', n: 'REST' },
-            ].map((item) => (
-              <View key={item.d} style={styles.upcomingCard}>
-                <Text style={styles.upcomingDay}>{item.d}</Text>
-                <Text style={styles.upcomingName}>{item.n}</Text>
-              </View>
-            ))}
+        {upcomingDays.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>UPCOMING</Text>
+            <View style={styles.upcomingRow}>
+              {upcomingDays.map((item) => (
+                <View key={item.dayLabel} style={[styles.upcomingCard, item.isRest && styles.upcomingCardRest]}>
+                  <Text style={styles.upcomingDay}>{item.dayLabel}</Text>
+                  <Text style={[styles.upcomingName, item.isRest && { color: Colors.textTertiary }]} numberOfLines={2}>
+                    {item.name}
+                  </Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={{ height: 24 }} />
       </ScrollView>
@@ -268,15 +374,27 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingTop: 14, paddingBottom: 40 },
 
   // Header
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
+  coachStripe: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  coachDot: { width: 6, height: 6, borderRadius: 3 },
+  coachStripeText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.8 },
   dayLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6 },
-  greeting: { fontFamily: Fonts.display, fontSize: 28, color: Colors.text, letterSpacing: -0.5, marginTop: 2 },
+  greeting: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, letterSpacing: -0.5, marginTop: 4, lineHeight: 26 },
+  coachMotivation: { fontFamily: Fonts.mono, fontSize: 11, letterSpacing: 0.6, marginTop: 6, opacity: 0.9 },
   avatar: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: Colors.surface, borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center', marginTop: 16,
   },
-  avatarText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.primary },
+  avatarText: { fontFamily: Fonts.display, fontSize: 14 },
+
+  // Coach quote card
+  quoteCard: {
+    borderLeftWidth: 3, borderRadius: 4,
+    padding: 14, marginBottom: 14,
+  },
+  quoteAttrib: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 6 },
+  quoteText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20, fontStyle: 'italic' },
 
   // Tag chip
   tag: {
@@ -384,4 +502,5 @@ const styles = StyleSheet.create({
   },
   upcomingDay: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2 },
   upcomingName: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, marginTop: 4 },
+  upcomingCardRest: { opacity: 0.5 },
 });

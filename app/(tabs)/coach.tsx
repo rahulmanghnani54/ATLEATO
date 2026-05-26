@@ -1,214 +1,367 @@
+/**
+ * Coach Hub
+ *
+ * The coach's "office" — where you visit your trainer.
+ * Not a chat app — a complete persona experience:
+ *   • Hero card with portrait, era, today's quote
+ *   • Today's session CTA (deep-links into workout-lobby)
+ *   • Training philosophy (focus on / avoid)
+ *   • Nutrition approach (macros, signature foods)
+ *   • Signature lifts (their pet exercises)
+ *   • Coach switcher (chip bar)
+ *   • Inline chat at the bottom (existing functionality, integrated)
+ *
+ * Picking a different coach changes everything — colors, copy, exercises, food.
+ */
 import { useState, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { aiCoachChat } from '@/lib/api/edgeFunctions';
 import type { ClaudeMessage } from '@/lib/api/types';
-import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
+import { useAuthStore } from '@/stores/authStore';
+import { useProgramSchedule } from '@/hooks/useDashboardStats';
+import {
+  personaFromProgramId, quoteOfTheDay, styleText, getPersona, type PersonaId,
+} from '@/lib/personaTheme';
+import { Colors, Fonts } from '@/constants/theme';
 
-interface Persona {
-  id: string;
-  name: string;
-  full: string;
-  tag: string;
-  hue: string;
-  initials: string;
-}
+const PERSONA_ORDER: PersonaId[] = ['cbum', 'arnold', 'nippard', 'ct_fletcher', 'dr_mike'];
 
-const PERSONAS: Persona[] = [
-  { id: 'cbum',       name: 'CBUM',    full: 'Chris Bumstead',   tag: 'Classic Physique · 5× Mr O',      hue: '#dfff1f', initials: 'CB' },
-  { id: 'arnold',     name: 'ARNOLD',  full: 'Arnold S.',        tag: 'Golden Era · 7× Mr Olympia',      hue: '#f5b942', initials: 'AR' },
-  { id: 'nippard',    name: 'NIPPARD', full: 'Jeff Nippard',     tag: 'Evidence-based · MSc',             hue: '#5b8cff', initials: 'JN' },
-  { id: 'ct_fletcher',name: 'CT',      full: 'CT Fletcher',      tag: 'Iron Addict · "I command you"',   hue: '#ff4d2e', initials: 'CT' },
-  { id: 'dr_mike',    name: 'DR MIKE', full: 'Dr Mike Israetel', tag: 'RP Strength · PhD Sport Phys',    hue: '#00e0a4', initials: 'DM' },
-];
-
-const QUICK_PROMPTS = [
-  'Analyze today',
-  'Plan next session',
-  'Form check',
-  'Weekly review',
-];
+const QUICK_PROMPTS = ['Analyze my last week', 'Plan next session', 'Form check', 'Nutrition advice'];
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  personaId?: string;
 }
 
-export default function Coach() {
-  const [persona, setPersona] = useState<Persona>(PERSONAS[0]);
+export default function CoachHub() {
+  const router = useRouter();
+  const profile = useAuthStore((s) => s.profile);
+  const { data: schedule = [] } = useProgramSchedule();
+
+  // Local selection — default to user's chosen program coach, but allow exploring others
+  const userCoach = personaFromProgramId(profile?.selected_program);
+  const [selectedId, setSelectedId] = useState<PersonaId>(userCoach.id);
+  const persona = getPersona(selectedId);
+  const isUsersCoach = selectedId === userCoach.id;
+
+  const todayQuote = quoteOfTheDay(persona);
+  const todaySchedule = schedule.find((d) => d.isToday);
+  const todayWorkoutName = todaySchedule?.isRest ? 'REST DAY' : (todaySchedule?.name ?? 'Today');
+  const todayWorkout = todaySchedule?.workout;
+
+  // ── Chat ───────────────────────────────────────────────────────────────────
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const scrollRef = useRef<ScrollView>(null);
-
-  const getHistory = (): ClaudeMessage[] =>
-    messages.map((m) => ({ role: m.role, content: m.content }));
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatRef = useRef<ScrollView>(null);
 
   const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || chatLoading) return;
     setInput('');
-
     const userMsg: Message = { id: Date.now().toString(), role: 'user', content: trimmed };
     setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    setChatLoading(true);
+    setTimeout(() => chatRef.current?.scrollToEnd({ animated: true }), 100);
 
     try {
-      const { reply } = await aiCoachChat(persona.id, trimmed, getHistory());
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', content: reply, personaId: persona.id },
-      ]);
+      const history: ClaudeMessage[] = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+      const { reply } = await aiCoachChat(persona.id, trimmed, history);
+      setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: reply }]);
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(), role: 'assistant', personaId: persona.id,
-          content: "Connection issue — try again.",
-        },
-      ]);
+      setMessages((prev) => [...prev, {
+        id: (Date.now() + 1).toString(), role: 'assistant',
+        content: "Connection issue — try again in a moment.",
+      }]);
     } finally {
-      setIsLoading(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+      setChatLoading(false);
+      setTimeout(() => chatRef.current?.scrollToEnd({ animated: true }), 100);
     }
-  }, [persona, isLoading, messages]);
+  }, [persona.id, chatLoading, messages]);
 
-  const isCT = persona.id === 'ct_fletcher';
+  // ── Switch coach handler ───────────────────────────────────────────────────
+  const switchTo = (id: PersonaId) => {
+    setSelectedId(id);
+    setMessages([]);  // fresh conversation with new coach
+  };
+
+  const startTodaysWorkout = () => {
+    if (todaySchedule?.isRest || !todayWorkout) return;
+    const dow = new Date().getDay();
+    const programDay = dow === 0 ? 6 : dow - 1;
+    router.push({
+      pathname: '/workout-lobby',
+      params: {
+        programId: profile?.selected_program ?? 'cbum_evolved',
+        dayIndex: String(programDay),
+      },
+    } as any);
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
-      {/* Coach header */}
-      <View style={styles.coachHeader}>
-        <View style={[styles.coachAvatar, { backgroundColor: persona.hue }]}>
-          <Text style={styles.coachAvatarText}>{persona.initials}</Text>
-        </View>
-        <View style={{ flex: 1 }}>
-          <View style={styles.coachNameRow}>
-            <Text style={styles.coachName}>{persona.name}</Text>
-            <View style={styles.onlineDot} />
-          </View>
-          <Text style={styles.coachTag}>{persona.tag}</Text>
-        </View>
-        {/* Persona selector chevron */}
-        <TouchableOpacity style={styles.switchBtn}>
-          <Text style={{ color: Colors.textSecondary, fontSize: 18 }}>⌄</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Persona chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.chipBar}
-        contentContainerStyle={styles.chipBarContent}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {PERSONAS.map((p) => {
-          const active = p.id === persona.id;
-          return (
-            <TouchableOpacity
-              key={p.id}
-              style={[styles.chip, active && { backgroundColor: p.hue }]}
-              onPress={() => { setPersona(p); setMessages([]); }}
-            >
-              <Text style={[styles.chipText, active && { color: Colors.accentInk }]}>{p.name}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
-          ref={scrollRef}
-          style={styles.messageList}
-          contentContainerStyle={styles.messageContent}
+          ref={chatRef}
+          showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ paddingBottom: 20 }}
         >
-          {/* Empty state with quick prompts */}
-          {messages.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>ASK {persona.name}{'\n'}ANYTHING.</Text>
-              <Text style={styles.emptySub}>{persona.full} · {persona.tag}</Text>
-              <View style={styles.quickRow}>
-                {QUICK_PROMPTS.map((q) => (
-                  <TouchableOpacity
-                    key={q}
-                    style={[styles.quickChip, { borderColor: persona.hue }]}
-                    onPress={() => sendMessage(q)}
-                  >
-                    <Text style={[styles.quickChipText, { color: persona.hue }]}>{q}</Text>
-                  </TouchableOpacity>
-                ))}
+          {/* ── HERO ── full-bleed coach identity ────────────────────────── */}
+          <View style={[styles.hero, { backgroundColor: persona.accent }]}>
+            <View style={styles.heroTopRow}>
+              <View style={[styles.heroAvatar, { borderColor: persona.ink }]}>
+                <Text style={[styles.heroInitials, { color: persona.ink }]}>{persona.initials}</Text>
               </View>
-            </View>
-          )}
-
-          {/* Messages */}
-          {messages.map((msg) => (
-            <View
-              key={msg.id}
-              style={[styles.bubble, msg.role === 'user' ? styles.bubbleUser : styles.bubbleCoach]}
-            >
-              {msg.role === 'assistant' && (
-                <Text style={[styles.bubbleSender, { color: persona.hue }]}>{persona.name}</Text>
+              {!isUsersCoach && (
+                <View style={[styles.previewChip, { borderColor: persona.ink }]}>
+                  <Text style={[styles.previewChipText, { color: persona.ink }]}>PREVIEWING</Text>
+                </View>
               )}
-              <View style={[
-                styles.bubbleContent,
-                msg.role === 'user'
-                  ? [styles.bubbleContentUser, { backgroundColor: persona.hue }]
-                  : styles.bubbleContentCoach,
-              ]}>
-                <Text style={[
-                  styles.bubbleText,
-                  msg.role === 'user' ? { color: Colors.accentInk } : { color: Colors.text },
-                  isCT && msg.role === 'assistant' && styles.ctText,
-                ]}>
-                  {msg.content}
+            </View>
+            <Text style={[styles.heroVibe, { color: persona.ink, opacity: 0.6 }]}>
+              {styleText(persona, persona.vibe)}
+            </Text>
+            <Text style={[styles.heroName, { color: persona.ink }]}>
+              {styleText(persona, persona.fullName)}
+            </Text>
+            <Text style={[styles.heroEra, { color: persona.ink, opacity: 0.7 }]}>{persona.era}</Text>
+            <View style={[styles.quoteDivider, { backgroundColor: persona.ink, opacity: 0.2 }]} />
+            <Text style={[styles.heroQuote, { color: persona.ink }]}>"{todayQuote}"</Text>
+          </View>
+
+          {/* ── TODAY'S SESSION CTA ───────────────────────────────────── */}
+          {isUsersCoach && (
+            <TouchableOpacity
+              style={[styles.todayCard, { borderLeftColor: persona.accent }]}
+              onPress={startTodaysWorkout}
+              activeOpacity={todaySchedule?.isRest ? 1 : 0.85}
+              disabled={todaySchedule?.isRest}
+            >
+              <View>
+                <Text style={[styles.sectionLabel, { color: persona.accent }]}>TODAY</Text>
+                <Text style={styles.todayWorkoutName}>{todayWorkoutName}</Text>
+                <Text style={styles.todayMeta}>
+                  {todaySchedule?.isRest
+                    ? 'Rest day — recovery is when you grow.'
+                    : `${todayWorkout?.exercises.length ?? 0} lifts · ${todayWorkout?.estimatedMinutes ?? 60} min`}
                 </Text>
               </View>
-            </View>
-          ))}
+              {!todaySchedule?.isRest && (
+                <View style={[styles.todayBtn, { backgroundColor: persona.accent }]}>
+                  <Text style={[styles.todayBtnText, { color: persona.ink }]}>▶</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
 
-          {/* Typing indicator */}
-          {isLoading && (
-            <View style={styles.bubbleCoach}>
-              <Text style={[styles.bubbleSender, { color: persona.hue }]}>{persona.name}</Text>
-              <View style={styles.bubbleContentCoach}>
-                <View style={styles.typingDots}>
-                  {[0, 1, 2].map((i) => (
-                    <View key={i} style={[styles.dot, { backgroundColor: persona.hue, opacity: 0.3 + i * 0.25 }]} />
+          {/* ── PHILOSOPHY ──────────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>TRAINING PHILOSOPHY</Text>
+            <Text style={styles.philosophySig}>{persona.training.signature}</Text>
+
+            <Text style={[styles.miniLabel, { color: persona.accent }]}>FOCUS ON</Text>
+            {persona.training.focusOn.map((f, i) => (
+              <View key={i} style={styles.bulletRow}>
+                <Text style={[styles.bulletGood, { color: persona.accent }]}>✓</Text>
+                <Text style={styles.bulletText}>{f}</Text>
+              </View>
+            ))}
+
+            <Text style={[styles.miniLabel, { color: '#ef4444', marginTop: 10 }]}>NEVER</Text>
+            {persona.training.avoid.map((a, i) => (
+              <View key={i} style={styles.bulletRow}>
+                <Text style={styles.bulletBad}>✗</Text>
+                <Text style={styles.bulletText}>{a}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* ── SIGNATURE LIFTS ─────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>SIGNATURE LIFTS</Text>
+            <Text style={styles.signatureSub}>The exercises that define {persona.shortName}'s training.</Text>
+            <View style={styles.signatureGrid}>
+              {persona.training.signatureLifts.map((lift, i) => (
+                <View key={i} style={[styles.signatureChip, { borderColor: persona.accent }]}>
+                  <Text style={[styles.signatureChipText, { color: persona.accent }]}>{lift}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* ── NUTRITION APPROACH ──────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>NUTRITION APPROACH</Text>
+            <Text style={styles.nutritionHeadline}>{styleText(persona, persona.nutrition.headline)}</Text>
+            <Text style={styles.nutritionStyle}>{persona.nutrition.style}</Text>
+
+            <View style={styles.macroRow}>
+              <View style={styles.macroBox}>
+                <Text style={styles.macroNum}>{persona.nutrition.mealsPerDay}</Text>
+                <Text style={styles.macroLabel}>MEALS/DAY</Text>
+              </View>
+              <View style={styles.macroBox}>
+                <Text style={styles.macroNum}>{persona.nutrition.proteinPerKg}g</Text>
+                <Text style={styles.macroLabel}>PROTEIN/KG</Text>
+              </View>
+              <View style={styles.macroBox}>
+                <Text style={[styles.macroNum, { fontSize: 16 }]}>
+                  {persona.nutrition.macroSplit.protein}/{persona.nutrition.macroSplit.carbs}/{persona.nutrition.macroSplit.fat}
+                </Text>
+                <Text style={styles.macroLabel}>P / C / F</Text>
+              </View>
+            </View>
+
+            <Text style={[styles.miniLabel, { color: persona.accent, marginTop: 14 }]}>SIGNATURE FOODS</Text>
+            <View style={styles.foodGrid}>
+              {persona.nutrition.signatureFoods.map((food, i) => (
+                <View key={i} style={styles.foodChip}>
+                  <Text style={styles.foodChipText}>{food}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Text style={[styles.miniLabel, { color: persona.accent, marginTop: 14 }]}>CUTTING APPROACH</Text>
+            <Text style={styles.cuttingText}>{persona.nutrition.cuttingApproach}</Text>
+          </View>
+
+          {/* ── COACH SWITCHER ──────────────────────────────────────── */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>EXPLORE OTHER COACHES</Text>
+            <Text style={styles.signatureSub}>
+              {isUsersCoach
+                ? 'Tap to preview another coach\'s world. Your active coach stays as is.'
+                : 'You\'re previewing — tap your own coach to return.'}
+            </Text>
+            <View style={styles.coachSwitchRow}>
+              {PERSONA_ORDER.map((id) => {
+                const p = getPersona(id);
+                const active = id === selectedId;
+                const isUserId = id === userCoach.id;
+                return (
+                  <TouchableOpacity
+                    key={id}
+                    style={[
+                      styles.coachAvatarBtn,
+                      { borderColor: active ? p.accent : 'transparent' },
+                      active && { backgroundColor: p.accent },
+                    ]}
+                    onPress={() => switchTo(id)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={[
+                      styles.coachAvatarBtnText,
+                      { color: active ? p.ink : p.accent },
+                    ]}>
+                      {p.initials}
+                    </Text>
+                    {isUserId && <View style={[styles.userMarker, { backgroundColor: '#fff' }]} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* ── CHAT ──────────────────────────────────────────────── */}
+          <View style={[styles.section, { paddingBottom: 14 }]}>
+            <Text style={styles.sectionLabel}>
+              CHAT WITH {styleText(persona, persona.shortName)}
+            </Text>
+
+            {messages.length === 0 ? (
+              <View>
+                <Text style={styles.chatPrompt}>
+                  Ask {persona.shortName} anything — training, nutrition, mindset.
+                </Text>
+                <View style={styles.quickRow}>
+                  {QUICK_PROMPTS.map((q) => (
+                    <TouchableOpacity
+                      key={q}
+                      style={[styles.quickChip, { borderColor: persona.accent }]}
+                      onPress={() => sendMessage(q)}
+                    >
+                      <Text style={[styles.quickChipText, { color: persona.accent }]}>{q}</Text>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </View>
-            </View>
-          )}
+            ) : (
+              messages.map((msg) => (
+                <View
+                  key={msg.id}
+                  style={[styles.bubble, msg.role === 'user' ? styles.bubbleUser : styles.bubbleCoach]}
+                >
+                  {msg.role === 'assistant' && (
+                    <Text style={[styles.bubbleSender, { color: persona.accent }]}>
+                      {persona.shortName}
+                    </Text>
+                  )}
+                  <View style={[
+                    styles.bubbleContent,
+                    msg.role === 'user'
+                      ? { backgroundColor: persona.accent }
+                      : styles.bubbleContentCoach,
+                  ]}>
+                    <Text style={[
+                      styles.bubbleText,
+                      msg.role === 'user' ? { color: persona.ink } : { color: Colors.text },
+                    ]}>
+                      {msg.content}
+                    </Text>
+                  </View>
+                </View>
+              ))
+            )}
+
+            {chatLoading && (
+              <View style={styles.bubbleCoach}>
+                <Text style={[styles.bubbleSender, { color: persona.accent }]}>{persona.shortName}</Text>
+                <View style={styles.bubbleContentCoach}>
+                  <View style={styles.typingDots}>
+                    {[0, 1, 2].map((i) => (
+                      <View key={i} style={[styles.dot, { backgroundColor: persona.accent, opacity: 0.3 + i * 0.25 }]} />
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
         </ScrollView>
 
-        {/* Input bar */}
+        {/* ── INPUT BAR (always visible) ─────────────────────────────── */}
         <View style={styles.inputBar}>
           <TextInput
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder={`Ask ${persona.name} anything…`}
+            placeholder={`Ask ${persona.shortName} anything…`}
             placeholderTextColor={Colors.textTertiary}
             multiline
             maxLength={500}
             keyboardAppearance="dark"
           />
           <TouchableOpacity
-            style={[styles.sendBtn, { backgroundColor: persona.hue }, (!input.trim() || isLoading) && styles.sendDisabled]}
+            style={[
+              styles.sendBtn,
+              { backgroundColor: persona.accent },
+              (!input.trim() || chatLoading) && styles.sendDisabled,
+            ]}
             onPress={() => sendMessage(input)}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || chatLoading}
           >
-            {isLoading
-              ? <ActivityIndicator size="small" color={Colors.accentInk} />
-              : <Text style={[styles.sendArrow, { color: Colors.accentInk }]}>↑</Text>
+            {chatLoading
+              ? <ActivityIndicator size="small" color={persona.ink} />
+              : <Text style={[styles.sendArrow, { color: persona.ink }]}>↑</Text>
             }
           </TouchableOpacity>
         </View>
@@ -217,78 +370,142 @@ export default function Coach() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: Colors.background },
 
-  // Coach header
-  coachHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 20, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  // ── HERO ──
+  hero: {
+    paddingTop: 24, paddingBottom: 24, paddingHorizontal: 20,
+    borderBottomLeftRadius: 18, borderBottomRightRadius: 18,
   },
-  coachAvatar: {
-    width: 48, height: 48, borderRadius: 4,
+  heroTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  heroAvatar: {
+    width: 56, height: 56, borderRadius: 8, borderWidth: 2,
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center', justifyContent: 'center',
   },
-  coachAvatarText: { fontFamily: Fonts.display, fontSize: 16, color: Colors.accentInk },
-  coachNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  coachName: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, letterSpacing: -0.3 },
-  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.good },
-  coachTag: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, marginTop: 2, letterSpacing: 1 },
-  switchBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-
-  // Persona chips
-  chipBar: { flexShrink: 0, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  chipBarContent: { paddingHorizontal: 20, paddingVertical: 10, gap: 6, flexDirection: 'row' },
-  chip: {
-    paddingHorizontal: 12, paddingVertical: 7,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 16,
+  heroInitials: { fontFamily: Fonts.display, fontSize: 22, letterSpacing: -0.4 },
+  previewChip: {
+    paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1, borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
-  chipText: { fontFamily: Fonts.bodySemi, fontSize: 12, color: Colors.textSecondary },
+  previewChipText: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1.4 },
+  heroVibe: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 2.4, marginTop: 16 },
+  heroName: { fontFamily: Fonts.display, fontSize: 28, letterSpacing: -0.6, marginTop: 4 },
+  heroEra: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.2, marginTop: 4 },
+  quoteDivider: { height: 1, marginVertical: 16 },
+  heroQuote: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 21, fontStyle: 'italic' },
 
-  // Messages
-  messageList: { flex: 1 },
-  messageContent: { padding: 20, gap: 10, paddingBottom: 24 },
+  // ── TODAY CTA ──
+  todayCard: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 16, marginTop: 16, padding: 16,
+    backgroundColor: Colors.surface, borderRadius: 6,
+    borderLeftWidth: 3,
+  },
+  todayWorkoutName: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text, marginTop: 4, letterSpacing: -0.4 },
+  todayMeta: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, marginTop: 6, letterSpacing: 0.8 },
+  todayBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  todayBtnText: { fontFamily: Fonts.display, fontSize: 18 },
 
-  emptyState: { paddingTop: 32, paddingHorizontal: 4 },
-  emptyTitle: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text, lineHeight: 34, letterSpacing: -0.8 },
-  emptySub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginTop: 8, marginBottom: 24 },
+  // ── SECTIONS ──
+  section: {
+    marginHorizontal: 16, marginTop: 20, padding: 16,
+    backgroundColor: Colors.surface, borderRadius: 6,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  sectionLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.8 },
+  miniLabel: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 6, marginTop: 4 },
+
+  philosophySig: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, marginTop: 8, marginBottom: 14, lineHeight: 20, fontStyle: 'italic' },
+  bulletRow: { flexDirection: 'row', gap: 9, paddingVertical: 4, alignItems: 'flex-start' },
+  bulletGood: { fontFamily: Fonts.mono, fontSize: 14, marginTop: -1 },
+  bulletBad: { fontFamily: Fonts.mono, fontSize: 14, color: '#ef4444', marginTop: -1 },
+  bulletText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 19 },
+
+  signatureSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 6, marginBottom: 10, lineHeight: 17 },
+  signatureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  signatureChip: {
+    paddingHorizontal: 11, paddingVertical: 6, borderRadius: 3, borderWidth: 1,
+    backgroundColor: 'rgba(255,255,255,0.02)',
+  },
+  signatureChipText: { fontFamily: Fonts.bodySemi, fontSize: 12 },
+
+  nutritionHeadline: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginTop: 8, lineHeight: 22, letterSpacing: -0.3 },
+  nutritionStyle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 6, lineHeight: 17 },
+
+  macroRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
+  macroBox: {
+    flex: 1, padding: 10, borderRadius: 4,
+    backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center',
+  },
+  macroNum: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text },
+  macroLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 3 },
+
+  foodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+  foodChip: {
+    paddingHorizontal: 9, paddingVertical: 5, borderRadius: 3,
+    backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border,
+  },
+  foodChipText: { fontFamily: Fonts.body, fontSize: 11, color: Colors.text },
+
+  cuttingText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.text, lineHeight: 18 },
+
+  // ── COACH SWITCHER ──
+  coachSwitchRow: { flexDirection: 'row', gap: 10, marginTop: 12, justifyContent: 'space-between' },
+  coachAvatarBtn: {
+    flex: 1, aspectRatio: 1, borderRadius: 8, borderWidth: 2,
+    backgroundColor: Colors.background,
+    alignItems: 'center', justifyContent: 'center',
+    position: 'relative',
+  },
+  coachAvatarBtnText: { fontFamily: Fonts.display, fontSize: 14 },
+  userMarker: {
+    position: 'absolute', top: 4, right: 4,
+    width: 5, height: 5, borderRadius: 3,
+  },
+
+  // ── CHAT ──
+  chatPrompt: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginTop: 8, marginBottom: 12, lineHeight: 19 },
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   quickChip: {
-    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 16, borderWidth: 1,
+    paddingHorizontal: 11, paddingVertical: 6, borderRadius: 16, borderWidth: 1,
   },
-  quickChipText: { fontFamily: Fonts.bodySemi, fontSize: 12 },
+  quickChipText: { fontFamily: Fonts.bodySemi, fontSize: 11 },
 
-  bubble: { gap: 4 },
+  bubble: { gap: 3, marginTop: 10 },
   bubbleUser: { alignItems: 'flex-end' },
   bubbleCoach: { alignItems: 'flex-start' },
-  bubbleSender: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 2, marginLeft: 2 },
-  bubbleContent: { maxWidth: '82%', paddingHorizontal: 14, paddingVertical: 12, borderRadius: 4 },
-  bubbleContentUser: {},
-  bubbleContentCoach: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 4,
-  },
-  bubbleText: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 21 },
-  ctText: { fontFamily: Fonts.bodySemi, letterSpacing: 0.1, textTransform: 'uppercase' },
-  typingDots: { flexDirection: 'row', gap: 4, padding: 4 },
+  bubbleSender: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4 },
+  bubbleContent: { maxWidth: '85%', paddingHorizontal: 13, paddingVertical: 10, borderRadius: 4 },
+  bubbleContentCoach: { backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border },
+  bubbleText: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
+  typingDots: { flexDirection: 'row', gap: 4, padding: 6 },
   dot: { width: 6, height: 6, borderRadius: 3 },
 
-  // Input bar
+  // ── INPUT BAR (fixed bottom) ──
   inputBar: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 8,
-    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 14,
+    paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12,
     borderTopWidth: 1, borderTopColor: Colors.border,
     backgroundColor: Colors.background,
   },
   input: {
-    flex: 1, minHeight: 44, maxHeight: 120,
-    backgroundColor: Colors.surface, borderRadius: 22,
-    paddingHorizontal: 16, paddingVertical: 10,
+    flex: 1, minHeight: 42, maxHeight: 120,
+    backgroundColor: Colors.surface, borderRadius: 21,
+    paddingHorizontal: 15, paddingVertical: 10,
     fontFamily: Fonts.body, fontSize: 13, color: Colors.text,
     borderWidth: 1, borderColor: Colors.border,
   },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   sendDisabled: { opacity: 0.35 },
-  sendArrow: { fontSize: 20, fontFamily: Fonts.bodyBold },
+  sendArrow: { fontSize: 18, fontFamily: Fonts.bodyBold },
 });
