@@ -1,10 +1,14 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
+import {
+  View, Text, TouchableOpacity, StyleSheet, Modal, Pressable,
+  KeyboardAvoidingView, Platform,
+} from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS,
 } from 'react-native-reanimated';
 import { useWindowDimensions } from 'react-native';
-import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 interface Props {
   visible: boolean;
@@ -15,6 +19,7 @@ interface Props {
 
 export function BottomSheet({ visible, onClose, title, children }: Props) {
   const { height: screenHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const translateY = useSharedValue(screenHeight);
   const opacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
@@ -37,11 +42,22 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
 
   return (
     <Modal transparent animationType="none" visible={modalVisible} onRequestClose={onClose}>
-      <View style={styles.container}>
-        <Animated.View style={[styles.backdrop, backdropStyle]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        </Animated.View>
-        <Animated.View style={[styles.sheet, sheetStyle, { maxHeight: screenHeight * 0.9 }]}>
+      {/* Backdrop — sits behind everything, tapping it closes the sheet */}
+      <Animated.View style={[styles.backdrop, backdropStyle]} pointerEvents="box-none">
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+      </Animated.View>
+
+      {/* KeyboardAvoidingView wraps ONLY the sheet so it slides up with the keyboard */}
+      <KeyboardAvoidingView
+        style={styles.sheetContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        pointerEvents="box-none"
+      >
+        <Animated.View style={[
+          styles.sheet,
+          sheetStyle,
+          { maxHeight: screenHeight * 0.9, paddingBottom: Spacing.xxl + insets.bottom },
+        ]}>
           {title && (
             <View style={styles.header}>
               <Text style={styles.title}>{title}</Text>
@@ -52,14 +68,17 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
           )}
           {children}
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  sheetContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   sheet: {
     backgroundColor: Colors.surface,
     borderTopLeftRadius: 16,
@@ -67,7 +86,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: Colors.border,
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
   },
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',

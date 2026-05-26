@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 160" width="600" height="160">
+  <rect width="600" height="160" fill="#0d0d0d"/>
+  <text x="30" y="130" font-family="'Arial Black', 'Arial', sans-serif" font-weight="900" font-size="130" letter-spacing="-4" fill="#ff6b35">A</text>
+  <text x="110" y="130" font-family="'Arial Black', 'Arial', sans-serif" font-weight="900" font-size="130" letter-spacing="-4" fill="#ffffff">TLEATO</text>
+  <rect x="30" y="142" width="542" height="6" rx="3" fill="#ff6b35"/>
+</svg>

@@ -3,6 +3,9 @@ const path = require('path');
 
 const config = getDefaultConfig(__dirname);
 
+// Allow Metro to bundle .tflite model files as assets
+config.resolver.assetExts.push('tflite');
+
 const stub = path.resolve(__dirname, 'stubs/mediapipe-stub.js');
 
 // @tensorflow-models/pose-detection bundles every backend (BlazePose, PoseNet,
