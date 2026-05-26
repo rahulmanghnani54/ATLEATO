@@ -205,7 +205,9 @@ export default function Dashboard() {
             />
           }
         >
-          {/* ── Greeting ────────────────────────────────────────────────── */}
+          {/* ─────────────────────────────────────────────────────────────
+              GREETING (no section header)
+              ───────────────────────────────────────────────────────────── */}
           <View style={styles.greetingRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.dayLabel}>{dayLabel}</Text>
@@ -226,45 +228,12 @@ export default function Dashboard() {
             </TouchableOpacity>
           </View>
 
-          {/* ── Today Rings ─────────────────────────────────────────────── */}
-          <GlassCard style={styles.ringsCard}>
-            <View style={styles.ringsInner}>
-              <View style={{ position: 'relative', width: 120, height: 120 }}>
-                <TodayRings
-                  movePct={movePct}
-                  proteinPct={proteinPct}
-                  recoveryPct={recoveryPct}
-                  accent={persona.accent}
-                />
-                <View style={styles.ringsCenter}>
-                  <Text style={styles.ringsCenterNum}>
-                    {recoveryScore != null ? recoveryScore : '—'}
-                  </Text>
-                  <Text style={styles.ringsCenterLabel}>SCORE</Text>
-                </View>
-              </View>
-              <View style={styles.ringMeta}>
-                <RingMetaRow color={persona.accent} bold={`${weekVolume.toFixed(1)}k`} small="kg this week" />
-                <RingMetaRow color="#7be38c" bold={`${protein}g`} small={`/ ${proteinGoal}g protein`} />
-                <RingMetaRow color="#5DD3FA" bold={`${streak} day`} small={streak === 1 ? 'streak' : 'streak'} />
-              </View>
-            </View>
-          </GlassCard>
+          {/* ═════════════════════════════════════════════════════════════
+              SECTION 1 · TODAY  (primary action + urgent nudges)
+              ═════════════════════════════════════════════════════════════ */}
+          <SectionHeader label="TODAY" accent={persona.accent} />
 
-          {/* ── Streak Nudge (only shows when behind) ───────────────────── */}
-          <StreakNudge
-            streak={streak}
-            trainedToday={trainedToday}
-            isRestDay={!!todaySchedule?.isRest}
-            persona={persona}
-            onTrainPress={startTodayWorkout}
-          />
-
-          {/* ── Morning Brief ───────────────────────────────────────────── */}
-          <MorningBriefCard persona={persona} />
-
-          {/* ── TODAY gradient hero ─────────────────────────────────────── */}
-          <Text style={styles.sectionLabel}>TODAY</Text>
+          {/* TODAY gradient hero — biggest tap target */}
           <TouchableOpacity onPress={startTodayWorkout} activeOpacity={0.88}>
             <LinearGradient
               colors={[persona.accent, `${persona.accent}cc`]}
@@ -292,22 +261,62 @@ export default function Dashboard() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* ── Coach voice quote — frosted glass ───────────────────────── */}
-          <GlassCard style={{ marginTop: 14 }}>
-            <View style={styles.quoteHead}>
-              <View style={[styles.quoteAvatar, { backgroundColor: persona.accent }]}>
-                <Text style={[styles.quoteAvatarText, { color: persona.ink }]}>
-                  {persona.initials}
-                </Text>
+          {/* Streak Nudge — only shows when user is behind */}
+          <View style={{ marginTop: 14 }}>
+            <StreakNudge
+              streak={streak}
+              trainedToday={trainedToday}
+              isRestDay={!!todaySchedule?.isRest}
+              persona={persona}
+              onTrainPress={startTodayWorkout}
+            />
+          </View>
+
+          {/* Recovery check-in — only if not done today */}
+          {!hasCheckedInToday && (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => router.push('/recovery-checkin' as any)}
+            >
+              <GlassCard style={{ marginTop: 14 }}>
+                <Text style={[styles.miniLabel, { color: persona.accent }]}>⚠  DAILY CHECK-IN</Text>
+                <Text style={styles.checkinTitle}>How did you sleep?</Text>
+                <Text style={styles.checkinSub}>Log recovery to optimise today&rsquo;s training →</Text>
+              </GlassCard>
+            </TouchableOpacity>
+          )}
+
+          {/* ═════════════════════════════════════════════════════════════
+              SECTION 2 · AT A GLANCE  (status snapshot)
+              ═════════════════════════════════════════════════════════════ */}
+          <SectionHeader label="AT A GLANCE" accent={persona.accent} />
+
+          {/* Today Rings — the centrepiece status card */}
+          <GlassCard style={styles.ringsCard}>
+            <View style={styles.ringsInner}>
+              <View style={{ position: 'relative', width: 120, height: 120 }}>
+                <TodayRings
+                  movePct={movePct}
+                  proteinPct={proteinPct}
+                  recoveryPct={recoveryPct}
+                  accent={persona.accent}
+                />
+                <View style={styles.ringsCenter}>
+                  <Text style={styles.ringsCenterNum}>
+                    {recoveryScore != null ? recoveryScore : '—'}
+                  </Text>
+                  <Text style={styles.ringsCenterLabel}>SCORE</Text>
+                </View>
               </View>
-              <Text style={[styles.quoteName, { color: persona.accent }]}>
-                {styleText(persona, `${persona.shortName} SAYS`)}
-              </Text>
+              <View style={styles.ringMeta}>
+                <RingMetaRow color={persona.accent} bold={`${weekVolume.toFixed(1)}k`} small="kg this week" />
+                <RingMetaRow color="#7be38c" bold={`${protein}g`} small={`/ ${proteinGoal}g protein`} />
+                <RingMetaRow color="#5DD3FA" bold={`${streak} day`} small="streak" />
+              </View>
             </View>
-            <Text style={styles.quoteBody}>"{todayQuote}"</Text>
           </GlassCard>
 
-          {/* ── Three icon cards: RANK / CHAIN / FREEZES ────────────────── */}
+          {/* Three icon cards: RANK / CHAIN / FREEZES */}
           <View style={styles.iconCardsRow}>
             <IconCard
               icon="🏆"
@@ -331,42 +340,10 @@ export default function Dashboard() {
             />
           </View>
 
-          {/* ── Streak Hero (with persona accent) ───────────────────────── */}
-          <View style={{ marginTop: 14 }}>
-            <StreakHero days={streak} persona={persona} />
-          </View>
-
-          {/* ── PR Shelf ────────────────────────────────────────────────── */}
-          <PRShelf persona={persona} />
-
-          {/* ── Chain Calendar (full strip) ─────────────────────────────── */}
-          <ChainCalendarCard persona={persona} />
-
-          {/* ── Global Leaderboard (top 3 + you) ────────────────────────── */}
-          <LeaderboardCard persona={persona} />
-
-          {/* ── Tomorrow's Commitment ───────────────────────────────────── */}
-          <TomorrowCommitmentCard persona={persona} />
-
-          {/* ── Witness Nudge ───────────────────────────────────────────── */}
-          <WitnessNudgeCard sessionsThisWeek={sessionsThisWeek} persona={persona} />
-
-          {/* ── Recovery ────────────────────────────────────────────────── */}
-          {!hasCheckedInToday ? (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push('/recovery-checkin' as any)}
-            >
-              <GlassCard style={{ marginTop: 14 }}>
-                <Text style={[styles.miniLabel, { color: persona.accent }]}>⚠  DAILY CHECK-IN</Text>
-                <Text style={styles.checkinTitle}>How did you sleep?</Text>
-                <Text style={styles.checkinSub}>Log recovery to optimise today&rsquo;s training →</Text>
-              </GlassCard>
-            </TouchableOpacity>
-          ) : null}
-
-          {/* ── Nutrition macros ────────────────────────────────────────── */}
-          <Text style={styles.sectionLabel}>NUTRITION · {format(date, 'HH:mm')}</Text>
+          {/* ═════════════════════════════════════════════════════════════
+              SECTION 3 · YOUR DAY  (live daily tracking)
+              ═════════════════════════════════════════════════════════════ */}
+          <SectionHeader label={`YOUR DAY · ${format(date, 'HH:mm')}`} accent={persona.accent} />
           <GlassCard>
             <View style={styles.macroTop}>
               <View>
@@ -407,9 +384,8 @@ export default function Dashboard() {
             </View>
           </GlassCard>
 
-          {/* ── Hydration ───────────────────────────────────────────────── */}
-          <Text style={styles.sectionLabel}>HYDRATION</Text>
-          <GlassCard>
+          {/* Hydration — paired with nutrition under YOUR DAY */}
+          <GlassCard style={{ marginTop: 10 }}>
             <View style={styles.waterRow}>
               <Text style={styles.miniLabel}>WATER</Text>
               <View style={styles.waterBars}>
@@ -433,6 +409,54 @@ export default function Dashboard() {
             </View>
           </GlassCard>
 
+          {/* ═════════════════════════════════════════════════════════════
+              SECTION 4 · MOMENTUM  (motivation: streak, quote, PRs, plan)
+              ═════════════════════════════════════════════════════════════ */}
+          <SectionHeader label="MOMENTUM" accent={persona.accent} />
+
+          {/* Streak Hero with freeze inventory */}
+          <StreakHero days={streak} persona={persona} />
+
+          {/* Coach voice quote */}
+          <GlassCard style={{ marginTop: 14 }}>
+            <View style={styles.quoteHead}>
+              <View style={[styles.quoteAvatar, { backgroundColor: persona.accent }]}>
+                <Text style={[styles.quoteAvatarText, { color: persona.ink }]}>
+                  {persona.initials}
+                </Text>
+              </View>
+              <Text style={[styles.quoteName, { color: persona.accent }]}>
+                {styleText(persona, `${persona.shortName} SAYS`)}
+              </Text>
+            </View>
+            <Text style={styles.quoteBody}>"{todayQuote}"</Text>
+          </GlassCard>
+
+          {/* PR Shelf */}
+          <PRShelf persona={persona} />
+
+          {/* Tomorrow Commitment — pre-commit for tomorrow's workout */}
+          <TomorrowCommitmentCard persona={persona} />
+
+          {/* ═════════════════════════════════════════════════════════════
+              SECTION 5 · COMMUNITY  (chain, leaderboard, accountability)
+              ═════════════════════════════════════════════════════════════ */}
+          <SectionHeader label="COMMUNITY" accent={persona.accent} />
+
+          {/* Chain Calendar — Seinfeld "don't break the chain" strip */}
+          <ChainCalendarCard persona={persona} />
+
+          {/* Global Weekly Leaderboard — top 3 + your row */}
+          <LeaderboardCard persona={persona} />
+
+          {/* Witness Nudge — Sunday/Monday only when behind on weekly sessions */}
+          <WitnessNudgeCard sessionsThisWeek={sessionsThisWeek} persona={persona} />
+
+          {/* Morning Brief at the very bottom — quiet daily ritual */}
+          <View style={{ marginTop: 14 }}>
+            <MorningBriefCard persona={persona} />
+          </View>
+
           <View style={{ height: 48 }} />
         </ScrollView>
       </SafeAreaView>
@@ -441,6 +465,21 @@ export default function Dashboard() {
 }
 
 // ─── Helper components ───────────────────────────────────────────────────────
+
+/**
+ * SectionHeader — Strava-style mono label with a hairline rule.
+ * Separates the home into clear scannable groups (Today / At a glance /
+ * Your day / Momentum / Community).
+ */
+function SectionHeader({ label, accent }: { label: string; accent: string }) {
+  return (
+    <View style={styles.sectionHeaderRow}>
+      <View style={[styles.sectionHeaderBar, { backgroundColor: accent }]} />
+      <Text style={[styles.sectionHeaderText, { color: accent }]}>{label}</Text>
+      <View style={styles.sectionHeaderRule} />
+    </View>
+  );
+}
 
 function RingMetaRow({ color, bold, small }: { color: string; bold: string; small: string }) {
   return (
@@ -558,10 +597,25 @@ const styles = StyleSheet.create({
   ringMetaDot: { width: 8, height: 8, borderRadius: 4 },
   ringMetaText: { fontSize: 13, color: Colors.text },
 
-  // Section label
+  // Section label (legacy — used by YOUR DAY sub-labels)
   sectionLabel: {
     fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.8,
     color: Colors.textTertiary, marginBottom: 8, marginTop: 16,
+  },
+
+  // Section header (Strava-style block divider with accent bar + rule)
+  sectionHeaderRow: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: 10, marginTop: 28, marginBottom: 14,
+  },
+  sectionHeaderBar: { width: 3, height: 12, borderRadius: 1.5 },
+  sectionHeaderText: {
+    fontFamily: Fonts.mono, fontSize: 11,
+    letterSpacing: 2.2, fontWeight: '700',
+  },
+  sectionHeaderRule: {
+    flex: 1, height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
 
   // Today hero (gradient)
