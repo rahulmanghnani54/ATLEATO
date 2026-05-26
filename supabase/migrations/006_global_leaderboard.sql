@@ -11,6 +11,11 @@
 --     pseudo-id derived from the user_id (so people stay anonymous but their
 --     rank persists week-over-week).
 --   - No names, no emails, no profile photos are ever returned.
+--
+-- Implementation note:
+--   Inner CTE columns use distinct names (uid/v_kg/sess/rnk) to avoid the
+--   PL/pgSQL OUT-parameter ambiguity (`volume_kg` is both a column alias and
+--   an OUT variable). The final SELECT renames them back to the contract.
 -- ─────────────────────────────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.global_weekly_leaderboard(
@@ -27,6 +32,7 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+#variable_conflict use_column
 DECLARE
   week_start DATE;
   caller_id UUID := auth.uid();
@@ -37,9 +43,9 @@ BEGIN
   RETURN QUERY
   WITH agg AS (
     SELECT
-      wl.user_id,
-      COALESCE(SUM(wl.total_volume_kg), 0)::NUMERIC AS volume_kg,
-      COUNT(DISTINCT wl.date)::BIGINT              AS sessions
+      wl.user_id                                    AS uid,
+      COALESCE(SUM(wl.total_volume_kg), 0)::NUMERIC AS v_kg,
+      COUNT(DISTINCT wl.date)::BIGINT               AS sess
     FROM public.workout_logs wl
     WHERE wl.date >= week_start
       AND wl.total_volume_kg IS NOT NULL
@@ -48,23 +54,20 @@ BEGIN
   ),
   ranked AS (
     SELECT
-      ROW_NUMBER() OVER (ORDER BY volume_kg DESC) AS rank,
-      user_id,
-      volume_kg,
-      sessions
+      ROW_NUMBER() OVER (ORDER BY v_kg DESC) AS rnk,
+      uid, v_kg, sess
     FROM agg
   )
   SELECT
-    r.rank,
-    'Lifter #' || LPAD(((ABS(HASHTEXT(r.user_id::TEXT)) % 9000) + 1000)::TEXT, 4, '0')
-      AS anon_handle,
-    ROUND(r.volume_kg, 1) AS volume_kg,
-    r.sessions,
-    (r.user_id = caller_id) AS is_current_user
+    r.rnk                                                                              AS rank,
+    'Lifter #' || LPAD(((ABS(HASHTEXT(r.uid::TEXT)) % 9000) + 1000)::TEXT, 4, '0')     AS anon_handle,
+    ROUND(r.v_kg, 1)                                                                   AS volume_kg,
+    r.sess                                                                             AS sessions,
+    (r.uid = caller_id)                                                                AS is_current_user
   FROM ranked r
-  WHERE r.rank <= limit_count
-     OR r.user_id = caller_id
-  ORDER BY r.rank ASC;
+  WHERE r.rnk <= limit_count
+     OR r.uid = caller_id
+  ORDER BY r.rnk ASC;
 END;
 $$;
 
