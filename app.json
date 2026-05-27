@@ -32,11 +32,6 @@
     },
     "android": {
       "package": "com.madsales.atleato",
-      "config": {
-        "googleMaps": {
-          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY_HERE_OPTIONAL"
-        }
-      },
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ff6b35"

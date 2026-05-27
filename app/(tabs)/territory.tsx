@@ -130,7 +130,14 @@ export default function TerritoryMapScreen() {
       </View>
 
       <View style={styles.mapWrap}>
-        {locating ? (
+        {!HAS_GOOGLE_KEY ? (
+          <NoMapPlaceholder
+            persona={persona}
+            cellsInView={cells.length}
+            ownedInView={cells.filter((c) => c.is_current_user).length}
+            onRun={() => router.push('/run' as any)}
+          />
+        ) : locating ? (
           <View style={styles.mapPlaceholder}>
             <ActivityIndicator color={persona.accent} />
             <Text style={styles.muted}>Locating you…</Text>
@@ -171,16 +178,18 @@ export default function TerritoryMapScreen() {
           </View>
         )}
 
-        {/* Heatmap toggle */}
-        <TouchableOpacity
-          style={[styles.heatBtn, heatmap && { backgroundColor: persona.accent }]}
-          onPress={() => setHeatmap((h) => !h)}
-          activeOpacity={0.85}
-        >
-          <Text style={[styles.heatBtnText, heatmap && { color: persona.ink }]}>
-            🔥 {heatmap ? 'HEAT ON' : 'HEATMAP'}
-          </Text>
-        </TouchableOpacity>
+        {/* Heatmap toggle (only meaningful when map is rendering) */}
+        {HAS_GOOGLE_KEY && (
+          <TouchableOpacity
+            style={[styles.heatBtn, heatmap && { backgroundColor: persona.accent }]}
+            onPress={() => setHeatmap((h) => !h)}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.heatBtnText, heatmap && { color: persona.ink }]}>
+              🔥 {heatmap ? 'HEAT ON' : 'HEATMAP'}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Selected cell info card */}
@@ -271,6 +280,53 @@ function CellPolygon({
   );
 }
 
+/**
+ * NoMapPlaceholder — shown when Google Maps API key is not configured.
+ * The territory game still works (you can run, claim cells, see your
+ * stats + leaderboard), you just can't VIEW the map until a key is added.
+ */
+function NoMapPlaceholder({
+  persona, cellsInView, ownedInView, onRun,
+}: {
+  persona: ReturnType<typeof personaFromProgramId>;
+  cellsInView: number;
+  ownedInView: number;
+  onRun: () => void;
+}) {
+  return (
+    <View style={[styles.noMapWrap, { borderColor: persona.accent }]}>
+      <Text style={styles.noMapEmoji}>🗺</Text>
+      <Text style={[styles.noMapTitle, { color: persona.accent }]}>
+        Map view needs setup
+      </Text>
+      <Text style={styles.noMapBody}>
+        Add a free Google Maps API key in app.json to see the world map.
+        The territory game works fine without it.
+      </Text>
+
+      <View style={styles.noMapStats}>
+        <View style={styles.noMapStat}>
+          <Text style={[styles.noMapStatNum, { color: persona.accent }]}>{ownedInView}</Text>
+          <Text style={styles.noMapStatLabel}>YOURS HERE</Text>
+        </View>
+        <View style={styles.noMapDivider} />
+        <View style={styles.noMapStat}>
+          <Text style={styles.noMapStatNum}>{cellsInView}</Text>
+          <Text style={styles.noMapStatLabel}>CELLS NEARBY</Text>
+        </View>
+      </View>
+
+      <TouchableOpacity
+        style={[styles.noMapBtn, { backgroundColor: persona.accent }]}
+        onPress={onRun}
+        activeOpacity={0.85}
+      >
+        <Text style={[styles.noMapBtnText, { color: persona.ink }]}>▶  START RUN</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function Stat({ label, value, accent }: { label: string; value: string; accent: string }) {
   return (
     <View style={styles.stat}>
@@ -336,6 +392,32 @@ const styles = StyleSheet.create({
   heatBtnText: {
     color: '#fff', fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4, fontWeight: '700',
   },
+
+  // NoMapPlaceholder
+  noMapWrap: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
+    padding: 24, gap: 14,
+  },
+  noMapEmoji: { fontSize: 56 },
+  noMapTitle: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 18, letterSpacing: -0.2 },
+  noMapBody: {
+    fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary,
+    textAlign: 'center', lineHeight: 17, paddingHorizontal: 12,
+  },
+  noMapStats: {
+    flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 6,
+  },
+  noMapStat: { alignItems: 'center' },
+  noMapStatNum: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 32, color: Colors.text, letterSpacing: -0.8 },
+  noMapStatLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 2 },
+  noMapDivider: { width: 1, height: 40, backgroundColor: Colors.border },
+  noMapBtn: {
+    marginTop: 8, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 100,
+  },
+  noMapBtnText: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
 
   selCard: {
     flexDirection: 'row', alignItems: 'center',

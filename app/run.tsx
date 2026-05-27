@@ -219,46 +219,58 @@ export default function RunScreen() {
 
         {phase === 'tracking' && (
           <View style={styles.tracking}>
-            {/* Live route map — top 55% of viewport */}
-            <View style={styles.mapWrap}>
-              {currentPos ? (
-                <MapView
-                  ref={mapRef}
-                  provider={MAP_PROVIDER}
-                  style={StyleSheet.absoluteFill}
-                  initialRegion={{
-                    latitude: currentPos.lat,
-                    longitude: currentPos.lon,
-                    latitudeDelta: 0.005,
-                    longitudeDelta: 0.005,
-                  }}
-                  showsUserLocation
-                  showsMyLocationButton={false}
-                  followsUserLocation
-                  toolbarEnabled={false}
-                >
-                  {/* Route polyline */}
-                  {route.length > 1 && (
-                    <Polyline
-                      coordinates={route.map((p) => ({ latitude: p.lat, longitude: p.lon }))}
-                      strokeColor={persona.accent}
-                      strokeWidth={5}
-                      lineCap="round"
-                      lineJoin="round"
-                    />
-                  )}
-                  {/* Live cells being claimed */}
-                  {cellList.map((cid) => (
-                    <CellSquare key={cid} cellId={cid} accent={persona.accent} />
-                  ))}
-                </MapView>
-              ) : (
-                <View style={styles.mapPlaceholder}>
-                  <ActivityIndicator color={persona.accent} />
-                  <Text style={styles.muted}>Locking onto GPS…</Text>
-                </View>
-              )}
-            </View>
+            {/* Live route map — top half of viewport (only if map available) */}
+            {HAS_GOOGLE_KEY ? (
+              <View style={styles.mapWrap}>
+                {currentPos ? (
+                  <MapView
+                    ref={mapRef}
+                    provider={MAP_PROVIDER}
+                    style={StyleSheet.absoluteFill}
+                    initialRegion={{
+                      latitude: currentPos.lat,
+                      longitude: currentPos.lon,
+                      latitudeDelta: 0.005,
+                      longitudeDelta: 0.005,
+                    }}
+                    showsUserLocation
+                    showsMyLocationButton={false}
+                    followsUserLocation
+                    toolbarEnabled={false}
+                  >
+                    {route.length > 1 && (
+                      <Polyline
+                        coordinates={route.map((p) => ({ latitude: p.lat, longitude: p.lon }))}
+                        strokeColor={persona.accent}
+                        strokeWidth={5}
+                        lineCap="round"
+                        lineJoin="round"
+                      />
+                    )}
+                    {cellList.map((cid) => (
+                      <CellSquare key={cid} cellId={cid} accent={persona.accent} />
+                    ))}
+                  </MapView>
+                ) : (
+                  <View style={styles.mapPlaceholder}>
+                    <ActivityIndicator color={persona.accent} />
+                    <Text style={styles.muted}>Locking onto GPS…</Text>
+                  </View>
+                )}
+              </View>
+            ) : (
+              /* No Google Maps key — show a big live "cells claimed" hero */
+              <View style={[styles.bigClaimHero, { borderColor: persona.accent }]}>
+                <Text style={styles.statLabel}>CELLS CLAIMED · LIVE</Text>
+                <Text style={[styles.bigClaimNum, { color: persona.accent }]}>{cellsTouched}</Text>
+                <Text style={styles.bigClaimSub}>
+                  {currentPos ? '📡 GPS locked · keep moving' : '📡 Locking onto GPS…'}
+                </Text>
+                <Text style={styles.bigClaimHint}>
+                  Live map needs a Google Maps API key in app.json.
+                </Text>
+              </View>
+            )}
 
             {/* Compact stats row */}
             <View style={styles.compactStats}>
@@ -292,8 +304,8 @@ export default function RunScreen() {
 
         {phase === 'finished' && (
           <View style={styles.tracking}>
-            {/* Full route review map */}
-            {route.length > 1 && currentPos && (
+            {/* Full route review map (only if Google Maps configured) */}
+            {HAS_GOOGLE_KEY && route.length > 1 && currentPos && (
               <View style={styles.mapWrap}>
                 <MapView
                   provider={MAP_PROVIDER}
@@ -453,6 +465,25 @@ const styles = StyleSheet.create({
   compactBig: {
     fontFamily: Fonts.display, fontWeight: '800', fontSize: 18, color: Colors.text,
     letterSpacing: -0.3, marginTop: 4,
+  },
+
+  // Big claim hero — shown when map is unavailable (no Google Maps key)
+  bigClaimHero: {
+    flex: 1, minHeight: 260, borderRadius: 14, padding: 24,
+    borderWidth: 1.5,
+    alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  bigClaimNum: {
+    fontFamily: Fonts.display, fontWeight: '800',
+    fontSize: 120, letterSpacing: -4, lineHeight: 120,
+  },
+  bigClaimSub: {
+    fontFamily: Fonts.mono, fontSize: 11, color: Colors.textSecondary,
+    letterSpacing: 1.2, marginTop: 6,
+  },
+  bigClaimHint: {
+    fontFamily: Fonts.body, fontSize: 10, color: Colors.textTertiary,
+    textAlign: 'center', marginTop: 8, paddingHorizontal: 16,
   },
 
   statBlock: {
