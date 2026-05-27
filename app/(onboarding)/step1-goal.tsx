@@ -6,11 +6,13 @@
  * accent stripe on selection. Same flow + same data, better feel.
  */
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
 import { Colors, Fonts } from '@/constants/theme';
+import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 import type { Goal } from '@/types/index';
 
 interface GoalOption {
@@ -54,7 +56,39 @@ const GOALS: GoalOption[] = [
 
 export default function Step1Goal() {
   const router = useRouter();
-  const [selected, setSelected] = useState<Goal | null>(null);
+  const params = useLocalSearchParams<{ fromProfile?: string }>();
+  const fromProfile = params.fromProfile === '1';
+  const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
+  const setProfile = useAuthStore((s) => s.setProfile);
+  const [selected, setSelected] = useState<Goal | null>(
+    fromProfile ? (profile?.goal as Goal | null) ?? null : null,
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleContinue = async () => {
+    if (!selected) return;
+    if (!fromProfile) {
+      // Normal onboarding flow — continue to next step
+      router.push({ pathname: '/(onboarding)/step2-stats', params: { goal: selected } });
+      return;
+    }
+    // Edit mode — save directly and return to profile
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await (supabase.from('profiles') as any)
+        .update({ goal: selected, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (error) throw error;
+      if (profile) setProfile({ ...profile, goal: selected } as any);
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Could not save', e?.message ?? 'Try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -99,12 +133,14 @@ export default function Step1Goal() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
-          onPress={() => router.push({ pathname: '/(onboarding)/step2-stats', params: { goal: selected! } })}
-          disabled={!selected}
+          style={[styles.continueBtn, (!selected || saving) && styles.continueBtnDisabled]}
+          onPress={handleContinue}
+          disabled={!selected || saving}
           activeOpacity={0.85}
         >
-          <Text style={styles.continueBtnText}>CONTINUE  →</Text>
+          <Text style={styles.continueBtnText}>
+            {saving ? 'SAVING…' : fromProfile ? 'SAVE  →' : 'CONTINUE  →'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

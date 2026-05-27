@@ -5,11 +5,13 @@
  * (e.g. "P 30 / C 50 / F 20") so users see how their choice shifts macros.
  */
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
 import { Colors, Fonts } from '@/constants/theme';
+import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 
 interface DietOption {
   key: string;
@@ -34,8 +36,38 @@ export default function Step4Diet() {
   const params = useLocalSearchParams<{
     goal: string; gender: string; dob: string;
     heightCm: string; weightKg: string; activityLevel: string;
+    fromProfile?: string;
   }>();
-  const [selected, setSelected] = useState<string | null>(null);
+  const fromProfile = params.fromProfile === '1';
+  const user = useAuthStore((s) => s.user);
+  const profile = useAuthStore((s) => s.profile);
+  const setProfile = useAuthStore((s) => s.setProfile);
+  const [selected, setSelected] = useState<string | null>(
+    fromProfile ? ((profile as any)?.diet ?? null) : null,
+  );
+  const [saving, setSaving] = useState(false);
+
+  const handleContinue = async () => {
+    if (!selected) return;
+    if (!fromProfile) {
+      router.push({ pathname: '/(onboarding)/step5-program', params: { ...params, diet: selected } });
+      return;
+    }
+    if (!user?.id) return;
+    setSaving(true);
+    try {
+      const { error } = await (supabase.from('profiles') as any)
+        .update({ diet: selected, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (error) throw error;
+      if (profile) setProfile({ ...profile, diet: selected } as any);
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Could not save', e?.message ?? 'Try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -87,12 +119,14 @@ export default function Step4Diet() {
 
       <View style={styles.footer}>
         <TouchableOpacity
-          style={[styles.continueBtn, !selected && styles.continueBtnDisabled]}
-          onPress={() => router.push({ pathname: '/(onboarding)/step5-program', params: { ...params, diet: selected! } })}
-          disabled={!selected}
+          style={[styles.continueBtn, (!selected || saving) && styles.continueBtnDisabled]}
+          onPress={handleContinue}
+          disabled={!selected || saving}
           activeOpacity={0.85}
         >
-          <Text style={styles.continueBtnText}>CONTINUE  →</Text>
+          <Text style={styles.continueBtnText}>
+            {saving ? 'SAVING…' : fromProfile ? 'SAVE  →' : 'CONTINUE  →'}
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

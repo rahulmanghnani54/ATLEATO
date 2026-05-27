@@ -13,8 +13,9 @@
  *
  * Doesn't render if today is a programmed REST day.
  */
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import {
   getTomorrowIntention, cleanupOldIntentions, formatTime12h,
   type Intention,
@@ -41,6 +42,10 @@ export function TomorrowCommitmentCard({ persona }: { persona: PersonaTheme }) {
       setLoaded(true);
     })();
   }, []);
+
+  // Refresh whenever the home screen regains focus — picks up an intention
+  // the user just committed via post-workout.tsx's sheet.
+  useFocusEffect(useCallback(() => { refresh(); }, []));
 
   if (!loaded) return null;
 

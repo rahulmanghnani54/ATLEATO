@@ -292,9 +292,11 @@ export default function Dashboard() {
                 />
                 <View style={styles.ringsCenter}>
                   <Text style={styles.ringsCenterNum}>
-                    {recoveryScore != null ? recoveryScore : '—'}
+                    {recoveryScore != null ? recoveryScore : streak}
                   </Text>
-                  <Text style={styles.ringsCenterLabel}>SCORE</Text>
+                  <Text style={styles.ringsCenterLabel}>
+                    {recoveryScore != null ? 'SCORE' : 'STREAK'}
+                  </Text>
                 </View>
               </View>
               <View style={styles.ringMeta}>
@@ -326,6 +328,7 @@ export default function Dashboard() {
               label="FREEZES"
               value={String(freezes)}
               accent={persona.accent}
+              onPress={() => router.push('/streak-calendar' as any)}
             />
           </View>
 

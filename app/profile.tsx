@@ -252,14 +252,41 @@ export default function ProfileScreen() {
                   onChangeText={setWeightInput}
                   keyboardType="decimal-pad"
                   autoFocus
-                  returnKeyType="done"
+                  returnKeyType="next"
+                  onSubmitEditing={() => setEditingHeight(true)}
                 />
                 <TouchableOpacity
                   style={[styles.saveBtn, { backgroundColor: programColor }]}
                   onPress={async () => {
                     const val = parseFloat(weightInput);
                     if (!isNaN(val) && val > 20 && val < 500) await saveField({ weight_kg: val });
+                    setEditingHeight(true); // move on to height
+                  }}
+                >
+                  <Text style={styles.saveBtnText}>NEXT</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={[styles.inlineEditLabel, { marginTop: 12 }]}>Height (cm)</Text>
+              <View style={styles.inlineEditRow}>
+                <TextInput
+                  style={styles.statInput}
+                  value={heightInput}
+                  onChangeText={setHeightInput}
+                  keyboardType="decimal-pad"
+                  returnKeyType="done"
+                />
+                <TouchableOpacity
+                  style={[styles.saveBtn, { backgroundColor: programColor }]}
+                  onPress={async () => {
+                    const w = parseFloat(weightInput);
+                    const h = parseFloat(heightInput);
+                    const updates: Record<string, number> = {};
+                    if (!isNaN(w) && w > 20 && w < 500) updates.weight_kg = w;
+                    if (!isNaN(h) && h > 50 && h < 300) updates.height_cm = h;
+                    if (Object.keys(updates).length > 0) await saveField(updates);
                     setEditingWeight(false);
+                    setEditingHeight(false);
                   }}
                 >
                   <Text style={styles.saveBtnText}>SAVE</Text>
@@ -272,7 +299,7 @@ export default function ProfileScreen() {
             label="Goals"
             sub={`${GOAL_LABELS[profile?.goal ?? ''] ?? '—'} · ${ACTIVITY_LABELS[profile?.activity_level ?? ''] ?? '—'}`}
             trail="▸"
-            onPress={() => router.push('/(onboarding)/step1-goal' as any)}
+            onPress={() => router.push({ pathname: '/(onboarding)/step1-goal', params: { fromProfile: '1' } } as any)}
           />
         </SettingsGroup>
 
@@ -284,7 +311,7 @@ export default function ProfileScreen() {
               ? `${profile.tdee} kcal · ${profile.protein_g ?? '—'} / ${profile.carbs_g ?? '—'} / ${profile.fat_g ?? '—'} g`
               : 'Not set'}
             trail="▸"
-            onPress={() => router.push('/(onboarding)/step4-diet' as any)}
+            onPress={() => router.push({ pathname: '/(onboarding)/step4-diet', params: { fromProfile: '1' } } as any)}
           />
         </SettingsGroup>
 

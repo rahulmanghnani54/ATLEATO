@@ -11,6 +11,7 @@ import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -73,18 +74,27 @@ export default function Login() {
             />
 
             <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>PASSWORD</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor={Colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-              returnKeyType="done"
-              onSubmitEditing={handleLogin}
-              keyboardAppearance="dark"
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="••••••••"
+                placeholderTextColor={Colors.textTertiary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoComplete="password"
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
+                keyboardAppearance="dark"
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={10}
+              >
+                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity onPress={handleForgotPassword} style={styles.forgotBtn}>
               <Text style={styles.forgotText}>FORGOT PASSWORD?</Text>
@@ -138,10 +148,23 @@ const styles = StyleSheet.create({
   forgotBtn: { alignSelf: 'flex-end', marginTop: 12 },
   forgotText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1.2 },
   primaryBtn: {
-    height: 56, backgroundColor: Colors.primary, borderRadius: Radius.sm,
+    height: 56, backgroundColor: '#ff6b35', borderRadius: Radius.sm,
     alignItems: 'center', justifyContent: 'center', marginBottom: 20,
   },
-  primaryBtnText: { fontFamily: Fonts.display, fontSize: 15, color: Colors.accentInk, letterSpacing: 0.8 },
+  primaryBtnText: { fontFamily: Fonts.display, fontSize: 15, color: '#1a1208', letterSpacing: 0.8 },
+
+  // Password row with show/hide toggle
+  passwordRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: Radius.sm,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  passwordInput: {
+    flex: 1, height: 50, paddingHorizontal: 16,
+    fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
+  },
+  eyeBtn: { paddingHorizontal: 14, paddingVertical: 12 },
+  eyeIcon: { fontSize: 18 },
   signupRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   signupPrompt: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary },
   signupLink: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.primary, letterSpacing: 1 },

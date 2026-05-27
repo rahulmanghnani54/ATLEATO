@@ -13,6 +13,8 @@ export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,29 +90,47 @@ export default function Signup() {
             />
 
             <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>PASSWORD</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Min. 8 characters"
-              placeholderTextColor={Colors.textTertiary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              returnKeyType="next"
-              keyboardAppearance="dark"
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="Min. 8 characters"
+                placeholderTextColor={Colors.textTertiary}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                returnKeyType="next"
+                keyboardAppearance="dark"
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={10}
+              >
+                <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+              </TouchableOpacity>
+            </View>
 
             <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>CONFIRM PASSWORD</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor={Colors.textTertiary}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              returnKeyType="done"
-              onSubmitEditing={handleSignup}
-              keyboardAppearance="dark"
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={styles.passwordInput}
+                placeholder="••••••••"
+                placeholderTextColor={Colors.textTertiary}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={!showConfirm}
+                returnKeyType="done"
+                onSubmitEditing={handleSignup}
+                keyboardAppearance="dark"
+              />
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowConfirm((v) => !v)}
+                hitSlop={10}
+              >
+                <Text style={styles.eyeIcon}>{showConfirm ? '🙈' : '👁'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <TouchableOpacity
@@ -118,7 +138,7 @@ export default function Signup() {
             onPress={handleSignup}
             disabled={loading}
           >
-            <Text style={styles.primaryBtnText}>{loading ? '...' : 'CREATE ACCOUNT'}</Text>
+            <Text style={[styles.primaryBtnText, { color: '#1a1208' }]}>{loading ? '...' : 'CREATE ACCOUNT'}</Text>
           </TouchableOpacity>
 
           <View style={styles.signinRow}>
@@ -158,9 +178,22 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
   },
   primaryBtn: {
-    height: 56, backgroundColor: Colors.primary, borderRadius: Radius.sm,
+    height: 56, backgroundColor: '#ff6b35', borderRadius: Radius.sm,
     alignItems: 'center', justifyContent: 'center', marginBottom: 20,
   },
+
+  // Password row with show/hide toggle
+  passwordRow: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: Radius.sm,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  passwordInput: {
+    flex: 1, height: 50, paddingHorizontal: 16,
+    fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
+  },
+  eyeBtn: { paddingHorizontal: 14, paddingVertical: 12 },
+  eyeIcon: { fontSize: 18 },
   primaryBtnText: { fontFamily: Fonts.display, fontSize: 15, color: Colors.accentInk, letterSpacing: 0.8 },
   signinRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   signinPrompt: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary },
