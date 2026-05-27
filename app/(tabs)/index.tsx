@@ -15,10 +15,10 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G } from 'react-native-svg';
+import { GlassScreen } from '@/components/ui';
 import { format } from 'date-fns';
 import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
@@ -182,27 +182,8 @@ export default function Dashboard() {
   };
 
   return (
-    <View style={styles.root}>
-      {/* Persona-tinted ambient gradient background */}
-      <LinearGradient
-        colors={[
-          `${persona.accent}26`,
-          `${persona.accent}0d`,
-          '#0a0b0d',
-        ]}
-        locations={[0, 0.35, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* Secondary glow from opposite corner */}
-      <View style={styles.glowSpot} pointerEvents="none">
-        <LinearGradient
-          colors={['rgba(93,211,250,0.18)', 'transparent']}
-          style={{ flex: 1, borderRadius: 200 }}
-        />
-      </View>
-
-      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView
+    <GlassScreen persona={persona}>
+      <ScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           refreshControl={
@@ -470,8 +451,7 @@ export default function Dashboard() {
 
           <View style={{ height: 48 }} />
         </ScrollView>
-      </SafeAreaView>
-    </View>
+    </GlassScreen>
   );
 }
 

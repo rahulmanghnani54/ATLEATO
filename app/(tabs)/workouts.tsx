@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { EXERCISE_LIBRARY, type MuscleGroup } from '@/constants/exerciseLibrary';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
 import { Colors, Fonts } from '@/constants/theme';
+import { personaFromProgramId } from '@/lib/personaTheme';
+import { GlassScreen } from '@/components/ui';
 
 function getTodayWorkoutIndex(daysPerWeek: number): number | null {
   const dayOfWeek = new Date().getDay();
@@ -97,7 +98,8 @@ export default function Workouts() {
 
   const programId = profile?.selected_program ?? 'cbum_evolved';
   const program = EXPERT_PROGRAMS[programId] ?? EXPERT_PROGRAMS.cbum_evolved;
-  const accentColor = COACH_COLORS[programId] ?? Colors.primary;
+  const persona = personaFromProgramId(programId);
+  const accentColor = persona.accent;
 
   const todayIndex = getTodayWorkoutIndex(program.daysPerWeek);
   const workoutIndex = todayIndex !== null ? todayIndex % program.schedule.length : 0;
@@ -118,7 +120,7 @@ export default function Workouts() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <GlassScreen persona={persona}>
 
       {/* ── Top toggle: TODAY  |  LIBRARY ── */}
       <View style={styles.sectionToggle}>
@@ -285,7 +287,7 @@ export default function Workouts() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-    </SafeAreaView>
+    </GlassScreen>
   );
 }
 

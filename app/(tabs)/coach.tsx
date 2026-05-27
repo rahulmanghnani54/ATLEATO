@@ -18,8 +18,8 @@ import {
   View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { GlassScreen } from '@/components/ui';
 import { aiCoachChat } from '@/lib/api/edgeFunctions';
 import type { ClaudeMessage } from '@/lib/api/types';
 import { useAuthStore } from '@/stores/authStore';
@@ -105,7 +105,7 @@ export default function CoachHub() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <GlassScreen persona={persona}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -366,7 +366,7 @@ export default function CoachHub() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </GlassScreen>
   );
 }
 

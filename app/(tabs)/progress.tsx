@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { VolumeChart } from '@/components/progress/VolumeChart';
 import { PhysiqueGallery } from '@/components/progress/PhysiqueGallery';
 import { PhysiquePrivacyCard } from '@/components/progress/PhysiquePrivacyCard';
 import { useWeeklyVolume, usePersonalRecords, useAchievements } from '@/hooks/useProgressStats';
 import { getWeeklySummary, type WeeklySummaryResponse } from '@/lib/api/edgeFunctions';
+import { useAuthStore } from '@/stores/authStore';
+import { personaFromProgramId } from '@/lib/personaTheme';
+import { GlassScreen } from '@/components/ui';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 function Epley1RM(weightKg: number, reps: number): number {
@@ -16,6 +18,8 @@ function Epley1RM(weightKg: number, reps: number): number {
 
 export default function Progress() {
   const router = useRouter();
+  const profile = useAuthStore((s) => s.profile);
+  const persona = personaFromProgramId(profile?.selected_program);
   const { data: weeklyVolume = [], isLoading: volumeLoading } = useWeeklyVolume(8);
   const { data: prs = [], isLoading: prsLoading } = usePersonalRecords();
   const { data: achievements = [], isLoading: achievementsLoading } = useAchievements();
@@ -51,7 +55,7 @@ export default function Progress() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <GlassScreen persona={persona}>
       {/* Tab toggle + profile gear */}
       <View style={styles.tabRow}>
         <TouchableOpacity
@@ -194,7 +198,7 @@ export default function Progress() {
           <View style={{ height: 24 }} />
         </ScrollView>
       )}
-    </SafeAreaView>
+    </GlassScreen>
   );
 }
 

@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import Svg, { Circle } from 'react-native-svg';
@@ -9,6 +8,7 @@ import { useWaterLog } from '@/hooks/useWaterLog';
 import { useAuthStore } from '@/stores/authStore';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { personaFromProgramId, nutritionTipOfTheDay, styleText } from '@/lib/personaTheme';
+import { GlassScreen, GlassCard, SectionHeader } from '@/components/ui';
 import type { MealType } from '@/types/index';
 
 const MEALS: { key: MealType; label: string; time: string }[] = [
@@ -59,10 +59,10 @@ export default function Nutrition() {
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <GlassScreen persona={persona}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* Header — persona-aware */}
+        {/* ── HEADER ─────────────────────────────────────────────────── */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <Text style={styles.monoLabel}>{format(date, 'EEE').toUpperCase()} · {persona.shortName} PROTOCOL</Text>
@@ -76,74 +76,88 @@ export default function Nutrition() {
           </Text>
         </View>
 
-        {/* Persona nutrition tip of the day */}
-        <View style={[styles.tipCard, { borderLeftColor: persona.accent, backgroundColor: persona.accentSoft }]}>
+        {/* ── TODAY · macros ───────────────────────────────────────── */}
+        <SectionHeader label="TODAY" accent={persona.accent} marginTop={6} />
+        <GlassCard>
+          <View style={styles.ringSection}>
+            <View style={styles.ringWrap}>
+              <MacroRing eaten={consumed} goal={goal} color={persona.accent} />
+              <View style={styles.ringCenter}>
+                <Text style={styles.ringNum}>{consumed}</Text>
+                <Text style={styles.ringMeta}>/ {goal} KCAL</Text>
+              </View>
+            </View>
+            <View style={styles.macroStack}>
+              {[
+                { l: 'PROTEIN', v: protein, t: proteinGoal, c: '#7be38c' },
+                { l: 'CARBS',   v: carbs,   t: carbsGoal,   c: persona.accent },
+                { l: 'FAT',     v: fat,     t: fatGoal,     c: '#f5b942' },
+              ].map((m) => (
+                <View key={m.l} style={{ marginBottom: 10 }}>
+                  <View style={styles.macroLabelRow}>
+                    <Text style={styles.macroMonoLabel}>{m.l}</Text>
+                    <Text style={styles.macroNums}>
+                      <Text style={[styles.macroVal, { color: m.c }]}>{m.v}</Text>
+                      <Text style={styles.macroOf}>/{m.t}g</Text>
+                    </Text>
+                  </View>
+                  <View style={styles.track}>
+                    <View style={[styles.fill, { width: `${Math.min((m.v / Math.max(m.t, 1)) * 100, 100)}%` as any, backgroundColor: m.c }]} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </GlassCard>
+
+        {/* Persona nutrition tip */}
+        <GlassCard style={{ marginTop: 12 }}>
           <Text style={[styles.tipLabel, { color: persona.accent }]}>
             ✦ {styleText(persona, `${persona.shortName} SAYS`)}
           </Text>
           <Text style={styles.tipText}>{nutritionTip}</Text>
-        </View>
+        </GlassCard>
 
-        {/* Big calorie ring + macros */}
-        <View style={styles.ringSection}>
-          <View style={styles.ringWrap}>
-            <MacroRing eaten={consumed} goal={goal} color={persona.accent} />
-            <View style={styles.ringCenter}>
-              <Text style={styles.ringNum}>{consumed}</Text>
-              <Text style={styles.ringMeta}>/ {goal} KCAL</Text>
+        {/* Quick-add search */}
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => router.push({ pathname: '/add-food', params: { mealType: 'lunch', date: dateStr } } as any)}
+          style={{ marginTop: 12 }}
+        >
+          <GlassCard>
+            <View style={styles.searchInput}>
+              <Text style={styles.searchIcon}>🔍</Text>
+              <Text style={styles.searchPlaceholder}>Search Indian & global foods…</Text>
             </View>
-          </View>
-          <View style={styles.macroStack}>
-            {[
-              { l: 'PROTEIN', v: protein, t: proteinGoal, c: Colors.macroProtein },
-              { l: 'CARBS',   v: carbs,   t: carbsGoal,   c: Colors.primary },
-              { l: 'FAT',     v: fat,     t: fatGoal,     c: Colors.macroFat },
-            ].map((m) => (
-              <View key={m.l} style={{ marginBottom: 10 }}>
-                <View style={styles.macroLabelRow}>
-                  <Text style={styles.macroMonoLabel}>{m.l}</Text>
-                  <Text style={styles.macroNums}>
-                    <Text style={[styles.macroVal, { color: m.c }]}>{m.v}</Text>
-                    <Text style={styles.macroOf}>/{m.t}g</Text>
-                  </Text>
-                </View>
-                <View style={styles.track}>
-                  <View style={[styles.fill, { width: `${Math.min((m.v / Math.max(m.t, 1)) * 100, 100)}%` as any, backgroundColor: m.c }]} />
-                </View>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        {/* Search row — quick-add to lunch by default; meal buttons below let user pick */}
-        <TouchableOpacity style={styles.searchRow} onPress={() => setActiveMeal('lunch')} activeOpacity={0.7}>
-          <View style={styles.searchInput}>
-            <Text style={styles.searchIcon}>🔍</Text>
-            <Text style={styles.searchPlaceholder}>Search Indian & global foods…</Text>
-          </View>
+          </GlassCard>
         </TouchableOpacity>
 
-        {/* Water tracker */}
-        <View style={styles.waterCard}>
-          <Text style={{ fontSize: 18 }}>💧</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.waterLabel}>WATER</Text>
-            <View style={styles.waterBars}>
-              {Array.from({ length: goalGlasses || 8 }).map((_, i) => (
-                <View key={i} style={[styles.waterBar, { backgroundColor: i < glasses ? Colors.info : Colors.border }]} />
-              ))}
+        {/* ── HYDRATION ─────────────────────────────────────────────── */}
+        <SectionHeader label="HYDRATION" accent={persona.accent} />
+        <GlassCard>
+          <View style={styles.waterRow}>
+            <Text style={{ fontSize: 18 }}>💧</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.waterLabel}>WATER</Text>
+              <View style={styles.waterBars}>
+                {Array.from({ length: goalGlasses || 8 }).map((_, i) => (
+                  <View key={i} style={[styles.waterBar, {
+                    backgroundColor: i < glasses ? '#5DD3FA' : 'rgba(255,255,255,0.08)',
+                  }]} />
+                ))}
+              </View>
             </View>
+            <Text style={styles.waterCount}>{glasses}<Text style={{ fontSize: 10, color: Colors.textSecondary }}>/{goalGlasses}</Text></Text>
+            <TouchableOpacity onPress={() => addGlass()} style={styles.waterPlus}>
+              <Text style={{ color: Colors.textSecondary, fontSize: 20 }}>+</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.waterCount}>{glasses}<Text style={{ fontSize: 10, color: Colors.textSecondary }}>/{goalGlasses}</Text></Text>
-          <TouchableOpacity onPress={() => addGlass()} style={styles.waterPlus}>
-            <Text style={{ color: Colors.textSecondary, fontSize: 20 }}>+</Text>
-          </TouchableOpacity>
-        </View>
+        </GlassCard>
 
-        {/* Meal cards */}
+        {/* ── MEALS ────────────────────────────────────────────────── */}
+        <SectionHeader label="MEALS" accent={persona.accent} />
         {MEALS.map((meal) => {
           const mealKcal = Math.round(nutrition?.byMeal[meal.key] ?? 0);
-          // Compute per-meal macro split proportional to its share of total calories
           const totalKcal = Math.max(1, Math.round(nutrition?.calories ?? 0));
           const share = mealKcal / totalKcal;
           const mP = Math.round((nutrition?.proteinG ?? 0) * share);
@@ -151,52 +165,56 @@ export default function Nutrition() {
           const mF = Math.round((nutrition?.fatG ?? 0)     * share);
           const macroLine = mealKcal > 0 ? `${mP}P · ${mC}C · ${mF}F` : '— · — · —';
           return (
-            <View key={meal.key} style={styles.mealCard}>
-              <TouchableOpacity
-                style={styles.mealHeader}
-                onPress={() => router.push({
-                  pathname: '/add-food',
-                  params: { mealType: meal.key, date: dateStr },
-                } as any)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.mealTime}>
-                  <Text style={[styles.mealTimeH, { color: Colors.primary }]}>{meal.time.split(':')[0]}</Text>
-                  <Text style={styles.mealTimeM}>:{meal.time.split(':')[1]}</Text>
+            <TouchableOpacity
+              key={meal.key}
+              activeOpacity={0.7}
+              onPress={() => router.push({
+                pathname: '/add-food',
+                params: { mealType: meal.key, date: dateStr },
+              } as any)}
+              style={{ marginBottom: 10 }}
+            >
+              <GlassCard>
+                <View style={styles.mealHeader}>
+                  <View style={styles.mealTime}>
+                    <Text style={[styles.mealTimeH, { color: persona.accent }]}>{meal.time.split(':')[0]}</Text>
+                    <Text style={styles.mealTimeM}>:{meal.time.split(':')[1]}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.mealLabel}>{meal.label}</Text>
+                    <Text style={styles.mealMacro}>{macroLine}</Text>
+                  </View>
+                  <View style={styles.mealRight}>
+                    <Text style={[styles.mealKcal, mealKcal > 0 && { color: persona.accent }]}>
+                      {mealKcal > 0 ? mealKcal : '—'}
+                    </Text>
+                    <Text style={styles.mealKcalUnit}>kcal</Text>
+                  </View>
+                  <Text style={[styles.addPlus, { color: persona.accent }]}>+</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.mealLabel}>{meal.label}</Text>
-                  <Text style={styles.mealMacro}>{macroLine}</Text>
-                </View>
-                <View style={styles.mealRight}>
-                  <Text style={[styles.mealKcal, mealKcal > 0 && { color: Colors.primary }]}>
-                    {mealKcal > 0 ? mealKcal : '—'}
-                  </Text>
-                  <Text style={styles.mealKcalUnit}>kcal</Text>
-                </View>
-                <Text style={styles.addPlus}>+</Text>
-              </TouchableOpacity>
-            </View>
+              </GlassCard>
+            </TouchableOpacity>
           );
         })}
 
-        {/* AI advice */}
-        <View style={styles.aiCard}>
-          <Text style={{ fontSize: 16 }}>✦</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.aiLabel}>AI GAP ANALYSIS</Text>
+        {/* ── AI GAP ANALYSIS ──────────────────────────────────────── */}
+        <SectionHeader label="AI COACH" accent={persona.accent} />
+        <GlassCard>
+          <View style={styles.aiRow}>
+            <Text style={[styles.tipLabel, { color: persona.accent, marginBottom: 6 }]}>
+              ✦ GAP ANALYSIS
+            </Text>
             <Text style={styles.aiText}>
               {protein < proteinGoal * 0.8
                 ? `Protein at ${Math.round((protein / Math.max(proteinGoal, 1)) * 100)}%. Add ${proteinGoal - protein}g protein to hit target.`
                 : `Looking good! Protein on track.`}
             </Text>
           </View>
-        </View>
+        </GlassCard>
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 48 }} />
       </ScrollView>
-
-    </SafeAreaView>
+    </GlassScreen>
   );
 }
 
@@ -271,12 +289,8 @@ const styles = StyleSheet.create({
   mealKcalUnit: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1 },
   addPlus: { fontSize: 22, color: Colors.primary, fontFamily: Fonts.display, paddingLeft: 4 },
 
-  aiCard: {
-    flexDirection: 'row', gap: 10, alignItems: 'flex-start',
-    padding: 14, marginTop: 4,
-    backgroundColor: 'rgba(91,140,255,0.08)',
-    borderWidth: 1, borderColor: 'rgba(91,140,255,0.2)', borderRadius: 6,
-  },
-  aiLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.info, letterSpacing: 1.4, marginBottom: 4 },
-  aiText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.text, lineHeight: 18 },
+  // Glass-card-friendly inner rows (no padding/bg — provided by GlassCard)
+  waterRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  aiRow: { gap: 4 },
+  aiText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 19 },
 });
