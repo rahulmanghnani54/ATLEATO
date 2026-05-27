@@ -94,6 +94,7 @@ export interface CellInBbox {
   is_current_user: boolean;
   anon_handle:     string;
   claimed_at:      string;
+  change_count:    number;   // # of times this cell has switched owners
 }
 
 export interface BBox {
@@ -140,4 +141,62 @@ export function useCellsInBbox(bbox: BBox | null, limit = 800) {
     enabled: !!user && !!bbox,
     staleTime: 15 * 1000,
   });
+}
+
+// ── Nearby ("city") leaderboard ──────────────────────────────────────────────
+
+/**
+ * Top users among everyone who owns at least one cell inside the bbox.
+ * Useful for "your city" rankings; pass a ~0.1° (~10km) bbox around the
+ * caller's location.
+ */
+export function useNearbyLeaderboard(bbox: BBox | null, limit = 50) {
+  const user = useAuthStore((s) => s.user);
+  const key = bbox
+    ? [
+        Math.round(bbox.latMin * 50) / 50,
+        Math.round(bbox.latMax * 50) / 50,
+        Math.round(bbox.lonMin * 50) / 50,
+        Math.round(bbox.lonMax * 50) / 50,
+      ]
+    : null;
+
+  return useQuery({
+    queryKey: ['nearby_leaderboard', user?.id, key, limit],
+    queryFn: async (): Promise<TerritoryLeaderRow[]> => {
+      if (!user || !bbox) return [];
+      const { data, error } = await (supabase.rpc as any)('nearby_leaderboard', {
+        p_lat_min: bbox.latMin,
+        p_lat_max: bbox.latMax,
+        p_lon_min: bbox.lonMin,
+        p_lon_max: bbox.lonMax,
+        limit_count: limit,
+      });
+      if (error) {
+        if (__DEV__) console.warn('[territory] nearby_leaderboard:', error.message);
+        return [];
+      }
+      return (data ?? []) as TerritoryLeaderRow[];
+    },
+    enabled: !!user && !!bbox,
+    staleTime: 60 * 1000,
+  });
+}
+
+// ── Push token registration ──────────────────────────────────────────────────
+
+/**
+ * Register the caller's Expo push token so the notify_steal edge function
+ * can deliver "Lifter #4729 took your park" alerts. Safe to call repeatedly
+ * (upserts on user_id).
+ */
+export async function upsertPushToken(
+  token: string,
+  platform: 'ios' | 'android' | 'web',
+): Promise<void> {
+  const { error } = await (supabase.rpc as any)('upsert_push_token', {
+    p_token: token,
+    p_platform: platform,
+  });
+  if (error) throw error;
 }

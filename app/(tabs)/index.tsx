@@ -11,7 +11,7 @@
  * All existing data hooks and feature components are preserved — only the
  * presentation layer is re-skinned.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl,
 } from 'react-native';
@@ -41,6 +41,7 @@ import { useTrainedToday } from '@/hooks/useTrainedToday';
 import { useSessionsThisWeek } from '@/hooks/useSessionsThisWeek';
 import { useStreakFreezes } from '@/hooks/useStreakFreezes';
 import { useGlobalLeaderboard } from '@/hooks/useGlobalLeaderboard';
+import { registerPushTokenIfNeeded } from '@/lib/pushNotifications';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Three Apple-style concentric rings: MOVE (outer) / PROTEIN (middle) / RECOVERY (inner)
@@ -158,6 +159,12 @@ export default function Dashboard() {
     refetch();
     refetchWater();
   }, [refetch, refetchWater]));
+
+  // Register push token once per session so the user can receive
+  // "Lifter #4729 took your park" alerts from the territory game.
+  useEffect(() => {
+    if (profile) registerPushTokenIfNeeded();
+  }, [profile]);
 
   // Tap handlers
   const startTodayWorkout = () => {

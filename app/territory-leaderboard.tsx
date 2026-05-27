@@ -7,21 +7,56 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
+import * as Location from 'expo-location';
 import {
-  useTerritoryLeaderboard, type TerritoryLeaderRow,
+  useTerritoryLeaderboard, useNearbyLeaderboard,
+  type TerritoryLeaderRow,
 } from '@/hooks/useTerritory';
 import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, styleText } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
 
+const NEARBY_RADIUS_DEG = 0.09; // ~10km
+
 export default function TerritoryLeaderboardScreen() {
   const router  = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const persona = personaFromProgramId(profile?.selected_program);
+  const [tab, setTab] = useState<'global' | 'nearby'>('global');
+
   const { data: rows = [], isLoading, refetch, isFetching } = useTerritoryLeaderboard(100);
 
-  const me  = rows.find((r) => r.is_current_user);
-  const top = rows.filter((r) => r.rank <= 100);
+  // Nearby tab: only fetch location + nearby cells when user opens that tab
+  const [nearbyBbox, setNearbyBbox] = useState<{ latMin: number; latMax: number; lonMin: number; lonMax: number } | null>(null);
+  const [nearbyError, setNearbyError] = useState<string | null>(null);
+  useEffect(() => {
+    if (tab !== 'nearby' || nearbyBbox) return;
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setNearbyError('Location permission required for nearby leaderboard.');
+          return;
+        }
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        setNearbyBbox({
+          latMin: loc.coords.latitude  - NEARBY_RADIUS_DEG,
+          latMax: loc.coords.latitude  + NEARBY_RADIUS_DEG,
+          lonMin: loc.coords.longitude - NEARBY_RADIUS_DEG,
+          lonMax: loc.coords.longitude + NEARBY_RADIUS_DEG,
+        });
+      } catch (e: any) {
+        setNearbyError(e?.message ?? 'Could not get your location.');
+      }
+    })();
+  }, [tab, nearbyBbox]);
+  const { data: nearbyRows = [], isLoading: nearbyLoading } = useNearbyLeaderboard(nearbyBbox);
+
+  const sourceRows = tab === 'global' ? rows : nearbyRows;
+  const loading    = tab === 'global' ? isLoading : nearbyLoading;
+  const me  = sourceRows.find((r) => r.is_current_user);
+  const top = sourceRows.filter((r) => r.rank <= 100);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -42,15 +77,38 @@ export default function TerritoryLeaderboardScreen() {
         </View>
       </View>
 
+      {/* Tab switcher: Global / Nearby */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'global' && { backgroundColor: persona.accent }]}
+          onPress={() => setTab('global')}
+        >
+          <Text style={[styles.tabText, tab === 'global' && { color: persona.ink }]}>
+            🌍 GLOBAL
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'nearby' && { backgroundColor: persona.accent }]}
+          onPress={() => setTab('nearby')}
+        >
+          <Text style={[styles.tabText, tab === 'nearby' && { color: persona.ink }]}>
+            📍 NEARBY
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <View style={[styles.banner, { backgroundColor: persona.accentSoft, borderColor: persona.accent }]}>
         <Text style={[styles.bannerLabel, { color: persona.accent }]}>
-          GLOBAL · CURRENT CELL OWNERSHIP
+          {tab === 'global' ? 'GLOBAL · CURRENT CELL OWNERSHIP' : 'NEARBY · ~10KM RADIUS'}
         </Text>
         <Text style={styles.bannerBody}>
-          Ranked by how many 200×200m grid cells you currently own. Run
-          through someone&rsquo;s cell to take it. Hold cells indefinitely
-          until someone else runs through.
+          {tab === 'global'
+            ? 'Ranked by how many 200×200m grid cells you currently own anywhere in the world.'
+            : 'Ranked by cells owned within ~10km of your current location. Beat your local rivals.'}
         </Text>
+        {tab === 'nearby' && nearbyError && (
+          <Text style={[styles.bannerBody, { color: Colors.danger, marginTop: 6 }]}>{nearbyError}</Text>
+        )}
         {me && (
           <Text style={[styles.bannerYou, { color: persona.accent }]}>
             You: rank #{me.rank} · {me.cells_owned.toLocaleString()} cells
@@ -58,7 +116,7 @@ export default function TerritoryLeaderboardScreen() {
         )}
       </View>
 
-      {isLoading ? (
+      {loading ? (
         <ActivityIndicator color={persona.accent} style={{ marginTop: 24 }} />
       ) : top.length === 0 ? (
         <View style={styles.emptyWrap}>
@@ -145,6 +203,16 @@ const styles = StyleSheet.create({
   empty:     { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
   startBtn:  { paddingHorizontal: 28, paddingVertical: 16, borderRadius: 100 },
   startBtnText: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+
+  // Tab switcher
+  tabBar: {
+    flexDirection: 'row', gap: 6, marginHorizontal: 16, marginBottom: 12,
+    padding: 4, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  tab: {
+    flex: 1, paddingVertical: 10, borderRadius: 100, alignItems: 'center',
+  },
+  tabText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1.4, fontWeight: '700' },
 
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   sep: { height: 1, backgroundColor: Colors.border },

@@ -21,8 +21,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import MapView, {
-  PROVIDER_DEFAULT, Polygon, Marker, Region,
+  PROVIDER_DEFAULT, PROVIDER_GOOGLE, Polygon, Region,
 } from 'react-native-maps';
+
+// If a Google Maps API key is configured (EXPO_PUBLIC_GOOGLE_MAPS_API_KEY in
+// .env.local + native key in app.json), use the premium Google tiles.
+// Otherwise fall back to the system map provider so the screen works zero-config.
+const HAS_GOOGLE_KEY = !!process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const MAP_PROVIDER = HAS_GOOGLE_KEY ? PROVIDER_GOOGLE : PROVIDER_DEFAULT;
 import * as Location from 'expo-location';
 import { useCellsInBbox, useMyTerritoryStats } from '@/hooks/useTerritory';
 import { cellCorner } from '@/lib/territoryGrid';
@@ -49,7 +55,8 @@ export default function TerritoryMapScreen() {
   const mapRef = useRef<MapView>(null);
   const [region, setRegion]   = useState<Region | null>(null);
   const [locating, setLocating] = useState(true);
-  const [selected, setSelected] = useState<{ cellId: string; handle: string; mine: boolean } | null>(null);
+  const [selected, setSelected] = useState<{ cellId: string; handle: string; mine: boolean; changes: number } | null>(null);
+  const [heatmap, setHeatmap]   = useState(false);
 
   // Initial center on user location (graceful fallback)
   useEffect(() => {
@@ -131,7 +138,7 @@ export default function TerritoryMapScreen() {
         ) : (
           <MapView
             ref={mapRef}
-            provider={PROVIDER_DEFAULT}
+            provider={MAP_PROVIDER}
             style={StyleSheet.absoluteFill}
             initialRegion={region ?? FALLBACK_REGION}
             onRegionChangeComplete={setRegion}
@@ -145,10 +152,13 @@ export default function TerritoryMapScreen() {
                 cellId={c.cell_id}
                 mine={c.is_current_user}
                 accent={persona.accent}
+                heatmap={heatmap}
+                changeCount={c.change_count ?? 1}
                 onPress={() => setSelected({
                   cellId: c.cell_id,
                   handle: c.is_current_user ? 'You' : c.anon_handle,
                   mine:   c.is_current_user,
+                  changes: c.change_count ?? 1,
                 })}
               />
             ))}
@@ -160,6 +170,17 @@ export default function TerritoryMapScreen() {
             <Text style={styles.fetchingText}>loading cells…</Text>
           </View>
         )}
+
+        {/* Heatmap toggle */}
+        <TouchableOpacity
+          style={[styles.heatBtn, heatmap && { backgroundColor: persona.accent }]}
+          onPress={() => setHeatmap((h) => !h)}
+          activeOpacity={0.85}
+        >
+          <Text style={[styles.heatBtnText, heatmap && { color: persona.ink }]}>
+            🔥 {heatmap ? 'HEAT ON' : 'HEATMAP'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Selected cell info card */}
@@ -172,7 +193,12 @@ export default function TerritoryMapScreen() {
             </Text>
             {!selected.mine && (
               <Text style={styles.selHint}>
-                Run through it to take it.
+                Run through it to take it. {selected.changes > 1 ? `(flipped ${selected.changes}× 🔥)` : ''}
+              </Text>
+            )}
+            {selected.mine && selected.changes > 1 && (
+              <Text style={styles.selHint}>
+                You wrestled this cell from {selected.changes - 1} other lifter{selected.changes - 1 === 1 ? '' : 's'}. 👑
               </Text>
             )}
           </View>
@@ -194,9 +220,10 @@ export default function TerritoryMapScreen() {
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function CellPolygon({
-  cellId, mine, accent, onPress,
+  cellId, mine, accent, onPress, heatmap, changeCount,
 }: {
   cellId: string; mine: boolean; accent: string; onPress: () => void;
+  heatmap: boolean; changeCount: number;
 }) {
   const sw = cellCorner(cellId);
   const ne = { lat: sw.lat + CELL_DEG, lon: sw.lon + CELL_DEG };
@@ -206,12 +233,38 @@ function CellPolygon({
     { latitude: ne.lat, longitude: ne.lon },
     { latitude: ne.lat, longitude: sw.lon },
   ];
+
+  // Heatmap palette: cells that change hands a LOT glow hot. Caps at ~6 flips.
+  const heatColor = (() => {
+    if (!heatmap) return null;
+    const t = Math.min(1, (changeCount - 1) / 5);
+    // cool blue → yellow → red
+    if (t < 0.5) {
+      const blend = t * 2;
+      const r = Math.round(70 + blend * (245 - 70));
+      const g = Math.round(180 + blend * (200 - 180));
+      const b = Math.round(255 - blend * 255);
+      return `rgba(${r},${g},${b},0.45)`;
+    } else {
+      const blend = (t - 0.5) * 2;
+      const r = 245;
+      const g = Math.round(200 - blend * 200);
+      const b = 0;
+      return `rgba(${r},${g},${b},0.55)`;
+    }
+  })();
+
+  const fill   = heatColor ?? (mine ? `${accent}66` : 'rgba(239,68,68,0.32)');
+  const stroke = heatColor
+    ? heatColor.replace(/[\d.]+\)/, '0.95)')
+    : (mine ? accent : 'rgba(239,68,68,0.8)');
+
   return (
     <Polygon
       coordinates={coordinates}
-      fillColor={mine ? `${accent}66` : 'rgba(239,68,68,0.32)'}
-      strokeColor={mine ? accent : 'rgba(239,68,68,0.8)'}
-      strokeWidth={mine ? 2 : 1}
+      fillColor={fill}
+      strokeColor={stroke}
+      strokeWidth={mine && !heatmap ? 2 : 1}
       tappable
       onPress={onPress}
     />
@@ -272,6 +325,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 100,
   },
   fetchingText: { color: '#fff', fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1 },
+
+  heatBtn: {
+    position: 'absolute', bottom: 12, right: 12,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 100,
+    backgroundColor: 'rgba(20,20,22,0.92)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+  },
+  heatBtnText: {
+    color: '#fff', fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4, fontWeight: '700',
+  },
 
   selCard: {
     flexDirection: 'row', alignItems: 'center',
