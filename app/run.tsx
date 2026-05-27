@@ -19,13 +19,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
+import MapView, {
+  PROVIDER_DEFAULT, PROVIDER_GOOGLE, Polyline, Polygon, Region,
+} from 'react-native-maps';
 import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, styleText } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
 import {
-  cellIdForPoint, distanceMeters, type LatLon,
+  cellIdForPoint, cellCorner, distanceMeters, type LatLon,
 } from '@/lib/territoryGrid';
 import { claimCells } from '@/hooks/useTerritory';
+
+const CELL_DEG = 0.0018;
+const HAS_GOOGLE_KEY = !!process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+const MAP_PROVIDER   = HAS_GOOGLE_KEY ? PROVIDER_GOOGLE : PROVIDER_DEFAULT;
 
 type Phase = 'ready' | 'requesting' | 'tracking' | 'finished';
 
@@ -41,6 +48,11 @@ export default function RunScreen() {
   const [cellsTouched, setCellsTouched] = useState(0);
   const [submitting, setSubmitting]     = useState(false);
 
+  // Live map state — mirrors trackRef/cellsRef so the map can render them
+  const [route, setRoute]       = useState<LatLon[]>([]);
+  const [cellList, setCellList] = useState<string[]>([]);
+  const [currentPos, setCurrentPos] = useState<LatLon | null>(null);
+
   // Refs so the GPS callback doesn't re-create on every state change
   const trackRef     = useRef<LatLon[]>([]);
   const cellsRef     = useRef<Set<string>>(new Set());
@@ -48,6 +60,7 @@ export default function RunScreen() {
   const distanceRef  = useRef<number>(0);
   const subRef       = useRef<Location.LocationSubscription | null>(null);
   const tickRef      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mapRef       = useRef<MapView>(null);
 
   useEffect(() => {
     return () => {
@@ -75,7 +88,20 @@ export default function RunScreen() {
       setDistanceM(0);
       setCellsTouched(0);
       setElapsedSec(0);
+      setRoute([]);
+      setCellList([]);
+      setCurrentPos(null);
       startedAtRef.current = Date.now();
+
+      // Seed the map at the user's first known position so the camera doesn't
+      // start in the middle of the ocean while waiting for the first GPS fix.
+      try {
+        const first = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+        const fp = { lat: first.coords.latitude, lon: first.coords.longitude };
+        setCurrentPos(fp);
+      } catch {/* best effort */}
 
       // Begin GPS watch (3s cadence, accept fixes within 5m for new sample)
       subRef.current = await Location.watchPositionAsync(
@@ -92,6 +118,15 @@ export default function RunScreen() {
           cellsRef.current.add(cellIdForPoint(p));
           setDistanceM(distanceRef.current);
           setCellsTouched(cellsRef.current.size);
+          // Mirror to state so the map re-renders the live route
+          setRoute([...trackRef.current]);
+          setCellList(Array.from(cellsRef.current));
+          setCurrentPos(p);
+          // Keep camera following the user
+          mapRef.current?.animateCamera(
+            { center: { latitude: p.lat, longitude: p.lon } },
+            { duration: 500 },
+          );
         },
       );
 
@@ -184,28 +219,64 @@ export default function RunScreen() {
 
         {phase === 'tracking' && (
           <View style={styles.tracking}>
-            <View style={[styles.statBlock, { borderColor: persona.accent }]}>
-              <Text style={styles.statLabel}>CELLS CLAIMED</Text>
-              <Text style={[styles.statBigNum, { color: persona.accent }]}>{cellsTouched}</Text>
+            {/* Live route map — top 55% of viewport */}
+            <View style={styles.mapWrap}>
+              {currentPos ? (
+                <MapView
+                  ref={mapRef}
+                  provider={MAP_PROVIDER}
+                  style={StyleSheet.absoluteFill}
+                  initialRegion={{
+                    latitude: currentPos.lat,
+                    longitude: currentPos.lon,
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                  }}
+                  showsUserLocation
+                  showsMyLocationButton={false}
+                  followsUserLocation
+                  toolbarEnabled={false}
+                >
+                  {/* Route polyline */}
+                  {route.length > 1 && (
+                    <Polyline
+                      coordinates={route.map((p) => ({ latitude: p.lat, longitude: p.lon }))}
+                      strokeColor={persona.accent}
+                      strokeWidth={5}
+                      lineCap="round"
+                      lineJoin="round"
+                    />
+                  )}
+                  {/* Live cells being claimed */}
+                  {cellList.map((cid) => (
+                    <CellSquare key={cid} cellId={cid} accent={persona.accent} />
+                  ))}
+                </MapView>
+              ) : (
+                <View style={styles.mapPlaceholder}>
+                  <ActivityIndicator color={persona.accent} />
+                  <Text style={styles.muted}>Locking onto GPS…</Text>
+                </View>
+              )}
             </View>
-            <View style={styles.statRow}>
-              <View style={styles.statHalf}>
-                <Text style={styles.statLabel}>DISTANCE</Text>
-                <Text style={styles.statMid}>{km}<Text style={styles.statUnit}> km</Text></Text>
+
+            {/* Compact stats row */}
+            <View style={styles.compactStats}>
+              <View style={styles.compactStat}>
+                <Text style={styles.statLabel}>CELLS</Text>
+                <Text style={[styles.compactBig, { color: persona.accent }]}>{cellsTouched}</Text>
               </View>
-              <View style={styles.statHalf}>
+              <View style={styles.compactStat}>
+                <Text style={styles.statLabel}>KM</Text>
+                <Text style={styles.compactBig}>{km}</Text>
+              </View>
+              <View style={styles.compactStat}>
                 <Text style={styles.statLabel}>TIME</Text>
-                <Text style={styles.statMid}>{mmss}</Text>
+                <Text style={styles.compactBig}>{mmss}</Text>
               </View>
-            </View>
-            <View style={styles.statRow}>
-              <View style={styles.statHalf}>
+              <View style={styles.compactStat}>
                 <Text style={styles.statLabel}>PACE</Text>
-                <Text style={styles.statMid}>{pace}<Text style={styles.statUnit}> /km</Text></Text>
-              </View>
-              <View style={styles.statHalf}>
-                <Text style={styles.statLabel}>POINTS LOGGED</Text>
-                <Text style={styles.statMid}>{trackRef.current.length}</Text>
+                <Text style={styles.compactBig}>{pace}</Text>
               </View>
             </View>
 
@@ -221,9 +292,33 @@ export default function RunScreen() {
 
         {phase === 'finished' && (
           <View style={styles.tracking}>
-            <Text style={styles.finishHero}>🏁</Text>
+            {/* Full route review map */}
+            {route.length > 1 && currentPos && (
+              <View style={styles.mapWrap}>
+                <MapView
+                  provider={MAP_PROVIDER}
+                  style={StyleSheet.absoluteFill}
+                  initialRegion={fitRegion(route)}
+                  showsUserLocation={false}
+                  toolbarEnabled={false}
+                  scrollEnabled
+                  zoomEnabled
+                >
+                  <Polyline
+                    coordinates={route.map((p) => ({ latitude: p.lat, longitude: p.lon }))}
+                    strokeColor={persona.accent}
+                    strokeWidth={5}
+                    lineCap="round"
+                  />
+                  {cellList.map((cid) => (
+                    <CellSquare key={cid} cellId={cid} accent={persona.accent} />
+                  ))}
+                </MapView>
+              </View>
+            )}
+
             <Text style={styles.finishHead}>
-              {cellsTouched > 0 ? "Run complete." : "Run too short."}
+              {cellsTouched > 0 ? "🏁 Run complete." : "🏁 Run too short."}
             </Text>
             <View style={[styles.statBlock, { borderColor: persona.accent }]}>
               <Text style={styles.statLabel}>CELLS TO CLAIM</Text>
@@ -259,6 +354,49 @@ export default function RunScreen() {
   );
 }
 
+/** Cell square overlay — shows a single grid cell as a colored polygon. */
+function CellSquare({ cellId, accent }: { cellId: string; accent: string }) {
+  const sw = cellCorner(cellId);
+  const ne = { lat: sw.lat + CELL_DEG, lon: sw.lon + CELL_DEG };
+  return (
+    <Polygon
+      coordinates={[
+        { latitude: sw.lat, longitude: sw.lon },
+        { latitude: sw.lat, longitude: ne.lon },
+        { latitude: ne.lat, longitude: ne.lon },
+        { latitude: ne.lat, longitude: sw.lon },
+      ]}
+      fillColor={`${accent}55`}
+      strokeColor={accent}
+      strokeWidth={1.5}
+    />
+  );
+}
+
+/** Compute a region that fits the entire route, with some padding. */
+function fitRegion(track: LatLon[]): Region {
+  if (track.length === 0) {
+    return { latitude: 0, longitude: 0, latitudeDelta: 0.05, longitudeDelta: 0.05 };
+  }
+  let latMin = track[0].lat, latMax = track[0].lat;
+  let lonMin = track[0].lon, lonMax = track[0].lon;
+  for (const p of track) {
+    if (p.lat < latMin) latMin = p.lat;
+    if (p.lat > latMax) latMax = p.lat;
+    if (p.lon < lonMin) lonMin = p.lon;
+    if (p.lon > lonMax) lonMax = p.lon;
+  }
+  const PAD = 1.4;
+  const latDelta = Math.max(0.003, (latMax - latMin) * PAD);
+  const lonDelta = Math.max(0.003, (lonMax - lonMin) * PAD);
+  return {
+    latitude:  (latMin + latMax) / 2,
+    longitude: (lonMin + lonMax) / 2,
+    latitudeDelta: latDelta,
+    longitudeDelta: lonDelta,
+  };
+}
+
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
   const r = s % 60;
@@ -290,6 +428,32 @@ const styles = StyleSheet.create({
   errorMsg: { fontFamily: Fonts.body, fontSize: 13, color: Colors.danger, textAlign: 'center', marginTop: 8 },
 
   tracking: { flex: 1, paddingTop: 12, gap: 12 },
+
+  // Live route map
+  mapWrap: {
+    flex: 1, minHeight: 260, borderRadius: 14, overflow: 'hidden',
+    backgroundColor: Colors.surface,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
+  },
+  mapPlaceholder: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center', justifyContent: 'center', gap: 12,
+  },
+  muted: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textSecondary, letterSpacing: 1 },
+
+  // Compact stats row under the map
+  compactStats: {
+    flexDirection: 'row', gap: 6,
+  },
+  compactStat: {
+    flex: 1, paddingVertical: 10, paddingHorizontal: 8,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 8, alignItems: 'center',
+  },
+  compactBig: {
+    fontFamily: Fonts.display, fontWeight: '800', fontSize: 18, color: Colors.text,
+    letterSpacing: -0.3, marginTop: 4,
+  },
 
   statBlock: {
     borderWidth: 1.5, borderRadius: 14, padding: 22, alignItems: 'center',
