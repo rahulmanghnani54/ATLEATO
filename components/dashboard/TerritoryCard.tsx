@@ -52,7 +52,7 @@ export function TerritoryCard({ persona }: { persona: PersonaTheme }) {
   return (
     <TouchableOpacity
       style={[styles.card, { borderColor: persona.accent, backgroundColor: persona.accentSoft }]}
-      onPress={() => router.push('/territory-map' as any)}
+      onPress={() => router.push('/(tabs)/territory' as any)}
       activeOpacity={0.88}
     >
       <View style={styles.headRow}>
@@ -82,7 +82,7 @@ export function TerritoryCard({ persona }: { persona: PersonaTheme }) {
       <View style={styles.actionRow}>
         <TouchableOpacity
           style={[styles.actionBtn, { borderColor: persona.accent }]}
-          onPress={() => router.push('/territory-map' as any)}
+          onPress={() => router.push('/(tabs)/territory' as any)}
           activeOpacity={0.85}
         >
           <Text style={[styles.actionText, { color: persona.accent }]}>🗺  VIEW MAP</Text>

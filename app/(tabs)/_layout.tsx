@@ -52,6 +52,15 @@ function UserIcon({ color, size = 22 }: { color: string; size?: number }) {
   );
 }
 
+function TerritoryIcon({ color, size = 22 }: { color: string; size?: number }) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.8"/>
+      <Path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18" stroke={color} strokeWidth="1.5" strokeLinecap="round"/>
+    </Svg>
+  );
+}
+
 function TabIcon({ icon, focused, label }: { icon: string; focused: boolean; label: string }) {
   const color = focused ? Colors.primary : Colors.textSecondary;
   const iconMap: Record<string, React.ReactElement> = {
@@ -60,6 +69,7 @@ function TabIcon({ icon, focused, label }: { icon: string; focused: boolean; lab
     eat: <EatIcon color={color} />,
     coach: <CoachIcon color={color} />,
     me: <UserIcon color={color} />,
+    territory: <TerritoryIcon color={color} />,
   };
   return (
     <View style={styles.tabItem}>
@@ -100,6 +110,12 @@ export default function TabsLayout() {
         name="coach"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon icon="coach" focused={focused} label="COACH" />,
+        }}
+      />
+      <Tabs.Screen
+        name="territory"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon icon="territory" focused={focused} label="RUN" />,
         }}
       />
       <Tabs.Screen
