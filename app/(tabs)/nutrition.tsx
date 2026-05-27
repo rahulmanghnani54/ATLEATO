@@ -1,10 +1,9 @@
 import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import Svg, { Circle } from 'react-native-svg';
-import { FoodSearchModal } from '@/components/nutrition/FoodSearchModal';
 import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
 import { useAuthStore } from '@/stores/authStore';
@@ -36,8 +35,8 @@ function MacroRing({ eaten, goal, size = 140, color = Colors.primary }: { eaten:
 }
 
 export default function Nutrition() {
+  const router = useRouter();
   const [date, setDate] = useState(new Date());
-  const [activeMeal, setActiveMeal] = useState<MealType | null>(null);
   const profile = useAuthStore((s) => s.profile);
   const { data: nutrition, refetch } = useDailyNutrition(date);
   const { glasses, goalGlasses, addGlass } = useWaterLog(date);
@@ -153,7 +152,14 @@ export default function Nutrition() {
           const macroLine = mealKcal > 0 ? `${mP}P · ${mC}C · ${mF}F` : '— · — · —';
           return (
             <View key={meal.key} style={styles.mealCard}>
-              <TouchableOpacity style={styles.mealHeader} onPress={() => setActiveMeal(meal.key)} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.mealHeader}
+                onPress={() => router.push({
+                  pathname: '/add-food',
+                  params: { mealType: meal.key, date: dateStr },
+                } as any)}
+                activeOpacity={0.7}
+              >
                 <View style={styles.mealTime}>
                   <Text style={[styles.mealTimeH, { color: Colors.primary }]}>{meal.time.split(':')[0]}</Text>
                   <Text style={styles.mealTimeM}>:{meal.time.split(':')[1]}</Text>
@@ -190,15 +196,6 @@ export default function Nutrition() {
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {activeMeal && (
-        <FoodSearchModal
-          visible={!!activeMeal}
-          onClose={() => setActiveMeal(null)}
-          mealType={activeMeal}
-          date={dateStr}
-          onFoodLogged={() => { refetch(); setActiveMeal(null); }}
-        />
-      )}
     </SafeAreaView>
   );
 }
