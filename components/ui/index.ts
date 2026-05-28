@@ -13,3 +13,4 @@ export type { PickerOption } from './PickerModal';
 export { GlassScreen } from './GlassScreen';
 export { GlassCard } from './GlassCard';
 export { SectionHeader } from './SectionHeader';
+export { AnimatedLogo } from './AnimatedLogo';

@@ -7,6 +7,7 @@ import { Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
+import { AnimatedLogo } from '@/components/ui';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -40,16 +41,8 @@ export default function Login() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
-          {/* Logo */}
-          <View style={styles.logoArea}>
-            <View style={styles.wordmark}>
-              <Text style={styles.wordmarkA}>A</Text>
-              <Text style={styles.wordmarkRest}>TLEATO</Text>
-              <Text style={styles.tmSymbol}>™</Text>
-            </View>
-            <View style={styles.wordmarkBar} />
-            <Text style={styles.logoHero}>TRAIN.FUEL.RISE.</Text>
-          </View>
+          {/* Logo — animated intro + idle pulse */}
+          <AnimatedLogo />
 
           {error ? (
             <View style={styles.errorBox}>

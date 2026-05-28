@@ -166,19 +166,15 @@ export default function Dashboard() {
     if (profile) registerPushTokenIfNeeded();
   }, [profile]);
 
-  // Tap handlers
+  // Tap handler — route to the workout-picker so user can pick today's
+  // recommended OR swap to any other day in the program.
   const startTodayWorkout = () => {
-    if (todaySchedule?.isRest) { router.push('/recovery-checkin' as any); return; }
-    if (!todayWorkout)         { router.push('/(tabs)/workouts' as any);  return; }
-    const dow = new Date().getDay();
-    const programDay = dow === 0 ? 6 : dow - 1;
-    router.push({
-      pathname: '/workout-lobby',
-      params: {
-        programId: profile?.selected_program ?? 'cbum_evolved',
-        dayIndex: String(programDay),
-      },
-    } as any);
+    if (todaySchedule?.isRest && !todayWorkout) {
+      // Pure rest day → offer recovery check-in
+      router.push('/recovery-checkin' as any);
+      return;
+    }
+    router.push('/workout-picker' as any);
   };
 
   return (

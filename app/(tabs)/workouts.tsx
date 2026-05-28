@@ -214,10 +214,7 @@ export default function Workouts() {
                 <TouchableOpacity
                   style={[styles.startBtn, { backgroundColor: accentColor }]}
                   onPress={() =>
-                    router.push({
-                      pathname: '/workout-lobby',
-                      params: { programId, dayIndex: workoutIndex },
-                    } as any)
+                    router.push('/workout-picker' as any)
                   }
                   activeOpacity={0.85}
                 >

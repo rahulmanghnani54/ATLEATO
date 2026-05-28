@@ -92,16 +92,9 @@ export default function CoachHub() {
   };
 
   const startTodaysWorkout = () => {
-    if (todaySchedule?.isRest || !todayWorkout) return;
-    const dow = new Date().getDay();
-    const programDay = dow === 0 ? 6 : dow - 1;
-    router.push({
-      pathname: '/workout-lobby',
-      params: {
-        programId: profile?.selected_program ?? 'cbum_evolved',
-        dayIndex: String(programDay),
-      },
-    } as any);
+    // Route through the workout-picker so the user can swap day on the fly
+    // (e.g. today is Push but they want Pull instead).
+    router.push('/workout-picker' as any);
   };
 
   return (
