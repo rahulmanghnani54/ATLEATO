@@ -44,7 +44,7 @@
       "package": "com.madsales.atleato",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ff6b35"
+        "backgroundColor": "#0a0b0d"
       },
       "permissions": [
         "android.permission.CAMERA",

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Atleato — The Mark</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@700;800;900&family=Inter:wght@900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:#050608;color:#f5f5f4;font-family:'Inter',sans-serif;
+    padding:40px 20px;min-height:100vh;
+  }
+  .head{text-align:center;margin-bottom:36px}
+  .head h1{font-family:'Space Grotesk',sans-serif;font-size:32px;letter-spacing:-0.6px;margin-bottom:6px}
+  .head .sub{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:1.8px;color:#888}
+
+  .grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+    max-width:900px;margin:0 auto 40px;
+  }
+  .card{
+    background:#0e0f12;border:1px solid #1d1e22;border-radius:18px;padding:22px;
+    text-align:center;
+  }
+  .label{
+    font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:1.6px;
+    color:#ff6b35;margin-bottom:14px;font-weight:700;
+  }
+  .label small{
+    display:block;color:#777;font-size:9px;letter-spacing:1px;
+    font-weight:500;margin-top:4px;
+  }
+
+  /* ── The mark — three sizes ──────────────────────────────────────────── */
+  .mark-canvas{
+    border-radius:24px; /* iOS-style continuous corner */
+    display:flex;align-items:center;justify-content:center;
+    background:#0a0b0d;position:relative;overflow:hidden;
+    margin:0 auto 6px;
+  }
+  .mark-canvas::before{
+    content:'';position:absolute;inset:0;
+    background:radial-gradient(circle at 50% 65%, rgba(255,107,53,.22), transparent 65%);
+    pointer-events:none;
+  }
+  .mark-canvas.lg{width:240px;height:240px;border-radius:54px}
+  .mark-canvas.md{width:140px;height:140px;border-radius:32px}
+  .mark-canvas.sm{width:80px;height:80px;border-radius:18px}
+
+  /* SVG colour vars */
+  :root{
+    --orange:#ff6b35;
+    --orange-deep:#e84d20;
+  }
+
+  .pick{
+    font-family:'JetBrains Mono',monospace;font-size:9px;color:#666;
+    letter-spacing:1px;margin-top:8px;
+  }
+
+  /* ── Phone home-screen preview ───────────────────────────────────────── */
+  .phone-row{
+    max-width:380px;margin:60px auto 0;text-align:center;
+  }
+  .phone-row h2{
+    font-family:'Space Grotesk',sans-serif;font-size:20px;margin-bottom:6px;
+  }
+  .phone-row .desc{color:#888;font-family:'JetBrains Mono',monospace;font-size:10px;
+    letter-spacing:1.4px;margin-bottom:24px;
+  }
+  .home-screen{
+    background:linear-gradient(180deg,#1c1c1f 0%,#0b0b0e 100%);
+    padding:30px 22px;border-radius:42px;border:6px solid #18191c;
+    box-shadow:0 30px 80px rgba(0,0,0,.55);
+  }
+  .row{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:22px}
+  .app{display:flex;flex-direction:column;align-items:center;gap:6px;width:64px}
+  .app img,.app .placeholder{
+    width:60px;height:60px;border-radius:14px;background:#222;
+    display:flex;align-items:center;justify-content:center;
+    color:#555;font-size:9px;font-family:'JetBrains Mono',monospace;
+  }
+  .app .placeholder.color{background:#1f4a8e}
+  .app .placeholder.green{background:#138b3e}
+  .app .placeholder.purple{background:#7c2c91}
+  .app .placeholder.red{background:#c0162c}
+  .app .placeholder.yellow{background:#e5b015;color:#222}
+  .app .name{font-size:10px;color:#fff;font-family:'Inter',sans-serif;font-weight:500}
+
+  /* Story panel */
+  .story{
+    max-width:760px;margin:50px auto 0;
+    background:#0e0f12;border:1px solid #1d1e22;border-radius:16px;padding:28px;
+  }
+  .story h3{
+    font-family:'Space Grotesk',sans-serif;font-size:18px;letter-spacing:-0.3px;
+    color:#ff6b35;margin-bottom:14px;
+  }
+  .story table{width:100%;border-collapse:collapse}
+  .story td{
+    padding:10px 0;border-bottom:1px solid #1a1b1f;
+    font-family:'Inter',sans-serif;font-size:13px;line-height:1.6;
+  }
+  .story td:first-child{
+    color:#ff6b35;font-weight:700;width:34%;padding-right:14px;
+    vertical-align:top;
+  }
+  .story td:last-child{color:#ccc}
+  .story tr:last-child td{border-bottom:none}
+</style>
+</head>
+<body>
+
+<div class="head">
+  <h1>The Atleato Mark</h1>
+  <div class="sub">5 COACHES · PERFECT FORM · PURE POWER</div>
+</div>
+
+<!-- ── 3 sizes ─────────────────────────────────────────────────────────── -->
+<div class="grid">
+  <div class="card">
+    <div class="label">XL · 240×240<small>store listing</small></div>
+    <div class="mark-canvas lg">
+      <svg width="180" height="180" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#ff6b35"/>
+            <stop offset="100%" stop-color="#e84d20"/>
+          </linearGradient>
+        </defs>
+        <!-- The angular A -->
+        <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g1)"/>
+        <!-- The form bar at golden-ratio height -->
+        <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+        <!-- 5 subtle inner step lines (the 5 coaches) -->
+        <g opacity="0.18" fill="#0a0b0d">
+          <rect x="36" y="50" width="28" height="1.6"/>
+          <rect x="34" y="56" width="32" height="1.6"/>
+          <rect x="32" y="62" width="36" height="1.6"/>
+          <rect x="30" y="74" width="40" height="1.6"/>
+          <rect x="28" y="80" width="44" height="1.6"/>
+        </g>
+      </svg>
+    </div>
+    <div class="pick">tap to copy / inspect</div>
+  </div>
+
+  <div class="card">
+    <div class="label">M · 140×140<small>play store grid</small></div>
+    <div class="mark-canvas md">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#ff6b35"/>
+            <stop offset="100%" stop-color="#e84d20"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g2)"/>
+        <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+      </svg>
+    </div>
+    <div class="pick">notice the form bar</div>
+  </div>
+
+  <div class="card">
+    <div class="label">S · 80×80<small>tab bar / notification</small></div>
+    <div class="mark-canvas sm">
+      <svg width="56" height="56" viewBox="0 0 100 100">
+        <defs>
+          <linearGradient id="g3" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"  stop-color="#ff6b35"/>
+            <stop offset="100%" stop-color="#e84d20"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g3)"/>
+        <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+      </svg>
+    </div>
+    <div class="pick">still readable</div>
+  </div>
+</div>
+
+<!-- ── Phone home-screen preview ───────────────────────────────────────── -->
+<div class="phone-row">
+  <h2>On a phone home screen</h2>
+  <div class="desc">SCALE + RECOGNIZABILITY CHECK</div>
+  <div class="home-screen">
+    <div class="row">
+      <div class="app">
+        <div class="placeholder color">WTSP</div>
+        <div class="name">WhatsApp</div>
+      </div>
+      <div class="app">
+        <div class="placeholder green">SPTF</div>
+        <div class="name">Spotify</div>
+      </div>
+      <div class="app">
+        <div class="placeholder red">YTBE</div>
+        <div class="name">YouTube</div>
+      </div>
+      <div class="app">
+        <!-- OUR ICON, in context -->
+        <div style="width:60px;height:60px;border-radius:14px;background:#0a0b0d;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;">
+          <div style="position:absolute;inset:0;background:radial-gradient(circle at 50% 65%, rgba(255,107,53,.22), transparent 65%);"></div>
+          <svg width="46" height="46" viewBox="0 0 100 100" style="z-index:2">
+            <defs>
+              <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"  stop-color="#ff6b35"/>
+                <stop offset="100%" stop-color="#e84d20"/>
+              </linearGradient>
+            </defs>
+            <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g4)"/>
+            <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+          </svg>
+        </div>
+        <div class="name" style="color:#ff6b35;font-weight:700">Atleato</div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="app">
+        <div class="placeholder purple">INSTA</div>
+        <div class="name">Instagram</div>
+      </div>
+      <div class="app">
+        <div class="placeholder yellow">CHGP</div>
+        <div class="name">ChatGPT</div>
+      </div>
+      <div class="app">
+        <div class="placeholder">STRA</div>
+        <div class="name">Strava</div>
+      </div>
+      <div class="app">
+        <div class="placeholder color" style="background:#005f9e">UBER</div>
+        <div class="name">Uber</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Story panel ─────────────────────────────────────────────────────── -->
+<div class="story">
+  <h3>Why every element</h3>
+  <table>
+    <tr><td>The “A”</td><td>Atleato, Athlete, Apex. The first letter of every word that drives this brand.</td></tr>
+    <tr><td>Sharp angular strokes</td><td>Power. Not soft, not rounded — angles are aggressive, intentional, like a perfectly executed lift.</td></tr>
+    <tr><td>Crossbar at golden ratio</td><td>This is the BARBELL. Placed at mathematically correct height → symbolizes FORM. Your user is a youth learning correct technique; this bar visually rewards them.</td></tr>
+    <tr><td>5 inner step lines</td><td>The 5 coaches. Subtle rungs inside the A — readable up close as “levels you climb with 5 coaches”, invisible at a glance so the mark stays clean.</td></tr>
+    <tr><td>Orange → red gradient</td><td>Heat. Fire. Sweat. The warm glow of effort. Same hex (#ff6b35) already in your login button and bar.</td></tr>
+    <tr><td>Deep dark background</td><td>The gym at 5am. Discipline before sunrise. Lets the mark glow.</td></tr>
+    <tr><td>No wordmark in the icon</td><td>“Atleato” lives below the icon on the home screen. The MARK does the heavy lifting alone.</td></tr>
+  </table>
+</div>
+
+</body>
+</html>
