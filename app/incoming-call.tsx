@@ -25,6 +25,7 @@ import {
   cancelRingingChain, declineCoachCall, getCallCopy,
   type CallKind,
 } from '@/lib/coachCallScheduler';
+import { stopPersistentRing } from '@/lib/wakeupCalls';
 import { speakAs } from '@/lib/voiceCues';
 import { getPersona, styleText, type PersonaId } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
@@ -55,6 +56,9 @@ export default function IncomingCallScreen() {
     speakAs(personaId, copy.body);
     // Stop any pending ring follow-ups — user has engaged
     cancelRingingChain(kind);
+    // Stop the persistent-ring loop (Notifee path) — user is here, no need
+    // to keep waking the device.
+    stopPersistentRing();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

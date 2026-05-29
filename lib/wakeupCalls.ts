@@ -117,22 +117,89 @@ export async function triggerIncomingCall(opts: {
 }): Promise<string> {
   await setupCallKeep();
   const callUUID = generateUUID();
-  if (!RNCallKeep) {
-    // CallKeep unavailable — caller should fall back to fireIncomingCall (Notifee)
-    throw new Error('CallKeep unavailable (New Arch incompatibility)');
-  }
-  const persona = getPersona(opts.persona);
-  const handle = persona.shortName.toLowerCase();
-  const localizedCallerName = `${persona.shortName} · ${opts.reason ?? 'WAKE UP'}`;
 
-  RNCallKeep.displayIncomingCall(
-    callUUID,
-    handle,
-    localizedCallerName,
-    HANDLE_TYPE,
-    /* hasVideo */ false,
-  );
+  // Path A — CallKeep is available (legacy arch builds): real system ring.
+  if (RNCallKeep) {
+    const persona = getPersona(opts.persona);
+    const handle = persona.shortName.toLowerCase();
+    const localizedCallerName = `${persona.shortName} · ${opts.reason ?? 'WAKE UP'}`;
+    RNCallKeep.displayIncomingCall(
+      callUUID, handle, localizedCallerName, HANDLE_TYPE, false,
+    );
+    return callUUID;
+  }
+
+  // Path B — New Arch / no CallKeep: fire a persistent-ring loop of Notifee
+  // notifications every 3s for 60s so the system call sound + vibration
+  // keep triggering. The /incoming-call screen calls stopPersistentRing()
+  // on mount.
+  await startPersistentRing(opts.persona, opts.reason ?? 'WAKE UP');
   return callUUID;
+}
+
+// ─── Persistent ring loop (used when CallKeep isn't available) ─────────────
+
+let ringTimer: ReturnType<typeof setInterval> | null = null;
+let ringNotificationIds: string[] = [];
+
+/**
+ * Fire a series of high-priority CALL-category notifications every 3 seconds
+ * for the given duration. Each notification re-triggers the system call
+ * sound + vibration on Android. Total impact = real-call-feeling ring that
+ * keeps going for ~60s until the user actively answers or declines.
+ */
+async function startPersistentRing(
+  personaId: PersonaId,
+  reason: string,
+  durationSec = 60,
+): Promise<void> {
+  await ensureChannel();
+  await stopPersistentRing(); // clear any previous loop
+
+  const persona = getPersona(personaId);
+  const start = Date.now();
+  const callerName = `${persona.shortName} · ${reason}`;
+
+  const fire = async () => {
+    if (Date.now() - start > durationSec * 1000) {
+      await stopPersistentRing();
+      return;
+    }
+    try {
+      const nid = await notifee.displayNotification({
+        id: `${WAKEUP_NOTIFEE_ID_PREFIX}ring-${Date.now()}`,
+        title: callerName,
+        body: 'Incoming call · swipe to answer',
+        data: { kind: 'wakeup-call', persona: personaId },
+        android: {
+          channelId: RING_CHANNEL,
+          importance: AndroidImportance.HIGH,
+          visibility: AndroidVisibility.PUBLIC,
+          category: AndroidCategory.CALL,
+          sound: 'default',
+          fullScreenAction: { id: 'default', launchActivity: 'default' },
+          pressAction:      { id: 'default', launchActivity: 'default' },
+          ongoing: true,
+          autoCancel: false,
+        },
+      });
+      ringNotificationIds.push(nid);
+    } catch (e: any) {
+      if (__DEV__) console.warn('[wakeup] ring fire failed:', e?.message);
+    }
+  };
+
+  await fire();
+  ringTimer = setInterval(fire, 3000);
+}
+
+/** Called by /incoming-call when the user opens it. Stops the loop. */
+export async function stopPersistentRing(): Promise<void> {
+  if (ringTimer) { clearInterval(ringTimer); ringTimer = null; }
+  for (const id of ringNotificationIds) {
+    try { await notifee.cancelNotification(id); } catch { /* ignore */ }
+  }
+  ringNotificationIds = [];
 }
 
 // ─── Scheduling ─────────────────────────────────────────────────────────────
