@@ -29,6 +29,7 @@ import {
 } from '@/lib/notifeeCallScheduler';
 import {
   setupCallKeep, wireCallKeepEvents, handleWakeupBackground,
+  ringForegroundServiceRunner,
 } from '@/lib/wakeupCalls';
 import notifee from '@notifee/react-native';
 import type { PersonaId } from '@/lib/personaTheme';
@@ -36,6 +37,11 @@ import type { PersonaId } from '@/lib/personaTheme';
 // Notifee background event handler — fires even when app is fully killed.
 // Catches our wake-up trigger and escalates it into a real ring via CallKeep.
 notifee.onBackgroundEvent(handleWakeupBackground);
+
+// Register the foreground-service runner that keeps the ring loop alive
+// while the user's phone is dark / app is backgrounded. MUST be at module
+// load (top-level), not inside a component.
+notifee.registerForegroundService(ringForegroundServiceRunner);
 import type { CallKind } from '@/lib/coachCallScheduler';
 
 // Configure how foreground notifications behave (banner + sound).
