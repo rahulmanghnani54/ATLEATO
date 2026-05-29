@@ -56,14 +56,16 @@ export default function IncomingCallScreen() {
     speakAs(personaId, copy.body);
     // Stop any pending ring follow-ups — user has engaged
     cancelRingingChain(kind);
-    // Stop the persistent-ring loop (Notifee path) — user is here, no need
-    // to keep waking the device.
-    stopPersistentRing();
+    // DO NOT stop the persistent ring on mount — let the user actively
+    // answer or decline. Otherwise the user sees the call screen but never
+    // hears the ring, defeating the whole "make notifications wake people up"
+    // point. stopPersistentRing() is called in handleAnswer/handleDecline.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleAnswer = () => {
     cancelRingingChain(kind);
+    stopPersistentRing();
     // Coach greets you on answer
     speakAs(personaId, `Good to hear from you. Let's go.`);
     // Deep-link to the right destination for this call kind
@@ -72,6 +74,7 @@ export default function IncomingCallScreen() {
   };
 
   const handleDecline = async () => {
+    stopPersistentRing();
     await declineCoachCall({ kind, personaId });
     router.back();
   };
