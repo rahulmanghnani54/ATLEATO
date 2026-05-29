@@ -19,6 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useCoachReminders } from '@/hooks/useCoachReminders';
 import { getCallCopy, getNextFiringDate, type CallKind } from '@/lib/coachCallScheduler';
 import { fireIncomingCall, ensureNotifeePermission } from '@/lib/notifeeCallScheduler';
+import { triggerIncomingCall, setupCallKeep } from '@/lib/wakeupCalls';
 import { AuthorizationStatus } from '@notifee/react-native';
 import { styleText } from '@/lib/personaTheme';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
@@ -87,24 +88,33 @@ export default function CoachRemindersScreen() {
       return;
     }
 
-    // 2. Fire the call. We do TWO things in parallel:
-    //    a. Show the in-app /incoming-call screen IMMEDIATELY — gives the
-    //       full-screen call UI even when phone is unlocked
-    //    b. Also fire the OS notification — provides sound + vibration +
-    //       lock-screen takeover IF the phone is locked
-    // The user thus gets the call experience regardless of phone state.
+    // 2. Fire the REAL incoming call via CallKeep (Android ConnectionService
+    //    / iOS CallKit). This triggers the system-level call ring at full
+    //    volume — the actual phone ringtone, vibration, lock-screen takeover.
+    //    THIS is what wakes people up. Notifications get slept through.
     try {
-      await fireIncomingCall({ kind, personaId: persona.id, isTest: true });
+      await setupCallKeep();
+      await triggerIncomingCall({
+        persona: persona.id,
+        reason: kind === 'wakeup' ? 'WAKE UP' : 'WORKOUT TIME',
+      });
     } catch (e: any) {
-      Alert.alert(
-        'Could not start call',
-        `Reason: ${e?.message ?? String(e)}\n\nCheck: Notifications + Battery → Unrestricted for Atleato.`,
-      );
-      return;
+      // Fall back to the legacy notification path if CallKeep isn't ready
+      // (e.g. native module not linked yet on this build).
+      if (__DEV__) console.warn('[wakeup] CallKeep fire failed, falling back:', e?.message);
+      try {
+        await fireIncomingCall({ kind, personaId: persona.id, isTest: true });
+      } catch (e2: any) {
+        Alert.alert(
+          'Could not start call',
+          `Reason: ${e2?.message ?? String(e2)}\n\nCheck: Notifications + Battery → Unrestricted for Atleato.`,
+        );
+        return;
+      }
     }
 
-    // Open the in-app call UI immediately — full-screen takeover even
-    // when the phone isn't locked.
+    // Also open the in-app call UI immediately so testing on an unlocked
+    // screen still feels like a call.
     router.push({
       pathname: '/incoming-call',
       params: { kind, personaId: persona.id },

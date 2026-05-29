@@ -27,7 +27,15 @@ import {
 import {
   setupCallChannel, registerCallEventHandler,
 } from '@/lib/notifeeCallScheduler';
+import {
+  setupCallKeep, wireCallKeepEvents, handleWakeupBackground,
+} from '@/lib/wakeupCalls';
+import notifee from '@notifee/react-native';
 import type { PersonaId } from '@/lib/personaTheme';
+
+// Notifee background event handler — fires even when app is fully killed.
+// Catches our wake-up trigger and escalates it into a real ring via CallKeep.
+notifee.onBackgroundEvent(handleWakeupBackground);
 import type { CallKind } from '@/lib/coachCallScheduler';
 
 // Configure how foreground notifications behave (banner + sound).
@@ -56,7 +64,7 @@ function RootNavigator() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // One-time setup: notification channels + Notifee call handler.
+  // One-time setup: notification channels + Notifee call handler + CallKeep.
   // Wrapped so any setup failure can never block the app from rendering.
   useEffect(() => {
     let unsub: (() => void) | undefined;
@@ -70,6 +78,22 @@ function RootNavigator() {
             pathname: '/incoming-call',
             params: { kind, personaId },
           } as any);
+        });
+      } catch { /* ignore */ }
+      // CallKeep — proper system-level incoming call escalation.
+      try {
+        await setupCallKeep();
+        wireCallKeepEvents({
+          onAnswered: () => {
+            // When the user taps "Answer" in the system call UI, open our
+            // in-app call screen. The persona comes from the active wake-up
+            // schedule (last-known persona).
+            router.push('/incoming-call' as any);
+          },
+          onDeclined: () => {
+            // The user declined the system call. Nothing routes — we already
+            // let the persona vent via TTS inside the existing handler.
+          },
         });
       } catch { /* ignore */ }
     })();
