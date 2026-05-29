@@ -142,6 +142,22 @@ export default function CoachRemindersScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Ringtone shortcut — at the top so it's discoverable */}
+        <TouchableOpacity
+          style={[styles.ringtoneRow, { borderColor: persona.accent }]}
+          onPress={() => router.push('/ringtone-picker' as any)}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.ringtoneEmoji}>🔔</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.ringtoneLabel, { color: persona.accent }]}>RINGTONE</Text>
+            <Text style={styles.ringtoneHint}>
+              Choose what plays when the coach calls — or import your own.
+            </Text>
+          </View>
+          <Text style={[styles.ringtoneArrow, { color: persona.accent }]}>→</Text>
+        </TouchableOpacity>
+
         {/* Persona-aware hero */}
         <View style={[styles.hero, { backgroundColor: persona.accent }]}>
           <Text style={[styles.heroEyebrow, { color: persona.ink, opacity: 0.7 }]}>
@@ -323,6 +339,18 @@ const styles = StyleSheet.create({
   headerTitle: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text, letterSpacing: 0.4 },
 
   scroll: { padding: Spacing.md, paddingBottom: 40 },
+
+  // Ringtone shortcut row (top of the screen)
+  ringtoneRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 14, paddingVertical: 12,
+    borderWidth: 1, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: 14,
+  },
+  ringtoneEmoji: { fontSize: 22 },
+  ringtoneLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, fontWeight: '700' },
+  ringtoneHint:  { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, marginTop: 3, lineHeight: 15 },
+  ringtoneArrow: { fontFamily: Fonts.display, fontSize: 20 },
 
   hero: {
     borderRadius: 8, padding: 18, marginBottom: 18,
