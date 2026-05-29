@@ -27,7 +27,20 @@
  *        - User answers   → opens /incoming-call screen, plays coach TTS
  *        - User declines  → CallKeep.endCall, log "missed wake-up" event
  */
-import RNCallKeep from 'react-native-callkeep';
+// react-native-callkeep doesn't support the New Architecture (it declares
+// duplicate `displayIncomingCall` methods that the TurboModule interop layer
+// rejects). We CAN'T disable New Arch because react-native-worklets — needed
+// by the Form Coach via vision-camera — REQUIRES it. So we lazy-load
+// CallKeep inside a try/catch. When it works (legacy arch builds) we use it;
+// when it doesn't (current setup) we fall through to a Notifee-based ring.
+let RNCallKeep: any = null;
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  RNCallKeep = require('react-native-callkeep').default;
+} catch {
+  RNCallKeep = null;
+}
+
 import notifee, {
   TriggerType, AndroidImportance, AndroidVisibility, AndroidCategory,
   type TimestampTrigger,
@@ -51,6 +64,7 @@ let callKeepReady = false;
  */
 export async function setupCallKeep(): Promise<void> {
   if (callKeepReady) return;
+  if (!RNCallKeep) return; // native module not available — Notifee handles ringing
   try {
     await RNCallKeep.setup({
       ios: {
@@ -102,8 +116,12 @@ export async function triggerIncomingCall(opts: {
   reason?: string;     // "WAKE UP" / "WORKOUT TIME"
 }): Promise<string> {
   await setupCallKeep();
-  const persona = getPersona(opts.persona);
   const callUUID = generateUUID();
+  if (!RNCallKeep) {
+    // CallKeep unavailable — caller should fall back to fireIncomingCall (Notifee)
+    throw new Error('CallKeep unavailable (New Arch incompatibility)');
+  }
+  const persona = getPersona(opts.persona);
   const handle = persona.shortName.toLowerCase();
   const localizedCallerName = `${persona.shortName} · ${opts.reason ?? 'WAKE UP'}`;
 
@@ -249,12 +267,13 @@ export function wireCallKeepEvents(opts: {
   onAnswered: (uuid: string) => void;
   onDeclined: (uuid: string) => void;
 }): void {
-  RNCallKeep.addEventListener('answerCall', ({ callUUID }) => {
+  if (!RNCallKeep) return; // safe no-op when native module missing
+  RNCallKeep.addEventListener('answerCall', ({ callUUID }: { callUUID: string }) => {
     try { opts.onAnswered(callUUID); } finally {
       RNCallKeep.setCurrentCallActive(callUUID);
     }
   });
-  RNCallKeep.addEventListener('endCall', ({ callUUID }) => {
+  RNCallKeep.addEventListener('endCall', ({ callUUID }: { callUUID: string }) => {
     opts.onDeclined(callUUID);
   });
 }
