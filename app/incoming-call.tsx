@@ -63,10 +63,10 @@ export default function IncomingCallScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAnswer = () => {
+  const handleAnswer = async () => {
     cancelRingingChain(kind);
-    stopPersistentRing();
-    cancelSnoozeCall(); // user engaged — cancel any pending snooze
+    await stopPersistentRing();   // ensure notif + audio are GONE before routing
+    await cancelSnoozeCall();     // user engaged — cancel any pending snooze
     // Coach greets you on answer
     speakAs(personaId, `Good to hear from you. Let's go.`);
     // Deep-link to the right destination for this call kind
@@ -75,7 +75,7 @@ export default function IncomingCallScreen() {
   };
 
   const handleDecline = async () => {
-    stopPersistentRing();
+    await stopPersistentRing();   // tear down BEFORE the snooze is queued
     await declineCoachCall({ kind, personaId });
     // Schedule a follow-up call in 5 minutes — coach doesn't take 'no' for
     // an answer. Only for wake-up calls (workout calls don't auto-snooze).

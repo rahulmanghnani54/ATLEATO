@@ -198,8 +198,11 @@ async function startPersistentRing(
     if (__DEV__) console.warn('[wakeup] ringtone load failed:', e?.message);
   }
 
-  // 3. Display the foreground-service notification — keeps the JS thread
-  //    alive while ringing AND pops the lock-screen takeover UI.
+  // 3. Display a high-importance CALL-category notification (NOT a
+  //    foreground service — that variant lingers in the tray after the
+  //    service stops, even when we cancel it explicitly). For the 60s
+  //    we ring, expo-av's staysActiveInBackground keeps audio going
+  //    while the app is backgrounded or the screen is off.
   try {
     await notifee.displayNotification({
       id: FOREGROUND_NOTIF_ID,
@@ -211,16 +214,15 @@ async function startPersistentRing(
         importance: AndroidImportance.HIGH,
         visibility: AndroidVisibility.PUBLIC,
         category:   AndroidCategory.CALL,
-        asForegroundService: true,
         ongoing:    true,
-        autoCancel: false,
+        autoCancel: true, // dismiss the notif as soon as the user taps it
         smallIcon:  'ic_notification',
         fullScreenAction: { id: 'default', launchActivity: 'default' },
         pressAction:      { id: 'default', launchActivity: 'default' },
       },
     });
   } catch (e: any) {
-    if (__DEV__) console.warn('[wakeup] foreground notif failed:', e?.message);
+    if (__DEV__) console.warn('[wakeup] notif failed:', e?.message);
   }
 
   // 4. Self-terminate after the safety duration even if the user ignores it.
@@ -229,18 +231,25 @@ async function startPersistentRing(
 
 /**
  * Called by /incoming-call's Answer/Decline buttons (and by the 60-second
- * safety timer). Stops audio, dismisses the foreground service.
+ * safety timer). Tears the ring down completely: audio off, notification
+ * removed, any foreground service stopped.
  */
 export async function stopPersistentRing(): Promise<void> {
   ringActive = false;
   if (ringTimeoutId) { clearTimeout(ringTimeoutId); ringTimeoutId = null; }
+
+  // Cancel notification FIRST so the user doesn't see it lingering while
+  // audio is still being torn down.
+  try { await notifee.cancelNotification(FOREGROUND_NOTIF_ID); } catch { /* ignore */ }
+  // stopForegroundService is harmless if no service is running — keep it
+  // for back-compat with bundles that still expect the foreground variant.
+  try { await notifee.stopForegroundService(); } catch { /* ignore */ }
+
   if (ringSound) {
     try { await ringSound.stopAsync(); } catch { /* ignore */ }
     try { await ringSound.unloadAsync(); } catch { /* ignore */ }
     ringSound = null;
   }
-  try { await notifee.stopForegroundService(); } catch { /* ignore */ }
-  try { await notifee.cancelNotification(FOREGROUND_NOTIF_ID); } catch { /* ignore */ }
 }
 
 /**
