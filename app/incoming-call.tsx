@@ -57,9 +57,14 @@ export default function IncomingCallScreen() {
     // Stop any pending ring follow-ups — user has engaged
     cancelRingingChain(kind);
     // DO NOT stop the persistent ring on mount — let the user actively
-    // answer or decline. Otherwise the user sees the call screen but never
-    // hears the ring, defeating the whole "make notifications wake people up"
-    // point. stopPersistentRing() is called in handleAnswer/handleDecline.
+    // answer or decline. The ring keeps going so they hear it under the
+    // call screen.
+    // BUT — on UNMOUNT (user navigates away after answer/decline), make
+    // absolutely sure no stale notification is left in the tray.
+    return () => {
+      stopPersistentRing().catch(() => {});
+      cancelSnoozeCall().catch(() => {});
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -166,6 +166,10 @@ async function startPersistentRing(
   durationSec = 60,
 ): Promise<void> {
   if (ringActive) await stopPersistentRing();
+  // Belt-and-braces: also sweep any orphan wakeup notifications from prior
+  // runs that may have slipped through cleanup (e.g. snooze that fired
+  // while no app instance was running to handle it).
+  await sweepWakeupNotifications();
   ringActive = true;
   await ensureChannel();
 
@@ -231,25 +235,54 @@ async function startPersistentRing(
 
 /**
  * Called by /incoming-call's Answer/Decline buttons (and by the 60-second
- * safety timer). Tears the ring down completely: audio off, notification
- * removed, any foreground service stopped.
+ * safety timer). Tears the ring down COMPLETELY:
+ *   - stops the audio loop
+ *   - cancels any foreground service (legacy)
+ *   - cancels the notification by exact ID
+ *   - sweeps the displayed-notifications tray for ANY wakeup-tagged
+ *     notification and cancels each one (covers stale rings from prior
+ *     test runs, snooze fires that overlap, etc.)
+ *   - repeats the sweep after a 250ms delay to catch any that were
+ *     posted mid-teardown
  */
 export async function stopPersistentRing(): Promise<void> {
   ringActive = false;
   if (ringTimeoutId) { clearTimeout(ringTimeoutId); ringTimeoutId = null; }
 
-  // Cancel notification FIRST so the user doesn't see it lingering while
-  // audio is still being torn down.
+  // Cancel by exact ID first
   try { await notifee.cancelNotification(FOREGROUND_NOTIF_ID); } catch { /* ignore */ }
-  // stopForegroundService is harmless if no service is running — keep it
-  // for back-compat with bundles that still expect the foreground variant.
   try { await notifee.stopForegroundService(); } catch { /* ignore */ }
 
+  // Sweep — find every displayed notification flagged as wakeup-call and
+  // cancel it. Catches stale ones from prior runs, snooze callbacks that
+  // landed mid-teardown, etc.
+  await sweepWakeupNotifications();
+
+  // Stop + unload audio
   if (ringSound) {
     try { await ringSound.stopAsync(); } catch { /* ignore */ }
     try { await ringSound.unloadAsync(); } catch { /* ignore */ }
     ringSound = null;
   }
+
+  // Belt-and-braces: re-sweep after a tick in case Notifee was posting a
+  // new notification while we were cancelling the old one.
+  setTimeout(() => { sweepWakeupNotifications().catch(() => {}); }, 250);
+}
+
+async function sweepWakeupNotifications(): Promise<void> {
+  try {
+    const displayed = await notifee.getDisplayedNotifications();
+    const toCancel: string[] = [];
+    for (const n of displayed) {
+      const data = (n.notification as any)?.data ?? {};
+      const id   = n.notification.id;
+      if (data.kind === 'wakeup-call' && id) toCancel.push(id);
+    }
+    for (const id of toCancel) {
+      try { await notifee.cancelNotification(id); } catch { /* ignore */ }
+    }
+  } catch { /* ignore */ }
 }
 
 /**
