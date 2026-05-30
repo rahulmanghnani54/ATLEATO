@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Audio } from 'expo-av';
-import * as DocumentPicker from 'expo-document-picker';
 import {
   BUNDLED_RINGTONES, getRingtonePref, setRingtonePref,
   type RingtonePref,
@@ -79,8 +78,24 @@ export default function RingtonePicker() {
   };
 
   const importFromDevice = async () => {
+    // Lazy-load expo-document-picker so the screen still renders if the
+    // installed APK was built before this dep was added (autolinked native
+    // module). The require() throws at module-load time when missing —
+    // doing it here defers the failure to when the user actually taps.
+    let DocumentPicker: typeof import('expo-document-picker') | null = null;
     try {
-      const res = await DocumentPicker.getDocumentAsync({
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      DocumentPicker = require('expo-document-picker');
+    } catch {
+      Alert.alert(
+        'Update required',
+        'Importing files needs a newer build of Atleato. Rebuild the app with `npx expo run:android` to enable this.',
+      );
+      return;
+    }
+
+    try {
+      const res = await DocumentPicker!.getDocumentAsync({
         type: 'audio/*',
         copyToCacheDirectory: true,
         multiple: false,
