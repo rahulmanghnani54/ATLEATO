@@ -78,17 +78,34 @@ export default function RingtonePicker() {
   };
 
   const importFromDevice = async () => {
-    // expo-document-picker is autolinked but needs a native rebuild to be
-    // usable. Until the user rebuilds the APK we surface a clean message
-    // instead of crashing the JS bundle. After rebuild, swap the body of
-    // this function back to the DocumentPicker.getDocumentAsync flow.
-    Alert.alert(
-      'Rebuild required',
-      'To import a custom ringtone, rebuild the app:\n\n' +
-      '  npx expo prebuild --clean\n' +
-      '  npx expo run:android\n\n' +
-      'After install, this button will let you pick any audio file from your phone.',
-    );
+    // Lazy-require: keeps module load off the route-evaluation path so
+    // stale APKs without the native module fall back to the alert below
+    // instead of white-screening the picker.
+    let DocumentPicker: typeof import('expo-document-picker') | null = null;
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      DocumentPicker = require('expo-document-picker');
+    } catch {
+      Alert.alert(
+        'Rebuild required',
+        'To import a custom ringtone, rebuild the app:\n  npx expo prebuild --clean\n  npx expo run:android',
+      );
+      return;
+    }
+
+    try {
+      const res = await DocumentPicker!.getDocumentAsync({
+        type: 'audio/*',
+        copyToCacheDirectory: true,
+        multiple: false,
+      });
+      if (res.canceled || !res.assets?.length) return;
+      const file = res.assets[0];
+      await choose({ kind: 'file', uri: file.uri, filename: file.name });
+      Alert.alert('Saved', `Using "${file.name}" as your wake-up ringtone.`);
+    } catch (e: any) {
+      Alert.alert('Could not import', e?.message ?? 'Try a different file.');
+    }
   };
 
   const isSelected = (id: string): boolean => {
