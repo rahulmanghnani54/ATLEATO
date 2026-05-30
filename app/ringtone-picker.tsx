@@ -78,40 +78,17 @@ export default function RingtonePicker() {
   };
 
   const importFromDevice = async () => {
-    // Lazy-load expo-document-picker so the screen still renders if the
-    // installed APK was built before this dep was added (autolinked native
-    // module). The require() throws at module-load time when missing —
-    // doing it here defers the failure to when the user actually taps.
-    let DocumentPicker: typeof import('expo-document-picker') | null = null;
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      DocumentPicker = require('expo-document-picker');
-    } catch {
-      Alert.alert(
-        'Update required',
-        'Importing files needs a newer build of Atleato. Rebuild the app with `npx expo run:android` to enable this.',
-      );
-      return;
-    }
-
-    try {
-      const res = await DocumentPicker!.getDocumentAsync({
-        type: 'audio/*',
-        copyToCacheDirectory: true,
-        multiple: false,
-      });
-      if (res.canceled || !res.assets?.length) return;
-      const file = res.assets[0];
-      const newPref: RingtonePref = {
-        kind: 'file',
-        uri: file.uri,
-        filename: file.name,
-      };
-      await choose(newPref);
-      Alert.alert('Saved', `Using "${file.name}" as your wake-up ringtone.`);
-    } catch (e: any) {
-      Alert.alert('Could not import', e?.message ?? 'Try a different file.');
-    }
+    // expo-document-picker is autolinked but needs a native rebuild to be
+    // usable. Until the user rebuilds the APK we surface a clean message
+    // instead of crashing the JS bundle. After rebuild, swap the body of
+    // this function back to the DocumentPicker.getDocumentAsync flow.
+    Alert.alert(
+      'Rebuild required',
+      'To import a custom ringtone, rebuild the app:\n\n' +
+      '  npx expo prebuild --clean\n' +
+      '  npx expo run:android\n\n' +
+      'After install, this button will let you pick any audio file from your phone.',
+    );
   };
 
   const isSelected = (id: string): boolean => {

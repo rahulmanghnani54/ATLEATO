@@ -25,7 +25,7 @@ import {
   cancelRingingChain, declineCoachCall, getCallCopy,
   type CallKind,
 } from '@/lib/coachCallScheduler';
-import { stopPersistentRing } from '@/lib/wakeupCalls';
+import { stopPersistentRing, scheduleSnoozeCall, cancelSnoozeCall } from '@/lib/wakeupCalls';
 import { speakAs } from '@/lib/voiceCues';
 import { getPersona, styleText, type PersonaId } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
@@ -66,6 +66,7 @@ export default function IncomingCallScreen() {
   const handleAnswer = () => {
     cancelRingingChain(kind);
     stopPersistentRing();
+    cancelSnoozeCall(); // user engaged — cancel any pending snooze
     // Coach greets you on answer
     speakAs(personaId, `Good to hear from you. Let's go.`);
     // Deep-link to the right destination for this call kind
@@ -76,6 +77,11 @@ export default function IncomingCallScreen() {
   const handleDecline = async () => {
     stopPersistentRing();
     await declineCoachCall({ kind, personaId });
+    // Schedule a follow-up call in 5 minutes — coach doesn't take 'no' for
+    // an answer. Only for wake-up calls (workout calls don't auto-snooze).
+    if (kind === 'wakeup') {
+      await scheduleSnoozeCall({ persona: personaId, minutes: 5 });
+    }
     router.back();
   };
 

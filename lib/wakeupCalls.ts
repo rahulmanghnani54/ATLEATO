@@ -309,6 +309,57 @@ export async function cancelWakeupCall(id: string): Promise<void> {
   await notifee.cancelTriggerNotification(id);
 }
 
+// ─── Snooze: re-call N minutes after a decline ──────────────────────────────
+
+const SNOOZE_NOTIF_ID = 'atleato-wakeup-snooze';
+
+/**
+ * Schedule a wake-up follow-up call to fire in `minutes` minutes. Called from
+ * /incoming-call's handleDecline so the coach doesn't take "no" for an
+ * answer — same psychology as a snooze alarm but feels like the coach
+ * calling back.
+ *
+ * If a snooze is already queued, it's replaced (no stacking).
+ */
+export async function scheduleSnoozeCall(opts: {
+  persona: PersonaId;
+  minutes?: number;
+}): Promise<void> {
+  await ensureChannel();
+  const minutes = opts.minutes ?? 5;
+  // Cancel any existing snooze first — last decline wins
+  try { await notifee.cancelTriggerNotification(SNOOZE_NOTIF_ID); } catch { /* ignore */ }
+
+  const trigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: Date.now() + minutes * 60 * 1000,
+    alarmManager: { allowWhileIdle: true },
+  };
+
+  await notifee.createTriggerNotification(
+    {
+      id: SNOOZE_NOTIF_ID,
+      title: `${getPersona(opts.persona).shortName} calling back`,
+      body: `You declined. ${minutes} minutes is up — answer this time.`,
+      data: { kind: 'wakeup-call', persona: opts.persona, snooze: 'true' },
+      android: {
+        channelId: RING_CHANNEL,
+        importance: AndroidImportance.HIGH,
+        visibility: AndroidVisibility.PUBLIC,
+        category: AndroidCategory.CALL,
+        fullScreenAction: { id: 'default', launchActivity: 'default' },
+        pressAction:      { id: 'default', launchActivity: 'default' },
+      },
+    },
+    trigger,
+  );
+}
+
+/** Cancel a pending snooze (e.g. user answered the second call). */
+export async function cancelSnoozeCall(): Promise<void> {
+  try { await notifee.cancelTriggerNotification(SNOOZE_NOTIF_ID); } catch { /* ignore */ }
+}
+
 export async function listScheduledWakeupIds(): Promise<string[]> {
   const ids = await notifee.getTriggerNotificationIds();
   return ids.filter((x) => x.startsWith(WAKEUP_NOTIFEE_ID_PREFIX) || true);
@@ -335,8 +386,14 @@ export async function handleWakeupBackground({
   const data = detail?.notification?.data ?? {};
   if (data.kind !== 'wakeup-call') return;
   const persona = (data.persona as PersonaId) ?? 'cbum';
+  const isSnooze = data.snooze === 'true';
   try {
-    await triggerIncomingCall({ persona, reason: 'WAKE UP' });
+    // triggerIncomingCall handles both CallKeep + Notifee-ring paths.
+    // For snoozes we tag the reason so the coach voice can be sharper.
+    await triggerIncomingCall({
+      persona,
+      reason: isSnooze ? 'WAKE UP · CALLING BACK' : 'WAKE UP',
+    });
   } catch (e: any) {
     if (__DEV__) console.warn('[wakeup] background trigger failed:', e?.message);
   }
