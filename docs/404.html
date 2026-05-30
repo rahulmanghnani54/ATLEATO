@@ -3,30 +3,61 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#0a0b0d" />
 <title>404 — Atleato™</title>
+<meta name="robots" content="noindex" />
+<link rel="icon" href="/favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{
-    background:#0a0b0d;color:#fafafa;min-height:100vh;
-    display:flex;align-items:center;justify-content:center;
-    font-family:'JetBrains Mono',monospace;text-align:center;padding:24px;
+  html,body{
+    background:
+      radial-gradient(ellipse 800px 600px at 50% 20%, rgba(255,107,53,0.15), transparent 60%),
+      #0a0b0d;
+    color:#fafafa;font-family:'Inter',sans-serif;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    text-align:center;padding:24px;
   }
-  .num{font-family:'Archivo Black',sans-serif;font-size:clamp(120px,28vw,260px);color:#dfff1f;letter-spacing:-8px;line-height:.9;margin-bottom:16px}
-  h1{font-family:'Archivo Black',sans-serif;font-size:32px;letter-spacing:-1px;margin-bottom:14px}
-  p{font-size:13px;color:#9ca3af;letter-spacing:1px;margin-bottom:32px}
-  a{color:#dfff1f;text-decoration:none;border:1px solid #dfff1f;padding:14px 24px;border-radius:6px;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:1.2px}
-  a:hover{background:#dfff1f;color:#0a0b0d}
+  .wrap{max-width:520px}
+  .icon{margin-bottom:32px}
+  .code{
+    font-weight:900;font-size:120px;
+    letter-spacing:-6px;line-height:1;color:#ff6b35;margin-bottom:14px;
+  }
+  h1{font-weight:900;font-size:32px;letter-spacing:-0.8px;margin-bottom:14px}
+  p{color:#9ca3af;font-size:16px;line-height:1.6;margin-bottom:32px}
+  .btn{
+    display:inline-block;background:#ff6b35;color:#1a1208;
+    padding:14px 28px;border-radius:8px;
+    font-weight:800;font-size:13px;letter-spacing:0.8px;
+    text-decoration:none;transition:all .15s;
+  }
+  .btn:hover{background:#e84d20;transform:translateY(-2px)}
+  .foot{
+    margin-top:48px;font-family:'JetBrains Mono',monospace;
+    font-size:11px;color:#6b7280;letter-spacing:1.2px;
+  }
 </style>
 </head>
 <body>
-<div>
-  <div class="num">404</div>
-  <h1>WRONG REP.</h1>
-  <p>THIS PAGE ISN'T IN YOUR PROGRAM.</p>
-  <a href="/">←  BACK TO ATLEATO</a>
-</div>
+  <div class="wrap">
+    <svg class="icon" width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff6b35"/>
+          <stop offset="100%" stop-color="#e84d20"/>
+        </linearGradient>
+      </defs>
+      <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g)"/>
+      <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+    </svg>
+    <div class="code">404</div>
+    <h1>Coach didn&rsquo;t pick up.</h1>
+    <p>This page doesn&rsquo;t exist — or you&rsquo;re looking for one we haven&rsquo;t built yet. Either way, the way out is back to the home screen.</p>
+    <a href="/" class="btn">BACK TO HOME  →</a>
+    <div class="foot">ATLEATO.COM · YOUR COACH CALLS</div>
+  </div>
 </body>
 </html>

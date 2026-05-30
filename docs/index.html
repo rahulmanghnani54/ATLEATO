@@ -3,368 +3,563 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Atleato™ — Train. Fuel. Rise.</title>
-<meta name="description" content="Atleato is the only fitness app where you train under a legend. Live form correction, persona-driven coaching, real wake-up calls from CBUM, Arnold, Nippard, CT Fletcher, or Dr Mike Israetel." />
+<meta name="theme-color" content="#0a0b0d" />
+<title>Atleato™ — Your Coach Calls.</title>
+<meta name="description" content="The only fitness app where your coach actually rings you. 5 world-class AI coaches, live form check, run-to-conquer territory, real wake-up calls. No excuses." />
 
 <!-- Open Graph / social share -->
-<meta property="og:title" content="Atleato™ — Train. Fuel. Rise." />
-<meta property="og:description" content="The only fitness app where you train under a legend. Live form correction, daily wake-up calls from your coach, persona-driven workouts." />
+<meta property="og:title" content="Atleato™ — Your Coach Calls." />
+<meta property="og:description" content="5 world-class AI coaches, live form check, real wake-up calls. No excuses." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://atleato.com" />
+<meta property="og:image" content="https://atleato.com/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+
+<!-- Twitter -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Atleato™ — Your Coach Calls." />
+<meta name="twitter:description" content="5 world-class AI coaches, live form check, real wake-up calls. No excuses." />
+<meta name="twitter:image" content="https://atleato.com/og-image.png" />
+
+<link rel="icon" href="/favicon.ico" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
 
 <style>
   :root {
-    --bg: #0a0b0d;
-    --surface: #15171b;
-    --raised: #1d2026;
-    --border: rgba(255,255,255,0.10);
-    --text: #fafafa;
-    --text-secondary: #9ca3af;
-    --text-tertiary: #6b7280;
-    --lime: #dfff1f;
-    --ink: #0a0b0d;
+    --bg:           #0a0b0d;
+    --surface:      #15171b;
+    --raised:       #1d2026;
+    --border:       rgba(255,255,255,0.10);
+    --border-strong:rgba(255,255,255,0.18);
+    --text:         #fafafa;
+    --text-sec:     #9ca3af;
+    --text-tert:    #6b7280;
+    --orange:       #ff6b35;
+    --orange-deep:  #e84d20;
+    --green:        #7be38c;
+    --cyan:         #5DD3FA;
+    --ink:          #1a1208;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
+  html, body {
     background: var(--bg); color: var(--text);
-    font-family: 'Inter', sans-serif; line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
+    font-family: 'Inter', sans-serif; line-height: 1.55;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
   }
-  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+  a { color: inherit; text-decoration: none; }
+  .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
 
-  /* ── NAV ── */
+  /* ─── NAV ─────────────────────────────────────────────────────── */
   nav {
-    padding: 20px 0; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; background: rgba(10,11,13,0.85);
-    backdrop-filter: blur(12px); z-index: 10;
+    position: sticky; top: 0; z-index: 100;
+    padding: 18px 0;
+    background: rgba(10,11,13,0.78);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
   }
   .nav-inner { display: flex; justify-content: space-between; align-items: center; }
   .wordmark {
-    font-family: 'Archivo Black', sans-serif; font-size: 22px;
-    letter-spacing: -0.5px; display: flex; align-items: baseline; gap: 4px;
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'Inter', sans-serif; font-weight: 900; font-size: 22px;
+    letter-spacing: -0.6px;
   }
-  .wordmark .a { color: #ff6b35; }
-  .wordmark .tm { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-tertiary); }
-  nav a { color: var(--text-secondary); text-decoration: none; font-size: 13px; font-weight: 500; }
-  nav a:hover { color: var(--lime); }
+  .wordmark-icon {
+    width: 26px; height: 26px;
+  }
+  .wordmark .tm { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-tert); font-weight: 700; }
+  .nav-links { display: flex; gap: 28px; align-items: center; }
+  .nav-links a { color: var(--text-sec); font-size: 13px; font-weight: 600; transition: color .15s; }
+  .nav-links a:hover { color: var(--orange); }
+  .nav-cta {
+    background: var(--orange); color: var(--ink) !important;
+    padding: 10px 18px; border-radius: 6px;
+    font-size: 12px; font-weight: 800; letter-spacing: 0.6px;
+  }
+  .nav-cta:hover { background: var(--orange-deep); transform: translateY(-1px); }
+  @media (max-width: 640px) {
+    .nav-links a:not(.nav-cta) { display: none; }
+  }
 
-  /* ── HERO ── */
-  .hero { padding: 120px 0 100px; position: relative; overflow: hidden; }
+  /* ─── HERO ────────────────────────────────────────────────────── */
+  .hero { padding: 100px 0 80px; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 800px 600px at 80% 20%, rgba(255,107,53,0.18), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 20% 90%, rgba(93,211,250,0.12), transparent 60%);
+  }
+  .hero-inner { position: relative; max-width: 920px; }
   .hero-eyebrow {
-    font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--text-tertiary); letter-spacing: 2.4px; margin-bottom: 18px;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 6px 14px; border: 1px solid var(--border);
+    border-radius: 100px; font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--orange); letter-spacing: 1.8px;
+    margin-bottom: 28px; font-weight: 700;
   }
-  .hero-headline {
-    font-family: 'Archivo Black', sans-serif; font-size: clamp(48px, 9vw, 96px);
-    line-height: 0.95; letter-spacing: -2px; margin-bottom: 24px;
+  .hero-eyebrow .pulse {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--orange);
+    box-shadow: 0 0 0 0 rgba(255,107,53,0.7);
+    animation: pulse 1.8s infinite;
   }
-  .hero-headline span { color: var(--lime); }
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255,107,53,0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255,107,53,0); }
+    100% { box-shadow: 0 0 0 0 rgba(255,107,53,0); }
+  }
+  .hero h1 {
+    font-family: 'Inter', sans-serif; font-weight: 900;
+    font-size: clamp(48px, 9vw, 104px); line-height: 0.95;
+    letter-spacing: -3px; margin-bottom: 28px;
+  }
+  .hero h1 .accent { color: var(--orange); }
   .hero-sub {
-    font-size: clamp(16px, 1.8vw, 20px); color: var(--text-secondary);
-    max-width: 580px; line-height: 1.55; margin-bottom: 36px;
+    font-size: clamp(16px, 1.9vw, 22px); color: var(--text-sec);
+    max-width: 640px; line-height: 1.5; margin-bottom: 40px;
   }
-  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; }
-  .cta-primary {
-    background: var(--lime); color: var(--ink);
-    padding: 16px 28px; border-radius: 6px; border: none;
-    font-family: 'Archivo Black', sans-serif; font-size: 14px;
-    letter-spacing: 1.2px; cursor: pointer; text-decoration: none;
-    display: inline-block;
-  }
-  .cta-primary:hover { transform: translateY(-1px); }
-  .cta-secondary {
-    border: 1px solid var(--border); color: var(--text);
-    padding: 16px 24px; border-radius: 6px;
-    font-family: 'Archivo Black', sans-serif; font-size: 13px;
-    letter-spacing: 1px; text-decoration: none; display: inline-block;
-  }
+  .hero-sub strong { color: var(--text); font-weight: 700; }
 
-  /* ── COACH BAR ── */
-  .coaches {
-    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-    padding: 36px 0; background: var(--surface);
+  .hero-cta-row { display: flex; gap: 14px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--orange); color: var(--ink);
+    padding: 18px 32px; border-radius: 8px; border: none;
+    font-family: 'Inter', sans-serif; font-weight: 800;
+    font-size: 14px; letter-spacing: 1px; cursor: pointer;
+    transition: all 0.15s; box-shadow: 0 8px 24px rgba(255,107,53,0.25);
   }
-  .coaches-eyebrow {
-    text-align: center; font-family: 'JetBrains Mono', monospace;
-    font-size: 10px; color: var(--text-tertiary); letter-spacing: 2px; margin-bottom: 20px;
+  .btn-primary:hover {
+    background: var(--orange-deep); transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(255,107,53,0.35);
   }
-  .coach-row {
-    display: flex; justify-content: center; align-items: center; gap: 40px;
-    flex-wrap: wrap;
+  .btn-secondary {
+    padding: 18px 28px; border-radius: 8px;
+    border: 1px solid var(--border-strong); color: var(--text);
+    font-family: 'Inter', sans-serif; font-weight: 700; font-size: 14px;
+    letter-spacing: 0.6px; cursor: pointer; background: transparent;
+    transition: all 0.15s;
   }
-  .coach-chip {
-    display: flex; align-items: center; gap: 10px;
-    font-family: 'Archivo Black', sans-serif; font-size: 13px;
-    letter-spacing: 0.6px;
-  }
-  .coach-dot { width: 8px; height: 8px; border-radius: 4px; }
+  .btn-secondary:hover { border-color: var(--orange); color: var(--orange); }
 
-  /* ── FEATURES ── */
-  .features { padding: 100px 0 60px; }
-  .section-eyebrow {
+  .hero-meta {
+    display: flex; gap: 28px; margin-top: 44px; flex-wrap: wrap;
     font-family: 'JetBrains Mono', monospace; font-size: 11px;
-    color: var(--text-tertiary); letter-spacing: 2.4px; margin-bottom: 12px;
+    color: var(--text-tert); letter-spacing: 1.2px;
   }
-  .section-headline {
-    font-family: 'Archivo Black', sans-serif; font-size: clamp(34px, 5vw, 56px);
-    line-height: 1; letter-spacing: -1.2px; margin-bottom: 50px;
+  .hero-meta span::before { content: '✓  '; color: var(--green); }
+
+  /* ─── SECTION HEADERS ─────────────────────────────────────────── */
+  .section { padding: 100px 0; position: relative; }
+  .section-eyebrow {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--orange); letter-spacing: 2.2px; font-weight: 700;
+    margin-bottom: 14px;
   }
+  .section-title {
+    font-family: 'Inter', sans-serif; font-weight: 900;
+    font-size: clamp(34px, 5vw, 56px); line-height: 1.05;
+    letter-spacing: -1.5px; margin-bottom: 22px;
+  }
+  .section-sub {
+    color: var(--text-sec); font-size: 17px; max-width: 640px; line-height: 1.6;
+  }
+
+  /* ─── FEATURE GRID ────────────────────────────────────────────── */
   .feature-grid {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 18px; margin-bottom: 36px;
+    gap: 20px; margin-top: 56px;
   }
-  .feature-card {
+  .feature {
+    padding: 30px; border: 1px solid var(--border); border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.025) 0%, rgba(255,255,255,0) 100%);
+    transition: all 0.2s;
+  }
+  .feature:hover {
+    border-color: var(--orange); transform: translateY(-3px);
+    background: linear-gradient(180deg, rgba(255,107,53,0.06) 0%, rgba(255,107,53,0) 100%);
+  }
+  .feature-emoji { font-size: 32px; margin-bottom: 18px; }
+  .feature h3 {
+    font-family: 'Inter', sans-serif; font-weight: 800;
+    font-size: 20px; margin-bottom: 10px; letter-spacing: -0.4px;
+  }
+  .feature p { color: var(--text-sec); font-size: 14px; line-height: 1.6; }
+
+  /* ─── COACHES ─────────────────────────────────────────────────── */
+  .coaches { background: var(--surface); padding: 100px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .coach-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px; margin-top: 48px;
+  }
+  .coach-card {
+    padding: 20px; border: 1px solid var(--border); border-radius: 14px;
+    text-align: center;
+  }
+  .coach-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    margin: 0 auto 14px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 18px;
+    border: 2px solid;
+  }
+  .coach-name {
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 14px;
+    letter-spacing: 1.4px; margin-bottom: 4px;
+  }
+  .coach-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text-tert); letter-spacing: 1px; }
+
+  /* ─── HOW IT WORKS (3 steps) ──────────────────────────────────── */
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-top: 56px; }
+  .step {
+    padding: 28px; border-radius: 14px;
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 24px;
   }
-  .feature-emoji { font-size: 28px; margin-bottom: 16px; }
-  .feature-title {
-    font-family: 'Archivo Black', sans-serif; font-size: 17px;
-    letter-spacing: -0.2px; margin-bottom: 10px;
+  .step-num {
+    display: inline-block; font-family: 'Inter', sans-serif; font-weight: 900;
+    font-size: 36px; color: var(--orange); letter-spacing: -2px;
+    margin-bottom: 14px; line-height: 1;
   }
-  .feature-title .tm {
-    font-family: 'JetBrains Mono', monospace; font-size: 9px;
-    color: var(--lime); margin-left: 4px; vertical-align: super;
-  }
-  .feature-body { color: var(--text-secondary); font-size: 14px; line-height: 1.55; }
+  .step h4 { font-weight: 800; font-size: 18px; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .step p { color: var(--text-sec); font-size: 14px; line-height: 1.55; }
 
-  /* ── DIFFERENTIATOR ── */
-  .diff { padding: 80px 0; border-top: 1px solid var(--border); background: var(--surface); }
-  .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-  @media (max-width: 720px) { .diff-grid { grid-template-columns: 1fr; } }
-  .diff-card {
-    background: var(--bg); border: 1px solid var(--border); border-radius: 8px;
-    padding: 28px;
+  /* ─── WAITLIST FORM ───────────────────────────────────────────── */
+  .waitlist-section {
+    background:
+      radial-gradient(ellipse 800px 500px at 50% 0%, rgba(255,107,53,0.10), transparent 60%),
+      var(--bg);
+    padding: 120px 0;
+    border-top: 1px solid var(--border);
   }
-  .diff-card.them { opacity: 0.85; }
-  .diff-card.us { border-left: 3px solid var(--lime); }
-  .diff-label {
-    font-family: 'JetBrains Mono', monospace; font-size: 10px;
-    letter-spacing: 1.8px; margin-bottom: 14px;
+  .waitlist-inner { text-align: center; max-width: 620px; margin: 0 auto; }
+  .waitlist-form {
+    margin-top: 40px; display: flex; gap: 8px;
+    background: var(--surface); padding: 8px; border-radius: 100px;
+    border: 1px solid var(--border-strong); max-width: 520px; margin-left: auto; margin-right: auto;
   }
-  .diff-card.them .diff-label { color: var(--text-tertiary); }
-  .diff-card.us .diff-label { color: var(--lime); }
-  .diff-list { list-style: none; }
-  .diff-list li {
-    padding: 9px 0; border-bottom: 1px solid var(--border);
-    color: var(--text-secondary); font-size: 14px;
+  .waitlist-form input[type=email] {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-family: 'Inter', sans-serif; font-size: 15px;
+    padding: 12px 18px; min-width: 0;
   }
-  .diff-list li:last-child { border-bottom: none; }
-  .diff-card.us .diff-list li { color: var(--text); }
-  .diff-list li::before {
-    content: '— '; color: var(--text-tertiary);
+  .waitlist-form input[type=email]::placeholder { color: var(--text-tert); }
+  .waitlist-form button {
+    background: var(--orange); color: var(--ink); border: none; cursor: pointer;
+    padding: 12px 22px; border-radius: 100px;
+    font-family: 'Inter', sans-serif; font-weight: 800; font-size: 13px;
+    letter-spacing: 0.6px; transition: all 0.15s; white-space: nowrap;
   }
-  .diff-card.us .diff-list li::before { content: '✓ '; color: var(--lime); }
+  .waitlist-form button:hover:not(:disabled) { background: var(--orange-deep); }
+  .waitlist-form button:disabled { opacity: 0.5; cursor: wait; }
+  .waitlist-msg {
+    margin-top: 18px; font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; letter-spacing: 0.4px; min-height: 22px;
+  }
+  .waitlist-msg.ok    { color: var(--green); }
+  .waitlist-msg.err   { color: #ff6464; }
+  .waitlist-foot { font-size: 12px; color: var(--text-tert); margin-top: 14px; }
+  .waitlist-foot a { color: var(--orange); border-bottom: 1px dotted var(--orange); }
 
-  /* ── CTA STRIP ── */
-  .cta-strip { padding: 100px 0; text-align: center; }
-  .cta-strip h2 {
-    font-family: 'Archivo Black', sans-serif; font-size: clamp(38px, 6vw, 64px);
-    line-height: 1; letter-spacing: -1.2px; margin-bottom: 18px;
-  }
-  .cta-strip p {
-    color: var(--text-secondary); font-size: 17px; margin-bottom: 32px;
-  }
-
-  /* ── EMAIL FORM ── */
-  .email-form {
-    display: flex; gap: 8px; max-width: 460px; margin: 0 auto;
-  }
-  .email-form input {
-    flex: 1; background: var(--surface); color: var(--text);
-    border: 1px solid var(--border); border-radius: 6px;
-    padding: 14px 16px; font-size: 14px; font-family: inherit;
-  }
-  .email-form input::placeholder { color: var(--text-tertiary); }
-  .email-form button {
-    background: var(--lime); color: var(--ink); border: none;
-    padding: 14px 22px; border-radius: 6px; font-family: 'Archivo Black', sans-serif;
-    font-size: 13px; letter-spacing: 1px; cursor: pointer;
-  }
-  .form-note { font-size: 11px; color: var(--text-tertiary); margin-top: 12px; }
-
-  /* ── FOOTER ── */
-  footer {
-    border-top: 1px solid var(--border); padding: 40px 0 32px;
-    color: var(--text-tertiary);
-  }
+  /* ─── FOOTER ──────────────────────────────────────────────────── */
+  footer { padding: 60px 0 40px; border-top: 1px solid var(--border); margin-top: 0; }
   .footer-inner {
-    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 20px;
-    font-size: 12px; font-family: 'JetBrains Mono', monospace;
+    display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    color: var(--text-tert); font-size: 13px;
   }
-  .footer-legal {
-    margin-top: 28px; font-size: 10px; line-height: 1.5; text-align: center;
-    font-style: italic; color: var(--text-tertiary);
-    border-top: 1px solid var(--border); padding-top: 24px;
-  }
+  .footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+  .footer-links a { color: var(--text-sec); transition: color .15s; }
+  .footer-links a:hover { color: var(--orange); }
 </style>
 </head>
 <body>
 
+<!-- ─── NAV ────────────────────────────────────────────────────── -->
 <nav>
   <div class="container nav-inner">
-    <div class="wordmark"><span class="a">A</span>TLEATO<span class="tm">™</span></div>
-    <a href="#features">Features</a>
+    <a href="/" class="wordmark">
+      <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ff6b35"/>
+            <stop offset="100%" stop-color="#e84d20"/>
+          </linearGradient>
+        </defs>
+        <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g1)"/>
+        <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+      </svg>
+      Atleato<span class="tm">™</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#coaches">Coaches</a>
+      <a href="#how">How it works</a>
+      <a href="#waitlist" class="nav-cta">JOIN WAITLIST</a>
+    </div>
   </div>
 </nav>
 
-<!-- ── HERO ── -->
+<!-- ─── HERO ──────────────────────────────────────────────────── -->
 <section class="hero">
-  <div class="container">
-    <div class="hero-eyebrow">TRAIN  ·  FUEL  ·  RISE</div>
-    <h1 class="hero-headline">Train under<br/>a <span>legend.</span></h1>
+  <div class="container hero-inner">
+    <div class="hero-eyebrow">
+      <span class="pulse"></span>
+      LAUNCHING SOON · INVITE-ONLY BETA
+    </div>
+    <h1>
+      Your coach<br>
+      <span class="accent">just called.</span>
+    </h1>
     <p class="hero-sub">
-      Atleato is the only fitness app where you don't just track workouts —
-      you train under a coach. Five world-class personas. Live form correction.
-      Real wake-up calls. Persona-driven everything.
+      The fitness app that <strong>actually rings you</strong> at 5am — in the voice of
+      <strong>CBUM, Arnold, Nippard, CT Fletcher, or Dr Mike</strong>. Live form check.
+      Run-to-conquer territory. Streak mechanics built on Duolingo's playbook. No excuses.
     </p>
-    <div class="cta-row">
-      <a href="#waitlist" class="cta-primary">JOIN THE WAITLIST  →</a>
-      <a href="#features" class="cta-secondary">SEE FEATURES</a>
+    <div class="hero-cta-row">
+      <a href="#waitlist" class="btn-primary">JOIN THE WAITLIST  →</a>
+      <a href="#features" class="btn-secondary">See what's inside</a>
+    </div>
+    <div class="hero-meta">
+      <span>5 world-class AI coaches</span>
+      <span>Live form correction</span>
+      <span>Real ringing wake-up calls</span>
+      <span>Free during beta</span>
     </div>
   </div>
 </section>
 
-<!-- ── COACH BAR ── -->
-<section class="coaches">
+<!-- ─── FEATURES ──────────────────────────────────────────────── -->
+<section class="section" id="features">
   <div class="container">
-    <div class="coaches-eyebrow">CHOOSE YOUR COACH</div>
-    <div class="coach-row">
-      <div class="coach-chip"><span class="coach-dot" style="background:#dfff1f"></span>CBUM</div>
-      <div class="coach-chip"><span class="coach-dot" style="background:#f5b942"></span>ARNOLD</div>
-      <div class="coach-chip"><span class="coach-dot" style="background:#5b8cff"></span>NIPPARD</div>
-      <div class="coach-chip"><span class="coach-dot" style="background:#ff4d2e"></span>CT FLETCHER</div>
-      <div class="coach-chip"><span class="coach-dot" style="background:#00e0a4"></span>DR MIKE</div>
-    </div>
-  </div>
-</section>
-
-<!-- ── FEATURES ── -->
-<section class="features" id="features">
-  <div class="container">
-    <div class="section-eyebrow">WHAT MAKES IT DIFFERENT</div>
-    <h2 class="section-headline">No other fitness app<br/>does this.</h2>
+    <div class="section-eyebrow">WHAT'S INSIDE</div>
+    <h2 class="section-title">Six features no other fitness app has.</h2>
+    <p class="section-sub">
+      We didn't build "another tracker". We built a coaching system that pushes
+      you the way a real coach would.
+    </p>
 
     <div class="feature-grid">
-      <div class="feature-card">
+      <div class="feature">
         <div class="feature-emoji">📞</div>
-        <div class="feature-title">Coach Calls<span class="tm">TM</span></div>
-        <p class="feature-body">
-          Your coach rings you in the morning like an actual phone call. Full-screen
-          incoming-call UI. Persona-voice greeting. Say "no"? They call back angry.
-        </p>
+        <h3>Real Wake-Up Calls</h3>
+        <p>Your coach <em>rings your phone</em> at the time you set. Full ringtone, full screen, persistent vibration. Sleep through it once and they call back five minutes later.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-emoji">📷</div>
-        <div class="feature-title">Live Form Coach</div>
-        <p class="feature-body">
-          Camera watches your reps in real time. MoveNet pose detection + expert
-          biomechanics database. CT shouts "KNEES CAVING IN!" the moment they do.
-        </p>
+      <div class="feature">
+        <div class="feature-emoji">🎯</div>
+        <h3>AI Form Coach</h3>
+        <p>Point your phone, lift. On-device pose detection (MoveNet) analyses every rep in real time and calls out exactly what to fix — "knees collapsing", "rounded back", "depth short".</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-emoji">🌅</div>
-        <div class="feature-title">Morning Brief<span class="tm">TM</span></div>
-        <p class="feature-body">
-          30-second daily ritual. Sleep × intent → workout volume auto-adjusts.
-          Charged? +20% volume. Wrecked? Coach pulls you back to protect form.
-        </p>
+      <div class="feature">
+        <div class="feature-emoji">🌍</div>
+        <h3>Territory Conquest</h3>
+        <p>Every 200×200m grid cell you run through becomes yours. Anyone who runs through it next steals it. Splatoon meets Strava. Global + local leaderboards.</p>
       </div>
-      <div class="feature-card">
+      <div class="feature">
+        <div class="feature-emoji">🧠</div>
+        <h3>Persona-Themed Everything</h3>
+        <p>Pick CBUM and the entire app reads as CBUM — colors, copy, nutrition philosophy, signature lifts. Switch coaches and it transforms. 5 distinct experiences in one app.</p>
+      </div>
+      <div class="feature">
         <div class="feature-emoji">🔥</div>
-        <div class="feature-title">Streak Hero<span class="tm">TM</span></div>
-        <p class="feature-body">
-          6 streak tiers from FRESH to MOUNTAIN. Coach's voice scales with success.
-          Arnold whispers wisdom at day 30. CT screams about it.
-        </p>
+        <h3>Retention Built for You</h3>
+        <p>Streak freezes, implementation intentions, accountability witnesses, reward chests, chain calendar. Every mechanic that keeps Duolingo + Strava users coming back daily — applied to lifting.</p>
       </div>
-      <div class="feature-card">
-        <div class="feature-emoji">🏆</div>
-        <div class="feature-title">PR Shelf<span class="tm">TM</span></div>
-        <p class="feature-body">
-          Your top 3 personal records as trophies in your coach's accent color.
-          Pride visible every time you open the app. Made for sharing.
-        </p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-emoji">💪</div>
-        <div class="feature-title">Coach Hub<span class="tm">TM</span></div>
-        <p class="feature-body">
-          Your coach's office. Training philosophy. Signature lifts.
-          Nutrition macros. Daily quote. Inline chat. Five complete worlds — pick one.
-        </p>
+      <div class="feature">
+        <div class="feature-emoji">🥗</div>
+        <h3>Global Nutrition</h3>
+        <p>1.2 million packaged foods + 200+ global dishes + Indian dishes + custom foods. Find biryani, paneer, sushi, pizza — no more "couldn't find chicken tikka".</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── DIFFERENTIATOR ── -->
-<section class="diff">
+<!-- ─── COACHES ───────────────────────────────────────────────── -->
+<section class="coaches" id="coaches">
   <div class="container">
-    <div class="section-eyebrow">VS EVERY OTHER FITNESS APP</div>
-    <h2 class="section-headline" style="margin-bottom:36px">Pick your side.</h2>
-    <div class="diff-grid">
-      <div class="diff-card them">
-        <div class="diff-label">EVERY OTHER APP</div>
-        <ul class="diff-list">
-          <li>"Time to work out!" push notification</li>
-          <li>Generic voice telling you to squat</li>
-          <li>Streak counter you forget about</li>
-          <li>The app is a tracker, not a relationship</li>
-          <li>Hopes you'll come back tomorrow</li>
-        </ul>
+    <div class="section-eyebrow">YOUR LINEUP</div>
+    <h2 class="section-title">5 legends. 1 app.</h2>
+    <p class="section-sub">
+      Pick one as your active coach. Switch any time. Each persona changes the
+      colors, training philosophy, nutrition rules, and voice — top to bottom.
+    </p>
+
+    <div class="coach-grid">
+      <div class="coach-card">
+        <div class="coach-avatar" style="border-color:#c8ff3d;color:#c8ff3d">CB</div>
+        <div class="coach-name" style="color:#c8ff3d">CBUM</div>
+        <div class="coach-tag">CLASSIC PHYSIQUE</div>
       </div>
-      <div class="diff-card us">
-        <div class="diff-label">ATLEATO™</div>
-        <ul class="diff-list">
-          <li>CBUM calls you on your phone like a friend</li>
-          <li>CT yells "FIX THOSE KNEES!" mid-squat</li>
-          <li>Streak Hero — Arnold pep-talks each milestone</li>
-          <li>The app is your coach. You train under them</li>
-          <li>If you skip, the coach calls back angry</li>
-        </ul>
+      <div class="coach-card">
+        <div class="coach-avatar" style="border-color:#f5b942;color:#f5b942">AR</div>
+        <div class="coach-name" style="color:#f5b942">ARNOLD</div>
+        <div class="coach-tag">GOLDEN ERA</div>
+      </div>
+      <div class="coach-card">
+        <div class="coach-avatar" style="border-color:#5DD3FA;color:#5DD3FA">JN</div>
+        <div class="coach-name" style="color:#5DD3FA">NIPPARD</div>
+        <div class="coach-tag">EVIDENCE-BASED</div>
+      </div>
+      <div class="coach-card">
+        <div class="coach-avatar" style="border-color:#ef4444;color:#ef4444">CT</div>
+        <div class="coach-name" style="color:#ef4444">CT FLETCHER</div>
+        <div class="coach-tag">NO EXCUSES</div>
+      </div>
+      <div class="coach-card">
+        <div class="coach-avatar" style="border-color:#7be38c;color:#7be38c">DM</div>
+        <div class="coach-name" style="color:#7be38c">DR MIKE</div>
+        <div class="coach-tag">MEV / MAV / MRV</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── CTA STRIP ── -->
-<section class="cta-strip" id="waitlist">
+<!-- ─── HOW IT WORKS ──────────────────────────────────────────── -->
+<section class="section" id="how">
   <div class="container">
-    <div class="section-eyebrow">EARLY ACCESS</div>
-    <h2>Be the first to<br/>train under a legend.</h2>
-    <p>Drop your email. We'll text you the day Atleato hits the Play Store.</p>
+    <div class="section-eyebrow">3 STEPS · 30 SECONDS</div>
+    <h2 class="section-title">How it works.</h2>
+    <p class="section-sub">No tutorial. Pick your coach, set your alarm, train.</p>
 
-    <!-- Replace action= with your Formspree / Tally / Buttondown URL once you set one up.
-         For now this opens the user's mail client to send you their email — works offline,
-         zero backend needed. -->
-    <form class="email-form" action="mailto:atleato@gmail.com" method="GET">
-      <input type="email" name="subject" placeholder="your@email.com" required />
-      <button type="submit">JOIN  →</button>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h4>Pick a coach</h4>
+        <p>Choose from CBUM, Arnold, Nippard, CT, or Dr Mike. The app transforms around their philosophy — programs, nutrition, voice, colors.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h4>Set your wake-up</h4>
+        <p>Pick a time. Pick a ringtone. The next morning your phone rings like an actual incoming call — your coach pushing you out of bed.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h4>Train. Eat. Conquer.</h4>
+        <p>Live form check at the gym. Macro tracking with global foods. Run to claim territory. Streak grows. Coach calls back if you skip.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── WAITLIST ──────────────────────────────────────────────── -->
+<section class="waitlist-section" id="waitlist">
+  <div class="container waitlist-inner">
+    <div class="section-eyebrow">PRIVATE BETA · ANDROID FIRST</div>
+    <h2 class="section-title">Be among the first 1,000.</h2>
+    <p class="section-sub" style="margin: 0 auto;">
+      Beta opens this quarter. Waitlist members get early access, founding-member status,
+      and a permanent badge in the app. No spam, no marketing emails — just the launch invite.
+    </p>
+
+    <form class="waitlist-form" id="waitlist-form" novalidate>
+      <input type="email" name="email" placeholder="you@example.com" required autocomplete="email" />
+      <button type="submit" id="waitlist-submit">JOIN WAITLIST</button>
     </form>
-    <p class="form-note">No spam. One email when we launch. Promise.</p>
-  </div>
-</section>
-
-<!-- ── FOOTER ── -->
-<footer>
-  <div class="container">
-    <div class="footer-inner">
-      <div>© <script>document.write(new Date().getFullYear())</script> Atleato.  All rights reserved.</div>
-      <div>atleato.com  ·  TRAIN.FUEL.RISE.</div>
-    </div>
-    <p class="footer-legal">
-      Atleato™, Coach Calls™, Coach Hub™, PR Shelf™, Morning Brief™, and Streak Hero™ are
-      trademarks of Atleato. All persona theming, voice routing, and form-coach biomechanics
-      analysis are proprietary. Coach personas are stylistic interpretations and not affiliated
-      with the named individuals.
+    <div class="waitlist-msg" id="waitlist-msg"></div>
+    <p class="waitlist-foot">
+      We respect your inbox. Read our <a href="/privacy">Privacy Policy</a>.
     </p>
   </div>
+</section>
+
+<!-- ─── FOOTER ────────────────────────────────────────────────── -->
+<footer>
+  <div class="container footer-inner">
+    <div>
+      <div class="wordmark" style="font-size: 18px; margin-bottom: 8px;">
+        <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="width:20px;height:20px">
+          <defs>
+            <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff6b35"/>
+              <stop offset="100%" stop-color="#e84d20"/>
+            </linearGradient>
+          </defs>
+          <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g2)"/>
+          <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+        </svg>
+        Atleato<span class="tm">™</span>
+      </div>
+      <div style="color: var(--text-tert); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 1.2px;">
+        YOUR COACH CALLS · © 2026
+      </div>
+    </div>
+    <div class="footer-links">
+      <a href="/privacy">Privacy</a>
+      <a href="mailto:hello@atleato.com">Contact</a>
+      <a href="https://github.com/rahulmanghnani54/ATLEATO" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
 </footer>
+
+<!-- ─── WAITLIST SUBMIT ───────────────────────────────────────── -->
+<script>
+  (function () {
+    // Same Supabase project as the mobile app. Anon key is safe to expose —
+    // RLS on the `waitlist` table allows INSERT only, no SELECT.
+    var SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
+
+    var form   = document.getElementById('waitlist-form');
+    var btn    = document.getElementById('waitlist-submit');
+    var msgEl  = document.getElementById('waitlist-msg');
+
+    function setMsg(text, ok) {
+      msgEl.textContent = text;
+      msgEl.className = 'waitlist-msg ' + (ok === true ? 'ok' : ok === false ? 'err' : '');
+    }
+    function isValidEmail(s) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+    }
+
+    form.addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      var email = new FormData(form).get('email');
+      if (!isValidEmail(email)) {
+        setMsg('Please enter a valid email.', false);
+        return;
+      }
+      btn.disabled = true;
+      btn.textContent = 'JOINING…';
+      setMsg('');
+      try {
+        var res = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {
+          method: 'POST',
+          headers: {
+            'apikey':        SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type':  'application/json',
+            'Prefer':        'return=minimal',
+          },
+          body: JSON.stringify({
+            email:      email,
+            source:     'landing-page',
+            referrer:   document.referrer || null,
+            user_agent: navigator.userAgent.slice(0, 240),
+          }),
+        });
+        if (res.status === 409 || res.status === 23505) {
+          setMsg("You're already on the list. We'll be in touch.", true);
+        } else if (res.status >= 400) {
+          var t = await res.text();
+          if (t && t.indexOf('duplicate') >= 0) {
+            setMsg("You're already on the list. We'll be in touch.", true);
+          } else {
+            setMsg('Could not save. Try again in a moment.', false);
+            btn.disabled = false; btn.textContent = 'JOIN WAITLIST';
+            return;
+          }
+        } else {
+          setMsg("You're in. We'll email you the moment the beta opens. 🚀", true);
+        }
+        form.reset();
+        btn.textContent = '✓  ON THE LIST';
+      } catch (e) {
+        setMsg('Network error. Check your connection and try again.', false);
+        btn.disabled = false; btn.textContent = 'JOIN WAITLIST';
+      }
+    });
+  })();
+</script>
 
 </body>
 </html>

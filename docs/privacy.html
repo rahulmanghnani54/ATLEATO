@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#0a0b0d" />
+<title>Privacy Policy — Atleato™</title>
+<meta name="description" content="How Atleato collects, uses, and protects your data. Written in plain English." />
+
+<meta property="og:title" content="Privacy Policy — Atleato™" />
+<meta property="og:description" content="How Atleato collects, uses, and protects your data." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://atleato.com/privacy" />
+<meta property="og:image" content="https://atleato.com/og-image.png" />
+
+<link rel="icon" href="/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --bg:        #0a0b0d;
+    --surface:   #15171b;
+    --border:    rgba(255,255,255,0.10);
+    --text:      #fafafa;
+    --text-sec:  #9ca3af;
+    --text-tert: #6b7280;
+    --orange:    #ff6b35;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', sans-serif; line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--orange); text-decoration: none; border-bottom: 1px dotted var(--orange); }
+  a:hover { color: #ff9166; border-bottom-color: #ff9166; }
+  .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+
+  /* nav */
+  nav {
+    padding: 18px 0; border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; background: rgba(10,11,13,0.85);
+    backdrop-filter: blur(12px); z-index: 10;
+  }
+  .nav-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+  .wordmark { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 22px; letter-spacing: -0.6px; }
+  .wordmark a { color: var(--text); border: none; }
+  .wordmark-icon { width: 26px; height: 26px; }
+  .wordmark .tm { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-tert); font-weight: 700; }
+  .back-link {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-sec);
+    border: none; letter-spacing: 0.6px;
+  }
+  .back-link:hover { color: var(--orange); }
+
+  /* hero */
+  .hero { padding: 80px 0 40px; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--orange); letter-spacing: 2.2px; margin-bottom: 16px;
+    font-weight: 700;
+  }
+  h1 {
+    font-weight: 900; font-size: clamp(34px, 6vw, 56px);
+    letter-spacing: -1.5px; line-height: 1.05; margin-bottom: 18px;
+  }
+  .lead {
+    color: var(--text-sec); font-size: 17px; line-height: 1.65; margin-bottom: 12px;
+  }
+  .updated {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--text-tert); letter-spacing: 1px; margin-top: 28px;
+  }
+
+  /* content */
+  article { padding: 40px 0 100px; }
+  article h2 {
+    font-weight: 800; font-size: 24px; margin-top: 48px; margin-bottom: 14px;
+    letter-spacing: -0.5px; color: var(--text);
+  }
+  article h2:first-of-type { margin-top: 24px; }
+  article h3 {
+    font-weight: 700; font-size: 17px; margin-top: 28px; margin-bottom: 8px;
+    color: var(--text);
+  }
+  article p, article li {
+    color: var(--text-sec); font-size: 16px; line-height: 1.7;
+  }
+  article p { margin-bottom: 18px; }
+  article ul { padding-left: 22px; margin-bottom: 18px; }
+  article li { margin-bottom: 8px; }
+  article strong { color: var(--text); font-weight: 700; }
+
+  .callout {
+    background: var(--surface); border-left: 3px solid var(--orange);
+    padding: 18px 22px; border-radius: 6px; margin: 28px 0;
+  }
+  .callout p { margin: 0; color: var(--text); font-size: 15px; }
+
+  /* footer */
+  footer { padding: 50px 0; border-top: 1px solid var(--border); color: var(--text-tert); font-size: 13px; text-align: center; }
+  footer a { color: var(--text-sec); border: none; }
+  footer a:hover { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="wordmark">
+      <a href="/" style="display: flex; align-items: center; gap: 8px;">
+        <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff6b35"/>
+              <stop offset="100%" stop-color="#e84d20"/>
+            </linearGradient>
+          </defs>
+          <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g1)"/>
+          <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+        </svg>
+        Atleato<span class="tm">™</span>
+      </a>
+    </div>
+    <a href="/" class="back-link">← back to home</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="eyebrow">PRIVACY POLICY</div>
+    <h1>What we collect, what we don't, and why.</h1>
+    <p class="lead">
+      No dark patterns. No selling your data. No tracking pixels. The shortest
+      readable privacy policy we could write while still being legally accurate.
+    </p>
+    <div class="updated">LAST UPDATED · 27 MAY 2026</div>
+  </div>
+</section>
+
+<article>
+  <div class="container">
+
+    <div class="callout">
+      <p><strong>TL;DR:</strong> We collect the data you give us (email, workouts, photos), use it to run the app, and never sell it. Physique photos stay encrypted on your device. You can delete everything any time.</p>
+    </div>
+
+    <h2>1. Who runs Atleato</h2>
+    <p>
+      Atleato is operated by <strong>Rahul Manghnani</strong> (sole proprietor). Reach the team at
+      <a href="mailto:hello@atleato.com">hello@atleato.com</a>. This policy covers
+      <strong>atleato.com</strong>, the <strong>Atleato Android app</strong> (and future iOS version), and any
+      pre-release / beta versions thereof.
+    </p>
+
+    <h2>2. What we collect</h2>
+
+    <h3>2.1 Account data</h3>
+    <ul>
+      <li><strong>Email address</strong> — needed to sign in</li>
+      <li><strong>Display name</strong> — what your coach calls you</li>
+      <li><strong>Password</strong> — stored hashed; we never see it in plaintext</li>
+    </ul>
+
+    <h3>2.2 Fitness data</h3>
+    <ul>
+      <li><strong>Body stats</strong> — height, weight, age, gender (used to compute calorie targets)</li>
+      <li><strong>Workout logs</strong> — exercises, sets, reps, weight, RPE</li>
+      <li><strong>Nutrition logs</strong> — foods you log, macros</li>
+      <li><strong>Recovery check-ins</strong> — sleep quality, soreness, stress</li>
+      <li><strong>Streak history</strong> — training day counts, freeze inventory</li>
+    </ul>
+
+    <h3>2.3 Location data (territory game only)</h3>
+    <p>
+      When you start a run via the <strong>Territory</strong> feature, we collect GPS coordinates
+      <strong>during that run only</strong>. We compute a list of "grid cells" you passed through
+      (200×200 metre squares) and save those cells — not the raw GPS track.
+      Stop the run, the GPS subscription stops.
+    </p>
+    <p>
+      We <strong>never</strong> read your location in the background or outside an active run.
+    </p>
+
+    <h3>2.4 Physique photos</h3>
+    <p>
+      Photos you take in the Physique Check-in feature are <strong>encrypted on your device</strong>
+      using a key only you hold. The encrypted blobs are uploaded to our storage, but
+      we cannot decrypt them — even with full database access — because we never see your key.
+    </p>
+
+    <h3>2.5 Push tokens</h3>
+    <p>
+      We store your Firebase Cloud Messaging (FCM) token so the territory game can notify
+      you when someone takes one of your cells, and so the coach can call you at your
+      scheduled time. Used for nothing else.
+    </p>
+
+    <h3>2.6 Device data</h3>
+    <p>
+      Standard request metadata (IP address, browser user-agent, OS version) is logged
+      by our infrastructure provider (Supabase) for security + abuse prevention. Retained
+      for 30 days, then auto-deleted.
+    </p>
+
+    <h2>3. What we DON'T collect</h2>
+    <ul>
+      <li>No advertising IDs</li>
+      <li>No analytics tracking pixels (Google Analytics, Facebook Pixel, etc.)</li>
+      <li>No contact list, photo library, or microphone access (except when you explicitly enable Form Coach)</li>
+      <li>No data from third-party platforms (Instagram, Strava, etc.) unless you connect them</li>
+      <li>No payment data — we don't sell anything yet</li>
+    </ul>
+
+    <h2>4. How we use it</h2>
+    <ul>
+      <li><strong>Run the app</strong> — display your data back to you, compute your macros, draw your charts</li>
+      <li><strong>Personalise coaching</strong> — pick which workouts / tips to surface based on your stats</li>
+      <li><strong>Power the territory game</strong> — compute leaderboards, deliver steal notifications</li>
+      <li><strong>Improve the app</strong> — aggregate, anonymised usage stats only (no individual tracking)</li>
+    </ul>
+    <p>
+      We <strong>never</strong> sell your data. We <strong>never</strong> share your data with advertisers.
+      We <strong>never</strong> use your data to train AI models without your explicit opt-in.
+    </p>
+
+    <h2>5. Where it's stored</h2>
+    <p>
+      All data is stored on <strong>Supabase</strong> (postgres + storage) in the AWS US-East region.
+      AI coach replies are processed by <strong>Anthropic</strong> (Claude). Both
+      providers are SOC 2 certified.
+    </p>
+
+    <h2>6. Your rights</h2>
+    <p>You can, at any time:</p>
+    <ul>
+      <li><strong>Export your data</strong> — email <a href="mailto:hello@atleato.com">hello@atleato.com</a> and we send a JSON dump within 7 days</li>
+      <li><strong>Delete your account</strong> — Profile → Settings → Delete Account. Erases everything immediately and irreversibly. (Or email us if you can't access the app.)</li>
+      <li><strong>Edit or correct any field</strong> — directly from the app</li>
+      <li><strong>Withdraw consent</strong> — disable specific features (location, photos, notifications) any time from Profile → Permissions</li>
+    </ul>
+
+    <h2>7. Children</h2>
+    <p>
+      Atleato is not directed at children under 13 (under 16 in the EU). We do not knowingly
+      collect data from minors. If you believe a minor has signed up, email
+      <a href="mailto:hello@atleato.com">hello@atleato.com</a> and we will delete the account.
+    </p>
+
+    <h2>8. Changes to this policy</h2>
+    <p>
+      If we make material changes (e.g. start collecting new data, add a third-party service),
+      we'll notify you via email + in-app banner at least 14 days before the change takes effect.
+      Minor wording changes don't need notification.
+    </p>
+
+    <h2>9. Contact</h2>
+    <p>
+      Questions, complaints, data export requests, deletion requests — all to:
+      <a href="mailto:hello@atleato.com">hello@atleato.com</a>. We respond within 48 hours.
+    </p>
+
+    <div class="callout" style="margin-top: 48px">
+      <p>
+        This policy is written in plain English on purpose. Most of the legalese in
+        other policies exists to obscure what's happening. We don't have anything to hide,
+        so we say it straight.
+      </p>
+    </div>
+
+  </div>
+</article>
+
+<footer>
+  <div class="container">
+    <a href="/">← Atleato.com</a> · <a href="mailto:hello@atleato.com">hello@atleato.com</a>
+  </div>
+</footer>
+
+</body>
+</html>
