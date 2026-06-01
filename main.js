@@ -1,0 +1,830 @@
+/* ═══════════════════════════════════════════════
+   ATLEATO™ — 3D SCENE + ANIMATIONS
+   Three.js particle system + GSAP scroll animations
+   ═══════════════════════════════════════════════ */
+
+// ── Three.js 3D Scene ──────────────────────────
+(function initThreeScene() {
+  if (typeof THREE === 'undefined') {
+    console.warn('ATLEATO: Three.js not loaded — skipping 3D background.');
+    return;
+  }
+  const canvas = document.getElementById('three-canvas');
+  if (!canvas) return;
+  const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias: true,
+    alpha: true,
+  });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(
+    60,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+  camera.position.z = 30;
+
+  // ── Particles ──
+  const PARTICLE_COUNT = 800;
+  const particleGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(PARTICLE_COUNT * 3);
+  const velocities = new Float32Array(PARTICLE_COUNT * 3);
+  const sizes = new Float32Array(PARTICLE_COUNT);
+
+  for (let i = 0; i < PARTICLE_COUNT; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 80;
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 80;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 50;
+    velocities[i * 3] = (Math.random() - 0.5) * 0.01;
+    velocities[i * 3 + 1] = (Math.random() - 0.5) * 0.01;
+    velocities[i * 3 + 2] = (Math.random() - 0.5) * 0.005;
+    sizes[i] = Math.random() * 2.5 + 0.5;
+  }
+
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+  const particleMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTime: { value: 0 },
+      uColor1: { value: new THREE.Color('#ff6b35') },
+      uColor2: { value: new THREE.Color('#e84d20') },
+      uOpacity: { value: 0.5 },
+    },
+    vertexShader: `
+      attribute float size;
+      uniform float uTime;
+      varying float vAlpha;
+      void main() {
+        vec3 pos = position;
+        pos.x += sin(uTime * 0.3 + position.y * 0.1) * 0.5;
+        pos.y += cos(uTime * 0.2 + position.x * 0.1) * 0.5;
+        vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
+        gl_PointSize = size * (20.0 / -mvPosition.z);
+        gl_Position = projectionMatrix * mvPosition;
+        vAlpha = smoothstep(0.0, 1.0, size / 3.0);
+      }
+    `,
+    fragmentShader: `
+      uniform vec3 uColor1;
+      uniform vec3 uColor2;
+      uniform float uOpacity;
+      uniform float uTime;
+      varying float vAlpha;
+      void main() {
+        float d = distance(gl_PointCoord, vec2(0.5));
+        if (d > 0.5) discard;
+        float alpha = smoothstep(0.5, 0.0, d) * vAlpha * uOpacity;
+        vec3 color = mix(uColor1, uColor2, sin(uTime * 0.5 + vAlpha * 6.28) * 0.5 + 0.5);
+        gl_FragColor = vec4(color, alpha);
+      }
+    `,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+
+  const particles = new THREE.Points(particleGeo, particleMat);
+  scene.add(particles);
+
+  // Expose color switcher callback for morphing background particles and shapes
+  window.updateThreeBgColors = function(c1, c2) {
+    const col1 = new THREE.Color(c1);
+    const col2 = new THREE.Color(c2);
+    if (typeof gsap !== 'undefined') {
+      gsap.to(particleMat.uniforms.uColor1.value, { r: col1.r, g: col1.g, b: col1.b, duration: 0.8 });
+      gsap.to(particleMat.uniforms.uColor2.value, { r: col2.r, g: col2.g, b: col2.b, duration: 0.8 });
+      shapes.forEach(mesh => {
+        gsap.to(mesh.material.color, { r: col1.r, g: col1.g, b: col1.b, duration: 0.8 });
+      });
+    } else {
+      particleMat.uniforms.uColor1.value.copy(col1);
+      particleMat.uniforms.uColor2.value.copy(col2);
+      shapes.forEach(mesh => mesh.material.color.copy(col1));
+    }
+  };
+
+  // ── Floating 3D Shapes ──
+  const shapes = [];
+  const shapeConfigs = [
+    { geo: new THREE.IcosahedronGeometry(2, 0), pos: [15, 8, -10], speed: 0.003 },
+    { geo: new THREE.OctahedronGeometry(1.5, 0), pos: [-18, -5, -8], speed: 0.004 },
+    { geo: new THREE.TorusGeometry(2, 0.5, 8, 16), pos: [20, -12, -15], speed: 0.002 },
+    { geo: new THREE.TetrahedronGeometry(1.8, 0), pos: [-14, 12, -12], speed: 0.005 },
+    { geo: new THREE.DodecahedronGeometry(1.2, 0), pos: [8, -18, -6], speed: 0.003 },
+    { geo: new THREE.IcosahedronGeometry(3, 1), pos: [-22, 0, -20], speed: 0.001 },
+    { geo: new THREE.TorusKnotGeometry(1, 0.3, 32, 8), pos: [25, 5, -18], speed: 0.002 },
+  ];
+
+  shapeConfigs.forEach((cfg) => {
+    const mat = new THREE.MeshBasicMaterial({
+      color: new THREE.Color('#ff6b35'),
+      wireframe: true,
+      transparent: true,
+      opacity: 0.08,
+    });
+    const mesh = new THREE.Mesh(cfg.geo, mat);
+    mesh.position.set(...cfg.pos);
+    mesh.userData.speed = cfg.speed;
+    mesh.userData.baseY = cfg.pos[1];
+    scene.add(mesh);
+    shapes.push(mesh);
+  });
+
+  // ── Connection Lines ──
+  const lineGeo = new THREE.BufferGeometry();
+  const linePositions = new Float32Array(300 * 6);
+  lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
+  const lineMat = new THREE.LineBasicMaterial({
+    color: new THREE.Color('#ff6b35'),
+    transparent: true,
+    opacity: 0.04,
+  });
+  const lines = new THREE.LineSegments(lineGeo, lineMat);
+  scene.add(lines);
+
+  // ── Mouse Interaction ──
+  let mouseX = 0, mouseY = 0;
+  let targetMouseX = 0, targetMouseY = 0;
+
+  document.addEventListener('mousemove', (e) => {
+    targetMouseX = (e.clientX / window.innerWidth - 0.5) * 2;
+    targetMouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
+  });
+
+  // ── Scroll progress ──
+  let scrollProgress = 0;
+  window.addEventListener('scroll', () => {
+    scrollProgress = window.scrollY / (document.body.scrollHeight - window.innerHeight);
+  });
+
+  // ── Animate ──
+  const clock = new THREE.Clock();
+  function animate() {
+    requestAnimationFrame(animate);
+    const elapsed = clock.getElapsedTime();
+
+    // Update uniforms
+    particleMat.uniforms.uTime.value = elapsed;
+    particleMat.uniforms.uOpacity.value = 0.3 + Math.sin(elapsed * 0.5) * 0.15;
+
+    // Smooth mouse
+    mouseX += (targetMouseX - mouseX) * 0.03;
+    mouseY += (targetMouseY - mouseY) * 0.03;
+
+    // Rotate particles
+    particles.rotation.y = elapsed * 0.03 + mouseX * 0.3;
+    particles.rotation.x = mouseY * 0.15;
+
+    // Animate shapes
+    shapes.forEach((mesh, i) => {
+      mesh.rotation.x += mesh.userData.speed;
+      mesh.rotation.y += mesh.userData.speed * 1.3;
+      mesh.position.y = mesh.userData.baseY + Math.sin(elapsed * 0.5 + i) * 2;
+      mesh.material.opacity = 0.05 + Math.sin(elapsed * 0.3 + i * 1.5) * 0.04;
+    });
+
+    // Update connection lines between close particles
+    const posArr = particleGeo.attributes.position.array;
+    let lineIdx = 0;
+    const maxLines = 300;
+    const threshold = 8;
+
+    for (let i = 0; i < PARTICLE_COUNT && lineIdx < maxLines; i += 4) {
+      for (let j = i + 4; j < PARTICLE_COUNT && lineIdx < maxLines; j += 4) {
+        const dx = posArr[i * 3] - posArr[j * 3];
+        const dy = posArr[i * 3 + 1] - posArr[j * 3 + 1];
+        const dz = posArr[i * 3 + 2] - posArr[j * 3 + 2];
+        const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+        if (dist < threshold) {
+          linePositions[lineIdx * 6] = posArr[i * 3];
+          linePositions[lineIdx * 6 + 1] = posArr[i * 3 + 1];
+          linePositions[lineIdx * 6 + 2] = posArr[i * 3 + 2];
+          linePositions[lineIdx * 6 + 3] = posArr[j * 3];
+          linePositions[lineIdx * 6 + 4] = posArr[j * 3 + 1];
+          linePositions[lineIdx * 6 + 5] = posArr[j * 3 + 2];
+          lineIdx++;
+        }
+      }
+    }
+
+    lineGeo.attributes.position.needsUpdate = true;
+    lineGeo.setDrawRange(0, lineIdx * 2);
+
+    // Camera drift
+    camera.position.x += (mouseX * 3 - camera.position.x) * 0.02;
+    camera.position.y += (mouseY * 2 - camera.position.y) * 0.02;
+    camera.lookAt(0, 0, 0);
+
+    // Dim particles as user scrolls down
+    const scrollFade = Math.max(0.1, 1 - scrollProgress * 2);
+    particleMat.uniforms.uOpacity.value *= scrollFade;
+
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  // ── Resize ──
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+})();
+
+
+// ── GSAP Scroll Animations ─────────────────────
+if (typeof gsap !== 'undefined' && typeof ScrollTrigger !== 'undefined') {
+gsap.registerPlugin(ScrollTrigger);
+document.body.classList.add('gsap-loaded');
+
+// Hero entrance
+const heroTL = gsap.timeline({ defaults: { ease: 'power3.out' } });
+heroTL
+  .from('.hero-eyebrow', { opacity: 0, y: 20, duration: 0.8, delay: 0.3 })
+  .from('.hero-headline', { opacity: 0, y: 40, duration: 1 }, '-=0.5')
+  .from('.hero-sub', { opacity: 0, y: 30, duration: 0.8 }, '-=0.6')
+  .from('.cta-row', { opacity: 0, y: 20, duration: 0.7 }, '-=0.5')
+  .from('.hero-stats', { opacity: 0, y: 20, duration: 0.7 }, '-=0.4');
+
+// Coach chips
+gsap.from('.coach-chip', {
+  scrollTrigger: {
+    trigger: '#coaches-bar',
+    start: 'top 85%',
+  },
+  y: 30,
+  opacity: 0,
+  stagger: 0.1,
+  duration: 0.7,
+  ease: 'power3.out',
+});
+
+// Coach cards inside lineup section
+gsap.from('.coach-card', {
+  scrollTrigger: {
+    trigger: '#coaches',
+    start: 'top 80%',
+  },
+  y: 40,
+  opacity: 0,
+  stagger: 0.1,
+  duration: 0.8,
+  ease: 'power3.out',
+});
+
+// Section headers
+gsap.utils.toArray('.section-header').forEach((header) => {
+  gsap.from(header, {
+    scrollTrigger: {
+      trigger: header,
+      start: 'top 85%',
+    },
+    y: 40,
+    opacity: 0,
+    duration: 0.8,
+    ease: 'power3.out',
+  });
+});
+
+// Feature cards
+gsap.from('.feature-card', {
+  scrollTrigger: {
+    trigger: '.features-grid',
+    start: 'top 80%',
+  },
+  y: 50,
+  opacity: 0,
+  stagger: 0.12,
+  duration: 0.8,
+  ease: 'power3.out',
+});
+
+// Form Correction Demo Section animations
+gsap.from('.demo-info', {
+  scrollTrigger: {
+    trigger: '#form-demo',
+    start: 'top 80%',
+  },
+  x: -40,
+  opacity: 0,
+  duration: 0.9,
+  ease: 'power3.out',
+});
+
+gsap.from('.demo-visual', {
+  scrollTrigger: {
+    trigger: '#form-demo',
+    start: 'top 80%',
+  },
+  x: 40,
+  opacity: 0,
+  duration: 0.9,
+  ease: 'power3.out',
+});
+
+// Steps
+gsap.from('.step-card', {
+  scrollTrigger: {
+    trigger: '.steps-row',
+    start: 'top 80%',
+  },
+  y: 40,
+  opacity: 0,
+  stagger: 0.15,
+  duration: 0.7,
+  ease: 'power3.out',
+});
+
+gsap.from('.step-connector', {
+  scrollTrigger: {
+    trigger: '.steps-row',
+    start: 'top 80%',
+  },
+  scaleX: 0,
+  opacity: 0,
+  stagger: 0.15,
+  duration: 0.6,
+  delay: 0.3,
+  ease: 'power3.out',
+});
+
+// Quote
+gsap.from('.quote-block', {
+  scrollTrigger: {
+    trigger: '#quote-section',
+    start: 'top 80%',
+  },
+  y: 50,
+  opacity: 0,
+  duration: 1,
+  ease: 'power3.out',
+});
+
+// Pricing cards
+gsap.from('.price-card', {
+  scrollTrigger: {
+    trigger: '.pricing-grid',
+    start: 'top 80%',
+  },
+  y: 40,
+  opacity: 0,
+  stagger: 0.12,
+  duration: 0.7,
+  ease: 'power3.out',
+});
+
+// Waitlist
+gsap.from('.waitlist-block', {
+  scrollTrigger: {
+    trigger: '#waitlist',
+    start: 'top 80%',
+  },
+  y: 40,
+  opacity: 0,
+  duration: 0.8,
+  ease: 'power3.out',
+});
+
+} else {
+  // GSAP not loaded — force hero content visible immediately
+  console.warn('ATLEATO: GSAP not loaded — forcing hero visible.');
+  document.querySelectorAll('.hero-eyebrow,.hero-headline,.hero-sub,.cta-row,.hero-stats').forEach(function(el) {
+    el.style.opacity = '1';
+    el.style.transform = 'none';
+  });
+}
+
+
+// ── Nav Scroll Effect ──────────────────────────
+window.addEventListener('scroll', () => {
+  const nav = document.getElementById('main-nav');
+  if (window.scrollY > 60) {
+    nav.classList.add('scrolled');
+  } else {
+    nav.classList.remove('scrolled');
+  }
+});
+
+
+// ── Smooth Scroll for Anchor Links ─────────────
+document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+  anchor.addEventListener('click', function (e) {
+    e.preventDefault();
+    const target = document.querySelector(this.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  });
+});
+
+
+// ── Waitlist Form Handler (Supabase Synced) ──────────────────────
+const waitlistForm = document.getElementById('waitlist-form');
+if (waitlistForm) {
+  const SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
+
+  const btn = document.getElementById('waitlist-submit');
+  const msgEl = document.getElementById('waitlist-msg');
+
+  function setMsg(text, ok) {
+    if (msgEl) {
+      msgEl.textContent = text;
+      msgEl.className = 'waitlist-msg ' + (ok === true ? 'ok' : ok === false ? 'err' : '');
+    }
+  }
+
+  function isValidEmail(s) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+  }
+
+  waitlistForm.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const email = new FormData(waitlistForm).get('email');
+
+    if (!isValidEmail(email)) {
+      setMsg('Please enter a valid email.', false);
+      return;
+    }
+
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.textContent = 'JOINING…';
+    setMsg('');
+
+    try {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {
+        method: 'POST',
+        headers: {
+          'apikey':        SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type':  'application/json',
+          'Prefer':        'return=minimal',
+        },
+        body: JSON.stringify({
+          email:      email,
+          source:     'landing-page',
+          referrer:   document.referrer || null,
+          user_agent: navigator.userAgent.slice(0, 240),
+        }),
+      });
+
+      if (res.status === 409 || res.status === 23505) {
+        setMsg("You're already on the list. We'll be in touch.", true);
+        btn.textContent = '✓  ON THE LIST';
+      } else if (res.status >= 400) {
+        const text = await res.text();
+        if (text && text.indexOf('duplicate') >= 0) {
+          setMsg("You're already on the list. We'll be in touch.", true);
+          btn.textContent = '✓  ON THE LIST';
+        } else {
+          setMsg('Could not save. Try again in a moment.', false);
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          return;
+        }
+      } else {
+        setMsg("You're in. We'll email you the moment the beta opens. 🚀", true);
+        btn.textContent = '✓  ON THE LIST';
+        // GSAP animate button scale on success
+        if (typeof gsap !== 'undefined') gsap.from(btn, {
+          scale: 0.95,
+          duration: 0.3,
+          ease: 'back.out(1.7)',
+        });
+      }
+
+      waitlistForm.reset();
+    } catch (err) {
+      setMsg('Network error. Check your connection and try again.', false);
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  });
+}
+
+
+// ── Coach Chip Hover Audio Feedback ────────────
+document.querySelectorAll('.coach-chip').forEach((chip) => {
+  chip.addEventListener('mouseenter', () => {
+    if (typeof gsap !== 'undefined') gsap.to(chip, {
+      scale: 1.03,
+      duration: 0.3,
+      ease: 'power2.out',
+    });
+  });
+  chip.addEventListener('mouseleave', () => {
+    if (typeof gsap !== 'undefined') gsap.to(chip, {
+      scale: 1,
+      duration: 0.3,
+      ease: 'power2.out',
+    });
+  });
+});
+
+
+// ── Mobile Menu Toggle ─────────────────────────
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+if (mobileMenuBtn) {
+  mobileMenuBtn.addEventListener('click', () => {
+    const navLinks = document.querySelector('.nav-links');
+    navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
+    navLinks.style.flexDirection = 'column';
+    navLinks.style.position = 'absolute';
+    navLinks.style.top = '100%';
+    navLinks.style.left = '0';
+    navLinks.style.right = '0';
+    navLinks.style.background = 'rgba(10, 11, 13, 0.95)';
+    navLinks.style.padding = '20px 28px';
+    navLinks.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+    navLinks.style.backdropFilter = 'blur(20px)';
+  });
+}
+
+
+// ── Parallax on Feature Cards ──────────────────
+document.querySelectorAll('.feature-card').forEach((card) => {
+  card.addEventListener('mousemove', (e) => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const rotateX = (y - centerY) / 20;
+    const rotateY = (centerX - x) / 20;
+
+    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-6px)`;
+  });
+
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+
+// ── Procedural Sound Synthesizer (Web Audio API) ────────────────
+class TechAudioSynth {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+  }
+  
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  playBlip(freq = 800, duration = 0.05, type = 'sine') {
+    if (this.muted) return;
+    this.init();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch(e) {}
+  }
+  
+  playSweep(startFreq = 200, endFreq = 600, duration = 0.3) {
+    if (this.muted) return;
+    this.init();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(startFreq, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(endFreq, this.ctx.currentTime + duration);
+      gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch(e) {}
+  }
+  
+  playSonar(freq = 1200, decay = 1.0) {
+    if (this.muted) return;
+    this.init();
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+      gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + decay);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + decay);
+    } catch(e) {}
+  }
+}
+
+const audioSynth = new TechAudioSynth();
+window.audioSynth = audioSynth;
+
+// Sound toggle button in navigation
+const soundToggleBtn = document.getElementById('sound-toggle');
+if (soundToggleBtn) {
+  soundToggleBtn.addEventListener('click', () => {
+    audioSynth.muted = !audioSynth.muted;
+    soundToggleBtn.classList.toggle('muted', audioSynth.muted);
+    if (!audioSynth.muted) {
+      audioSynth.init();
+      audioSynth.playBlip(1000, 0.1);
+    }
+  });
+}
+
+// Hover effects for card elements
+document.querySelectorAll('.feature-card, .price-card, .step-card, .coach-chip, .coach-card').forEach(card => {
+  card.addEventListener('mouseenter', () => {
+    audioSynth.playBlip(600, 0.04);
+  });
+});
+
+// Scroll sweep sound effects when passing key sections
+const scrollSections = ['#features', '#form-demo', '#coaches', '#pricing', '#waitlist'];
+let lastScrollTop = 0;
+let passedSections = new Set();
+
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  const scrollingDown = scrollTop > lastScrollTop;
+  lastScrollTop = scrollTop;
+
+  scrollSections.forEach(selector => {
+    const el = document.querySelector(selector);
+    if (el) {
+      const rect = el.getBoundingClientRect();
+      const triggerY = window.innerHeight * 0.4;
+      if (rect.top <= triggerY && rect.bottom >= triggerY) {
+        if (!passedSections.has(selector)) {
+          passedSections.add(selector);
+          if (scrollingDown) {
+            audioSynth.playSweep(150, 450, 0.4);
+          } else {
+            audioSynth.playSweep(450, 150, 0.4);
+          }
+        }
+      } else {
+        passedSections.delete(selector);
+      }
+    }
+  });
+});
+
+
+// ── Interactive Coach Persona Switcher ──────────────────────────
+const coachConfigs = {
+  cbum: {
+    lime: '#c8ff3d',
+    limeRgb: '200, 255, 61',
+    limeDim: '#b4e632',
+    color2: '#ff6b35', // orange
+    headline: 'TRAIN UNDER<br/><span class="lime-text">A LEGEND.</span>',
+    quote: 'Most fitness apps give you a spreadsheet. <span class="lime-text">Atleato gives you a coach who knows your name.</span>',
+    speech: "Wake up, champion. It's time to build that classic physique. Let's get it today.",
+    pitch: 0.85, rate: 0.95
+  },
+  arnold: {
+    lime: '#f5b942',
+    limeRgb: '245, 185, 66',
+    limeDim: '#dd9b25',
+    color2: '#ff6b35',
+    headline: 'PUMP UNDER<br/><span class="lime-text">A LEGEND.</span>',
+    quote: 'The pump is the greatest feeling in the world. <span class="lime-text">Don\'t wait, get to work immediately!</span>',
+    speech: "Come on! Get up! Stop being a couch potato. You have to lift, there is no time to sleep!",
+    pitch: 0.75, rate: 0.9
+  },
+  nippard: {
+    lime: '#5dd3fa',
+    limeRgb: '93, 211, 250',
+    limeDim: '#3cbbe5',
+    color2: '#ff6b35',
+    headline: 'OPTIMIZE UNDER<br/><span class="lime-text">A LEGEND.</span>',
+    quote: 'Scientific evidence proves that high intensity hypertrophy yields <span class="lime-text">42% more muscle protein synthesis.</span>',
+    speech: "Good morning. Scientifically speaking, skipping this workout will lead to zero muscle protein synthesis. Let's start.",
+    pitch: 1.02, rate: 1.05
+  },
+  ct: {
+    lime: '#ef4444',
+    limeRgb: '239, 68, 68',
+    limeDim: '#d32f2f',
+    color2: '#ff6b35',
+    headline: 'CONQUER UNDER<br/><span class="lime-text">A LEGEND.</span>',
+    quote: 'IT\'S STILL YOUR MOTHERF***IN\' SET! <span class="lime-text">SQUAT LOW OR PACK YOUR BAGS AND GO HOME!</span>',
+    speech: "WAKE YOUR ASS UP! IT'S CHERRY PICKIN' TIME! NO EXCUSES IN MY GYM!",
+    pitch: 0.7, rate: 1.15
+  },
+  mike: {
+    lime: '#7be38c',
+    limeRgb: '123, 227, 140',
+    limeDim: '#5fc670',
+    color2: '#5dd3fa', // cyan
+    headline: 'GROW UNDER<br/><span class="lime-text">A LEGEND.</span>',
+    quote: 'Your muscle fibers will literally atrophy if you leave range of motion short. <span class="lime-text">Go deep, or go home.</span>',
+    speech: "Hey guys, Dr. Mike here. Time to get some hypertrophy going. If you stay in bed, your gains are going to literally shrink.",
+    pitch: 1.15, rate: 1.1
+  }
+};
+
+function playSpeechSynthesis(text, pitch, rate) {
+  try {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.pitch = pitch;
+    utterance.rate = rate;
+    const voices = window.speechSynthesis.getVoices();
+    const englishMale = voices.find(v => (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('google')) && v.lang.startsWith('en'));
+    if (englishMale) utterance.voice = englishMale;
+    window.speechSynthesis.speak(utterance);
+  } catch(e) {}
+}
+
+document.querySelectorAll('.coach-chip, .coach-card').forEach(item => {
+  item.addEventListener('click', () => {
+    const coachName = item.getAttribute('data-coach') || item.querySelector('.coach-name')?.textContent.toLowerCase().replace(/[\s.]/g, '');
+    if (!coachName || !coachConfigs[coachName]) return;
+    
+    const cfg = coachConfigs[coachName];
+
+    // Play procedural sonar sound
+    audioSynth.playSonar(900, 1.4);
+
+    // Play voice preview simulation
+    playSpeechSynthesis(cfg.speech, cfg.pitch, cfg.rate);
+
+    // Apply color morph CSS variables
+    document.documentElement.style.setProperty('--lime', cfg.lime);
+    document.documentElement.style.setProperty('--lime-rgb', cfg.limeRgb);
+    document.documentElement.style.setProperty('--lime-dim', cfg.limeDim);
+
+    // Apply background particle morphing
+    if (window.updateThreeBgColors) {
+      window.updateThreeBgColors(cfg.lime, cfg.color2);
+    }
+    
+    // Update visualizer colors if method is exposed
+    if (window.updateMannequinColors) {
+      window.updateMannequinColors(cfg.lime, cfg.color2);
+    }
+
+    // Morph Headline and Quote text with slide-out-in animation
+    const headline = document.querySelector('.hero-headline');
+    if (headline) {
+      if (typeof gsap !== 'undefined') {
+        gsap.to(headline, {
+          opacity: 0, y: -20, duration: 0.3, onComplete: () => {
+            headline.innerHTML = cfg.headline;
+            gsap.to(headline, { opacity: 1, y: 0, duration: 0.5 });
+          }
+        });
+      } else {
+        headline.innerHTML = cfg.headline;
+      }
+    }
+
+    const quoteBlockText = document.querySelector('.quote-text');
+    if (quoteBlockText) {
+      if (typeof gsap !== 'undefined') {
+        gsap.to(quoteBlockText, {
+          opacity: 0, y: 15, duration: 0.3, onComplete: () => {
+            quoteBlockText.innerHTML = cfg.quote;
+            gsap.to(quoteBlockText, { opacity: 1, y: 0, duration: 0.5 });
+          }
+        });
+      } else {
+        quoteBlockText.innerHTML = cfg.quote;
+      }
+    }
+
+    // Toggle active state visual border on chips/cards
+    document.querySelectorAll('.coach-chip').forEach(c => {
+      c.style.borderColor = c.getAttribute('data-coach') === coachName ? 'var(--lime)' : '';
+    });
+  });
+});
+
+
+console.log('%c🏋️ ATLEATO™ — Train. Fuel. Rise.', 'color: #ff6b35; font-size: 16px; font-weight: bold; background: #0a0b0d; padding: 8px 16px; border-radius: 4px;');
