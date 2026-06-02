@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
   Alert, Image,
@@ -11,6 +11,7 @@ import { PhysiqueScoreCard } from '@/components/progress/PhysiqueScoreCard';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
+import { canAccess } from '@/lib/featureGates';
 
 type Step = 'cadence' | 'front' | 'side' | 'back' | 'processing' | 'done';
 type Cadence = 'weekly' | 'biweekly' | 'monthly';
@@ -25,6 +26,12 @@ export default function PhysiqueCheckin() {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const { mutateAsync: submitCheckin } = useSubmitCheckin();
+
+  useEffect(() => {
+    if (!canAccess('physique_photos')) {
+      router.replace('/paywall?feature=physique_photos' as any);
+    }
+  }, []);
 
   const [step, setStep] = useState<Step>('cadence');
   const [cadence, setCadence] = useState<Cadence>('biweekly');
