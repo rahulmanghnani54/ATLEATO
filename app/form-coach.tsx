@@ -34,6 +34,7 @@ import { Colors, Spacing, Fonts } from '@/constants/theme';
 import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
 import { getExerciseForm, getCoachCue, type ExerciseForm } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
+import { canAccess } from '@/lib/featureGates';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -293,6 +294,12 @@ export default function FormCoach() {
   const [facing, setFacing] = useState<'front' | 'back'>('back');
   const device = useCameraDevice(facing);
   const cameraRef = useRef<Camera>(null);
+
+  useEffect(() => {
+    if (!canAccess('ai_form_coach')) {
+      router.replace('/paywall?feature=ai_form_coach' as any);
+    }
+  }, []);
 
   useEffect(() => {
     if (!hasPermission) requestPermission();
