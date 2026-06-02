@@ -443,89 +443,95 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
 
 
 // ── Waitlist Form Handler (Supabase Synced) ──────────────────────
-const waitlistForm = document.getElementById('waitlist-form');
-if (waitlistForm) {
+(function initWaitlistForms() {
   const SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
-
-  const btn = document.getElementById('waitlist-submit');
-  const msgEl = document.getElementById('waitlist-msg');
-
-  function setMsg(text, ok) {
-    if (msgEl) {
-      msgEl.textContent = text;
-      msgEl.className = 'waitlist-msg ' + (ok === true ? 'ok' : ok === false ? 'err' : '');
-    }
-  }
 
   function isValidEmail(s) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
   }
 
-  waitlistForm.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const email = new FormData(waitlistForm).get('email');
+  function bindWaitlistForm(formId, msgId) {
+    var form = document.getElementById(formId);
+    if (!form) return;
+    var msgEl = document.getElementById(msgId);
+    var btn = form.querySelector('button[type="submit"]');
 
-    if (!isValidEmail(email)) {
-      setMsg('Please enter a valid email.', false);
-      return;
+    function setMsg(text, ok) {
+      if (msgEl) {
+        msgEl.textContent = text;
+        msgEl.className = 'waitlist-msg ' + (ok === true ? 'ok' : ok === false ? 'err' : '');
+      }
     }
 
-    btn.disabled = true;
-    const originalText = btn.innerHTML;
-    btn.textContent = 'JOINING…';
-    setMsg('');
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var email = new FormData(form).get('email');
 
-    try {
-      const res = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {
-        method: 'POST',
-        headers: {
-          'apikey':        SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-          'Content-Type':  'application/json',
-          'Prefer':        'return=minimal',
-        },
-        body: JSON.stringify({
-          email:      email,
-          source:     'landing-page',
-          referrer:   document.referrer || null,
-          user_agent: navigator.userAgent.slice(0, 240),
-        }),
-      });
-
-      if (res.status === 409 || res.status === 23505) {
-        setMsg("You're already on the list. We'll be in touch.", true);
-        btn.textContent = '✓  ON THE LIST';
-      } else if (res.status >= 400) {
-        const text = await res.text();
-        if (text && text.indexOf('duplicate') >= 0) {
-          setMsg("You're already on the list. We'll be in touch.", true);
-          btn.textContent = '✓  ON THE LIST';
-        } else {
-          setMsg('Could not save. Try again in a moment.', false);
-          btn.disabled = false;
-          btn.innerHTML = originalText;
-          return;
-        }
-      } else {
-        setMsg("You're in. We'll email you the moment the beta opens. 🚀", true);
-        btn.textContent = '✓  ON THE LIST';
-        // GSAP animate button scale on success
-        if (typeof gsap !== 'undefined') gsap.from(btn, {
-          scale: 0.95,
-          duration: 0.3,
-          ease: 'back.out(1.7)',
-        });
+      if (!isValidEmail(email)) {
+        setMsg('Please enter a valid email.', false);
+        return;
       }
 
-      waitlistForm.reset();
-    } catch (err) {
-      setMsg('Network error. Check your connection and try again.', false);
-      btn.disabled = false;
-      btn.innerHTML = originalText;
-    }
-  });
-}
+      btn.disabled = true;
+      var originalText = btn.innerHTML;
+      btn.textContent = 'JOINING…';
+      setMsg('');
+
+      try {
+        var res = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {
+          method: 'POST',
+          headers: {
+            'apikey':        SUPABASE_ANON_KEY,
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+            'Content-Type':  'application/json',
+            'Prefer':        'return=minimal',
+          },
+          body: JSON.stringify({
+            email:      email,
+            source:     formId === 'hero-waitlist-form' ? 'hero' : 'landing-page',
+            referrer:   document.referrer || null,
+            user_agent: navigator.userAgent.slice(0, 240),
+          }),
+        });
+
+        if (res.status === 409 || res.status === 23505) {
+          setMsg("You're already on the list. We'll be in touch.", true);
+          btn.textContent = '✓  ON THE LIST';
+        } else if (res.status >= 400) {
+          var text = await res.text();
+          if (text && text.indexOf('duplicate') >= 0) {
+            setMsg("You're already on the list. We'll be in touch.", true);
+            btn.textContent = '✓  ON THE LIST';
+          } else {
+            setMsg('Could not save. Try again in a moment.', false);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            return;
+          }
+        } else {
+          setMsg("You're in! We'll email you when the beta opens. 🚀", true);
+          btn.textContent = '✓  ON THE LIST';
+          if (typeof gsap !== 'undefined') gsap.from(btn, {
+            scale: 0.95,
+            duration: 0.3,
+            ease: 'back.out(1.7)',
+          });
+        }
+
+        form.reset();
+      } catch (err) {
+        setMsg('Network error. Check your connection and try again.', false);
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    });
+  }
+
+  // Bind both hero and bottom waitlist forms
+  bindWaitlistForm('hero-waitlist-form', 'hero-waitlist-msg');
+  bindWaitlistForm('waitlist-form', 'waitlist-msg');
+})();
 
 
 // ── Coach Chip Hover Audio Feedback ────────────
