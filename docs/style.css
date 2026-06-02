@@ -81,21 +81,17 @@ body {
   color: var(--lime);
 }
 
-/* ── GSAP Visibility Safety Net ──
-   gsap.from() sets opacity:0 instantly on elements. If GSAP or
-   ScrollTrigger fails, stalls, or loads slowly, content stays invisible.
-   This CSS animation forces everything visible after 3.5s no matter what. */
-@keyframes forceVisible {
-  to { opacity: 1 !important; transform: none !important; }
+/* ── CSS-only entrance animations (replaces broken GSAP from()) ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
-.hero-eyebrow, .hero-headline, .hero-sub, .cta-row, .hero-stats,
-.coach-chip, .coach-card, .feature-card, .section-header,
-.demo-info, .demo-visual, .step-card, .step-connector,
-.quote-block, .price-card, .waitlist-block, .waitlist-count,
-.coaches-eyebrow, .coach-row, .pricing-grid, .steps-row,
-.demo-grid, .hud-panel, .score-display, .canvas-wrap {
-  animation: forceVisible 0.6s 3.5s both;
-}
+
+.hero-eyebrow   { animation: fadeUp 0.7s 0.2s both; }
+.hero-headline  { animation: fadeUp 0.8s 0.4s both; }
+.hero-sub        { animation: fadeUp 0.7s 0.6s both; }
+.hero-stats      { animation: fadeUp 0.6s 1.0s both; }
+#hero .waitlist-form { animation: fadeUp 0.6s 0.8s both; }
 
 /* ═══════════════════════════════════════════════
    NAVIGATION
