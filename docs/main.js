@@ -394,11 +394,26 @@ gsap.from('.waitlist-block', {
 } else {
   // GSAP not loaded — force hero content visible immediately
   console.warn('ATLEATO: GSAP not loaded — forcing hero visible.');
-  document.querySelectorAll('.hero-eyebrow,.hero-headline,.hero-sub,.cta-row,.hero-stats').forEach(function(el) {
+  document.querySelectorAll('.hero-eyebrow,.hero-headline,.hero-sub,.cta-row,.hero-stats,.coach-chip,.coach-card,.feature-card,.section-header,.demo-info,.demo-visual,.step-card,.step-connector,.quote-block,.price-card,.waitlist-block').forEach(function(el) {
     el.style.opacity = '1';
     el.style.transform = 'none';
   });
 }
+
+// ── GSAP Safety Net ──────────────────────────
+// If GSAP from() hid elements and ScrollTrigger never fired,
+// force everything visible after 4 seconds as a last resort.
+setTimeout(function() {
+  var selectors = '.hero-eyebrow,.hero-headline,.hero-sub,.cta-row,.hero-stats,.coach-chip,.coach-card,.feature-card,.section-header,.demo-info,.demo-visual,.step-card,.step-connector,.quote-block,.price-card,.waitlist-block,.waitlist-count,.coaches-eyebrow,.pricing-grid,.hud-panel,.score-display,.canvas-wrap';
+  document.querySelectorAll(selectors).forEach(function(el) {
+    var style = window.getComputedStyle(el);
+    if (parseFloat(style.opacity) < 0.1) {
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+      el.style.visibility = 'visible';
+    }
+  });
+}, 4000);
 
 
 // ── Nav Scroll Effect ──────────────────────────
