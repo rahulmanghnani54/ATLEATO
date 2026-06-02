@@ -31,6 +31,7 @@ import {
   setupCallKeep, wireCallKeepEvents, handleWakeupBackground,
   ringForegroundServiceRunner,
 } from '@/lib/wakeupCalls';
+import { initBilling } from '@/lib/subscriptionManager';
 import notifee from '@notifee/react-native';
 import type { PersonaId } from '@/lib/personaTheme';
 
@@ -102,6 +103,8 @@ function RootNavigator() {
           },
         });
       } catch { /* ignore */ }
+      // Billing — resolve subscription tier from Google Play
+      try { await initBilling(); } catch { /* ignore */ }
     })();
     return () => { try { unsub?.(); } catch { /* ignore */ } };
   }, [router]);
