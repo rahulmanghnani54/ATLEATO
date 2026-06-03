@@ -21,7 +21,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  getFreezeState, MAX_FREEZES,
+  getFreezeState, getMaxFreezes,
 } from '@/lib/streakFreezes';
 import type { PersonaTheme } from '@/lib/personaTheme';
 
@@ -81,7 +81,7 @@ export async function openChest(persona: PersonaTheme): Promise<Drop> {
   let effect: 'freeze' | null = null;
   if (tier === 'rare') {
     const fs = await getFreezeState();
-    if (fs.freezes < MAX_FREEZES) {
+    if (fs.freezes < getMaxFreezes()) {
       effect = 'freeze';
     } else {
       tier = 'uncommon';
@@ -137,7 +137,7 @@ export async function getChestStats(): Promise<{ opens: number; rarePlus: number
 async function awardOneFreezeDirect(): Promise<void> {
   const KEY_FREEZES = 'freezes_available:v1';
   const cur = parseInt((await AsyncStorage.getItem(KEY_FREEZES)) ?? '0', 10) || 0;
-  const next = Math.min(MAX_FREEZES, cur + 1);
+  const next = Math.min(getMaxFreezes(), cur + 1);
   await AsyncStorage.setItem(KEY_FREEZES, String(next));
 }
 

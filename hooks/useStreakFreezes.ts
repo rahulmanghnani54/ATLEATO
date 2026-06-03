@@ -5,7 +5,7 @@
  * surface in the UI without manual invalidation.
  */
 import { useQuery } from '@tanstack/react-query';
-import { getFreezeState, MAX_FREEZES } from '@/lib/streakFreezes';
+import { getFreezeState, getMaxFreezes } from '@/lib/streakFreezes';
 
 export function useStreakFreezes() {
   const q = useQuery({
@@ -21,6 +21,6 @@ export function useStreakFreezes() {
   return {
     freezes: q.data?.freezes ?? 0,
     frozenDates: q.data?.frozenDates ?? [],
-    maxFreezes: MAX_FREEZES,
+    maxFreezes: getMaxFreezes(),
   };
 }
