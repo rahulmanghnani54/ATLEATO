@@ -13,7 +13,7 @@ import { usePersonalRecords } from '@/hooks/useProgressStats';
 import { calculateBMR, calculateTDEE, calculateMacros, getAgeFromDOB } from '@/lib/tdee';
 import type { ActivityLevel, Goal } from '@/lib/tdee';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { getUserTier } from '@/lib/featureGates';
+import { getUserTier, canAccess } from '@/lib/featureGates';
 
 const PROGRAM_NAMES: Record<string, string> = {
   cbum_evolved:          'CBum Evolved',
@@ -377,6 +377,17 @@ export default function ProfileScreen() {
               thumbColor="#fff"
             />
           </View>
+          {canAccess('voice_customization') && (
+            <>
+              <View style={styles.rowDivider} />
+              <SettingsRow
+                label="🎙  Coach Voice"
+                sub="Adjust pitch & speed"
+                trail="→"
+                onPress={() => router.push('/voice-settings' as any)}
+              />
+            </>
+          )}
         </SettingsGroup>
 
         {/* ── Account ── */}
