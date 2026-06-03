@@ -343,6 +343,23 @@ export default function ProfileScreen() {
           />
         </SettingsGroup>
 
+        {/* ── Community ── */}
+        <SettingsGroup title="COMMUNITY">
+          <SettingsRow
+            label="🏆  Community Squads"
+            sub="Train with your squad — weekly challenges & leaderboards"
+            trail="→"
+            onPress={() => router.push('/squads' as any)}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="🎁  Refer friends, earn Pro"
+            sub="Share your code — 3 referrals = 1 month Pro free"
+            trail="→"
+            onPress={() => router.push('/referral' as any)}
+          />
+        </SettingsGroup>
+
         {/* ── Accountability ── */}
         <SettingsGroup title="ACCOUNTABILITY">
           <SettingsRow

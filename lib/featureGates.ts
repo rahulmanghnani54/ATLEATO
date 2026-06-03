@@ -22,7 +22,8 @@ export type FeatureKey =
   | 'snooze_recalls'
   | 'territory_heatmap'
   | 'video_review'
-  | 'voice_customization';
+  | 'voice_customization'
+  | 'food_scan';
 
 type Tier = 'free' | 'pro' | 'legend';
 
@@ -34,6 +35,7 @@ const FEATURE_TIER: Record<FeatureKey, Tier> = {
   physique_photos:     'pro',
   custom_ringtone:     'pro',
   unlimited_freezes:   'pro',
+  food_scan:           'pro',
   snooze_recalls:      'legend',
   territory_heatmap:   'legend',
   video_review:        'legend',
@@ -46,6 +48,7 @@ const FEATURE_LABELS: Record<FeatureKey, string> = {
   physique_photos:     'Physique Progress Photos',
   custom_ringtone:     'Custom Ringtone Picker',
   unlimited_freezes:   'Unlimited Streak Freezes',
+  food_scan:           'AI Food Scanner',
   snooze_recalls:      '5-Min Snooze Re-Calls',
   territory_heatmap:   'Territory Heatmap & Analytics',
   video_review:        'Advanced Form AI & Video Review',

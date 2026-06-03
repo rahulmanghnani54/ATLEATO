@@ -118,19 +118,29 @@ export default function Nutrition() {
           <Text style={styles.tipText}>{nutritionTip}</Text>
         </GlassCard>
 
-        {/* Quick-add search */}
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPress={() => router.push({ pathname: '/add-food', params: { mealType: 'lunch', date: dateStr } } as any)}
-          style={{ marginTop: 12 }}
-        >
-          <GlassCard>
-            <View style={styles.searchInput}>
-              <Text style={styles.searchIcon}>🔍</Text>
-              <Text style={styles.searchPlaceholder}>Search Indian & global foods…</Text>
-            </View>
-          </GlassCard>
-        </TouchableOpacity>
+        {/* Quick-add row: search + AI scan */}
+        <View style={styles.quickAddRow}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => router.push({ pathname: '/add-food', params: { mealType: 'lunch', date: dateStr } } as any)}
+            style={{ flex: 1 }}
+          >
+            <GlassCard style={styles.quickAddCard}>
+              <View style={styles.searchInput}>
+                <Text style={styles.searchIcon}>🔍</Text>
+                <Text style={styles.searchPlaceholder}>Search foods…</Text>
+              </View>
+            </GlassCard>
+          </TouchableOpacity>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/food-photo-scan' as any)}
+            style={styles.scanBtn}
+          >
+            <Text style={styles.scanBtnIcon}>📷</Text>
+            <Text style={[styles.scanBtnLabel, { color: persona.accent }]}>SCAN</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* ── HYDRATION ─────────────────────────────────────────────── */}
         <SectionHeader label="HYDRATION" accent={persona.accent} />
@@ -247,14 +257,21 @@ const styles = StyleSheet.create({
   track: { height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, marginTop: 4, overflow: 'hidden' },
   fill: { height: '100%', borderRadius: 2 },
 
+  quickAddRow: { flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'stretch' },
+  quickAddCard: { flex: 1 },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
   searchInput: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
     paddingHorizontal: 14, paddingVertical: 12,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 4,
   },
   searchIcon: { fontSize: 16 },
   searchPlaceholder: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  scanBtn: {
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 12, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', gap: 2,
+  },
+  scanBtnIcon: { fontSize: 20 },
+  scanBtnLabel: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1.2 },
   barcodeBtn: {
     width: 44, height: 44, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
     borderRadius: 4, alignItems: 'center', justifyContent: 'center',
