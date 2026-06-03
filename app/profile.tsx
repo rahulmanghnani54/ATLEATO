@@ -13,6 +13,7 @@ import { usePersonalRecords } from '@/hooks/useProgressStats';
 import { calculateBMR, calculateTDEE, calculateMacros, getAgeFromDOB } from '@/lib/tdee';
 import type { ActivityLevel, Goal } from '@/lib/tdee';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { getUserTier } from '@/lib/featureGates';
 
 const PROGRAM_NAMES: Record<string, string> = {
   cbum_evolved:          'CBum Evolved',
@@ -220,6 +221,33 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+
+        {/* Subscription Tier */}
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+            backgroundColor: Colors.surface, borderRadius: 12,
+            padding: 16, marginBottom: 12, borderWidth: 1, borderColor: Colors.border,
+            marginHorizontal: Spacing.md, marginTop: 20,
+          }}
+          onPress={() => router.push('/paywall' as any)}
+        >
+          <View>
+            <Text style={{ fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.5 }}>
+              CURRENT PLAN
+            </Text>
+            <Text style={{ fontFamily: Fonts.display, fontSize: 18, color: Colors.primary, marginTop: 4 }}>
+              {getUserTier().toUpperCase()}
+            </Text>
+          </View>
+          {getUserTier() !== 'legend' && (
+            <View style={{ backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }}>
+              <Text style={{ fontFamily: Fonts.display, fontSize: 11, color: Colors.bg, letterSpacing: 1 }}>
+                UPGRADE
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* ── Active Coach ── */}
         <SettingsGroup title="ACTIVE COACH">
