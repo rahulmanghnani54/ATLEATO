@@ -27,6 +27,7 @@ import { calculateBMR, calculateTDEE, calculateMacros, getAgeFromDOB } from '@/l
 import type { ActivityLevel, Goal } from '@/lib/tdee';
 import type { Database } from '@/types/database';
 import { getPersona, quoteOfTheDay, styleText, type PersonaId, type PersonaTheme } from '@/lib/personaTheme';
+import { getMaxCoaches } from '@/lib/featureGates';
 
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
@@ -78,6 +79,11 @@ export default function Step5Program() {
 
   const handleComplete = async () => {
     if (!user) return;
+    const maxCoaches = getMaxCoaches();
+    if (pageIndex >= maxCoaches) {
+      router.push(`/paywall?feature=ai_form_coach` as any);
+      return;
+    }
     setLoading(true);
     try {
       const weightKg = parseFloat(params.weightKg);
@@ -150,8 +156,8 @@ export default function Step5Program() {
         // Performance — only render 1 forward, 1 back at a time
         initialNumToRender={1}
         windowSize={3}
-        renderItem={({ item }) => (
-          <PersonaCard card={item} width={screenWidth} />
+        renderItem={({ item, index }) => (
+          <PersonaCard card={item} index={index} width={screenWidth} />
         )}
         style={{ flex: 1 }}
       />
@@ -188,7 +194,7 @@ export default function Step5Program() {
 // Persona Card — one full-width page in the deck
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PersonaCard({ card, width }: { card: ProgramCard; width: number }) {
+function PersonaCard({ card, index, width }: { card: ProgramCard; index: number; width: number }) {
   const persona: PersonaTheme = getPersona(card.personaId);
   const signatureQuote = quoteOfTheDay(persona); // stable per-day, fine here
 
@@ -196,8 +202,22 @@ function PersonaCard({ card, width }: { card: ProgramCard; width: number }) {
   const macros = persona.nutrition.macroSplit;
   const macroLine = `${persona.nutrition.mealsPerDay}m/day · ${macros.protein}P/${macros.carbs}C/${macros.fat}F`;
 
+  const maxCoaches = getMaxCoaches();
+  const isLocked = index >= maxCoaches;
+
   return (
     <View style={[styles.card, { width, backgroundColor: persona.accent }]}>
+      {isLocked && (
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 10, justifyContent: 'center', alignItems: 'center', borderRadius: 20 }}>
+          <Text style={{ fontSize: 40 }}>🔒</Text>
+          <Text style={{ fontFamily: 'ArchivoBlack_400Regular', fontSize: 14, color: '#fff', marginTop: 8, letterSpacing: 1 }}>
+            {maxCoaches === 1 ? 'PRO' : 'LEGEND'} ONLY
+          </Text>
+          <Text style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>
+            Upgrade to unlock this coach
+          </Text>
+        </View>
+      )}
       {/* Hero block — avatar + name + era */}
       <View style={styles.cardHero}>
         <View style={styles.avatarRow}>
