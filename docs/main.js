@@ -339,7 +339,7 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             return;
           }
         } else {
-          setMsg("You're in! We'll email you when the beta opens. 🚀", true);
+          setMsg("You're in! 🚀 We'll email you a beta invite link within 48 hours. Check your inbox.", true);
           btn.textContent = '✓  ON THE LIST';
           if (typeof gsap !== 'undefined') gsap.from(btn, {
             scale: 0.95,
@@ -385,18 +385,45 @@ document.querySelectorAll('.coach-chip').forEach((chip) => {
 // ── Mobile Menu Toggle ─────────────────────────
 const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 if (mobileMenuBtn) {
+  let menuOpen = false;
   mobileMenuBtn.addEventListener('click', () => {
     const navLinks = document.querySelector('.nav-links');
-    navLinks.style.display = navLinks.style.display === 'flex' ? 'none' : 'flex';
-    navLinks.style.flexDirection = 'column';
-    navLinks.style.position = 'absolute';
-    navLinks.style.top = '100%';
-    navLinks.style.left = '0';
-    navLinks.style.right = '0';
-    navLinks.style.background = 'rgba(10, 11, 13, 0.95)';
-    navLinks.style.padding = '20px 28px';
-    navLinks.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
-    navLinks.style.backdropFilter = 'blur(20px)';
+    menuOpen = !menuOpen;
+    if (menuOpen) {
+      navLinks.style.display = 'flex';
+      navLinks.style.flexDirection = 'column';
+      navLinks.style.position = 'absolute';
+      navLinks.style.top = '100%';
+      navLinks.style.left = '0';
+      navLinks.style.right = '0';
+      navLinks.style.background = 'rgba(10, 11, 13, 0.97)';
+      navLinks.style.padding = '20px 28px';
+      navLinks.style.borderBottom = '1px solid rgba(255,255,255,0.08)';
+      navLinks.style.backdropFilter = 'blur(20px)';
+      navLinks.style.gap = '20px';
+      navLinks.style.zIndex = '200';
+    } else {
+      navLinks.style.display = '';
+      navLinks.style.flexDirection = '';
+      navLinks.style.position = '';
+      navLinks.style.top = '';
+      navLinks.style.left = '';
+      navLinks.style.right = '';
+      navLinks.style.background = '';
+      navLinks.style.padding = '';
+      navLinks.style.borderBottom = '';
+      navLinks.style.backdropFilter = '';
+      navLinks.style.gap = '';
+      navLinks.style.zIndex = '';
+    }
+  });
+  // Close menu when a nav link is clicked
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (menuOpen) {
+        mobileMenuBtn.click();
+      }
+    });
   });
 }
 

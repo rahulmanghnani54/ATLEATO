@@ -21,6 +21,10 @@
   <meta name="twitter:description" content="5 world-class AI coaches, live form check, real wake-up calls. No excuses." />
   <meta name="twitter:image" content="https://atleato.com/og-image.png" />
 
+  <link rel="canonical" href="https://atleato.com/" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,8 14,92 30,92 50,42 70,92 86,92' fill='%23ff6b35'/></svg>" />
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap" as="style" />
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -28,11 +32,29 @@
 
 
   <link rel="stylesheet" href="style.css" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Atleato",
+  "url": "https://atleato.com",
+  "description": "AI-powered fitness coaching app with 5 persona coaches, live form correction, and real wake-up calls.",
+  "applicationCategory": "HealthApplication",
+  "operatingSystem": "Android",
+  "offers": [
+    {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free"},
+    {"@type": "Offer", "price": "9.99", "priceCurrency": "USD", "name": "Pro"},
+    {"@type": "Offer", "price": "19.99", "priceCurrency": "USD", "name": "Legend"}
+  ]
+}
+</script>
 </head>
 <body>
 
   <!-- 3D Canvas Background -->
   <canvas id="three-canvas"></canvas>
+  <noscript><style>#three-canvas{display:none}</style></noscript>
 
   <!-- Navigation -->
   <nav id="main-nav">
@@ -54,6 +76,7 @@
         <a href="#features">Features</a>
         <a href="#coaches">Coaches</a>
         <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
         <a href="#waitlist" class="nav-cta">Join Waitlist</a>
         <button id="sound-toggle" class="sound-btn" aria-label="Toggle Sound">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sound-icon-svg">
@@ -611,6 +634,38 @@
     </div>
   </section>
 
+  <!-- FAQ Section -->
+  <section id="faq" class="section" style="padding:80px 0;">
+    <div class="container" style="max-width:800px;">
+      <div class="section-header" style="text-align:center;margin-bottom:48px;">
+        <span class="section-eyebrow">FAQ</span>
+        <h2 class="section-title">Questions?<br/><span class="lime-text">Answered.</span></h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Is it really free? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Yes. The Free tier includes 1 coach, workouts, nutrition tracking, wake-up calls, territory conquest, and streaks — forever. No credit card required. PRO and LEGEND unlock additional coaches, AI form correction, and premium features.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">How do wake-up calls work? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Set a time, pick a ringtone. Your phone rings like an actual incoming call — full screen, vibration, the works. If you decline, your coach calls back 5 minutes later. It's not a notification you can swipe away.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">What is Territory Conquest? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Every 200m grid cell you run through becomes yours on the map. If someone else runs through it, they steal it. Think Splatoon meets Strava — you're painting the city in your colors.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Can I switch coaches? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Free users get 1 coach. PRO unlocks 3. LEGEND gets all 5. When you switch, the entire app transforms — colors, workout programs, nutrition philosophy, voice, and motivational style all change to match your new coach.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">When does the app launch? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">We're in closed beta. Join the waitlist above to get early access. Waitlist members will be the first to download when we launch on Google Play.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
   <!-- Waitlist Section -->
   <section id="waitlist" class="section">
     <div class="container">
@@ -618,7 +673,7 @@
         <div class="waitlist-content">
           <span class="section-eyebrow">EARLY ACCESS</span>
           <h2 class="section-title">Be First to<br/><span class="lime-text">Train Under a Legend.</span></h2>
-          <p class="waitlist-sub">Join the waitlist. Get early access. No spam. Cancel anytime.</p>
+          <p class="waitlist-sub">Beta spots are limited. Early members get lifetime Pro pricing. No spam, ever.</p>
           <form id="waitlist-form" class="waitlist-form" novalidate>
             <div class="input-group">
               <input type="email" name="email" id="waitlist-email" placeholder="Enter your email" required autocomplete="email" />
@@ -686,16 +741,19 @@
         </div>
       </div>
       <div class="footer-bottom">
+        <p style="font-size:10px;color:var(--text-tertiary);margin-bottom:12px;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.5;">
+          Coach personas are AI-generated characters inspired by popular training philosophies. Atleato is not affiliated with, endorsed by, or sponsored by any real individual referenced on this page.
+        </p>
         <p>© 2026 Atleato™. All rights reserved.</p>
       </div>
     </div>
   </footer>
 
   <!-- CDN Libraries (loaded after HTML to prevent render-blocking) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" crossorigin="anonymous"></script>
 
-  <script src="main.js"></script>
-  <script src="exercise-demo.js"></script>
+  <script defer src="main.js"></script>
+  <script defer src="exercise-demo.js"></script>
 </body>
 </html>
