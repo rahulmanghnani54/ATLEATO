@@ -35,6 +35,7 @@ import { cellCorner } from '@/lib/territoryGrid';
 import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, styleText } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
+import { canAccess } from '@/lib/featureGates';
 
 const CELL_DEG = 0.0018;
 
@@ -178,8 +179,8 @@ export default function TerritoryMapScreen() {
           </View>
         )}
 
-        {/* Heatmap toggle (only meaningful when map is rendering) */}
-        {HAS_GOOGLE_KEY && (
+        {/* Heatmap toggle (LEGEND-tier, only meaningful when map is rendering) */}
+        {HAS_GOOGLE_KEY && canAccess('territory_heatmap') && (
           <TouchableOpacity
             style={[styles.heatBtn, heatmap && { backgroundColor: persona.accent }]}
             onPress={() => setHeatmap((h) => !h)}
@@ -222,6 +223,31 @@ export default function TerritoryMapScreen() {
         <LegendDot color={persona.accent} label="YOU" />
         <LegendDot color="#ef4444" label="OTHERS" />
       </View>
+
+      {/* Territory Analytics — LEGEND tier */}
+      {canAccess('territory_heatmap') && (
+        <View style={[styles.analyticsPanel, { borderColor: persona.accent }]}>
+          <Text style={[styles.analyticTitle, { color: persona.accent }]}>TERRITORY ANALYTICS</Text>
+          <View style={styles.analyticsGrid}>
+            <View style={styles.analyticBox}>
+              <Text style={[styles.analyticValue, { color: persona.accent }]}>{stats?.cells_owned ?? 0}</Text>
+              <Text style={styles.analyticLabel}>CELLS OWNED</Text>
+            </View>
+            <View style={styles.analyticDivider} />
+            <View style={styles.analyticBox}>
+              <Text style={[styles.analyticValue, { color: persona.accent }]}>
+                {stats?.total_distance_m != null ? (stats.total_distance_m / 1000).toFixed(1) : '0'}
+              </Text>
+              <Text style={styles.analyticLabel}>KM CONQUERED</Text>
+            </View>
+            <View style={styles.analyticDivider} />
+            <View style={styles.analyticBox}>
+              <Text style={[styles.analyticValue, { color: persona.accent }]}>{stats?.total_runs ?? 0}</Text>
+              <Text style={styles.analyticLabel}>RUNS MADE</Text>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -439,4 +465,33 @@ const styles = StyleSheet.create({
   legendItem:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendSwatch:  { width: 12, height: 12, borderRadius: 2 },
   legendText:    { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1 },
+
+  // Analytics panel (LEGEND tier)
+  analyticsPanel: {
+    marginHorizontal: 16, marginBottom: 12,
+    borderWidth: 1, borderRadius: 10,
+    backgroundColor: Colors.surface,
+    paddingVertical: 14, paddingHorizontal: 16,
+  },
+  analyticTitle: {
+    fontFamily: Fonts.display, fontSize: 11, fontWeight: '800',
+    letterSpacing: 1.6, marginBottom: 12, textAlign: 'center',
+  },
+  analyticsGrid: {
+    flexDirection: 'row', alignItems: 'center',
+  },
+  analyticBox: {
+    flex: 1, alignItems: 'center',
+  },
+  analyticValue: {
+    fontFamily: Fonts.display, fontWeight: '800', fontSize: 28,
+    letterSpacing: -0.6,
+  },
+  analyticLabel: {
+    fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary,
+    letterSpacing: 1.4, marginTop: 4,
+  },
+  analyticDivider: {
+    width: 1, height: 40, backgroundColor: Colors.border,
+  },
 });
