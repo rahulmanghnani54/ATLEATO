@@ -16,6 +16,7 @@
  *   the moment the user engages with the call, they get the real experience.
  */
 import { useEffect, useRef } from 'react';
+import { canAccess } from '@/lib/featureGates';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated, Easing, StatusBar,
 } from 'react-native';
@@ -84,7 +85,7 @@ export default function IncomingCallScreen() {
     await declineCoachCall({ kind, personaId });
     // Schedule a follow-up call in 5 minutes — coach doesn't take 'no' for
     // an answer. Only for wake-up calls (workout calls don't auto-snooze).
-    if (kind === 'wakeup') {
+    if (kind === 'wakeup' && canAccess('snooze_recalls')) {
       await scheduleSnoozeCall({ persona: personaId, minutes: 5 });
     }
     router.back();
