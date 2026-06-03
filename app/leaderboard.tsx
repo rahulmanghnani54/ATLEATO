@@ -4,11 +4,13 @@
  * Anonymous handles (Lifter #1234). User's own row is highlighted in the
  * persona accent and stays pinned at the bottom if they're outside the top.
  */
+import { useEffect } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { canAccess } from '@/lib/featureGates';
 import { useGlobalLeaderboard, type LeaderboardRow } from '@/hooks/useGlobalLeaderboard';
 import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, styleText } from '@/lib/personaTheme';
@@ -17,6 +19,12 @@ import { Colors, Fonts } from '@/constants/theme';
 export default function LeaderboardScreen() {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
+
+  useEffect(() => {
+    if (!canAccess('reward_chests')) {
+      router.replace('/paywall?feature=reward_chests' as any);
+    }
+  }, []);
   const persona = personaFromProgramId(profile?.selected_program);
   const { data: rows = [], isLoading, refetch, isFetching } = useGlobalLeaderboard(100);
 
