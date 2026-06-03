@@ -712,6 +712,17 @@ export default function FormCoach() {
       </View>
 
       <ScrollView style={styles.feedbackPanel} contentContainerStyle={styles.feedbackContent}>
+        {canAccess('video_review') && (
+          <TouchableOpacity
+            style={{ backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center' }}
+            onPress={() => router.push('/video-review' as any)}
+          >
+            <Text style={{ fontFamily: Fonts.display, fontSize: 11, color: Colors.bg, letterSpacing: 1 }}>
+              📹 RECORD & REVIEW
+            </Text>
+          </TouchableOpacity>
+        )}
+
         <TouchableOpacity
           style={[styles.cueBtn, !canCallCue && styles.cueBtnDisabled]}
           onPress={handleGetCoachCue}
