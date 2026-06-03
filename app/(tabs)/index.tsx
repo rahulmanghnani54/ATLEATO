@@ -15,6 +15,7 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, TouchableOpacity, RefreshControl,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Circle, G } from 'react-native-svg';
@@ -42,6 +43,10 @@ import { useSessionsThisWeek } from '@/hooks/useSessionsThisWeek';
 import { useStreakFreezes } from '@/hooks/useStreakFreezes';
 import { useGlobalLeaderboard } from '@/hooks/useGlobalLeaderboard';
 import { registerPushTokenIfNeeded } from '@/lib/pushNotifications';
+import {
+  getTodayTip, hasTipBeenSeen, scheduleScarcityNotification,
+  type PersonaId,
+} from '@/lib/scarcityEngine';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Three Apple-style concentric rings: MOVE (outer) / PROTEIN (middle) / RECOVERY (inner)
@@ -114,6 +119,7 @@ export default function Dashboard() {
   const { data: leaderboardRows = [] } = useGlobalLeaderboard(100);
   const programWeek = useProgramWeek();
   const hasCheckedInToday = !!todayRecovery;
+  const [tipSeen, setTipSeen] = useState(true); // default true so card doesn't flash on load
 
   const goal = profile?.tdee ?? 2000;
   const proteinGoal = profile?.protein_g ?? 150;
@@ -165,6 +171,15 @@ export default function Dashboard() {
   useEffect(() => {
     if (profile) registerPushTokenIfNeeded();
   }, [profile]);
+
+  // Check whether today's scarcity tip has been seen
+  useEffect(() => {
+    if (!persona.id) return;
+    hasTipBeenSeen(persona.id as PersonaId).then((seen) => {
+      setTipSeen(seen);
+      if (!seen) scheduleScarcityNotification(persona.id as PersonaId);
+    });
+  }, [persona.id]);
 
   // Tap handler — route to the workout-picker so user can pick today's
   // recommended OR swap to any other day in the program.
@@ -256,6 +271,16 @@ export default function Dashboard() {
               onTrainPress={startTodayWorkout}
             />
           </View>
+
+          {/* Scarcity Tip card — shows when today's tip hasn't been seen yet */}
+          {!tipSeen && (
+            <TipCard
+              personaId={persona.id as PersonaId}
+              accent={persona.accent}
+              ink={persona.ink}
+              onPress={() => router.push('/daily-tip' as any)}
+            />
+          )}
 
           {/* Recovery check-in — only if not done today */}
           {!hasCheckedInToday && (
@@ -443,6 +468,40 @@ export default function Dashboard() {
           {/* Witness Nudge — Sunday/Monday only when behind on weekly sessions */}
           <WitnessNudgeCard sessionsThisWeek={sessionsThisWeek} persona={persona} />
 
+          {/* Friend Scoreboard card */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/friend-scoreboard' as any)}
+            style={{ marginTop: 14 }}
+          >
+            <GlassCard>
+              <Text style={[styles.miniLabel, { color: persona.accent }]}>👥  FRIEND SCOREBOARD</Text>
+              <Text style={{ fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginTop: 6, letterSpacing: -0.3 }}>
+                See how you stack up
+              </Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 4 }}>
+                Weekly leaderboard with friends → loss-framing
+              </Text>
+            </GlassCard>
+          </TouchableOpacity>
+
+          {/* Photo Accountability card */}
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => router.push('/daily-selfie' as any)}
+            style={{ marginTop: 10 }}
+          >
+            <GlassCard>
+              <Text style={[styles.miniLabel, { color: persona.accent }]}>📸  DAILY SELFIE</Text>
+              <Text style={{ fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginTop: 6, letterSpacing: -0.3 }}>
+                Photo accountability
+              </Text>
+              <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 4 }}>
+                🔒 Private · 7-day progress gallery · stays on device
+              </Text>
+            </GlassCard>
+          </TouchableOpacity>
+
           {/* Morning Brief at the very bottom — quiet daily ritual */}
           <View style={{ marginTop: 14 }}>
             <MorningBriefCard persona={persona} />
@@ -498,6 +557,44 @@ function IconCard({
         <Text style={[styles.iconCardValue, { color: accent }]}>{value}</Text>
       </GlassCard>
     </Wrap>
+  );
+}
+
+/**
+ * TipCard — scarcity tip nudge shown in the TODAY section if tip is unseen.
+ * Tapping routes to /daily-tip.
+ */
+function TipCard({
+  personaId, accent, ink, onPress,
+}: {
+  personaId: PersonaId; accent: string; ink: string; onPress: () => void;
+}) {
+  const { tip, expiresAt } = getTodayTip(personaId);
+  const minsLeft = Math.floor((expiresAt.getTime() - Date.now()) / 60_000);
+  const isExpired = minsLeft <= 0;
+  if (isExpired) return null;
+
+  const h = Math.floor(minsLeft / 60);
+  const m = minsLeft % 60;
+  const countdown = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  const urgentColor = minsLeft <= 60 ? '#ff5b3a' : '#ffb13a';
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={{ marginTop: 14 }}>
+      <GlassCard>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <Text style={[styles.miniLabel, { color: urgentColor }]}>
+            ⏱  TODAY'S TIP — EXPIRES IN {countdown}
+          </Text>
+        </View>
+        <Text style={{ fontFamily: Fonts.body, fontSize: 14, color: Colors.text, lineHeight: 20 }} numberOfLines={2}>
+          {tip}
+        </Text>
+        <Text style={[styles.miniLabel, { color: accent, marginTop: 8 }]}>
+          TAP TO READ →
+        </Text>
+      </GlassCard>
+    </TouchableOpacity>
   );
 }
 

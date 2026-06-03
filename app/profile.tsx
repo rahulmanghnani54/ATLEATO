@@ -392,6 +392,27 @@ export default function ProfileScreen() {
             trail="→"
             onPress={() => router.push('/social-stake' as any)}
           />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="💸  Anti-charity stake"
+            sub="Stake $5* against a cause you hate — virtual, opt-in"
+            trail="→"
+            onPress={() => router.push('/charity-stake' as any)}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="📸  Daily selfie accountability"
+            sub="Private 7-day photo streak — never uploaded"
+            trail="→"
+            onPress={() => router.push('/daily-selfie' as any)}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="👥  Friend scoreboard"
+            sub="Weekly leaderboard with friends — loss-framing"
+            trail="→"
+            onPress={() => router.push('/friend-scoreboard' as any)}
+          />
         </SettingsGroup>
 
         {/* ── Coach Calls & Voice ── */}
