@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
 import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { Colors, Fonts } from '@/constants/theme';
 import { scoreLabel } from '@/lib/recoveryEngine';
+import { getTodayWorkoutModifier } from '@/lib/healthIntegration';
 
 // ─── Weight suggestion for a single exercise ────────────────────────────────
 function WeightSuggestion({ exerciseName, reps }: { exerciseName: string; reps: string }) {
@@ -78,9 +80,15 @@ export default function WorkoutLobby() {
   const idx = parseInt(dayIndex ?? '0');
   const workout = program.schedule[idx % program.schedule.length];
 
-  // volumeModifier from today's recovery (default 1.0 if no check-in)
+  // volumeModifier from today's recovery check-in (default 1.0 if no check-in)
   const volumeModifier: number = (recovery as any)?.volume_modifier ?? 1.0;
   const hasCheckin = !!recovery;
+
+  // Health integration modifier (from health-dashboard "Apply to Today's Workout")
+  const [healthModifier, setHealthModifier] = useState<number | null>(null);
+  useEffect(() => {
+    getTodayWorkoutModifier().then(setHealthModifier);
+  }, []);
 
   const handleBegin = () => {
     router.replace({
@@ -122,6 +130,31 @@ export default function WorkoutLobby() {
               Tap to check in — your volume will default to 100% if you skip.
             </Text>
           </TouchableOpacity>
+        )}
+
+        {/* Health integration modifier badge */}
+        {healthModifier !== null && (
+          <View style={[
+            styles.healthModifierCard,
+            {
+              borderColor: healthModifier >= 1
+                ? `${Colors.success}44`
+                : `${Colors.warning}44`,
+            },
+          ]}>
+            <Text style={styles.healthModifierLabel}>💓 HEALTH RECOVERY MODIFIER</Text>
+            <Text style={[
+              styles.healthModifierValue,
+              { color: healthModifier >= 1 ? Colors.success : Colors.warning },
+            ]}>
+              {healthModifier > 1
+                ? `+${Math.round((healthModifier - 1) * 100)}% VOLUME`
+                : healthModifier < 1
+                ? `${Math.round((healthModifier - 1) * 100)}% VOLUME`
+                : 'NORMAL VOLUME'}
+            </Text>
+            <Text style={styles.healthModifierSub}>Applied from Health Dashboard</Text>
+          </View>
         )}
 
         {/* Today's workout with adjusted set counts */}
@@ -235,4 +268,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16, alignItems: 'center',
   },
   beginBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1 },
+
+  healthModifierCard: {
+    backgroundColor: Colors.surface, borderWidth: 1,
+    borderRadius: 6, padding: 14, marginBottom: 16,
+  },
+  healthModifierLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginBottom: 4 },
+  healthModifierValue: { fontFamily: Fonts.display, fontSize: 16, marginBottom: 4 },
+  healthModifierSub: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.5 },
 });

@@ -249,6 +249,30 @@ export default function ProfileScreen() {
           )}
         </TouchableOpacity>
 
+        {/* ── Progression & Avatar ── */}
+        <SettingsGroup title="PROGRESSION">
+          <SettingsRow
+            label="⚡  Legend Progress"
+            sub="RPG levels, XP, and persona-flavoured rank"
+            trail="→"
+            onPress={() => router.push('/legend-progress' as any)}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="🧬  My Avatar"
+            sub="Visual avatar that evolves with your progress"
+            trail="→"
+            onPress={() => router.push('/my-avatar' as any)}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="💓  Health Dashboard"
+            sub="Steps, HRV, sleep quality & recovery modifier"
+            trail="→"
+            onPress={() => router.push('/health-dashboard' as any)}
+          />
+        </SettingsGroup>
+
         {/* ── Active Coach ── */}
         <SettingsGroup title="ACTIVE COACH">
           <SettingsRow

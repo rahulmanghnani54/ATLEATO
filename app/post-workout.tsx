@@ -11,6 +11,7 @@ import { RewardChestModal } from '@/components/dashboard/RewardChestModal';
 import { getPersona, type PersonaId } from '@/lib/personaTheme';
 import { getTomorrowIntention } from '@/lib/implementationIntention';
 import { format } from 'date-fns';
+import { addXP } from '@/lib/legendProgression';
 
 function SendIcon() {
   return (
@@ -64,18 +65,27 @@ export default function PostWorkout() {
   const persona      = getPersona(coachId as PersonaId);
   const [intentionSheetOpen, setIntentionSheetOpen] = useState(false);
   const [chestOpen, setChestOpen] = useState(false);
+  const [xpBadge, setXpBadge] = useState<string | null>(null);
   const tomorrowISO  = format(new Date(Date.now() + 86_400_000), 'yyyy-MM-dd');
 
   // Post-workout choreography:
   // 1.2s after mount → open Reward Chest (variable-reward Skinner box)
   // After chest closes → if no tomorrow-intention exists, open commit sheet
+  // Also award +50 XP for completing a workout.
   useEffect(() => {
     let cancelled = false;
+    // Award XP immediately on mount
+    addXP('workout', coachId as PersonaId).then((info) => {
+      if (!cancelled) {
+        setXpBadge(`+50 XP · ${info.persona_title}`);
+        setTimeout(() => { if (!cancelled) setXpBadge(null); }, 3500);
+      }
+    });
     const id = setTimeout(() => {
       if (!cancelled) setChestOpen(true);
     }, 1200);
     return () => { cancelled = true; clearTimeout(id); };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChestClose = async () => {
     setChestOpen(false);
@@ -160,6 +170,13 @@ export default function PostWorkout() {
             <Text style={styles.closeBtn}>✕</Text>
           </TouchableOpacity>
         </View>
+
+        {/* XP Award Badge */}
+        {xpBadge && (
+          <View style={styles.xpBadge}>
+            <Text style={styles.xpBadgeText}>⚡ {xpBadge}</Text>
+          </View>
+        )}
 
         {/* Score headline */}
         <Text style={styles.headline}>
@@ -357,6 +374,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1,
   },
   exerciseTagText: { fontFamily: Fonts.mono, fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
+
+  // XP badge
+  xpBadge: {
+    backgroundColor: `${Colors.primary}1a`, borderWidth: 1, borderColor: `${Colors.primary}44`,
+    borderRadius: 6, paddingHorizontal: 14, paddingVertical: 8, alignSelf: 'center', marginBottom: 12,
+  },
+  xpBadgeText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.primary, letterSpacing: 0.5 },
 
   // CTAs
   ctaRow: { flexDirection: 'row', gap: 8 },
