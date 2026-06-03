@@ -20,12 +20,19 @@
  *                               (prevents double-award at the same milestone)
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { canAccess } from '@/lib/featureGates';
 
 const KEY_FREEZES         = 'freezes_available:v1';
 const KEY_FROZEN_DATES    = 'frozen_dates:v1';
 const KEY_LAST_AWARD      = 'last_freeze_award:v1';
 
-export const MAX_FREEZES         = 3;
+export const MAX_FREEZES_PRO     = 3;
+export const MAX_FREEZES_FREE    = 1;
+
+export function getMaxFreezes(): number {
+  return canAccess('unlimited_freezes') ? MAX_FREEZES_PRO : MAX_FREEZES_FREE;
+}
+
 export const STREAK_PER_FREEZE   = 7;   // earn a freeze every 7 consecutive days
 
 // In-memory cache so sync UI reads don't hit AsyncStorage every render
@@ -42,7 +49,7 @@ async function ensureLoaded(): Promise<void> {
       AsyncStorage.getItem(KEY_FROZEN_DATES),
       AsyncStorage.getItem(KEY_LAST_AWARD),
     ]);
-    cachedFreezes      = f ? Math.max(0, Math.min(MAX_FREEZES, parseInt(f, 10) || 0)) : 0;
+    cachedFreezes      = f ? Math.max(0, Math.min(getMaxFreezes(), parseInt(f, 10) || 0)) : 0;
     cachedFrozenDates  = d ? JSON.parse(d) : [];
     cachedLastAward    = l ? (parseInt(l, 10) || 0) : 0;
   } catch {
@@ -96,7 +103,7 @@ export async function checkAndAwardFreeze(currentStreak: number): Promise<boolea
   const earnedMilestone = Math.floor(currentStreak / STREAK_PER_FREEZE) * STREAK_PER_FREEZE;
   if (earnedMilestone <= cachedLastAward) return false;
 
-  if (cachedFreezes >= MAX_FREEZES) {
+  if (cachedFreezes >= getMaxFreezes()) {
     // Inventory full — still update lastAward so we don't award again until next milestone
     cachedLastAward = earnedMilestone;
     await flush();
