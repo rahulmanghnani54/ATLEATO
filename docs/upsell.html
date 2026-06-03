@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>YOU'RE IN — Claim Your Founder's Pass | Atleato</title>
+  <meta name="description" content="You're on the Atleato waitlist. Claim your VIP Founder's Pass now and lock 90% off forever." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,8 14,92 30,92 50,42 70,92 86,92' fill='%23ff6b35'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@500;700&display=swap" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="upsell-body">
+  <nav id="main-nav" class="upsell-nav">
+    <a href="/" class="wordmark" aria-label="Atleato home">
+      <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logo-grad-upsell" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ff6b35" />
+            <stop offset="100%" stop-color="#e84d20" />
+          </linearGradient>
+        </defs>
+        <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#logo-grad-upsell)" />
+        <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d" />
+      </svg>
+      <span class="wordmark-text">Atleato<span class="tm">™</span></span>
+    </a>
+  </nav>
+
+  <main class="upsell-main">
+    <section class="upsell-hero">
+      <div class="upsell-badge">WELCOME, FOUNDER</div>
+      <h1 class="upsell-headline">YOU'RE IN. <span class="rocket">🚀</span></h1>
+      <p class="upsell-sub">Your spot is reserved. Now claim your VIP Founder's Pass.</p>
+
+      <div class="upsell-position-wrap">
+        <div class="upsell-position" id="position-number">#—</div>
+        <div class="upsell-position-label">athletes ahead of you</div>
+      </div>
+    </section>
+
+    <section class="upsell-cards">
+      <!-- PAID TRACK -->
+      <article class="upsell-card upsell-card-paid">
+        <div class="upsell-card-label">RECOMMENDED</div>
+        <h2 class="upsell-card-title">THE FAST TRACK</h2>
+        <p class="upsell-card-subtitle">Pay $1.99 today, save $18 forever</p>
+        <ul class="upsell-benefits">
+          <li><strong>90% Off Lifetime Lock</strong> — $1.99 deposit now, just $18 remaining at launch (vs $19.99/mo regular)</li>
+          <li><strong>Custom @username</strong> reservation — claim yours before launch</li>
+          <li><strong>Permanent Founder Badge</strong> on your profile, forever</li>
+          <li><strong>VIP role</strong> in the Atleato community (coming soon)</li>
+        </ul>
+        <a href="#" id="claim-paid-btn" class="upsell-cta-paid">CLAIM FOR $1.99</a>
+        <div class="upsell-fineprint">One-time. No subscription.</div>
+      </article>
+
+      <!-- FREE TRACK -->
+      <article class="upsell-card upsell-card-free">
+        <div class="upsell-card-label-free">VIRAL TRACK</div>
+        <h2 class="upsell-card-title">THE FREE TRACK</h2>
+        <p class="upsell-card-subtitle">Invite 3 friends &rarr; unlock everything FREE</p>
+
+        <div class="referral-box-wrap">
+          <div class="referral-box" id="referral-box">https://atleato.com?ref=</div>
+          <button class="referral-copy-btn" id="copy-link-btn" type="button">Copy Link</button>
+        </div>
+
+        <div class="share-buttons">
+          <a href="#" id="share-whatsapp" class="share-btn share-whatsapp" target="_blank" rel="noopener">
+            <span class="share-icon">💬</span> WhatsApp
+          </a>
+          <a href="#" id="share-twitter" class="share-btn share-twitter" target="_blank" rel="noopener">
+            <span class="share-icon">𝕏</span> Twitter
+          </a>
+          <a href="#" id="share-email" class="share-btn share-email">
+            <span class="share-icon">✉</span> Email
+          </a>
+        </div>
+
+        <div class="referral-progress">
+          <div class="referral-progress-label" id="progress-label">0 of 3 friends joined</div>
+          <div class="referral-progress-dots">
+            <span class="dot" data-step="1"></span>
+            <span class="dot" data-step="2"></span>
+            <span class="dot" data-step="3"></span>
+          </div>
+          <div class="referral-progress-bar">
+            <div class="referral-progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="upsell-trust">
+      <h3>Why Founder's Pass?</h3>
+      <p>Atleato launches at $19.99/mo. Founders lock $18 <em>once</em> — that's it, lifetime access to every AI coach, every workout, every analytic. We only sell 5,000 Founder seats. After that, regular pricing kicks in.</p>
+      <a href="/" class="upsell-back-link">&larr; Back to Atleato</a>
+    </section>
+  </main>
+
+  <footer class="upsell-footer">
+    <p>&copy; 2026 Atleato&trade; — Train. Fuel. Rise.</p>
+  </footer>
+
+  <script>
+  (function initUpsell() {
+    var SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
+
+    var params = new URLSearchParams(window.location.search);
+    var email = params.get('email') || '';
+    var encodedEmail = encodeURIComponent(email);
+    var referralLink = 'https://atleato.com?ref=' + encodedEmail;
+
+    // Display the referral link
+    var refBox = document.getElementById('referral-box');
+    if (refBox) refBox.textContent = referralLink;
+
+    // Wire share buttons
+    var shareMsg = "I'm getting early access to Atleato — AI fitness coaching with legends. Join me on the waitlist:";
+    var wa = document.getElementById('share-whatsapp');
+    if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(shareMsg + ' ' + referralLink);
+    var tw = document.getElementById('share-twitter');
+    if (tw) tw.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMsg) + '&url=' + encodeURIComponent(referralLink);
+    var em = document.getElementById('share-email');
+    if (em) em.href = 'mailto:?subject=' + encodeURIComponent('Join me on Atleato') +
+      '&body=' + encodeURIComponent(shareMsg + '\n\n' + referralLink);
+
+    // Copy button
+    var copyBtn = document.getElementById('copy-link-btn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', function () {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(referralLink).then(function () {
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(function () { copyBtn.textContent = 'Copy Link'; }, 2000);
+          });
+        } else {
+          // Fallback
+          var ta = document.createElement('textarea');
+          ta.value = referralLink;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); } catch (e) {}
+          document.body.removeChild(ta);
+          copyBtn.textContent = '✓ Copied!';
+          setTimeout(function () { copyBtn.textContent = 'Copy Link'; }, 2000);
+        }
+      });
+    }
+
+    // Stripe / payment link placeholder
+    var paidBtn = document.getElementById('claim-paid-btn');
+    if (paidBtn) {
+      paidBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        alert("Payment integration coming soon! Your Founder's seat will be reserved automatically.\n\nFor now, share your referral link to lock your spot for free.");
+      });
+    }
+
+    // Fetch total waitlist count
+    function fetchTotalCount() {
+      return fetch(SUPABASE_URL + '/rest/v1/waitlist?select=*', {
+        method: 'HEAD',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Prefer': 'count=exact',
+          'Range-Unit': 'items',
+          'Range': '0-0'
+        }
+      }).then(function (res) {
+        var range = res.headers.get('content-range') || '';
+        var parts = range.split('/');
+        var count = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+        return isNaN(count) ? 0 : count;
+      }).catch(function () { return 0; });
+    }
+
+    function formatNumber(n) {
+      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+
+    function updatePosition() {
+      fetchTotalCount().then(function (count) {
+        var displayed = count > 0 ? count : 2481;
+        var posEl = document.getElementById('position-number');
+        if (posEl) posEl.textContent = '#' + formatNumber(displayed);
+      });
+    }
+
+    // Fetch referral count (signups where source contains this user's email)
+    function fetchReferralCount() {
+      if (!email) return Promise.resolve(0);
+      var sourceFilter = 'landing-page_ref_' + email;
+      var heroFilter = 'hero_ref_' + email;
+      var url = SUPABASE_URL + '/rest/v1/waitlist?select=*&or=(source.eq.' +
+        encodeURIComponent(sourceFilter) + ',source.eq.' + encodeURIComponent(heroFilter) + ')';
+      return fetch(url, {
+        method: 'HEAD',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Prefer': 'count=exact',
+          'Range-Unit': 'items',
+          'Range': '0-0'
+        }
+      }).then(function (res) {
+        var range = res.headers.get('content-range') || '';
+        var parts = range.split('/');
+        var count = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+        return isNaN(count) ? 0 : count;
+      }).catch(function () { return 0; });
+    }
+
+    function updateReferralProgress() {
+      fetchReferralCount().then(function (count) {
+        var capped = Math.min(count, 3);
+        var label = document.getElementById('progress-label');
+        if (label) {
+          if (count >= 3) {
+            label.innerHTML = '🎉 <strong>UNLOCKED!</strong> You earned a free Founder Pass.';
+          } else {
+            label.textContent = count + ' of 3 friends joined';
+          }
+        }
+        var fill = document.getElementById('progress-fill');
+        if (fill) fill.style.width = (capped / 3 * 100) + '%';
+        var dots = document.querySelectorAll('.referral-progress-dots .dot');
+        dots.forEach(function (d, i) {
+          if (i < capped) d.classList.add('filled');
+          else d.classList.remove('filled');
+        });
+      });
+    }
+
+    updatePosition();
+    updateReferralProgress();
+    // Auto-refresh referral count every 10 seconds
+    setInterval(updateReferralProgress, 10000);
+  })();
+  </script>
+</body>
+</html>

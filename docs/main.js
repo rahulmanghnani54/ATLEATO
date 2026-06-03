@@ -307,6 +307,14 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
       btn.textContent = 'JOINING…';
       setMsg('');
 
+      // ── Capture ?ref= URL parameter for referral tracking ──
+      var urlParams = new URLSearchParams(window.location.search);
+      var refValue = urlParams.get('ref');
+      var baseSource = formId === 'hero-waitlist-form' ? 'hero' : 'landing-page';
+      var sourceValue = refValue
+        ? baseSource + '_ref_' + decodeURIComponent(refValue)
+        : baseSource;
+
       try {
         var res = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {
           method: 'POST',
@@ -318,20 +326,21 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
           },
           body: JSON.stringify({
             email:      email,
-            source:     formId === 'hero-waitlist-form' ? 'hero' : 'landing-page',
+            source:     sourceValue,
             referrer:   document.referrer || null,
             user_agent: navigator.userAgent.slice(0, 240),
           }),
         });
 
         if (res.status === 409 || res.status === 23505) {
-          setMsg("You're already on the list. We'll be in touch.", true);
-          btn.textContent = '✓  ON THE LIST';
+          // Duplicate — still redirect to upsell so existing users can claim
+          window.location.href = '/upsell.html?email=' + encodeURIComponent(email);
+          return;
         } else if (res.status >= 400) {
           var text = await res.text();
           if (text && text.indexOf('duplicate') >= 0) {
-            setMsg("You're already on the list. We'll be in touch.", true);
-            btn.textContent = '✓  ON THE LIST';
+            window.location.href = '/upsell.html?email=' + encodeURIComponent(email);
+            return;
           } else {
             setMsg('Could not save. Try again in a moment.', false);
             btn.disabled = false;
@@ -339,16 +348,10 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             return;
           }
         } else {
-          setMsg("You're in! 🚀 We'll email you a beta invite link within 48 hours. Check your inbox.", true);
-          btn.textContent = '✓  ON THE LIST';
-          if (typeof gsap !== 'undefined') gsap.from(btn, {
-            scale: 0.95,
-            duration: 0.3,
-            ease: 'back.out(1.7)',
-          });
+          // Success — redirect to upsell page
+          window.location.href = '/upsell.html?email=' + encodeURIComponent(email);
+          return;
         }
-
-        form.reset();
       } catch (err) {
         setMsg('Network error. Check your connection and try again.', false);
         btn.disabled = false;

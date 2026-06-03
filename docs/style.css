@@ -1652,3 +1652,641 @@ footer {
   font-weight: 700;
   box-shadow: 0 0 15px rgba(223, 255, 31, 0.35);
 }
+
+/* ═══════════════════════════════════════════════
+   UPSELL PAGE STYLES
+   ═══════════════════════════════════════════════ */
+
+.upsell-body {
+  background: radial-gradient(ellipse at top, rgba(255, 107, 53, 0.08), transparent 60%), var(--bg);
+  min-height: 100vh;
+}
+
+.upsell-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 11, 13, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 28px;
+  display: flex;
+  align-items: center;
+}
+
+.upsell-main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 60px 24px 80px;
+}
+
+.upsell-hero {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.upsell-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--orange);
+  background: rgba(255, 107, 53, 0.12);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  border-radius: 999px;
+  margin-bottom: 24px;
+}
+
+.upsell-headline {
+  font-family: var(--font-display);
+  font-size: clamp(48px, 8vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #ffffff 0%, #b8b8b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 16px;
+}
+
+.upsell-headline .rocket {
+  -webkit-text-fill-color: initial;
+  background: none;
+  display: inline-block;
+  animation: rocket-float 2.5s ease-in-out infinite;
+}
+
+@keyframes rocket-float {
+  0%, 100% { transform: translateY(0) rotate(-8deg); }
+  50% { transform: translateY(-10px) rotate(8deg); }
+}
+
+.upsell-sub {
+  font-size: clamp(16px, 2vw, 22px);
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto 48px;
+}
+
+.upsell-position-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 56px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, rgba(255, 107, 53, 0.06), rgba(255, 107, 53, 0.02));
+  box-shadow: 0 0 60px rgba(255, 107, 53, 0.1);
+}
+
+.upsell-position {
+  font-family: var(--font-display);
+  font-size: clamp(56px, 10vw, 120px);
+  line-height: 1;
+  background: linear-gradient(180deg, #ff6b35 0%, #e84d20 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.04em;
+}
+
+.upsell-position-label {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ── Cards Grid ── */
+.upsell-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-bottom: 64px;
+}
+
+@media (max-width: 880px) {
+  .upsell-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.upsell-card {
+  position: relative;
+  padding: 36px 32px;
+  border-radius: var(--radius-xl);
+  background: rgba(26, 28, 34, 0.6);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+}
+
+.upsell-card-paid {
+  border-color: rgba(255, 107, 53, 0.4);
+  background: linear-gradient(180deg, rgba(255, 107, 53, 0.08), rgba(26, 28, 34, 0.8));
+  box-shadow: 0 20px 60px rgba(255, 107, 53, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.upsell-card-free {
+  border-color: rgba(223, 255, 31, 0.35);
+  background: linear-gradient(180deg, rgba(223, 255, 31, 0.04), rgba(26, 28, 34, 0.8));
+  box-shadow: 0 20px 60px rgba(223, 255, 31, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.upsell-card-label,
+.upsell-card-label-free {
+  position: absolute;
+  top: -12px;
+  left: 24px;
+  padding: 4px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.upsell-card-label {
+  background: var(--orange);
+  color: var(--ink);
+}
+
+.upsell-card-label-free {
+  background: #dfff1f;
+  color: var(--ink);
+}
+
+.upsell-card-title {
+  font-family: var(--font-display);
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.upsell-card-subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.upsell-benefits {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.upsell-benefits li {
+  position: relative;
+  padding-left: 28px;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.upsell-benefits li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--orange);
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.upsell-benefits li strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.upsell-cta-paid {
+  display: block;
+  padding: 18px 24px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #ff6b35, #e84d20);
+  color: #fff;
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 40px rgba(255, 107, 53, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  margin-top: auto;
+}
+
+.upsell-cta-paid:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 50px rgba(255, 107, 53, 0.55);
+}
+
+.upsell-fineprint {
+  text-align: center;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.05em;
+}
+
+/* ── Referral Box ── */
+.referral-box-wrap {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.referral-box {
+  flex: 1;
+  padding: 14px 16px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: all;
+}
+
+.referral-copy-btn {
+  padding: 14px 18px;
+  background: #dfff1f;
+  color: var(--ink);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.referral-copy-btn:hover {
+  transform: scale(1.03);
+}
+
+.referral-copy-btn:active {
+  transform: scale(0.97);
+}
+
+/* ── Share Buttons ── */
+.share-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.share-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+}
+
+.share-btn:hover {
+  border-color: rgba(223, 255, 31, 0.5);
+  background: rgba(223, 255, 31, 0.06);
+  transform: translateY(-1px);
+}
+
+.share-icon {
+  font-size: 16px;
+}
+
+.share-whatsapp:hover { border-color: #25d366; }
+.share-twitter:hover { border-color: #ffffff; }
+.share-email:hover { border-color: #ff6b35; }
+
+/* ── Referral Progress ── */
+.referral-progress {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.referral-progress-label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.referral-progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.referral-progress-dots .dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.referral-progress-dots .dot.filled {
+  background: #dfff1f;
+  border-color: #dfff1f;
+  box-shadow: 0 0 14px rgba(223, 255, 31, 0.6);
+}
+
+.referral-progress-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.referral-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #dfff1f, #b8e600);
+  width: 0%;
+  transition: width 0.5s ease;
+  box-shadow: 0 0 12px rgba(223, 255, 31, 0.5);
+}
+
+/* ── Trust Block ── */
+.upsell-trust {
+  text-align: center;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.upsell-trust h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  margin-bottom: 14px;
+  color: var(--text);
+}
+
+.upsell-trust p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.upsell-back-link {
+  color: var(--orange);
+  text-decoration: none;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.upsell-back-link:hover {
+  text-decoration: underline;
+}
+
+.upsell-footer {
+  text-align: center;
+  padding: 24px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════════
+   ADMIN PANEL STYLES
+   ═══════════════════════════════════════════════ */
+
+.admin-body {
+  background: var(--bg);
+  min-height: 100vh;
+  font-family: var(--font-body);
+}
+
+.admin-login-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.admin-login-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 40px 32px;
+  border-radius: var(--radius-xl);
+  background: rgba(26, 28, 34, 0.8);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  text-align: center;
+}
+
+.admin-login-card h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  margin-bottom: 24px;
+  color: var(--text);
+}
+
+.admin-login-card input {
+  width: 100%;
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  margin-bottom: 16px;
+}
+
+.admin-login-card input:focus {
+  outline: none;
+  border-color: var(--orange);
+}
+
+.admin-login-card button {
+  width: 100%;
+  padding: 14px;
+  background: var(--orange);
+  color: var(--ink);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+}
+
+.admin-login-error {
+  color: #ff4d4d;
+  font-size: 13px;
+  margin-top: 12px;
+  font-family: var(--font-mono);
+}
+
+.admin-dashboard {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--text);
+}
+
+.admin-card {
+  padding: 24px;
+  background: rgba(26, 28, 34, 0.6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 24px;
+}
+
+.admin-card h2 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 720px) {
+  .admin-stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.admin-stat {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.admin-stat-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.admin-stat-number {
+  font-family: var(--font-display);
+  font-size: 40px;
+  line-height: 1;
+  background: linear-gradient(180deg, #ff6b35 0%, #e84d20 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-table th {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.admin-table td {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.admin-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.admin-table .email-cell { color: var(--text); }
+.admin-table .source-cell {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(255, 107, 53, 0.12);
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--orange);
+}
+
+.admin-btn {
+  padding: 10px 16px;
+  background: var(--orange);
+  color: var(--ink);
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.admin-loading {
+  text-align: center;
+  padding: 32px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
