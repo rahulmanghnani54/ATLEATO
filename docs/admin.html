@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Admin — Atleato</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,8 14,92 30,92 50,42 70,92 86,92' fill='%23ff6b35'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="admin-body">
+  <!-- LOGIN VIEW -->
+  <div id="login-view" class="admin-login-wrap">
+    <div class="admin-login-card">
+      <h1>ATLEATO ADMIN</h1>
+      <form id="login-form">
+        <input type="password" id="password-input" placeholder="Password" autocomplete="off" />
+        <button type="submit">Sign In</button>
+        <div id="login-error" class="admin-login-error" style="display:none;">Wrong password.</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboard-view" class="admin-dashboard" style="display:none;">
+    <div class="admin-header">
+      <h1>ATLEATO ADMIN</h1>
+      <button id="logout-btn" class="admin-btn">Logout</button>
+    </div>
+
+    <!-- LIVE STATS -->
+    <section class="admin-card">
+      <h2>Live Stats</h2>
+      <div class="admin-stat-grid" id="stats-grid">
+        <div class="admin-stat">
+          <div class="admin-stat-label">Total Signups</div>
+          <div class="admin-stat-number" id="stat-total">—</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Today</div>
+          <div class="admin-stat-number" id="stat-today">—</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">This Week</div>
+          <div class="admin-stat-number" id="stat-week">—</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Referrals</div>
+          <div class="admin-stat-number" id="stat-referrals">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECENT SIGNUPS -->
+    <section class="admin-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0;">Recent Signups (Last 50)</h2>
+        <button id="refresh-signups" class="admin-btn">Refresh</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Source</th>
+              <th>Joined</th>
+            </tr>
+          </thead>
+          <tbody id="signups-tbody">
+            <tr><td colspan="3" class="admin-loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section class="admin-card">
+      <h2>Referral Leaderboard (Top 20)</h2>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Referrer Email</th>
+              <th>Friends Invited</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-tbody">
+            <tr><td colspan="3" class="admin-loading">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script>
+  (function initAdmin() {
+    var ADMIN_PASSWORD = 'atleato2026admin';
+    var SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
+    var STORAGE_KEY = 'atleato_admin_authed';
+
+    var loginView = document.getElementById('login-view');
+    var dashView = document.getElementById('dashboard-view');
+    var loginForm = document.getElementById('login-form');
+    var passInput = document.getElementById('password-input');
+    var loginError = document.getElementById('login-error');
+
+    function showDashboard() {
+      loginView.style.display = 'none';
+      dashView.style.display = 'block';
+      loadAll();
+    }
+
+    if (sessionStorage.getItem(STORAGE_KEY) === '1') {
+      showDashboard();
+    }
+
+    loginForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (passInput.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem(STORAGE_KEY, '1');
+        loginError.style.display = 'none';
+        showDashboard();
+      } else {
+        loginError.style.display = 'block';
+        passInput.value = '';
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', function () {
+      sessionStorage.removeItem(STORAGE_KEY);
+      dashView.style.display = 'none';
+      loginView.style.display = 'flex';
+      passInput.value = '';
+    });
+
+    document.getElementById('refresh-signups').addEventListener('click', loadAll);
+
+    function sbHeaders() {
+      return {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      };
+    }
+
+    function sbCount(url) {
+      return fetch(url, {
+        method: 'HEAD',
+        headers: Object.assign({}, sbHeaders(), {
+          'Prefer': 'count=exact',
+          'Range-Unit': 'items',
+          'Range': '0-0'
+        })
+      }).then(function (res) {
+        var range = res.headers.get('content-range') || '';
+        var parts = range.split('/');
+        var c = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+        return isNaN(c) ? 0 : c;
+      }).catch(function () { return 0; });
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/[&<>"']/g, function (m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    function loadStats() {
+      var total = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*');
+      var todayIso = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+      var today = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&created_at=gte.' + encodeURIComponent(todayIso));
+      var weekIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      var week = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&created_at=gte.' + encodeURIComponent(weekIso));
+      var refs = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&source=like.*_ref_*');
+
+      Promise.all([total, today, week, refs]).then(function (vals) {
+        document.getElementById('stat-total').textContent = vals[0].toLocaleString();
+        document.getElementById('stat-today').textContent = vals[1].toLocaleString();
+        document.getElementById('stat-week').textContent = vals[2].toLocaleString();
+        document.getElementById('stat-referrals').textContent = vals[3].toLocaleString();
+      });
+    }
+
+    function loadRecentSignups() {
+      var tbody = document.getElementById('signups-tbody');
+      fetch(SUPABASE_URL + '/rest/v1/waitlist?select=email,source,created_at&order=created_at.desc&limit=50', {
+        headers: sbHeaders()
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          if (!Array.isArray(rows) || rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">No signups yet.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = rows.map(function (r) {
+            var date = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+            return '<tr>' +
+              '<td class="email-cell">' + escapeHtml(r.email) + '</td>' +
+              '<td><span class="source-cell">' + escapeHtml(r.source || 'unknown') + '</span></td>' +
+              '<td>' + escapeHtml(date) + '</td>' +
+              '</tr>';
+          }).join('');
+        })
+        .catch(function (err) {
+          tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">Error loading data.</td></tr>';
+          console.error(err);
+        });
+    }
+
+    function loadLeaderboard() {
+      var tbody = document.getElementById('leaderboard-tbody');
+      // Fetch all rows with source containing _ref_ and aggregate in JS
+      fetch(SUPABASE_URL + '/rest/v1/waitlist?select=source&source=like.*_ref_*&limit=5000', {
+        headers: sbHeaders()
+      })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          var counts = {};
+          (rows || []).forEach(function (r) {
+            if (!r.source) return;
+            // Source format: "landing-page_ref_email@x.com" or "hero_ref_email@x.com"
+            var m = r.source.match(/_ref_(.+)$/);
+            if (m && m[1]) {
+              var key = m[1];
+              counts[key] = (counts[key] || 0) + 1;
+            }
+          });
+          var sorted = Object.keys(counts)
+            .map(function (k) { return { email: k, count: counts[k] }; })
+            .sort(function (a, b) { return b.count - a.count; })
+            .slice(0, 20);
+
+          if (sorted.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">No referrals yet.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = sorted.map(function (s, i) {
+            return '<tr>' +
+              '<td>' + (i + 1) + '</td>' +
+              '<td class="email-cell">' + escapeHtml(s.email) + '</td>' +
+              '<td><strong style="color:var(--orange)">' + s.count + '</strong></td>' +
+              '</tr>';
+          }).join('');
+        })
+        .catch(function (err) {
+          tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">Error loading leaderboard.</td></tr>';
+          console.error(err);
+        });
+    }
+
+    function loadAll() {
+      loadStats();
+      loadRecentSignups();
+      loadLeaderboard();
+    }
+  })();
+  </script>
+</body>
+</html>
