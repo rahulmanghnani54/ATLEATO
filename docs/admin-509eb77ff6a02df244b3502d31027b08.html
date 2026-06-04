@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex,nofollow,noarchive,nosnippet" />
+  <!-- Security headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="no-referrer" />
+  <title>Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,8 14,92 30,92 50,42 70,92 86,92' fill='%23ff6b35'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Admin extras */
+    .admin-toolbar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:20px; }
+    .admin-toolbar .grow { flex:1; }
+    .admin-toolbar .updated { color:#888; font-size:12px; font-family:'JetBrains Mono',monospace; }
+    .admin-toolbar input[type=text] { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); color:#fff; padding:10px 14px; border-radius:8px; min-width:220px; font-family:inherit; }
+    .admin-chart-wrap { background:rgba(255,255,255,0.02); border-radius:12px; padding:18px; }
+    .admin-chart-wrap svg { width:100%; height:auto; display:block; }
+    .bar { fill:#ff6b35; transition:fill 0.15s; cursor:pointer; }
+    .bar:hover { fill:#ffaa6a; }
+    .bar.today { fill:#c8ff3d; }
+    .chart-axis { stroke:#333; stroke-width:1; }
+    .chart-label { fill:#666; font-family:'JetBrains Mono',monospace; font-size:9px; }
+    .donut-legend { display:flex; flex-direction:column; gap:8px; font-size:13px; }
+    .donut-legend .swatch { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:8px; vertical-align:middle; }
+    .donut-row { display:flex; gap:24px; align-items:center; flex-wrap:wrap; }
+    .donut-row svg { flex:0 0 200px; }
+    .conv-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; }
+    .conv-card { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:14px; }
+    .conv-card .label { color:#888; font-size:11px; text-transform:uppercase; letter-spacing:1px; }
+    .conv-card .val { font-family:'Archivo Black',sans-serif; font-size:28px; margin-top:6px; color:#fff; }
+    .conv-card .delta { font-size:12px; margin-top:4px; font-family:'JetBrains Mono',monospace; }
+    .conv-card .delta.up { color:#7be38c; }
+    .conv-card .delta.down { color:#ff6b6b; }
+    .conv-card .delta.flat { color:#888; }
+    .quick-actions { display:flex; flex-wrap:wrap; gap:10px; }
+    .ref-link-out { font-family:'JetBrains Mono',monospace; font-size:12px; word-break:break-all; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px; margin-top:8px; color:#c8ff3d; }
+  </style>
+</head>
+<body class="admin-body">
+  <!-- LOGIN VIEW -->
+  <div id="login-view" class="admin-login-wrap">
+    <div class="admin-login-card">
+      <h1>ATLEATO ADMIN</h1>
+      <form id="login-form">
+        <input type="password" id="password-input" placeholder="Password" autocomplete="off" />
+        <button type="submit">Sign In</button>
+        <div id="login-error" class="admin-login-error" style="display:none;">Wrong password.</div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="dashboard-view" class="admin-dashboard" style="display:none;">
+    <div class="admin-header">
+      <h1>ATLEATO ADMIN</h1>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <span class="updated" id="last-updated">Last updated: just now</span>
+        <button id="auto-refresh-toggle" class="admin-btn">Auto: ON</button>
+        <button id="logout-btn" class="admin-btn">Logout</button>
+      </div>
+    </div>
+
+    <!-- LIVE STATS -->
+    <section class="admin-card">
+      <h2>Live Stats</h2>
+      <div class="admin-stat-grid" id="stats-grid">
+        <div class="admin-stat">
+          <div class="admin-stat-label">Total Signups</div>
+          <div class="admin-stat-number" id="stat-total">—</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Today</div>
+          <div class="admin-stat-number" id="stat-today">—</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">This Week</div>
+          <div class="admin-stat-number" id="stat-week">—</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-stat-label">Referrals</div>
+          <div class="admin-stat-number" id="stat-referrals">—</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FUNNEL CONVERSION -->
+    <section class="admin-card">
+      <h2>Funnel Conversion</h2>
+      <div class="conv-grid" id="conv-grid">
+        <div class="conv-card"><div class="label">Today vs Yesterday</div><div class="val" id="conv-today">—</div><div class="delta flat" id="conv-today-delta">—</div></div>
+        <div class="conv-card"><div class="label">This week vs Last</div><div class="val" id="conv-week">—</div><div class="delta flat" id="conv-week-delta">—</div></div>
+        <div class="conv-card"><div class="label">Referral conv. rate</div><div class="val" id="conv-ref-rate">—</div><div class="delta flat" id="conv-ref-meta">—</div></div>
+        <div class="conv-card"><div class="label">Best converting source</div><div class="val" id="conv-best-src" style="font-size:18px;">—</div><div class="delta flat" id="conv-best-meta">—</div></div>
+      </div>
+    </section>
+
+    <!-- SIGN-UP CHART -->
+    <section class="admin-card">
+      <h2>Signups — Last 30 Days</h2>
+      <div class="admin-chart-wrap">
+        <svg id="signup-chart" viewBox="0 0 600 200" preserveAspectRatio="none"></svg>
+      </div>
+    </section>
+
+    <!-- SOURCE BREAKDOWN -->
+    <section class="admin-card">
+      <h2>Source Breakdown</h2>
+      <div class="donut-row">
+        <svg id="source-donut" viewBox="0 0 100 100"></svg>
+        <div class="donut-legend" id="source-legend"></div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="admin-card">
+      <h2>Email Search</h2>
+      <div class="admin-toolbar">
+        <input type="text" id="search-input" placeholder="Search waitlist email…" />
+        <button id="search-btn" class="admin-btn">Search</button>
+        <button id="search-clear" class="admin-btn">Clear</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Position</th><th>Email</th><th>Source</th><th>Joined</th></tr></thead>
+          <tbody id="search-tbody"><tr><td colspan="4" class="admin-loading">Type an email above to search.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- RECENT SIGNUPS -->
+    <section class="admin-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0;">Recent Signups (Last 50)</h2>
+        <div style="display:flex; gap:10px;">
+          <button id="export-csv" class="admin-btn">Export CSV</button>
+          <button id="refresh-signups" class="admin-btn">Refresh</button>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Email</th><th>Source</th><th>Joined</th></tr></thead>
+          <tbody id="signups-tbody"><tr><td colspan="3" class="admin-loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section class="admin-card">
+      <h2>Referral Leaderboard (Top 20)</h2>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>#</th><th>Referrer Email</th><th>Friends Invited</th></tr></thead>
+          <tbody id="leaderboard-tbody"><tr><td colspan="3" class="admin-loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- QUICK ACTIONS -->
+    <section class="admin-card">
+      <h2>Quick Actions</h2>
+      <div class="quick-actions">
+        <button id="copy-all-emails" class="admin-btn">Copy all emails</button>
+        <input type="text" id="ref-link-email" placeholder="Email for referral link…" />
+        <button id="gen-ref-link" class="admin-btn">Generate referral link</button>
+      </div>
+      <div class="ref-link-out" id="ref-link-out" style="display:none;"></div>
+    </section>
+  </div>
+
+  <script>
+  (function initAdmin() {
+    // SHA-256 of the admin password — never store plaintext in source.
+    // Current pwd: 'AtleatoAdm!n2026-509eb77ff6'  (USER: change before deploy if leaked)
+    // To rotate: hash = sha256(new_password); replace below.
+    var ADMIN_PASSWORD_SHA256 = 'b2c155d6c0f249fefb7b2cd6ce37db8037548346439fb5440743a2d052d91f86';
+    var SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
+    var STORAGE_KEY = 'atleato_admin_authed';
+    var ATTEMPTS_KEY = 'atleato_admin_attempts';
+    var MAX_ATTEMPTS = 5;
+    var LOCKOUT_MS = 5 * 60 * 1000; // 5 min lockout after too many attempts
+
+    async function sha256Hex(s) {
+      var buf = new TextEncoder().encode(s);
+      var hash = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hash)).map(function (b) {
+        return b.toString(16).padStart(2, '0');
+      }).join('');
+    }
+
+    function getAttempts() {
+      try { return JSON.parse(localStorage.getItem(ATTEMPTS_KEY) || '[]'); } catch (e) { return []; }
+    }
+    function recordAttempt() {
+      try {
+        var a = getAttempts();
+        a.push(Date.now());
+        localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(a.slice(-20)));
+      } catch (e) {}
+    }
+    function clearAttempts() {
+      try { localStorage.removeItem(ATTEMPTS_KEY); } catch (e) {}
+    }
+    function isLockedOut() {
+      var recent = getAttempts().filter(function (t) { return Date.now() - t < LOCKOUT_MS; });
+      return recent.length >= MAX_ATTEMPTS;
+    }
+
+    var loginView = document.getElementById('login-view');
+    var dashView = document.getElementById('dashboard-view');
+    var loginForm = document.getElementById('login-form');
+    var passInput = document.getElementById('password-input');
+    var loginError = document.getElementById('login-error');
+    var autoRefreshOn = true;
+    var refreshTimer = null;
+    var lastUpdatedTs = Date.now();
+    var allWaitlistCache = [];
+
+    function showDashboard() {
+      loginView.style.display = 'none';
+      dashView.style.display = 'block';
+      loadAll();
+      startAutoRefresh();
+      startUpdatedTicker();
+    }
+
+    if (sessionStorage.getItem(STORAGE_KEY) === '1') showDashboard();
+
+    loginForm.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      if (isLockedOut()) {
+        loginError.textContent = 'Too many failed attempts. Locked out for 5 minutes.';
+        loginError.style.display = 'block';
+        return;
+      }
+      try {
+        var entered = await sha256Hex(passInput.value);
+        if (entered === ADMIN_PASSWORD_SHA256) {
+          clearAttempts();
+          sessionStorage.setItem(STORAGE_KEY, '1');
+          loginError.style.display = 'none';
+          showDashboard();
+        } else {
+          recordAttempt();
+          loginError.textContent = 'Wrong password.';
+          loginError.style.display = 'block';
+          passInput.value = '';
+          // Throttle brute-force: small delay
+          await new Promise(function (r) { setTimeout(r, 500); });
+        }
+      } catch (err) {
+        loginError.textContent = 'Auth error. Try again.';
+        loginError.style.display = 'block';
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', function () {
+      sessionStorage.removeItem(STORAGE_KEY);
+      dashView.style.display = 'none';
+      loginView.style.display = 'flex';
+      passInput.value = '';
+      stopAutoRefresh();
+    });
+
+    document.getElementById('refresh-signups').addEventListener('click', loadAll);
+
+    document.getElementById('auto-refresh-toggle').addEventListener('click', function () {
+      autoRefreshOn = !autoRefreshOn;
+      this.textContent = 'Auto: ' + (autoRefreshOn ? 'ON' : 'OFF');
+      if (autoRefreshOn) startAutoRefresh(); else stopAutoRefresh();
+    });
+
+    function startAutoRefresh() {
+      stopAutoRefresh();
+      refreshTimer = setInterval(loadAll, 30000);
+    }
+    function stopAutoRefresh() { if (refreshTimer) clearInterval(refreshTimer); refreshTimer = null; }
+
+    function startUpdatedTicker() {
+      setInterval(function () {
+        var s = Math.floor((Date.now() - lastUpdatedTs) / 1000);
+        var label = s < 60 ? s + 's ago' : Math.floor(s / 60) + 'm ago';
+        document.getElementById('last-updated').textContent = 'Last updated: ' + label;
+      }, 1000);
+    }
+
+    function sbHeaders() {
+      return { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY };
+    }
+
+    function sbCount(url) {
+      return fetch(url, {
+        method: 'HEAD',
+        headers: Object.assign({}, sbHeaders(), { 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' })
+      }).then(function (res) {
+        var range = res.headers.get('content-range') || '';
+        var parts = range.split('/');
+        var c = parts.length > 1 ? parseInt(parts[1], 10) : 0;
+        return isNaN(c) ? 0 : c;
+      }).catch(function () { return 0; });
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      return String(s).replace(/[&<>"']/g, function (m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+
+    function animateNum(el, target) {
+      var current = parseInt((el.textContent || '0').replace(/[^\d-]/g, ''), 10) || 0;
+      if (current === target) { el.textContent = target.toLocaleString(); return; }
+      var diff = target - current;
+      var steps = 20;
+      var step = 0;
+      var interval = setInterval(function () {
+        step++;
+        var v = Math.round(current + (diff * step / steps));
+        el.textContent = v.toLocaleString();
+        if (step >= steps) { el.textContent = target.toLocaleString(); clearInterval(interval); }
+      }, 25);
+    }
+
+    function loadStats() {
+      var total = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*');
+      var todayIso = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+      var yIso = new Date(Date.now() - 24*60*60*1000); yIso.setHours(0,0,0,0);
+      var yStart = yIso.toISOString();
+      var weekIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      var lastWeekStart = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      var today = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&created_at=gte.' + encodeURIComponent(todayIso));
+      var yesterday = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&created_at=gte.' + encodeURIComponent(yStart) + '&created_at=lt.' + encodeURIComponent(todayIso));
+      var week = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&created_at=gte.' + encodeURIComponent(weekIso));
+      var lastWeek = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&created_at=gte.' + encodeURIComponent(lastWeekStart) + '&created_at=lt.' + encodeURIComponent(weekIso));
+      var refs = sbCount(SUPABASE_URL + '/rest/v1/waitlist?select=*&source=like.*_ref_*');
+
+      Promise.all([total, today, yesterday, week, lastWeek, refs]).then(function (v) {
+        var t = v[0], td = v[1], yd = v[2], wk = v[3], lwk = v[4], rf = v[5];
+        animateNum(document.getElementById('stat-total'), t);
+        animateNum(document.getElementById('stat-today'), td);
+        animateNum(document.getElementById('stat-week'), wk);
+        animateNum(document.getElementById('stat-referrals'), rf);
+
+        document.getElementById('conv-today').textContent = td.toLocaleString();
+        var dToday = yd === 0 ? (td > 0 ? '+inf' : '0') : (((td - yd) / yd) * 100).toFixed(0) + '%';
+        var elTd = document.getElementById('conv-today-delta');
+        elTd.textContent = (td >= yd ? '↑ ' : '↓ ') + dToday + ' (yesterday: ' + yd + ')';
+        elTd.className = 'delta ' + (td > yd ? 'up' : td < yd ? 'down' : 'flat');
+
+        document.getElementById('conv-week').textContent = wk.toLocaleString();
+        var dWeek = lwk === 0 ? (wk > 0 ? '+inf' : '0') : (((wk - lwk) / lwk) * 100).toFixed(0) + '%';
+        var elWk = document.getElementById('conv-week-delta');
+        elWk.textContent = (wk >= lwk ? '↑ ' : '↓ ') + dWeek + ' (last week: ' + lwk + ')';
+        elWk.className = 'delta ' + (wk > lwk ? 'up' : wk < lwk ? 'down' : 'flat');
+
+        var rate = t === 0 ? 0 : ((rf / t) * 100).toFixed(1);
+        document.getElementById('conv-ref-rate').textContent = rate + '%';
+        document.getElementById('conv-ref-meta').textContent = rf + ' of ' + t + ' from referrals';
+
+        lastUpdatedTs = Date.now();
+      });
+    }
+
+    function loadRecentSignups() {
+      var tbody = document.getElementById('signups-tbody');
+      fetch(SUPABASE_URL + '/rest/v1/waitlist?select=email,source,created_at&order=created_at.desc&limit=50', { headers: sbHeaders() })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          if (!Array.isArray(rows) || rows.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">No signups yet.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = rows.map(function (r) {
+            var date = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+            return '<tr><td class="email-cell">' + escapeHtml(r.email) + '</td>' +
+              '<td><span class="source-cell">' + escapeHtml(r.source || 'unknown') + '</span></td>' +
+              '<td>' + escapeHtml(date) + '</td></tr>';
+          }).join('');
+        })
+        .catch(function (err) {
+          tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">Error loading data.</td></tr>';
+          console.error(err);
+        });
+    }
+
+    function loadAllWaitlistAndCharts() {
+      // Pull up to 5000 rows for client-side charts/search/export
+      fetch(SUPABASE_URL + '/rest/v1/waitlist?select=email,source,created_at&order=created_at.asc&limit=5000', { headers: sbHeaders() })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          allWaitlistCache = Array.isArray(rows) ? rows : [];
+          drawSignupChart(allWaitlistCache);
+          drawSourceDonut(allWaitlistCache);
+          computeBestSource(allWaitlistCache);
+        })
+        .catch(function (err) { console.error('waitlist fetch', err); });
+    }
+
+    function drawSignupChart(rows) {
+      var svg = document.getElementById('signup-chart');
+      var days = 30;
+      var buckets = new Array(days).fill(0);
+      var labels = [];
+      var now = new Date(); now.setHours(0,0,0,0);
+      for (var i = 0; i < days; i++) {
+        var d = new Date(now.getTime() - (days - 1 - i) * 24 * 3600 * 1000);
+        labels.push((d.getMonth()+1) + '/' + d.getDate());
+      }
+      rows.forEach(function (r) {
+        if (!r.created_at) return;
+        var d = new Date(r.created_at); d.setHours(0,0,0,0);
+        var diff = Math.floor((now - d) / (24 * 3600 * 1000));
+        var idx = days - 1 - diff;
+        if (idx >= 0 && idx < days) buckets[idx]++;
+      });
+      var max = Math.max.apply(null, buckets.concat([1]));
+      var w = 600, h = 200, padL = 30, padB = 24, padT = 10, padR = 10;
+      var chartW = w - padL - padR, chartH = h - padB - padT;
+      var bw = chartW / days;
+      var html = '';
+      // Axis
+      html += '<line class="chart-axis" x1="' + padL + '" y1="' + (padT + chartH) + '" x2="' + (w - padR) + '" y2="' + (padT + chartH) + '"/>';
+      // Y-axis max label
+      html += '<text class="chart-label" x="2" y="' + (padT + 8) + '">' + max + '</text>';
+      html += '<text class="chart-label" x="2" y="' + (padT + chartH) + '">0</text>';
+      buckets.forEach(function (v, i) {
+        var bh = (v / max) * (chartH - 4);
+        var x = padL + i * bw + 1;
+        var y = padT + chartH - bh;
+        var cls = (i === days - 1) ? 'bar today' : 'bar';
+        html += '<rect class="' + cls + '" x="' + x + '" y="' + y + '" width="' + (bw - 2) + '" height="' + bh + '"><title>' + labels[i] + ': ' + v + ' signups</title></rect>';
+        if (i % 5 === 0 || i === days - 1) {
+          html += '<text class="chart-label" x="' + (x + bw/2) + '" y="' + (h - 6) + '" text-anchor="middle">' + labels[i] + '</text>';
+        }
+      });
+      svg.innerHTML = html;
+    }
+
+    function drawSourceDonut(rows) {
+      var groups = { 'landing-page': 0, 'hero': 0, 'referral': 0, 'other': 0 };
+      rows.forEach(function (r) {
+        var s = r.source || 'other';
+        if (s.indexOf('_ref_') >= 0) groups.referral++;
+        else if (s.indexOf('hero') === 0) groups.hero++;
+        else if (s.indexOf('landing-page') === 0) groups['landing-page']++;
+        else groups.other++;
+      });
+      var total = groups['landing-page'] + groups.hero + groups.referral + groups.other;
+      var colors = { 'landing-page': '#ff6b35', 'hero': '#c8ff3d', 'referral': '#5dd3fa', 'other': '#888' };
+      var svg = document.getElementById('source-donut');
+      var cx = 50, cy = 50, r = 38, sw = 18;
+      if (total === 0) { svg.innerHTML = '<text x="50" y="55" text-anchor="middle" fill="#888" font-size="8">No data</text>'; }
+      else {
+        var html = '<circle cx="50" cy="50" r="38" fill="none" stroke="#1c1d20" stroke-width="' + sw + '"/>';
+        var offset = 0;
+        var circumference = 2 * Math.PI * r;
+        Object.keys(groups).forEach(function (key) {
+          var v = groups[key];
+          if (v === 0) return;
+          var pct = v / total;
+          var len = pct * circumference;
+          html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + colors[key] + '" stroke-width="' + sw + '" stroke-dasharray="' + len + ' ' + (circumference - len) + '" stroke-dashoffset="' + (-offset) + '" transform="rotate(-90 ' + cx + ' ' + cy + ')"/>';
+          offset += len;
+        });
+        html += '<text x="50" y="48" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">' + total + '</text>';
+        html += '<text x="50" y="60" text-anchor="middle" fill="#888" font-size="6">signups</text>';
+        svg.innerHTML = html;
+      }
+      var legend = document.getElementById('source-legend');
+      legend.innerHTML = Object.keys(groups).map(function (k) {
+        var v = groups[k];
+        var pct = total === 0 ? 0 : ((v / total) * 100).toFixed(1);
+        return '<div><span class="swatch" style="background:' + colors[k] + '"></span>' + k + ' — <strong>' + v + '</strong> (' + pct + '%)</div>';
+      }).join('');
+    }
+
+    function computeBestSource(rows) {
+      var counts = {};
+      rows.forEach(function (r) {
+        if (!r.source || r.source.indexOf('_ref_') < 0) return;
+        var m = r.source.match(/_ref_(.+)$/);
+        if (m && m[1]) counts[m[1]] = (counts[m[1]] || 0) + 1;
+      });
+      var best = null, bestN = 0;
+      Object.keys(counts).forEach(function (k) { if (counts[k] > bestN) { best = k; bestN = counts[k]; } });
+      document.getElementById('conv-best-src').textContent = best || 'none yet';
+      document.getElementById('conv-best-meta').textContent = best ? (bestN + ' invites') : 'no referrals yet';
+    }
+
+    function loadLeaderboard() {
+      var tbody = document.getElementById('leaderboard-tbody');
+      fetch(SUPABASE_URL + '/rest/v1/waitlist?select=source&source=like.*_ref_*&limit=5000', { headers: sbHeaders() })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+          var counts = {};
+          (rows || []).forEach(function (r) {
+            if (!r.source) return;
+            var m = r.source.match(/_ref_(.+)$/);
+            if (m && m[1]) counts[m[1]] = (counts[m[1]] || 0) + 1;
+          });
+          var sorted = Object.keys(counts).map(function (k) { return { email: k, count: counts[k] }; })
+            .sort(function (a, b) { return b.count - a.count; }).slice(0, 20);
+          if (sorted.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">No referrals yet.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = sorted.map(function (s, i) {
+            return '<tr><td>' + (i + 1) + '</td>' +
+              '<td class="email-cell">' + escapeHtml(s.email) + '</td>' +
+              '<td><strong style="color:var(--orange)">' + s.count + '</strong></td></tr>';
+          }).join('');
+        })
+        .catch(function (err) {
+          tbody.innerHTML = '<tr><td colspan="3" class="admin-loading">Error loading leaderboard.</td></tr>';
+          console.error(err);
+        });
+    }
+
+    // ── Search ──
+    function runSearch() {
+      var q = (document.getElementById('search-input').value || '').trim().toLowerCase();
+      var tbody = document.getElementById('search-tbody');
+      if (!q) { tbody.innerHTML = '<tr><td colspan="4" class="admin-loading">Type an email above to search.</td></tr>'; return; }
+      var matches = allWaitlistCache
+        .map(function (r, idx) { return { row: r, pos: idx + 1 }; })
+        .filter(function (x) { return (x.row.email || '').toLowerCase().indexOf(q) >= 0; })
+        .slice(0, 50);
+      if (matches.length === 0) { tbody.innerHTML = '<tr><td colspan="4" class="admin-loading">No matches.</td></tr>'; return; }
+      tbody.innerHTML = matches.map(function (m) {
+        var date = m.row.created_at ? new Date(m.row.created_at).toLocaleString() : '';
+        return '<tr><td>#' + m.pos + '</td>' +
+          '<td class="email-cell">' + escapeHtml(m.row.email) + '</td>' +
+          '<td><span class="source-cell">' + escapeHtml(m.row.source || 'unknown') + '</span></td>' +
+          '<td>' + escapeHtml(date) + '</td></tr>';
+      }).join('');
+    }
+    document.getElementById('search-btn').addEventListener('click', runSearch);
+    document.getElementById('search-input').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
+    document.getElementById('search-clear').addEventListener('click', function () {
+      document.getElementById('search-input').value = '';
+      document.getElementById('search-tbody').innerHTML = '<tr><td colspan="4" class="admin-loading">Type an email above to search.</td></tr>';
+    });
+
+    // ── CSV Export ──
+    document.getElementById('export-csv').addEventListener('click', function () {
+      var rows = allWaitlistCache;
+      if (!rows.length) { alert('No data to export yet.'); return; }
+      var header = 'email,source,created_at,referrer';
+      var lines = rows.map(function (r) {
+        var fields = [r.email || '', r.source || '', r.created_at || '', r.referrer || ''];
+        return fields.map(function (f) {
+          var s = String(f).replace(/"/g, '""');
+          return /[,"\n]/.test(s) ? '"' + s + '"' : s;
+        }).join(',');
+      });
+      var csv = header + '\n' + lines.join('\n');
+      var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var today = new Date().toISOString().slice(0, 10);
+      a.href = url; a.download = 'waitlist-' + today + '.csv';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // ── Quick Actions ──
+    document.getElementById('copy-all-emails').addEventListener('click', function () {
+      var emails = allWaitlistCache.map(function (r) { return r.email; }).filter(Boolean).join(', ');
+      if (!emails) { alert('No emails to copy.'); return; }
+      navigator.clipboard.writeText(emails).then(function () {
+        var b = document.getElementById('copy-all-emails');
+        var orig = b.textContent; b.textContent = 'Copied ' + allWaitlistCache.length + '!';
+        setTimeout(function () { b.textContent = orig; }, 2000);
+      });
+    });
+
+    document.getElementById('gen-ref-link').addEventListener('click', function () {
+      var email = (document.getElementById('ref-link-email').value || '').trim();
+      if (!email) { alert('Enter an email first.'); return; }
+      var link = 'https://atleato.com?ref=' + encodeURIComponent(email);
+      var out = document.getElementById('ref-link-out');
+      out.style.display = 'block';
+      out.textContent = link;
+      navigator.clipboard.writeText(link).catch(function () {});
+    });
+
+    function loadAll() {
+      loadStats();
+      loadRecentSignups();
+      loadLeaderboard();
+      loadAllWaitlistAndCharts();
+    }
+  })();
+  </script>
+</body>
+</html>
