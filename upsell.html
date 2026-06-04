@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex,nofollow" />
   <!-- Security headers -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://buy.stripe.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://buy.stripe.com https://*.lemonsqueezy.com;" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-  <title>YOU'RE IN — Claim Your Founder's Pass | Atleato</title>
-  <meta name="description" content="You're on the Atleato waitlist. Claim your VIP Founder's Pass now and lock 90% off forever." />
+  <title>YOU'RE IN — Claim Your VIP Vanguard Pass | Atleato</title>
+  <meta name="description" content="You're on the Atleato waitlist. Claim your VIP Vanguard Pass — 1 month free Legend Tier + your 1-of-1 Vanguard Badge." />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,8 14,92 30,92 50,42 70,92 86,92' fill='%23ff6b35'/></svg>" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,220 +29,275 @@
         <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#logo-grad-upsell)" />
         <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d" />
       </svg>
-      <span class="wordmark-text">Atleato<span class="tm">™</span></span>
+      Atleato<span class="tm">™</span>
     </a>
   </nav>
 
   <main class="upsell-main">
-    <section class="upsell-hero">
-      <div class="upsell-badge">WELCOME, FOUNDER</div>
-      <h1 class="upsell-headline">YOU'RE IN. <span class="rocket">🚀</span></h1>
-      <p class="upsell-sub">Your spot is reserved. Now claim your VIP Founder's Pass.</p>
 
-      <div class="upsell-position-wrap">
-        <div class="upsell-position" id="position-number">#—</div>
-        <div class="upsell-position-label">athletes ahead of you</div>
+    <!-- ═══ SECTION 1: STATUS HUD ═══ -->
+    <section class="upsell-hud">
+      <div class="upsell-confirm">You're on the list! <span class="rocket">🎉</span></div>
+      <h1 class="upsell-headline">Claim Your <span class="lime-text">VIP Vanguard Pass</span></h1>
+      <p class="upsell-position">Your spot: <strong id="waitlist-position">#…</strong></p>
+
+      <!-- Scarcity counter -->
+      <div class="scarcity-counter">
+        <div class="scarcity-bar-track">
+          <div class="scarcity-bar-fill" id="scarcity-fill" style="width:82%;"></div>
+        </div>
+        <p class="scarcity-label"><strong id="scarcity-claimed">412</strong> / 500 VIP Slots Claimed — <span class="scarcity-remaining">Only <strong id="scarcity-remaining">88</strong> remaining!</span></p>
+      </div>
+
+      <!-- Countdown -->
+      <div class="countdown-wrap">
+        <span class="countdown-label">Your VIP reservation expires in</span>
+        <span class="countdown-timer" id="countdown">15:00</span>
       </div>
     </section>
 
+    <!-- ═══ SECTION 2: VANGUARD BADGE REVEAL ═══ -->
+    <section class="badge-reveal-section">
+      <p class="badge-label">YOUR 1-OF-1 IDENTITY</p>
+      <div class="vanguard-badge" id="vanguard-badge">
+        <span class="badge-emblem">⬡</span>
+        <span class="badge-name" id="badge-name">Generating…</span>
+      </div>
+      <p class="badge-sub">Claim it permanently below — it's yours forever, on your profile.</p>
+    </section>
+
+    <!-- ═══ SECTION 3: TWO UPGRADE PATHS ═══ -->
     <section class="upsell-cards">
-      <!-- PAID TRACK -->
-      <article class="upsell-card upsell-card-paid">
-        <div class="upsell-card-label">RECOMMENDED</div>
-        <h2 class="upsell-card-title">THE FAST TRACK</h2>
-        <p class="upsell-card-subtitle">Pay $1.99 today, save $18 forever</p>
+
+      <!-- Card A: Fast Track -->
+      <div class="upsell-card upsell-card-paid">
+        <div class="upsell-card-head">⚡ FAST TRACK</div>
+        <p class="upsell-card-copy">Pay <strong>$1.99</strong> today. Get <strong>1 Month of Legend Tier free</strong> at launch <span class="strike">($19.99/mo)</span>.</p>
         <ul class="upsell-benefits">
-          <li><strong>90% Off Lifetime Lock</strong> — $1.99 deposit now, just $18 remaining at launch (vs $19.99/mo regular)</li>
-          <li><strong>Custom @username</strong> reservation — claim yours before launch</li>
-          <li><strong>Permanent Founder Badge</strong> on your profile, forever</li>
-          <li><strong>VIP role</strong> in the Atleato community (coming soon)</li>
+          <li>✅ 1 Month Free Legend Tier</li>
+          <li>✅ Custom Username Reservation</li>
+          <li>✅ 1-of-1 Vanguard Badge</li>
+          <li>✅ VIP Community Access</li>
         </ul>
-        <a href="https://buy.stripe.com/REPLACE_WITH_YOUR_LINK"
-           id="claim-paid-btn"
-           class="upsell-cta-paid"
-           onclick="if(this.href.indexOf('REPLACE_WITH_YOUR_LINK')>=0){event.preventDefault();alert('Stripe payment link not yet configured.\n\nTo set up:\n1. Go to stripe.com/payments/payment-links\n2. Create a one-time product: $1.99 USD\n3. Copy the buy link (starts with buy.stripe.com)\n4. Replace REPLACE_WITH_YOUR_LINK in docs/upsell.html');return false;}">CLAIM FOR $1.99</a>
-        <div class="upsell-fineprint">One-time. No subscription.</div>
-      </article>
+        <a href="https://YOUR_PAYMENT_LINK" class="upsell-cta-primary" id="pay-cta"
+           onclick="if(this.getAttribute('href').indexOf('YOUR_PAYMENT_LINK')>=0){event.preventDefault();alert('Payment link not configured yet.\n\nSet it up in 5 minutes:\n• Stripe → see docs/STRIPE_SETUP.md\n• Lemon Squeezy → see docs/LEMONSQUEEZY_SETUP.md\n\nThen replace YOUR_PAYMENT_LINK in docs/upsell.html');return false;}">
+          CLAIM MY VIP PASS — $1.99
+        </a>
+        <p class="upsell-trust">🔒 Secure checkout. Full refund within 14 days.</p>
+      </div>
 
-      <!-- FREE TRACK -->
-      <article class="upsell-card upsell-card-free">
-        <div class="upsell-card-label-free">VIRAL TRACK</div>
-        <h2 class="upsell-card-title">THE FREE TRACK</h2>
-        <p class="upsell-card-subtitle">Invite 3 friends &rarr; unlock everything FREE</p>
+      <!-- Card B: Invite Track -->
+      <div class="upsell-card upsell-card-free">
+        <div class="upsell-card-head lime">🔗 INVITE TRACK</div>
+        <p class="upsell-card-copy">Invite <strong>3 friends</strong> to join the waitlist. Get the VIP Vanguard Pass <strong>100% free</strong>.</p>
 
-        <div class="referral-box-wrap">
-          <div class="referral-box" id="referral-box">https://atleato.com?ref=</div>
-          <button class="referral-copy-btn" id="copy-link-btn" type="button">Copy Link</button>
+        <div class="referral-box">
+          <code id="referral-link">https://atleato.com?ref=…</code>
+          <button class="referral-copy-btn" id="copy-btn">Copy Link</button>
         </div>
 
         <div class="share-buttons">
-          <a href="#" id="share-whatsapp" class="share-btn share-whatsapp" target="_blank" rel="noopener">
-            <span class="share-icon">💬</span> WhatsApp
-          </a>
-          <a href="#" id="share-twitter" class="share-btn share-twitter" target="_blank" rel="noopener">
-            <span class="share-icon">𝕏</span> Twitter
-          </a>
-          <a href="#" id="share-email" class="share-btn share-email">
-            <span class="share-icon">✉</span> Email
-          </a>
+          <a class="share-btn share-btn-whatsapp" id="share-wa" target="_blank" rel="noopener">WhatsApp</a>
+          <a class="share-btn share-btn-twitter" id="share-tw" target="_blank" rel="noopener">X / Twitter</a>
+          <a class="share-btn share-btn-email" id="share-em">Email</a>
         </div>
 
         <div class="referral-progress">
-          <div class="referral-progress-label" id="progress-label">0 of 3 friends joined</div>
           <div class="referral-progress-dots">
-            <span class="dot" data-step="1"></span>
-            <span class="dot" data-step="2"></span>
-            <span class="dot" data-step="3"></span>
+            <span class="prog-dot" data-i="0"></span>
+            <span class="prog-dot" data-i="1"></span>
+            <span class="prog-dot" data-i="2"></span>
           </div>
-          <div class="referral-progress-bar">
-            <div class="referral-progress-fill" id="progress-fill"></div>
-          </div>
+          <p class="referral-progress-label"><strong id="ref-count">0</strong> / 3 Friends Registered</p>
         </div>
-      </article>
+
+        <div class="success-unlock" id="success-unlock" hidden>
+          🎉 Vanguard Pass Unlocked!
+        </div>
+      </div>
+
     </section>
 
-    <section class="upsell-trust">
-      <h3>Why Founder's Pass?</h3>
-      <p>Atleato launches at $19.99/mo. Founders lock $18 <em>once</em> — that's it, lifetime access to every AI coach, every workout, every analytic. We only sell 5,000 Founder seats. After that, regular pricing kicks in.</p>
-      <a href="/" class="upsell-back-link">&larr; Back to Atleato</a>
-    </section>
+    <!-- ═══ SECTION 4: SKIP ═══ -->
+    <a href="/" class="upsell-skip">No thanks, I'll stay on the regular waitlist →</a>
+
   </main>
-
-  <footer class="upsell-footer">
-    <p>&copy; 2026 Atleato&trade; — Train. Fuel. Rise.</p>
-  </footer>
 
   <script>
   (function initUpsell() {
+    'use strict';
     var SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
     var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
 
+    // ── Get email from URL ──
     var params = new URLSearchParams(window.location.search);
-    var email = params.get('email') || '';
-    var encodedEmail = encodeURIComponent(email);
-    var referralLink = 'https://atleato.com?ref=' + encodedEmail;
+    var email = (params.get('email') || '').trim().toLowerCase();
 
-    // Display the referral link
-    var refBox = document.getElementById('referral-box');
-    if (refBox) refBox.textContent = referralLink;
+    // ── Deterministic Vanguard Badge generator ──
+    var adjectives = ["Obsidian","Aesthetic","Zenith","Primal","Solar",
+      "Lunar","Chrono","Carbon","Titanium","Neon","Phantom","Astral",
+      "Pyro","Rogue","Savage","Apex","Iron","Crimson","Emerald",
+      "Shadow","Sonic","Eternal","Catalyst","Vector","Orbit","Helix",
+      "Core","Delta","Alpha","Prime","Nova","Matrix","Cobalt","Kinetic"];
+    var nouns = ["Vanguard","Nomad","Ranger","Sentinel","Titan",
+      "Gladiator","Spectre","Warden","Raider","Enforcer","Dynamo",
+      "Monarch","Phoenix","Crusader","Spartan","Overlord","Oracle",
+      "Catalyst","Outlaw","Striker","Tempest","Reaper","Falcon",
+      "Maverick","Centurion","Brute","Sage","Ronin","Juggernaut"];
 
-    // Wire share buttons
-    var shareMsg = "I'm getting early access to Atleato — AI fitness coaching with legends. Join me on the waitlist:";
-    var wa = document.getElementById('share-whatsapp');
-    if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(shareMsg + ' ' + referralLink);
-    var tw = document.getElementById('share-twitter');
-    if (tw) tw.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMsg) + '&url=' + encodeURIComponent(referralLink);
-    var em = document.getElementById('share-email');
-    if (em) em.href = 'mailto:?subject=' + encodeURIComponent('Join me on Atleato') +
-      '&body=' + encodeURIComponent(shareMsg + '\n\n' + referralLink);
+    function hashStr(s, seed) {
+      var h = seed || 0;
+      for (var i = 0; i < s.length; i++) {
+        h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+      }
+      return Math.abs(h);
+    }
 
-    // Copy button
-    var copyBtn = document.getElementById('copy-link-btn');
+    function generateBadge(em) {
+      if (!em) em = 'guest@atleato.com';
+      var h1 = hashStr(em, 7);
+      var h2 = hashStr(em, 131);
+      var h3 = hashStr(em, 977);
+      var adj = adjectives[h1 % adjectives.length];
+      var noun = nouns[h2 % nouns.length];
+      var num = (h3 % 500) + 1;
+      var padded = ('000' + num).slice(-3);
+      return adj + ' ' + noun + ' #' + padded;
+    }
+
+    var badgeName = generateBadge(email);
+    var badgeEl = document.getElementById('badge-name');
+    if (badgeEl) {
+      setTimeout(function () {
+        badgeEl.textContent = badgeName;
+        var badge = document.getElementById('vanguard-badge');
+        if (badge) badge.classList.add('revealed');
+      }, 350);
+    }
+
+    // ── Referral link + share buttons ──
+    var refUrl = 'https://atleato.com?ref=' + encodeURIComponent(email);
+    var refLinkEl = document.getElementById('referral-link');
+    if (refLinkEl) refLinkEl.textContent = refUrl;
+
+    var shareMsg = "Join me on Atleato — train under a legend with 5 AI coaches that actually call you. Use my link: " + refUrl;
+    var wa = document.getElementById('share-wa');
+    var tw = document.getElementById('share-tw');
+    var em = document.getElementById('share-em');
+    if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(shareMsg);
+    if (tw) tw.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMsg);
+    if (em) em.href = 'mailto:?subject=' + encodeURIComponent('Join me on Atleato') + '&body=' + encodeURIComponent(shareMsg);
+
+    // ── Copy button ──
+    var copyBtn = document.getElementById('copy-btn');
     if (copyBtn) {
       copyBtn.addEventListener('click', function () {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(referralLink).then(function () {
-            copyBtn.textContent = '✓ Copied!';
+        try {
+          navigator.clipboard.writeText(refUrl).then(function () {
+            copyBtn.textContent = 'Copied! ✓';
             setTimeout(function () { copyBtn.textContent = 'Copy Link'; }, 2000);
           });
-        } else {
+        } catch (e) {
           // Fallback
-          var ta = document.createElement('textarea');
-          ta.value = referralLink;
-          document.body.appendChild(ta);
-          ta.select();
-          try { document.execCommand('copy'); } catch (e) {}
-          document.body.removeChild(ta);
-          copyBtn.textContent = '✓ Copied!';
+          var t = document.createElement('textarea');
+          t.value = refUrl; document.body.appendChild(t); t.select();
+          try { document.execCommand('copy'); copyBtn.textContent = 'Copied! ✓'; } catch (e2) {}
+          document.body.removeChild(t);
           setTimeout(function () { copyBtn.textContent = 'Copy Link'; }, 2000);
         }
       });
     }
 
-    // Stripe payment link — configured via href + inline onclick in upsell.html.
-    // When REPLACE_WITH_YOUR_LINK is swapped for the real buy.stripe.com URL,
-    // the inline handler short-circuits and the link works as a normal anchor.
-
-    // Fetch total waitlist count
-    function fetchTotalCount() {
-      return fetch(SUPABASE_URL + '/rest/v1/waitlist?select=*', {
-        method: 'HEAD',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-          'Prefer': 'count=exact',
-          'Range-Unit': 'items',
-          'Range': '0-0'
-        }
-      }).then(function (res) {
-        var range = res.headers.get('content-range') || '';
-        var parts = range.split('/');
-        var count = parts.length > 1 ? parseInt(parts[1], 10) : 0;
-        return isNaN(count) ? 0 : count;
-      }).catch(function () { return 0; });
-    }
-
-    function formatNumber(n) {
-      return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    }
-
-    function updatePosition() {
-      fetchTotalCount().then(function (count) {
-        var displayed = count > 0 ? count : 2481;
-        var posEl = document.getElementById('position-number');
-        if (posEl) posEl.textContent = '#' + formatNumber(displayed);
-      });
-    }
-
-    // Fetch referral count (signups where source contains this user's email)
-    function fetchReferralCount() {
-      if (!email) return Promise.resolve(0);
-      var sourceFilter = 'landing-page_ref_' + email;
-      var heroFilter = 'hero_ref_' + email;
-      var url = SUPABASE_URL + '/rest/v1/waitlist?select=*&or=(source.eq.' +
-        encodeURIComponent(sourceFilter) + ',source.eq.' + encodeURIComponent(heroFilter) + ')';
+    // ── Supabase: waitlist position + scarcity ──
+    function fetchCount(filter) {
+      var url = SUPABASE_URL + '/rest/v1/waitlist?select=id' + (filter ? '&' + filter : '');
       return fetch(url, {
         method: 'HEAD',
         headers: {
           'apikey': SUPABASE_ANON_KEY,
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
           'Prefer': 'count=exact',
-          'Range-Unit': 'items',
-          'Range': '0-0'
-        }
+          'Range': '0-0',
+        },
       }).then(function (res) {
-        var range = res.headers.get('content-range') || '';
-        var parts = range.split('/');
-        var count = parts.length > 1 ? parseInt(parts[1], 10) : 0;
-        return isNaN(count) ? 0 : count;
+        var cr = res.headers.get('content-range'); // "0-0/1234"
+        if (cr && cr.indexOf('/') >= 0) {
+          var total = parseInt(cr.split('/')[1], 10);
+          return isNaN(total) ? 0 : total;
+        }
+        return 0;
       }).catch(function () { return 0; });
     }
 
-    function updateReferralProgress() {
-      fetchReferralCount().then(function (count) {
-        var capped = Math.min(count, 3);
-        var label = document.getElementById('progress-label');
-        if (label) {
-          if (count >= 3) {
-            label.innerHTML = '🎉 <strong>UNLOCKED!</strong> You earned a free Founder Pass.';
-          } else {
-            label.textContent = count + ' of 3 friends joined';
-          }
+    // Waitlist position = base offset + actual count (looks established)
+    fetchCount('').then(function (total) {
+      var position = 2400 + total;
+      var posEl = document.getElementById('waitlist-position');
+      if (posEl) posEl.textContent = '#' + position.toLocaleString();
+
+      // Scarcity: start at 412, add real VIP claims (capped at 500)
+      var claimed = Math.min(412 + Math.floor(total / 10), 499);
+      var remaining = 500 - claimed;
+      var pct = Math.round((claimed / 500) * 100);
+      var cEl = document.getElementById('scarcity-claimed');
+      var rEl = document.getElementById('scarcity-remaining');
+      var fEl = document.getElementById('scarcity-fill');
+      if (cEl) cEl.textContent = claimed;
+      if (rEl) rEl.textContent = remaining;
+      if (fEl) fEl.style.width = pct + '%';
+    });
+
+    // ── Referral progress (count friends who used this email's ref link) ──
+    function refreshReferralCount() {
+      if (!email) return;
+      // source can be 'landing-page_ref_EMAIL' or 'hero_ref_EMAIL'
+      var filter = 'source=like.*_ref_' + encodeURIComponent(email);
+      fetchCount(filter).then(function (count) {
+        var n = Math.min(count, 3);
+        var rc = document.getElementById('ref-count');
+        if (rc) rc.textContent = n;
+        var dots = document.querySelectorAll('.prog-dot');
+        for (var i = 0; i < dots.length; i++) {
+          if (i < n) dots[i].classList.add('filled');
+          else dots[i].classList.remove('filled');
         }
-        var fill = document.getElementById('progress-fill');
-        if (fill) fill.style.width = (capped / 3 * 100) + '%';
-        var dots = document.querySelectorAll('.referral-progress-dots .dot');
-        dots.forEach(function (d, i) {
-          if (i < capped) d.classList.add('filled');
-          else d.classList.remove('filled');
-        });
+        if (n >= 3) {
+          var su = document.getElementById('success-unlock');
+          if (su) su.hidden = false;
+        }
       });
     }
+    refreshReferralCount();
+    setInterval(refreshReferralCount, 10000);
 
-    updatePosition();
-    updateReferralProgress();
-    // Auto-refresh referral count every 10 seconds
-    setInterval(updateReferralProgress, 10000);
+    // ── 15-minute countdown ──
+    var countdownEl = document.getElementById('countdown');
+    var KEY = 'vanguard_reservation_start';
+    var start = sessionStorage.getItem(KEY);
+    if (!start) {
+      start = Date.now();
+      sessionStorage.setItem(KEY, start);
+    }
+    start = parseInt(start, 10);
+    var DURATION = 15 * 60 * 1000;
+
+    function tickCountdown() {
+      if (!countdownEl) return;
+      var remaining = DURATION - (Date.now() - start);
+      if (remaining <= 0) {
+        countdownEl.textContent = 'EXPIRED';
+        countdownEl.classList.add('expired');
+        var label = document.querySelector('.countdown-label');
+        if (label) label.textContent = 'Reservation expired — but you can still claim:';
+        return;
+      }
+      var mins = Math.floor(remaining / 60000);
+      var secs = Math.floor((remaining % 60000) / 1000);
+      countdownEl.textContent = ('0' + mins).slice(-2) + ':' + ('0' + secs).slice(-2);
+      if (remaining < 60000) countdownEl.classList.add('urgent');
+      requestAnimationFrame(function () { setTimeout(tickCountdown, 250); });
+    }
+    tickCountdown();
   })();
   </script>
 </body>

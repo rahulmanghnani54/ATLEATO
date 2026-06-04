@@ -2290,3 +2290,80 @@ footer {
   overflow-x: auto;
 }
 
+
+/* ═══ VANGUARD PASS — SCARCITY BANNER ═══ */
+.scarcity-banner {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,107,53,0.1);
+  border: 1px solid rgba(255,107,53,0.35);
+  border-radius: 20px; padding: 8px 16px; margin-bottom: 20px;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 1px;
+  color: var(--orange); animation: fadeUp 0.6s 0.7s both;
+}
+.scarcity-banner-dot { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; animation: pulse-dot 2s infinite; }
+
+/* ═══ UPSELL — VIP VANGUARD PASS ═══ */
+.upsell-body { background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,107,53,0.12), transparent 60%), var(--bg); min-height: 100vh; }
+.upsell-nav { position: static; background: transparent; border-bottom: none; padding: 24px 0; }
+.upsell-nav .wordmark { padding-left: 28px; color: var(--text); text-decoration: none; }
+.upsell-main { max-width: 940px; margin: 0 auto; padding: 20px 28px 80px; }
+.upsell-hud { text-align: center; margin-bottom: 48px; }
+.upsell-confirm { font-family: var(--font-mono); font-size: 13px; letter-spacing: 2px; color: var(--lime); margin-bottom: 14px; }
+.upsell-confirm .rocket { font-size: 16px; }
+.upsell-headline { font-family: var(--font-display); font-size: clamp(32px,6vw,56px); line-height: 1.0; letter-spacing: -1.5px; margin-bottom: 18px; }
+.upsell-position { font-size: 15px; color: var(--text-secondary); margin-bottom: 28px; }
+.upsell-position strong { color: var(--text); font-family: var(--font-mono); }
+.scarcity-counter { max-width: 480px; margin: 0 auto 24px; }
+.scarcity-bar-track { height: 10px; background: var(--raised); border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
+.scarcity-bar-fill { height: 100%; background: linear-gradient(90deg,#ff8050,#e84d20); border-radius: 8px; transition: width 1s cubic-bezier(0.16,1,0.3,1); box-shadow: 0 0 12px rgba(255,107,53,0.5); }
+.scarcity-label { font-size: 13px; color: var(--text-secondary); margin-top: 10px; }
+.scarcity-label strong { color: var(--orange); }
+.scarcity-remaining { color: var(--orange); }
+.countdown-wrap { display: inline-flex; flex-direction: column; align-items: center; gap: 6px; }
+.countdown-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; color: var(--text-tertiary); }
+.countdown-timer { font-family: var(--font-mono); font-size: 34px; font-weight: 700; color: var(--orange); letter-spacing: 2px; animation: timerPulse 1s infinite; }
+.countdown-timer.urgent { color: #ef4444; }
+.countdown-timer.expired { color: var(--text-tertiary); animation: none; font-size: 22px; }
+@keyframes timerPulse { 0%,100% { opacity: 1; text-shadow: 0 0 12px rgba(255,107,53,0.4); } 50% { opacity: 0.85; text-shadow: 0 0 20px rgba(255,107,53,0.6); } }
+.badge-reveal-section { text-align: center; margin-bottom: 52px; padding: 36px 24px; background: linear-gradient(145deg,var(--surface),rgba(255,107,53,0.03)); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.badge-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 3px; color: var(--text-tertiary); margin-bottom: 18px; }
+.vanguard-badge { display: inline-flex; align-items: center; gap: 14px; padding: 18px 32px; border-radius: var(--radius-md); background: rgba(0,0,0,0.4); border: 1px solid rgba(255,107,53,0.3); opacity: 0; transform: scale(0.92); }
+.vanguard-badge.revealed { animation: badgeReveal 0.7s cubic-bezier(0.16,1,0.3,1) forwards; }
+@keyframes badgeReveal { to { opacity: 1; transform: scale(1); } }
+.badge-emblem { font-size: 28px; color: var(--orange); filter: drop-shadow(0 0 8px rgba(255,107,53,0.6)); }
+.badge-name { font-family: var(--font-display); font-size: clamp(22px,4vw,34px); letter-spacing: -0.5px; background: linear-gradient(135deg,#ff8050,#ffb13a); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.badge-sub { font-size: 14px; color: var(--text-secondary); margin-top: 18px; }
+.upsell-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+.upsell-card { padding: 32px 28px; border-radius: var(--radius-lg); border: 1px solid var(--border); background: rgba(255,255,255,0.02); backdrop-filter: blur(8px); display: flex; flex-direction: column; }
+.upsell-card-paid { border-color: rgba(255,107,53,0.35); background: linear-gradient(180deg,rgba(255,107,53,0.05),transparent); }
+.upsell-card-free { border-color: rgba(57,224,138,0.25); }
+.upsell-card-head { font-family: var(--font-display); font-size: 16px; letter-spacing: 1px; color: var(--orange); margin-bottom: 14px; }
+.upsell-card-head.lime { color: #39e08a; }
+.upsell-card-copy { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 20px; }
+.upsell-card-copy .strike { text-decoration: line-through; color: var(--text-tertiary); }
+.upsell-benefits { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; flex: 1; }
+.upsell-benefits li { font-size: 14px; color: var(--text-secondary); }
+.upsell-cta-primary { display: block; text-align: center; background: linear-gradient(135deg,#ff8050,#e84d20); color: #fff; padding: 16px 24px; border-radius: var(--radius-sm); font-family: var(--font-display); font-size: 14px; letter-spacing: 0.8px; text-decoration: none; transition: all 0.3s; }
+.upsell-cta-primary:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(255,107,53,0.4); }
+.upsell-trust { font-size: 12px; color: var(--text-tertiary); text-align: center; margin-top: 12px; }
+.referral-box { display: flex; gap: 8px; margin-bottom: 16px; }
+.referral-box code { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.referral-copy-btn { background: rgba(57,224,138,0.15); border: 1px solid rgba(57,224,138,0.4); color: #39e08a; border-radius: var(--radius-sm); padding: 0 16px; font-family: var(--font-mono); font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: all 0.3s; }
+.referral-copy-btn:hover { background: rgba(57,224,138,0.25); }
+.share-buttons { display: flex; gap: 8px; margin-bottom: 24px; }
+.share-btn { flex: 1; text-align: center; padding: 10px; border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 11px; font-weight: 700; text-decoration: none; cursor: pointer; transition: all 0.3s; }
+.share-btn-whatsapp { background: rgba(37,211,102,0.15); border: 1px solid rgba(37,211,102,0.4); color: #25d366; }
+.share-btn-twitter { background: rgba(91,140,255,0.15); border: 1px solid rgba(91,140,255,0.4); color: #5b8cff; }
+.share-btn-email { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-secondary); }
+.share-btn:hover { transform: translateY(-2px); }
+.referral-progress { margin-bottom: 8px; }
+.referral-progress-dots { display: flex; gap: 8px; margin-bottom: 10px; }
+.prog-dot { flex: 1; height: 8px; border-radius: 6px; background: var(--raised); border: 1px solid var(--border); transition: all 0.4s; }
+.prog-dot.filled { background: #39e08a; border-color: #39e08a; box-shadow: 0 0 10px rgba(57,224,138,0.5); }
+.referral-progress-label { font-size: 13px; color: var(--text-secondary); }
+.referral-progress-label strong { color: #39e08a; }
+.success-unlock { margin-top: 16px; text-align: center; font-family: var(--font-display); font-size: 16px; color: #39e08a; padding: 14px; border-radius: var(--radius-sm); background: rgba(57,224,138,0.1); border: 1px solid rgba(57,224,138,0.4); animation: successPulse 1.5s infinite; }
+@keyframes successPulse { 0%,100% { box-shadow: 0 0 12px rgba(57,224,138,0.3); } 50% { box-shadow: 0 0 24px rgba(57,224,138,0.6); } }
+.upsell-skip { display: block; text-align: center; font-size: 13px; color: var(--text-tertiary); text-decoration: none; opacity: 0.6; transition: opacity 0.3s; }
+.upsell-skip:hover { opacity: 1; }
+@media (max-width: 880px) { .upsell-cards { grid-template-columns: 1fr; } }
