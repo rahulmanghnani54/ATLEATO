@@ -342,7 +342,12 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             window.location.href = '/upsell.html?email=' + encodeURIComponent(email);
             return;
           } else {
-            setMsg('Could not save. Try again in a moment.', false);
+            console.error('[waitlist] Supabase error', res.status, text);
+            // Show specific error to help debug — table missing is most common
+            var errMsg = text.indexOf('relation') >= 0 || text.indexOf('does not exist') >= 0
+              ? 'Database not set up. Admin: apply migration 010.'
+              : 'Could not save. Try again in a moment.';
+            setMsg(errMsg, false);
             btn.disabled = false;
             btn.innerHTML = originalText;
             return;
@@ -353,7 +358,8 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
           return;
         }
       } catch (err) {
-        setMsg('Network error. Check your connection and try again.', false);
+        console.error('[waitlist] Network error', err);
+        setMsg('Network error: ' + (err.message || 'Check connection'), false);
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
