@@ -53,7 +53,10 @@
           <li><strong>Permanent Founder Badge</strong> on your profile, forever</li>
           <li><strong>VIP role</strong> in the Atleato community (coming soon)</li>
         </ul>
-        <a href="#" id="claim-paid-btn" class="upsell-cta-paid">CLAIM FOR $1.99</a>
+        <a href="https://buy.stripe.com/REPLACE_WITH_YOUR_LINK"
+           id="claim-paid-btn"
+           class="upsell-cta-paid"
+           onclick="if(this.href.indexOf('REPLACE_WITH_YOUR_LINK')>=0){event.preventDefault();alert('Stripe payment link not yet configured.\n\nTo set up:\n1. Go to stripe.com/payments/payment-links\n2. Create a one-time product: $1.99 USD\n3. Copy the buy link (starts with buy.stripe.com)\n4. Replace REPLACE_WITH_YOUR_LINK in docs/upsell.html');return false;}">CLAIM FOR $1.99</a>
         <div class="upsell-fineprint">One-time. No subscription.</div>
       </article>
 
@@ -152,14 +155,9 @@
       });
     }
 
-    // Stripe / payment link placeholder
-    var paidBtn = document.getElementById('claim-paid-btn');
-    if (paidBtn) {
-      paidBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        alert("Payment integration coming soon! Your Founder's seat will be reserved automatically.\n\nFor now, share your referral link to lock your spot for free.");
-      });
-    }
+    // Stripe payment link — configured via href + inline onclick in upsell.html.
+    // When REPLACE_WITH_YOUR_LINK is swapped for the real buy.stripe.com URL,
+    // the inline handler short-circuits and the link works as a normal anchor.
 
     // Fetch total waitlist count
     function fetchTotalCount() {
