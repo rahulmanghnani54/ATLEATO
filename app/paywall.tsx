@@ -222,7 +222,7 @@ const s = StyleSheet.create({
   toggleActive: {
     borderColor: Colors.primary, backgroundColor: 'rgba(223,255,31,0.08)',
   },
-  toggleText: { fontFamily: Fonts.medium, fontSize: 14, color: Colors.textSecondary },
+  toggleText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.textSecondary },
   toggleTextActive: { color: Colors.primary },
   saveBadge: {
     position: 'absolute', top: -8, right: -4,

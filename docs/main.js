@@ -248,6 +248,7 @@
 // ── Nav Scroll Effect ──────────────────────────
 window.addEventListener('scroll', () => {
   const nav = document.getElementById('main-nav');
+  if (!nav) return;
   if (window.scrollY > 60) {
     nav.classList.add('scrolled');
   } else {
@@ -280,6 +281,30 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
   }
 
+  // ── Client-side rate limit: max 3 attempts per minute per browser ──
+  var RATE_LIMIT_KEY = 'waitlist_attempts:v1';
+  var RATE_LIMIT_MAX = 3;
+  var RATE_LIMIT_WINDOW = 60000; // 1 min
+
+  function checkRateLimit() {
+    try {
+      var stored = localStorage.getItem(RATE_LIMIT_KEY);
+      var attempts = [];
+      if (stored) {
+        try { attempts = JSON.parse(stored) || []; } catch (e) { attempts = []; }
+      }
+      var now = Date.now();
+      attempts = attempts.filter(function (t) { return now - t < RATE_LIMIT_WINDOW; });
+      if (attempts.length >= RATE_LIMIT_MAX) return false;
+      attempts.push(now);
+      localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify(attempts));
+      return true;
+    } catch (e) {
+      // localStorage unavailable (e.g. private mode) — fail open, do not block users
+      return true;
+    }
+  }
+
   function bindWaitlistForm(formId, msgId) {
     var form = document.getElementById(formId);
     if (!form) return;
@@ -299,6 +324,11 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
 
       if (!isValidEmail(email)) {
         setMsg('Please enter a valid email.', false);
+        return;
+      }
+
+      if (!checkRateLimit()) {
+        setMsg('Too many attempts. Wait a minute and try again.', false);
         return;
       }
 
@@ -397,6 +427,7 @@ if (mobileMenuBtn) {
   let menuOpen = false;
   mobileMenuBtn.addEventListener('click', () => {
     const navLinks = document.querySelector('.nav-links');
+    if (!navLinks) return;
     menuOpen = !menuOpen;
     if (menuOpen) {
       navLinks.style.display = 'flex';

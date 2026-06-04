@@ -79,17 +79,16 @@ function CustomSlider({
   };
 
   return (
-    <TouchableOpacity
-      activeOpacity={1}
-      onPress={handleTouch}
+    <View
       onStartShouldSetResponder={() => true}
-      onResponderMove={(e) => handleTouch(e)}
+      onResponderGrant={handleTouch}
+      onResponderMove={(e: GestureResponderEvent) => handleTouch(e)}
     >
       <View style={sliderStyles.track} onLayout={handleLayout}>
         <View style={[sliderStyles.fill, { width: `${pct * 100}%`, backgroundColor: accentColor }]} />
         <View style={[sliderStyles.thumb, { left: `${pct * 100}%`, borderColor: accentColor }]} />
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
