@@ -61,7 +61,7 @@ export default function RecoveryCheckin() {
         {existingCheckin && (
           <View style={styles.updateBanner}>
             <Text style={styles.updateText}>
-              Already checked in today (score: {existingCheckin.recovery_score}). Saving will update your entry.
+              Already checked in today (score: {(existingCheckin as any).recovery_score}). Saving will update your entry.
             </Text>
           </View>
         )}

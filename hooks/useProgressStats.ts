@@ -29,7 +29,7 @@ export function useWeeklyVolume(weeks = 8) {
 
       // Group by week
       const weekMap = new Map<string, WeeklyVolume>();
-      for (const row of data ?? []) {
+      for (const row of (data ?? []) as any[]) {
         const d = new Date(row.date);
         // Get Monday of this week
         const dayOfWeek = d.getDay();

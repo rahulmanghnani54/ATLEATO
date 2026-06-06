@@ -25,7 +25,7 @@ export async function detectAndSavePRs(
 
   if (error || !newSets) return [];
 
-  const workingSets = newSets.filter((s) => !s.is_warmup && s.weight_kg > 0 && s.reps > 0);
+  const workingSets = (newSets as any[]).filter((s) => !s.is_warmup && s.weight_kg > 0 && s.reps > 0);
 
   const detectedPRs: DetectedPR[] = [];
 
@@ -43,7 +43,7 @@ export async function detectAndSavePRs(
       .limit(1)
       .maybeSingle();
 
-    const prev1RM = existing?.one_rep_max_kg ?? 0;
+    const prev1RM = (existing as any)?.one_rep_max_kg ?? 0;
 
     if (new1RM > prev1RM) {
       // New PR!

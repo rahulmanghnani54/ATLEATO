@@ -31,9 +31,9 @@ export function useExerciseHistory(exerciseName: string, limit = 5) {
 
       // Group by workout_log_id → session
       const sessionMap = new Map<string, { date: string; sets: any[] }>();
-      for (const row of data ?? []) {
+      for (const row of (data ?? []) as any[]) {
         const logId = row.workout_log_id;
-        const date = (row as any).workout_logs?.date ?? '';
+        const date = row.workout_logs?.date ?? '';
         if (!sessionMap.has(logId)) sessionMap.set(logId, { date, sets: [] });
         sessionMap.get(logId)!.sets.push({
           setNumber: row.set_number,
