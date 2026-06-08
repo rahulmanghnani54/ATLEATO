@@ -2851,6 +2851,19 @@ footer {
 .share-btn-facebook:hover { color: #1877f2; border-color: #1877f2; }
 .share-icon { font-size: 14px; }
 
+.info-banner {
+  display: flex;
+  gap: 14px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  border-radius: 14px;
+  border: 1px solid rgba(91, 140, 255, 0.3) !important;
+  background: linear-gradient(135deg, rgba(91, 140, 255, 0.08), rgba(20, 22, 28, 0.55)) !important;
+}
+.info-banner-icon { font-size: 24px; flex-shrink: 0; }
+.info-banner-text { font-size: 13px; color: rgba(255,255,255,0.8); line-height: 1.55; }
+.info-banner-text strong { color: #fff; }
+
 .referral-progress {
   margin-top: auto;
   padding-top: 14px;
