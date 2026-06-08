@@ -176,6 +176,18 @@
           <a class="share-btn share-btn-email" id="share-em">
             <span class="share-icon">✉️</span> Email
           </a>
+          <a class="share-btn share-btn-linkedin" id="share-li" target="_blank" rel="noopener">
+            <span class="share-icon">in</span> LinkedIn
+          </a>
+          <a class="share-btn share-btn-reddit" id="share-rd" target="_blank" rel="noopener">
+            <span class="share-icon">r/</span> Reddit
+          </a>
+          <a class="share-btn share-btn-telegram" id="share-tg" target="_blank" rel="noopener">
+            <span class="share-icon">✈️</span> Telegram
+          </a>
+          <a class="share-btn share-btn-facebook" id="share-fb" target="_blank" rel="noopener">
+            <span class="share-icon">f</span> Facebook
+          </a>
         </div>
 
         <div class="referral-progress">
@@ -291,6 +303,14 @@
     if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(shareMsg);
     if (tw) tw.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(shareMsg);
     if (em) em.href = 'mailto:?subject=' + encodeURIComponent('Train under a legend with me') + '&body=' + encodeURIComponent(shareMsg);
+    var li = document.getElementById('share-li');
+    var rd = document.getElementById('share-rd');
+    var tg = document.getElementById('share-tg');
+    var fb = document.getElementById('share-fb');
+    if (li) li.href = 'https://www.linkedin.com/sharing/share-offsite/?url=' + encodeURIComponent(refUrl);
+    if (rd) rd.href = 'https://www.reddit.com/submit?url=' + encodeURIComponent(refUrl) + '&title=' + encodeURIComponent('Join me on Atleato - AI fitness coaches that call your phone');
+    if (tg) tg.href = 'https://t.me/share/url?url=' + encodeURIComponent(refUrl) + '&text=' + encodeURIComponent(shareMsg);
+    if (fb) fb.href = 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(refUrl);
 
     // ── Copy button ──
     var copyBtn = document.getElementById('copy-btn');
