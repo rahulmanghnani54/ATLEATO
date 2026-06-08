@@ -25,11 +25,11 @@ Launching this month → atleato.com (link in bio)
 5 personalities.
 5 wildly different ways to train.
 
-🟢 The Classic — calm, controlled, classic physique
-🟠 The Champion — golden era volume, never skip a meal
+🟢 The Sculptor — calm, controlled, classic physique
+🟠 The Governor — golden era volume, never skip a meal
 🔵 The Scientist — RIR programming, optimal ROM
-🔴 The Iron — heavy raw intensity, "I COMMAND YOU TO GROW"
-🟢 The Professor — RP-style periodization, MEV→MAV→MRV
+🔴 The Commander — heavy raw intensity, "I COMMAND YOU TO GROW"
+🟢 Dr. Growth — RP-style periodization, MEV→MAV→MRV
 
 Free users get 1. PRO gets 3. LEGEND gets all 5.
 
@@ -95,8 +95,8 @@ Watch the app TRANSFORM as I switch coaches.
 
 Same exact screen. 5 wildly different feels.
 
-When you train under The Classic, the whole app feels disciplined.
-When you train under The Iron, it feels like a war zone.
+When you train under The Sculptor, the whole app feels disciplined.
+When you train under The Commander, it feels like a war zone.
 When you train under The Scientist, it feels like a lab.
 
 Pick the energy you need today.
@@ -145,7 +145,7 @@ This is the most addictive feature I built by accident.
 
 "Quality reps. Controlled tempo. Stay humble."
 
-— The Classic
+— The Sculptor
 
 The discipline you need this week.
 
@@ -171,11 +171,11 @@ Slide 7: "Only 500 Vanguard Passes ever. Claim: atleato.com"
 ```
 SAME prompt: "It's leg day."
 
-🟢 The Classic: "Today we build the foundation. Focus on tempo."
-🟠 The Champion: "LEG DAY! TIME TO PUMP! Don't be a couch potato!"
+🟢 The Sculptor: "Today we build the foundation. Focus on tempo."
+🟠 The Governor: "LEG DAY! TIME TO PUMP! Don't be a couch potato!"
 🔵 The Scientist: "Quadriceps require 12-20 sets per week for optimal hypertrophy."
-🔴 The Iron: "IT'S LEG DAY. I COMMAND YOU TO SQUAT DEEP!"
-🟢 The Professor: "Day 1 of mesocycle 3. MEV check: hit 8 sets."
+🔴 The Commander: "IT'S LEG DAY. I COMMAND YOU TO SQUAT DEEP!"
+🟢 Dr. Growth: "Day 1 of mesocycle 3. MEV check: hit 8 sets."
 
 Which voice do YOU need today?
 
@@ -190,7 +190,7 @@ Which voice do YOU need today?
 
 "IT'S STILL YOUR MOTHERF***IN' SET!"
 
-— The Iron
+— The Commander
 
 When you want to quit, you've got one more rep.
 
@@ -298,11 +298,11 @@ Choose your fighter:
 
 [5 quick clips of each coach's vibe]
 
-🟢 The Classic — for the disciplined builder
-🟠 The Champion — for the high-volume animal
+🟢 The Sculptor — for the disciplined builder
+🟠 The Governor — for the high-volume animal
 🔵 The Scientist — for the data nerd
-🔴 The Iron — for the savage
-🟢 The Professor — for the strategic athlete
+🔴 The Commander — for the savage
+🟢 Dr. Growth — for the strategic athlete
 
 Which one is YOU?
 

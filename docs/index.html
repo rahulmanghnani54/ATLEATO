@@ -8,6 +8,8 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+  <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(self), microphone=(self), payment=(self)" />
   <title>Atleato™ — Your Coach Calls.</title>
   <meta name="description" content="5 world-class AI coaches. Live form correction. Real wake-up calls. Territory conquest. The only fitness app where your coach actually rings you." />
 
@@ -28,6 +30,7 @@
   <link rel="canonical" href="https://atleato.com/" />
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,8 14,92 30,92 50,42 70,92 86,92' fill='%23ff6b35'/></svg>" />
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap" as="style" />
+  <link rel="preload" as="image" href="og-image.png" fetchpriority="high" />
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -55,6 +58,8 @@
 </script>
 </head>
 <body>
+
+  <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <!-- 3D Canvas Background -->
   <canvas id="three-canvas"></canvas>
@@ -94,6 +99,8 @@
       </button>
     </div>
   </nav>
+
+  <main id="main-content">
 
   <!-- Hero Section -->
   <section id="hero" class="section">
@@ -449,30 +456,66 @@
       </div>
 
       <div class="coach-grid">
-        <div class="coach-card" data-coach="cbum">
-          <div class="coach-avatar" style="color: #c8ff3d;">CB</div>
+        <div class="coach-card" data-coach="cbum" style="--coach-accent: #c8ff3d;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#c8ff3d;" role="img" aria-label="The Sculptor V-taper silhouette">
+              <path d="M40 8 C 35 8 32 12 32 18 C 32 22 34 24 34 24 L 28 32 L 22 50 L 28 58 L 34 50 L 32 70 L 48 70 L 46 50 L 52 58 L 58 50 L 52 32 L 46 24 C 46 24 48 22 48 18 C 48 12 45 8 40 8 Z" fill="currentColor" opacity="0.85"/>
+              <circle cx="40" cy="14" r="6" fill="currentColor"/>
+            </svg>
+          </div>
           <div class="coach-name" style="color: #c8ff3d;">THE SCULPTOR</div>
-          <div class="coach-tag">CLASSIC PHYSIQUE</div>
+          <div class="coach-tag">Classic Physique · 5x Champion</div>
+          <p class="coach-bio">Train under a 5x Classic Champion. Master the vacuum pose, build timeless aesthetic lines, and stay thavage.</p>
         </div>
-        <div class="coach-card" data-coach="arnold">
-          <div class="coach-avatar" style="color: #f5b942;">AR</div>
+        <div class="coach-card" data-coach="arnold" style="--coach-accent: #f5b942;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#f5b942;" role="img" aria-label="The Governor flexing bicep silhouette">
+              <path d="M14 50 C 14 42 22 36 30 36 C 38 36 44 40 50 44 C 58 50 64 46 66 38 C 68 30 60 26 52 28 L 48 22 C 56 16 70 18 72 30 C 74 44 64 56 50 56 C 38 56 30 50 24 50 L 18 56 L 14 50 Z" fill="currentColor" opacity="0.9"/>
+            </svg>
+          </div>
           <div class="coach-name" style="color: #f5b942;">THE GOVERNOR</div>
-          <div class="coach-tag">GOLDEN ERA</div>
+          <div class="coach-tag">Golden Era · 7x Mr. O Legend</div>
+          <p class="coach-bio">The 7x Mr. O and Golden Era legend. High volume, mind-muscle connection, and pumping iron till you can't.</p>
         </div>
-        <div class="coach-card" data-coach="nippard">
-          <div class="coach-avatar" style="color: #5DD3FA;">JN</div>
+        <div class="coach-card" data-coach="nippard" style="--coach-accent: #5DD3FA;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#5DD3FA;" role="img" aria-label="The Scientist atom symbol">
+              <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none"/>
+              <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none" transform="rotate(60 40 40)"/>
+              <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none" transform="rotate(120 40 40)"/>
+              <circle cx="40" cy="40" r="5" fill="currentColor"/>
+            </svg>
+          </div>
           <div class="coach-name" style="color: #5DD3FA;">THE SCIENTIST</div>
-          <div class="coach-tag">EVIDENCE-BASED</div>
+          <div class="coach-tag">Evidence-Based · PubMed</div>
+          <p class="coach-bio">A powerhouse optimizing every rep based on the latest PubMed literature. Science-based hypertrophy.</p>
         </div>
-        <div class="coach-card" data-coach="ct">
-          <div class="coach-avatar" style="color: #ef4444;">CT</div>
+        <div class="coach-card" data-coach="ct" style="--coach-accent: #ef4444;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#ef4444;" role="img" aria-label="The Commander towering figure with raised arms">
+              <circle cx="40" cy="14" r="7" fill="currentColor"/>
+              <path d="M40 22 L 40 50 L 30 70 M40 50 L 50 70 M40 28 L 18 18 M40 28 L 62 18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+              <circle cx="16" cy="16" r="4" fill="currentColor"/>
+              <circle cx="64" cy="16" r="4" fill="currentColor"/>
+            </svg>
+          </div>
           <div class="coach-name" style="color: #ef4444;">THE COMMANDER</div>
-          <div class="coach-tag">NO EXCUSES</div>
+          <div class="coach-tag">Iron Asylum · No Excuses</div>
+          <p class="coach-bio">It's still your set! A towering Iron Addict who commands you to push past the limits of human strength.</p>
         </div>
-        <div class="coach-card" data-coach="mike">
-          <div class="coach-avatar" style="color: #7be38c;">DM</div>
+        <div class="coach-card" data-coach="mike" style="--coach-accent: #7be38c;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#7be38c;" role="img" aria-label="Dr. Growth professor with glasses silhouette">
+              <ellipse cx="40" cy="34" rx="22" ry="26" fill="currentColor" opacity="0.85"/>
+              <circle cx="30" cy="36" r="6" fill="#0a0b0d" stroke="#fff" stroke-width="1.5"/>
+              <circle cx="50" cy="36" r="6" fill="#0a0b0d" stroke="#fff" stroke-width="1.5"/>
+              <line x1="36" y1="36" x2="44" y2="36" stroke="#fff" stroke-width="1.5"/>
+              <path d="M28 52 Q40 58 52 52" stroke="#0a0b0d" stroke-width="2" fill="none"/>
+            </svg>
+          </div>
           <div class="coach-name" style="color: #7be38c;">DR. GROWTH</div>
-          <div class="coach-tag">MEV / MAV / MRV</div>
+          <div class="coach-tag">Hypertrophy · MEV / MAV / MRV</div>
+          <p class="coach-bio">A PhD in Sports Physiology who will prescribe the exact Maximum Recoverable Volume to build serious tissue.</p>
         </div>
       </div>
     </div>
@@ -708,6 +751,8 @@
     </div>
   </section>
 
+  </main>
+
   <!-- Footer -->
   <footer id="footer">
     <div class="container">
@@ -763,5 +808,40 @@
 
   <script defer src="main.js"></script>
   <script defer src="exercise-demo.js"></script>
+
+  <!-- GDPR/ePrivacy Cookie Banner -->
+  <div id="cookie-banner" class="cookie-banner" style="display:none;" role="dialog" aria-label="Cookie consent">
+    <div class="cookie-banner-content">
+      <div class="cookie-banner-text">
+        🍪 We use essential cookies to make the site work + optional analytics to improve it. By clicking "Accept", you consent to analytics cookies. Read our <a href="/privacy">Privacy Policy</a>.
+      </div>
+      <div class="cookie-banner-actions">
+        <button id="cookie-reject" class="cookie-btn cookie-btn-secondary">Essential Only</button>
+        <button id="cookie-accept" class="cookie-btn cookie-btn-primary">Accept All</button>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function(){
+    var KEY = 'atleato_cookie_consent';
+    var banner = document.getElementById('cookie-banner');
+    if (!banner) return;
+    var stored = null;
+    try { stored = localStorage.getItem(KEY); } catch (e) {}
+    if (!stored) {
+      banner.style.display = 'flex';
+      setTimeout(function(){ banner.classList.add('show'); }, 600);
+    }
+    function close(value) {
+      try { localStorage.setItem(KEY, value); } catch (e) {}
+      banner.classList.remove('show');
+      setTimeout(function(){ banner.style.display = 'none'; }, 400);
+    }
+    var accept = document.getElementById('cookie-accept');
+    var reject = document.getElementById('cookie-reject');
+    if (accept) accept.addEventListener('click', function(){ close('all'); });
+    if (reject) reject.addEventListener('click', function(){ close('essential'); });
+  })();
+  </script>
 </body>
 </html>

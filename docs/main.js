@@ -614,53 +614,38 @@ window.addEventListener('scroll', () => {
 
 // ── Interactive Coach Persona Switcher ──────────────────────────
 const coachConfigs = {
-  cbum: {
-    lime: '#c8ff3d',
-    limeRgb: '200, 255, 61',
-    limeDim: '#b4e632',
-    color2: '#ff6b35', // orange
-    headline: 'TRAIN UNDER<br/><span class="lime-text">A LEGEND.</span>',
-    quote: 'Most fitness apps give you a spreadsheet. <span class="lime-text">Atleato gives you a coach who knows your name.</span>',
-    speech: "Wake up, champion. It's time to build that classic physique. Let's get it today.",
+  cbum: {  // THE SCULPTOR
+    lime: '#c8ff3d', limeRgb: '200, 255, 61', limeDim: '#b4e632', color2: '#d4af37',
+    headline: 'TRAIN UNDER<br/><span class="lime-text">THE SCULPTOR.</span>',
+    quote: 'Master the vacuum pose. Build timeless aesthetic lines. <span class="lime-text">Stay thavage.</span>',
+    speech: "Wake up, champion. It's time to build that classic physique. Stay thavage and let's get it today.",
     pitch: 0.85, rate: 0.95
   },
-  arnold: {
-    lime: '#f5b942',
-    limeRgb: '245, 185, 66',
-    limeDim: '#dd9b25',
-    color2: '#ff6b35',
-    headline: 'PUMP UNDER<br/><span class="lime-text">A LEGEND.</span>',
-    quote: 'The pump is the greatest feeling in the world. <span class="lime-text">Don\'t wait, get to work immediately!</span>',
+  arnold: {  // THE GOVERNOR
+    lime: '#f5b942', limeRgb: '245, 185, 66', limeDim: '#dd9b25', color2: '#ff6b35',
+    headline: 'PUMP UNDER<br/><span class="lime-text">THE GOVERNOR.</span>',
+    quote: 'The 7x Mr. O legend. High volume, mind-muscle connection, <span class="lime-text">pumping iron till you can\'t.</span>',
     speech: "Come on! Get up! Stop being a couch potato. You have to lift, there is no time to sleep!",
     pitch: 0.75, rate: 0.9
   },
-  nippard: {
-    lime: '#5dd3fa',
-    limeRgb: '93, 211, 250',
-    limeDim: '#3cbbe5',
-    color2: '#ff6b35',
-    headline: 'OPTIMIZE UNDER<br/><span class="lime-text">A LEGEND.</span>',
-    quote: 'Scientific evidence proves that high intensity hypertrophy yields <span class="lime-text">42% more muscle protein synthesis.</span>',
+  nippard: {  // THE SCIENTIST
+    lime: '#5dd3fa', limeRgb: '93, 211, 250', limeDim: '#3cbbe5', color2: '#ff6b35',
+    headline: 'OPTIMIZE UNDER<br/><span class="lime-text">THE SCIENTIST.</span>',
+    quote: 'Every rep based on the latest PubMed literature. <span class="lime-text">Science-based hypertrophy.</span>',
     speech: "Good morning. Scientifically speaking, skipping this workout will lead to zero muscle protein synthesis. Let's start.",
     pitch: 1.02, rate: 1.05
   },
-  ct: {
-    lime: '#ef4444',
-    limeRgb: '239, 68, 68',
-    limeDim: '#d32f2f',
-    color2: '#ff6b35',
-    headline: 'CONQUER UNDER<br/><span class="lime-text">A LEGEND.</span>',
-    quote: 'IT\'S STILL YOUR MOTHERF***IN\' SET! <span class="lime-text">SQUAT LOW OR PACK YOUR BAGS AND GO HOME!</span>',
-    speech: "WAKE YOUR ASS UP! IT'S CHERRY PICKIN' TIME! NO EXCUSES IN MY GYM!",
+  ct: {  // THE COMMANDER
+    lime: '#ef4444', limeRgb: '239, 68, 68', limeDim: '#d32f2f', color2: '#ff6b35',
+    headline: 'CONQUER UNDER<br/><span class="lime-text">THE COMMANDER.</span>',
+    quote: 'IT\'S STILL YOUR SET! <span class="lime-text">A TOWERING IRON ADDICT WHO COMMANDS YOU TO GROW!</span>',
+    speech: "WAKE YOUR ASS UP! IT'S CHERRY PICKIN' TIME! NO EXCUSES IN THE IRON ASYLUM!",
     pitch: 0.7, rate: 1.15
   },
-  mike: {
-    lime: '#7be38c',
-    limeRgb: '123, 227, 140',
-    limeDim: '#5fc670',
-    color2: '#5dd3fa', // cyan
-    headline: 'GROW UNDER<br/><span class="lime-text">A LEGEND.</span>',
-    quote: 'Your muscle fibers will literally atrophy if you leave range of motion short. <span class="lime-text">Go deep, or go home.</span>',
+  mike: {  // DR. GROWTH
+    lime: '#7be38c', limeRgb: '123, 227, 140', limeDim: '#5fc670', color2: '#a855f7',
+    headline: 'GROW UNDER<br/><span class="lime-text">DR. GROWTH.</span>',
+    quote: 'A PhD in Sports Physiology prescribing the exact MRV. <span class="lime-text">Build serious tissue.</span>',
     speech: "Hey guys, Dr. Growth here. Time to get some hypertrophy going. If you stay in bed, your gains are going to literally shrink.",
     pitch: 1.15, rate: 1.1
   }
