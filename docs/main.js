@@ -275,7 +275,7 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
 // ── Waitlist Form Handler (Supabase Synced) ──────────────────────
 (function initWaitlistForms() {
   const SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE0MDk1MDQsImV4cCI6MjA0Njk4NTUwNH0.UHGmDQ65k_QPdC0FCv4Po5BqPexk6FT3Bsr0lAzgvKw';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njg3NDcsImV4cCI6MjA5NDE0NDc0N30.rIT9u4d5dht_UWJ9er7ic1-TBa4C5ISRMdDwOolgIUA';
 
   function isValidEmail(s) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
