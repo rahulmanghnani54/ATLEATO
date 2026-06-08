@@ -6,7 +6,7 @@
  *
  * Each notification:
  *   - Uses the coach's voice in the title and body (CT shouts in CAPS,
- *     Arnold inspires, Nippard data-talks, Dr Mike calculates, CBUM is calm)
+ *     The Governor inspires, The Scientist data-talks, Dr. Growth calculates, THE SCULPTOR is calm)
  *   - Is tagged with a persistent ID so we can cancel/replace cleanly
  *   - On tap, deep-links into the right screen via the `data` payload
  *     (consumed by `app/_layout.tsx`'s notification response listener)
@@ -35,46 +35,46 @@ interface CallCopy { title: string; body: string }
 
 const WAKEUP_LINES: Record<PersonaId, CallCopy> = {
   cbum: {
-    title: '📞 CBUM CALLING',
+    title: '📞 THE SCULPTOR CALLING',
     body: "Good morning. The mat's ready. Are you?",
   },
   arnold: {
-    title: '📞 ARNOLD CALLING',
+    title: '📞 THE GOVERNOR CALLING',
     body: 'Rise up, champion. Today is yours to take.',
   },
   nippard: {
-    title: '📞 NIPPARD CALLING',
+    title: '📞 THE SCIENTIST CALLING',
     body: 'Morning check-in: hydrate, eat protein, get moving.',
   },
   ct_fletcher: {
-    title: '📞 CT FLETCHER CALLING',
+    title: '📞 THE COMMANDER CALLING',
     body: 'WAKE THE HELL UP! I COMMAND YOU TO MOVE!',
   },
   dr_mike: {
-    title: '📞 DR MIKE CALLING',
+    title: '📞 DR. GROWTH CALLING',
     body: 'Mesocycle progress check — your day starts now.',
   },
 };
 
 const WORKOUT_LINES: Record<PersonaId, CallCopy> = {
   cbum: {
-    title: '📞 CBUM CALLING',
+    title: '📞 THE SCULPTOR CALLING',
     body: "Session time. Let's get to work — control every rep.",
   },
   arnold: {
-    title: '📞 ARNOLD CALLING',
+    title: '📞 THE GOVERNOR CALLING',
     body: 'The gym is waiting. The last three reps build the muscle.',
   },
   nippard: {
-    title: '📞 NIPPARD CALLING',
+    title: '📞 THE SCIENTIST CALLING',
     body: 'Training window open. RIR 1-3 on top sets today.',
   },
   ct_fletcher: {
-    title: '📞 CT FLETCHER CALLING',
+    title: '📞 THE COMMANDER CALLING',
     body: 'GET TO THAT GYM! NO EXCUSES! I COMMAND YOU TO GROW!',
   },
   dr_mike: {
-    title: '📞 DR MIKE CALLING',
+    title: '📞 DR. GROWTH CALLING',
     body: 'Volume window: now. Hit your sets, log the data, deload Friday.',
   },
 };

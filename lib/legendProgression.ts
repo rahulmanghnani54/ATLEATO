@@ -48,7 +48,7 @@ const PERSONA_TITLES: Record<PersonaId, Record<LevelName, string>> = {
     Rookie:  'Fresh Physique',
     Grinder: 'Classic Builder',
     Athlete: 'Stage Ready',
-    Elite:   'CBum Standard',
+    Elite:   'The Sculptor Standard',
     Legend:  'Classic Olympian',
   },
   arnold: {
@@ -67,7 +67,7 @@ const PERSONA_TITLES: Record<PersonaId, Record<LevelName, string>> = {
   },
   ct_fletcher: {
     Rookie:  'No Excuses Rookie',
-    Grinder: 'Iron Addict',
+    Grinder: 'Iron Commander',
     Athlete: 'ISYMFS Warrior',
     Elite:   'Compton Iron',
     Legend:  'Iron Olympus',
@@ -77,7 +77,7 @@ const PERSONA_TITLES: Record<PersonaId, Record<LevelName, string>> = {
     Grinder: 'MAV Builder',
     Athlete: 'MRV Pusher',
     Elite:   'RP Athlete',
-    Legend:  'Dr Mike Status',
+    Legend:  'Dr. Growth Status',
   },
 };
 

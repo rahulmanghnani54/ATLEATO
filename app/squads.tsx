@@ -34,8 +34,8 @@ interface Squad {
 const SQUADS: Squad[] = [
   {
     id: 'cbum_evolved',
-    name: 'Team CBUM',
-    coach: 'Chris Bumstead',
+    name: 'Team THE SCULPTOR',
+    coach: 'The Sculptor',
     accent: '#dfff1f',
     members: 1247,
     challenge: '5 PPL sessions this week. No shortcuts.',
@@ -49,8 +49,8 @@ const SQUADS: Squad[] = [
   },
   {
     id: 'arnold_blueprint',
-    name: 'Team Arnold',
-    coach: 'Arnold Schwarzenegger',
+    name: 'Team The Governor',
+    coach: 'The Governor',
     accent: '#ffb13a',
     members: 892,
     challenge: '6 training days. Double split Monday.',
@@ -64,8 +64,8 @@ const SQUADS: Squad[] = [
   },
   {
     id: 'nippard_fundamentals',
-    name: 'Team Nippard',
-    coach: 'Jeff Nippard',
+    name: 'Team The Scientist',
+    coach: 'The Scientist',
     accent: '#5b8cff',
     members: 634,
     challenge: '4 sessions, track every rep. Science wins.',
@@ -80,7 +80,7 @@ const SQUADS: Squad[] = [
   {
     id: 'ct_strength',
     name: 'Team CT',
-    coach: 'CT Fletcher',
+    coach: 'The Commander',
     accent: '#ff5b3a',
     members: 478,
     challenge: '5 days of heavy iron. No excuses.',
@@ -94,8 +94,8 @@ const SQUADS: Squad[] = [
   },
   {
     id: 'dr_mike_mav',
-    name: 'Team Dr Mike',
-    coach: 'Dr Mike Israetel',
+    name: 'Team Dr. Growth',
+    coach: 'Dr. Growth',
     accent: '#00e0a4',
     members: 891,
     challenge: 'MEV to MAV progression. Deload Friday.',

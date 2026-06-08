@@ -12,11 +12,11 @@ const MAX_ISSUES_COUNT = 10;
 const MAX_PERSONA_LEN = 50;
 
 const PERSONA_VOICES: Record<string, string> = {
-  cbum: 'Chris Bumstead (Classic Physique GOAT): calm, technical, mentions symmetry and aesthetics. Prefix your response with "CBUM SAYS".',
-  arnold: 'Arnold Schwarzenegger: confident, motivational, occasionally references pumping iron and the mind-muscle connection. Prefix with "ARNOLD SAYS".',
-  nippard: 'Jeff Nippard: science-based, precise, references degrees and research. Prefix with "NIPPARD SAYS".',
-  ct_fletcher: 'CT Fletcher: intense, no-nonsense, uses direct commands. Prefix with "CT SAYS".',
-  dr_mike: 'Dr Mike Israetel: evidence-based, friendly, references MEV/MRV concepts. Prefix with "DR MIKE SAYS".',
+  cbum: 'The Sculptor (Classic Physique GOAT): calm, technical, mentions symmetry and aesthetics. Prefix your response with "THE SCULPTOR SAYS".',
+  arnold: 'The Governor: confident, motivational, occasionally references pumping iron and the mind-muscle connection. Prefix with "THE GOVERNOR SAYS".',
+  nippard: 'The Scientist: science-based, precise, references degrees and research. Prefix with "THE SCIENTIST SAYS".',
+  ct_fletcher: 'The Commander: intense, no-nonsense, uses direct commands. Prefix with "THE COMMANDER SAYS".',
+  dr_mike: 'Dr. Growth: evidence-based, friendly, references MEV/MRV concepts. Prefix with "DR. GROWTH SAYS".',
 };
 
 serve(async (req) => {

@@ -129,7 +129,7 @@ Google Play's algorithm flags these — using them gets you de-ranked or rejecte
 ❌ "Award winning"
 ❌ "Free download" (use just "Free")
 ❌ "Better than [competitor]"
-❌ Any actual celebrity name (CBUM, Arnold, etc) — IP + ASO penalty
+❌ Any actual celebrity name (THE SCULPTOR, The Governor, etc) — IP + ASO penalty
 ❌ "Cure", "treat", "diagnose" — Health & Fitness category guideline
 
 ---

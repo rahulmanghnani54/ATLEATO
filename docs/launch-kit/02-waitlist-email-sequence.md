@@ -84,7 +84,7 @@ That leaves {VIP_REMAINING} Passes available. Once they're gone, they're gone fo
 
 Here's what early Vanguard holders said:
 
-⭐ "The persona switching is wild — the app literally feels like a different product when I switch from CBUM to CT Fletcher." — Marcus, beta tester
+⭐ "The persona switching is wild — the app literally feels like a different product when I switch from THE SCULPTOR to The Commander." — Marcus, beta tester
 
 ⭐ "First alarm I haven't slept through in 4 years." — Priya, beta tester
 

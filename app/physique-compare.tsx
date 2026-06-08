@@ -48,8 +48,8 @@ export default function PhysiqueCompare() {
   const persona = programId.replace(/_(?:evolved|blueprint|fundamentals|strength|mav)$/, '');
 
   const PERSONA_LABELS: Record<string, string> = {
-    cbum: 'CBUM SAYS', arnold: 'ARNOLD SAYS', nippard: 'NIPPARD SAYS',
-    ct: 'CT SAYS', ct_fletcher: 'CT SAYS', dr_mike: 'DR MIKE SAYS',
+    cbum: 'THE SCULPTOR SAYS', arnold: 'THE GOVERNOR SAYS', nippard: 'THE SCIENTIST SAYS',
+    ct: 'THE COMMANDER SAYS', ct_fletcher: 'THE COMMANDER SAYS', dr_mike: 'DR. GROWTH SAYS',
   };
 
   const checkinA = allCheckins.find((c) => c.id === checkinAId) ?? null;

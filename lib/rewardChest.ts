@@ -5,7 +5,7 @@
  *   - Common  (60%): a coach quote / mantra
  *   - Uncommon(25%): an XP bonus number (cosmetic)
  *   - Rare    (10%): a bonus Streak Freeze ❄ (real value)
- *   - Epic    ( 4%): a persona badge ("CBUM PUSHED YOU TODAY")
+ *   - Epic    ( 4%): a persona badge ("THE SCULPTOR PUSHED YOU TODAY")
  *   - Mythic  ( 1%): "Coach Voice Memo Unlocked" (placeholder for future TTS)
  *
  * Why variable: Skinner-box / Hooked-model. Unpredictable rewards drive

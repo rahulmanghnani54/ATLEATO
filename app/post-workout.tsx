@@ -104,11 +104,11 @@ export default function PostWorkout() {
     : `${durationMin}m`;
 
   const coaches: Record<string, { initials: string; hue: string; name: string }> = {
-    cbum:        { initials: 'CB', hue: Colors.primary, name: "CBUM'S BREAKDOWN" },
-    arnold:      { initials: 'AR', hue: '#f5b942',       name: "ARNOLD'S BREAKDOWN" },
-    nippard:     { initials: 'JN', hue: Colors.info,     name: "NIPPARD'S BREAKDOWN" },
-    ct_fletcher: { initials: 'CT', hue: Colors.danger,   name: "CT'S BREAKDOWN" },
-    dr_mike:     { initials: 'DM', hue: Colors.good,     name: "DR MIKE'S BREAKDOWN" },
+    cbum:        { initials: 'TS', hue: Colors.primary, name: "THE SCULPTOR'S BREAKDOWN" },
+    arnold:      { initials: 'TG', hue: '#f5b942',       name: "THE GOVERNOR'S BREAKDOWN" },
+    nippard:     { initials: 'SC', hue: Colors.info,     name: "THE SCIENTIST'S BREAKDOWN" },
+    ct_fletcher: { initials: 'TC', hue: Colors.danger,   name: "THE COMMANDER'S BREAKDOWN" },
+    dr_mike:     { initials: 'DG', hue: Colors.good,     name: "DR. GROWTH'S BREAKDOWN" },
   };
   const coach = coaches[coachId] ?? coaches.cbum;
 
@@ -184,7 +184,7 @@ export default function PostWorkout() {
           <Text style={{ color: Colors.primary }}>{score}/10</Text>.
         </Text>
         <Text style={styles.subline}>
-          {sessionName} — {durationLabel} · CBum Classic, Week 3
+          {sessionName} — {durationLabel} · The Sculptor Method, Week 3
         </Text>
 
         {/* Score grid */}

@@ -13,11 +13,11 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY env var is required');
 
 const PERSONA_VOICES: Record<string, string> = {
-  cbum: 'Chris Bumstead (calm, technical, focuses on symmetry and conditioning)',
-  arnold: 'Arnold Schwarzenegger (confident, motivational, references the golden era)',
-  nippard: 'Jeff Nippard (science-based, precise, references muscle development objectively)',
-  ct_fletcher: 'CT Fletcher (intense, direct, no fluff)',
-  dr_mike: 'Dr Mike Israetel (evidence-based, friendly, references hypertrophy science)',
+  cbum: 'The Sculptor (calm, technical, focuses on symmetry and conditioning)',
+  arnold: 'The Governor (confident, motivational, references the golden era)',
+  nippard: 'The Scientist (science-based, precise, references muscle development objectively)',
+  ct_fletcher: 'The Commander (intense, direct, no fluff)',
+  dr_mike: 'Dr. Growth (evidence-based, friendly, references hypertrophy science)',
 };
 
 interface ImageSet {

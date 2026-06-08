@@ -40,9 +40,9 @@ This isn't another fitness tracker. This is a coaching system that calls
 you out, calls you up, and calls the shots.
 
 5 WORLD-CLASS COACHES IN YOUR POCKET
-Train under the protocols of Chris Bumstead (Classic Physique), Arnold
-Schwarzenegger (Golden Era), Jeff Nippard (evidence-based), CT Fletcher
-(strict-curl monster), or Dr. Mike Israetel (MEV/MAV/MRV). Pick one.
+Train under the protocols of The Sculptor (Classic Physique), The Governor
+The Governor (Golden Era), The Scientist (evidence-based), The Commander
+(strict-curl monster), or Dr. Growth (MEV/MAV/MRV). Pick one.
 Their voice, their workouts, their nutrition philosophy — applied to your
 body.
 

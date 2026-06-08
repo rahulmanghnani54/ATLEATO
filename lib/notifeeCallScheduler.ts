@@ -39,18 +39,18 @@ const ID_PREFIX  = 'coach-call:';
 interface CallCopy { title: string; body: string }
 
 const WAKEUP: Record<PersonaId, CallCopy> = {
-  cbum:        { title: 'CBUM',         body: "Good morning. The mat's ready. Are you?" },
-  arnold:      { title: 'Arnold',       body: 'Rise up, champion. Today is yours to take.' },
-  nippard:     { title: 'Jeff Nippard', body: 'Morning check-in: hydrate, eat protein, get moving.' },
-  ct_fletcher: { title: 'CT Fletcher',  body: 'WAKE THE HELL UP! I COMMAND YOU TO MOVE!' },
-  dr_mike:     { title: 'Dr Mike',      body: 'Mesocycle progress check — your day starts now.' },
+  cbum:        { title: 'THE SCULPTOR',         body: "Good morning. The mat's ready. Are you?" },
+  arnold:      { title: 'The Governor',       body: 'Rise up, champion. Today is yours to take.' },
+  nippard:     { title: 'The Scientist', body: 'Morning check-in: hydrate, eat protein, get moving.' },
+  ct_fletcher: { title: 'The Commander',  body: 'WAKE THE HELL UP! I COMMAND YOU TO MOVE!' },
+  dr_mike:     { title: 'Dr. Growth',      body: 'Mesocycle progress check — your day starts now.' },
 };
 const WORKOUT: Record<PersonaId, CallCopy> = {
-  cbum:        { title: 'CBUM',         body: "Session time. Let's get to work — control every rep." },
-  arnold:      { title: 'Arnold',       body: 'The gym is waiting. The last three reps build the muscle.' },
-  nippard:     { title: 'Jeff Nippard', body: 'Training window open. RIR 1-3 on top sets today.' },
-  ct_fletcher: { title: 'CT Fletcher',  body: 'GET TO THAT GYM! NO EXCUSES! I COMMAND YOU TO GROW!' },
-  dr_mike:     { title: 'Dr Mike',      body: 'Volume window: now. Hit your sets, log the data.' },
+  cbum:        { title: 'THE SCULPTOR',         body: "Session time. Let's get to work — control every rep." },
+  arnold:      { title: 'The Governor',       body: 'The gym is waiting. The last three reps build the muscle.' },
+  nippard:     { title: 'The Scientist', body: 'Training window open. RIR 1-3 on top sets today.' },
+  ct_fletcher: { title: 'The Commander',  body: 'GET TO THAT GYM! NO EXCUSES! I COMMAND YOU TO GROW!' },
+  dr_mike:     { title: 'Dr. Growth',      body: 'Volume window: now. Hit your sets, log the data.' },
 };
 const DECLINE_LINES: Record<PersonaId, string> = {
   cbum:        "Not today? I'll be back. Set the bar higher tomorrow.",

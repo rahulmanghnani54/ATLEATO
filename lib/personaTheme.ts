@@ -6,7 +6,7 @@
  *   - Accent color and tone
  *   - Greeting and headline copy
  *   - Nutrition philosophy and macro targets
- *   - Voice rules (CT yells, Arnold inspires, Dr Mike calculates)
+ *   - Voice rules (The Commander yells, The Governor inspires, Dr. Growth calculates)
  *   - A daily quote in their voice
  *
  * The five personas map 1:1 to the EXPERT_PROGRAMS in `constants/experts.ts`.
@@ -18,10 +18,10 @@ export type PersonaId = 'cbum' | 'arnold' | 'nippard' | 'ct_fletcher' | 'dr_mike
 export interface PersonaTheme {
   id: PersonaId;
   // ── Identity ─────────────────────────────────────────────────────────────
-  shortName: string;       // "CBUM"
-  fullName: string;        // "Chris Bumstead"
-  era: string;             // "Modern Classic Physique · 5× Mr Olympia"
-  initials: string;        // "CB"
+  shortName: string;       // "The Sculptor"
+  fullName: string;        // "The Sculptor"
+  era: string;             // "Modern Classic Physique · Aesthetic Specialist"
+  initials: string;        // "TS"
 
   // ── Visual ───────────────────────────────────────────────────────────────
   accent: string;          // primary accent color
@@ -63,10 +63,10 @@ export interface PersonaTheme {
 
 const ARNOLD: PersonaTheme = {
   id: 'arnold',
-  shortName: 'ARNOLD',
-  fullName: 'Arnold Schwarzenegger',
-  era: 'Golden Era · 7× Mr Olympia',
-  initials: 'AR',
+  shortName: 'THE GOVERNOR',
+  fullName: 'The Governor',
+  era: 'Old School Volume · Golden Era Mass',
+  initials: 'TG',
 
   accent: '#f5b942',
   accentSoft: 'rgba(245,185,66,0.14)',
@@ -105,16 +105,16 @@ const ARNOLD: PersonaTheme = {
     signature: 'High-volume double-split — AM chest/back, PM shoulders/arms.',
     focusOn: ['Mind-muscle connection', 'Full range of motion', 'The painful last 3-4 reps'],
     avoid: ['Skipping the warm-up', 'Going light on the basics'],
-    signatureLifts: ['Arnold Press', 'Concentration Curl', 'Cable Crossover', 'Behind-the-Neck Pulldown'],
+    signatureLifts: ['Rotating DB Press', 'Concentration Curl', 'Cable Crossover', 'Behind-the-Neck Pulldown'],
   },
 };
 
 const CBUM: PersonaTheme = {
   id: 'cbum',
-  shortName: 'CBUM',
-  fullName: 'Chris Bumstead',
-  era: 'Modern Classic Physique · 5× Mr Olympia',
-  initials: 'CB',
+  shortName: 'THE SCULPTOR',
+  fullName: 'The Sculptor',
+  era: 'Classic Aesthetics · Modern Physique Specialist',
+  initials: 'TS',
 
   accent: '#dfff1f',
   accentSoft: 'rgba(223,255,31,0.12)',
@@ -159,10 +159,10 @@ const CBUM: PersonaTheme = {
 
 const NIPPARD: PersonaTheme = {
   id: 'nippard',
-  shortName: 'NIPPARD',
-  fullName: 'Jeff Nippard',
-  era: 'Evidence-based · MSc · Drug-free',
-  initials: 'JN',
+  shortName: 'THE SCIENTIST',
+  fullName: 'The Scientist',
+  era: 'Evidence-Based · Hypertrophy Research',
+  initials: 'SC',
 
   accent: '#5b8cff',
   accentSoft: 'rgba(91,140,255,0.14)',
@@ -207,10 +207,10 @@ const NIPPARD: PersonaTheme = {
 
 const CT_FLETCHER: PersonaTheme = {
   id: 'ct_fletcher',
-  shortName: 'CT',
-  fullName: 'CT Fletcher',
-  era: 'Iron Addict · "I COMMAND YOU TO GROW"',
-  initials: 'CT',
+  shortName: 'THE COMMANDER',
+  fullName: 'The Commander',
+  era: 'Iron Commander · "I COMMAND YOU TO GROW"',
+  initials: 'TC',
 
   accent: '#ff4d2e',
   accentSoft: 'rgba(255,77,46,0.14)',
@@ -255,10 +255,10 @@ const CT_FLETCHER: PersonaTheme = {
 
 const DR_MIKE: PersonaTheme = {
   id: 'dr_mike',
-  shortName: 'DR MIKE',
-  fullName: 'Dr Mike Israetel',
-  era: 'RP Strength · PhD Sport Physiology',
-  initials: 'DM',
+  shortName: 'DR. GROWTH',
+  fullName: 'Dr. Growth',
+  era: 'Hypertrophy Science · Periodization Specialist',
+  initials: 'DG',
 
   accent: '#00e0a4',
   accentSoft: 'rgba(0,224,164,0.12)',

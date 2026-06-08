@@ -4,10 +4,10 @@ import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 
 const PROGRAM_NAMES: Record<string, string> = {
-  arnold_blueprint: "Arnold's Blueprint",
-  cbum_evolved: 'CBum Evolved',
+  arnold_blueprint: "The Governor's Blueprint",
+  cbum_evolved: 'The Sculptor Method',
   nippard_fundamentals: 'Science Fundamentals',
-  ct_strength: 'ISYMFS Strength',
+  ct_strength: 'Commander Strength',
   dr_mike_mav: 'MAV Hypertrophy',
 };
 

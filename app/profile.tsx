@@ -16,10 +16,10 @@ import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { getUserTier, canAccess } from '@/lib/featureGates';
 
 const PROGRAM_NAMES: Record<string, string> = {
-  cbum_evolved:          'CBum Evolved',
-  arnold_blueprint:      "Arnold's Blueprint",
+  cbum_evolved:          'The Sculptor Method',
+  arnold_blueprint:      "The Governor's Blueprint",
   nippard_fundamentals:  'Science Fundamentals',
-  ct_strength:           'ISYMFS Strength',
+  ct_strength:           'Commander Strength',
   dr_mike_mav:           'RP Hypertrophy',
 };
 const PROGRAM_COLORS: Record<string, string> = {

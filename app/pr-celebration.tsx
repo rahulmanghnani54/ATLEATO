@@ -69,13 +69,13 @@ export default function PRCelebration() {
   const deltaPct   = prevRM > 0 ? ((delta / prevRM) * 100).toFixed(1) : '—';
 
   const coachLabels: Record<string, { initials: string; hue: string; quote: string }> = {
-    cbum:       { initials: 'CB', hue: Colors.primary,  quote: "That's what showing up looks like. Now eat. Sleep. Repeat Friday." },
-    arnold:     { initials: 'AR', hue: '#f5b942',        quote: "This is what the pump leads to. You are growing!" },
-    nippard:    { initials: 'JN', hue: Colors.info,      quote: `New estimated 1RM via Epley: ${newRM} kg. The data confirms progression.` },
-    ct:         { initials: 'CT', hue: Colors.danger,    quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
-    ct_fletcher:{ initials: 'CT', hue: Colors.danger,    quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
-    dr_mike:    { initials: 'DM', hue: Colors.good,      quote: "Progressive overload achieved. You're above MEV and making gains." },
-    dr:         { initials: 'DM', hue: Colors.good,      quote: "Progressive overload achieved. You're above MEV and making gains." },
+    cbum:       { initials: 'TS', hue: Colors.primary,  quote: "That's what showing up looks like. Now eat. Sleep. Repeat Friday." },
+    arnold:     { initials: 'TG', hue: '#f5b942',        quote: "This is what the pump leads to. You are growing!" },
+    nippard:    { initials: 'SC', hue: Colors.info,      quote: `New estimated 1RM via Epley: ${newRM} kg. The data confirms progression.` },
+    ct:         { initials: 'TC', hue: Colors.danger,    quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
+    ct_fletcher:{ initials: 'TC', hue: Colors.danger,    quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
+    dr_mike:    { initials: 'DG', hue: Colors.good,      quote: "Progressive overload achieved. You're above MEV and making gains." },
+    dr:         { initials: 'DG', hue: Colors.good,      quote: "Progressive overload achieved. You're above MEV and making gains." },
   };
   const coach = coachLabels[coachId] ?? coachLabels.cbum;
 

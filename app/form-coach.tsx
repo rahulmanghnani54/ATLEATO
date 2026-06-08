@@ -59,11 +59,11 @@ const MOTION_PX_THRESHOLD    = 32;    // px — clearly above MoveNet noise floo
 const MOTION_HYSTERESIS_HITS = 2;     // need N consecutive frames of new state to flip
 
 const PERSONA_LABELS: Record<string, string> = {
-  cbum:        'CBUM SAYS',
-  arnold:      'ARNOLD SAYS',
-  nippard:     'NIPPARD SAYS',
-  ct_fletcher: 'CT SAYS',
-  dr_mike:     'DR MIKE SAYS',
+  cbum:        'THE SCULPTOR SAYS',
+  arnold:      'THE GOVERNOR SAYS',
+  nippard:     'THE SCIENTIST SAYS',
+  ct_fletcher: 'THE COMMANDER SAYS',
+  dr_mike:     'DR. GROWTH SAYS',
 };
 
 const KP = {

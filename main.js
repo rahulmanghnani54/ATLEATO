@@ -661,7 +661,7 @@ const coachConfigs = {
     color2: '#5dd3fa', // cyan
     headline: 'GROW UNDER<br/><span class="lime-text">A LEGEND.</span>',
     quote: 'Your muscle fibers will literally atrophy if you leave range of motion short. <span class="lime-text">Go deep, or go home.</span>',
-    speech: "Hey guys, Dr. Mike here. Time to get some hypertrophy going. If you stay in bed, your gains are going to literally shrink.",
+    speech: "Hey guys, Dr. Growth here. Time to get some hypertrophy going. If you stay in bed, your gains are going to literally shrink.",
     pitch: 1.15, rate: 1.1
   }
 };

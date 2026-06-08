@@ -32,8 +32,8 @@ export interface ExpertProgram {
 export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
   arnold_blueprint: {
     id: 'arnold_blueprint',
-    name: "Arnold's Blueprint",
-    expert: 'Arnold Schwarzenegger',
+    name: "The Governor's Blueprint",
+    expert: 'The Governor',
     quote: "The last three or four reps is what makes the muscle grow. This area of pain divides the champion from someone else.",
     emoji: '🏆',
     difficulty: 'Advanced',
@@ -49,7 +49,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Chest', 'Back'],
         estimatedMinutes: 75,
         exercises: [
-          { name: 'Barbell Bench Press', sets: 5, reps: '8-10', restSeconds: 120, tips: ['Touch chest, full lockout.', 'Arnold pressed to failure on the last set.'] },
+          { name: 'Barbell Bench Press', sets: 5, reps: '8-10', restSeconds: 120, tips: ['Touch chest, full lockout.', 'The Governor pressed to failure on the last set.'] },
           { name: 'Wide-Grip Pull-Up', sets: 5, reps: '10-12', restSeconds: 90, tips: ['Full dead hang at bottom.', 'Chin clears the bar at top.'] },
           { name: 'Incline Dumbbell Press', sets: 4, reps: '10-12', restSeconds: 90, tips: ['30-45° angle.', 'Squeeze at top, stretch at bottom.'] },
           { name: 'Barbell Row', sets: 4, reps: '8-10', restSeconds: 90, tips: ['Overhand grip, pull to lower chest.', 'Keep chest against bar.'] },
@@ -64,7 +64,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Shoulders', 'Biceps', 'Triceps'],
         estimatedMinutes: 70,
         exercises: [
-          { name: 'Seated Dumbbell Press', sets: 4, reps: '8-10', restSeconds: 90, tips: ['Arnold Press — rotate wrists at top for full shoulder activation.'] },
+          { name: 'Seated Dumbbell Press', sets: 4, reps: '8-10', restSeconds: 90, tips: ['Rotating press — turn wrists at top for full shoulder activation.'] },
           { name: 'Barbell Curl', sets: 4, reps: '10-12', restSeconds: 75, tips: ['No swinging.', 'Squeeze at top for 1 second.'] },
           { name: 'Skull Crusher', sets: 4, reps: '10-12', restSeconds: 75, tips: ['Lower to forehead.', 'Full extension at top.'] },
           { name: 'Lateral Raise', sets: 3, reps: '15-20', restSeconds: 60, tips: ['Slight forward lean.', 'Lead with elbows.'] },
@@ -91,14 +91,14 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
 
   cbum_evolved: {
     id: 'cbum_evolved',
-    name: 'CBum Evolved',
-    expert: 'Chris Bumstead',
+    name: 'The Sculptor Method',
+    expert: 'The Sculptor',
     quote: "Train insane or remain the same. Mind-muscle connection is everything — weight means nothing if you don't feel it.",
     emoji: '⭐',
     difficulty: 'Intermediate',
     daysPerWeek: 5,
     focus: 'Classic Physique',
-    description: "5× Classic Physique Olympia champion's hypertrophy system. Mind-muscle connection over ego lifting.",
+    description: "A modern aesthetics hypertrophy system. Mind-muscle connection over ego lifting.",
     color: '#7c3aed',
     schedule: [
       {
@@ -122,7 +122,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Pecs', 'Front Delts'],
         estimatedMinutes: 55,
         exercises: [
-          { name: 'Incline Barbell Press', sets: 4, reps: '8-10', restSeconds: 120, tips: ['CBum focuses on incline for upper chest dominance.'] },
+          { name: 'Incline Barbell Press', sets: 4, reps: '8-10', restSeconds: 120, tips: ['The Sculptor focuses on incline for upper chest dominance.'] },
           { name: 'Flat Dumbbell Press', sets: 4, reps: '10-12', restSeconds: 90, tips: ['Deep stretch at bottom.', 'Explosive press.'] },
           { name: 'Cable Fly', sets: 3, reps: '12-15', restSeconds: 60, tips: ['Cross hands at the top.', 'Hold 1 second squeeze.'] },
           { name: 'Pec Deck', sets: 3, reps: '15', restSeconds: 60, tips: ['Feel the squeeze in the middle.'] },
@@ -152,7 +152,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         exercises: [
           { name: 'Seated Dumbbell Press', sets: 4, reps: '10-12', restSeconds: 90, tips: ['Control the eccentric.'] },
           { name: 'Lateral Raise', sets: 4, reps: '15-20', restSeconds: 60, tips: ['Slight internal rotation.', 'Lead with pinky.'] },
-          { name: 'Reverse Pec Deck', sets: 3, reps: '15-20', restSeconds: 45, tips: ["Rear delts are CBum's secret weapon."] },
+          { name: 'Reverse Pec Deck', sets: 3, reps: '15-20', restSeconds: 45, tips: ["Rear delts are The Sculptor's secret weapon."] },
           { name: 'Front Raise', sets: 3, reps: '12-15', restSeconds: 45, tips: ['Alternate arms.', "Don't swing."] },
         ],
       },
@@ -164,7 +164,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         estimatedMinutes: 70,
         exercises: [
           { name: 'Leg Extension (Warmup)', sets: 3, reps: '20', restSeconds: 45, tips: ['Activates quads before heavy work.'] },
-          { name: 'Barbell Back Squat', sets: 4, reps: '8-12', restSeconds: 150, tips: ['CBum focuses on controlled descent.'] },
+          { name: 'Barbell Back Squat', sets: 4, reps: '8-12', restSeconds: 150, tips: ['The Sculptor focuses on controlled descent.'] },
           { name: 'Hack Squat', sets: 3, reps: '10-12', restSeconds: 120, tips: ['Feet high on platform.'] },
           { name: 'Romanian Deadlift', sets: 4, reps: '10-12', restSeconds: 90, tips: ['Feel the hamstring stretch.', 'Bar close to legs.'] },
           { name: 'Lying Leg Curl', sets: 3, reps: '12-15', restSeconds: 60, tips: ['Slow eccentric.'] },
@@ -177,7 +177,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
   nippard_fundamentals: {
     id: 'nippard_fundamentals',
     name: 'Science Fundamentals',
-    expert: 'Jeff Nippard',
+    expert: 'The Scientist',
     quote: "The best program is one based on evidence, not broscience. Frequency, volume, and progressive overload — that's the formula.",
     emoji: '🔬',
     difficulty: 'Intermediate',
@@ -241,7 +241,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
           { name: 'Sumo Deadlift', sets: 3, reps: '8-10', restSeconds: 120, tips: ['Hip hinge.', 'Chest up.'] },
           { name: 'Walking Lunge', sets: 3, reps: '12 each', restSeconds: 75, tips: ['Full stride.', 'Knee touches floor.'] },
           { name: 'Leg Curl', sets: 4, reps: '12-15', restSeconds: 60, tips: ['Slow eccentric 3 seconds.'] },
-          { name: 'Tibialis Raise', sets: 3, reps: '20', restSeconds: 45, tips: ['Nippard special: prevents shin splints.'] },
+          { name: 'Tibialis Raise', sets: 3, reps: '20', restSeconds: 45, tips: ['Scientist special: prevents shin splints.'] },
         ],
       },
     ],
@@ -249,8 +249,8 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
 
   ct_strength: {
     id: 'ct_strength',
-    name: 'ISYMFS Strength',
-    expert: 'CT Fletcher',
+    name: 'Commander Strength',
+    expert: 'The Commander',
     quote: "It's Still Your Motherf***ing Set. Nobody is going to do this for you. You are the only one responsible for your results.",
     emoji: '💥',
     difficulty: 'Advanced',
@@ -266,7 +266,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Chest', 'Triceps'],
         estimatedMinutes: 80,
         exercises: [
-          { name: 'Flat Barbell Press', sets: 6, reps: '10,8,6,4,4,4', restSeconds: 180, tips: ['CT: "The bench press is the most important exercise for the upper body."', 'Go heavier each set.'] },
+          { name: 'Flat Barbell Press', sets: 6, reps: '10,8,6,4,4,4', restSeconds: 180, tips: ['The Commander:"The bench press is the most important exercise for the upper body."', 'Go heavier each set.'] },
           { name: 'Incline Dumbbell Press', sets: 4, reps: '10-12', restSeconds: 90, tips: ['No stopping. ISYMFS.'] },
           { name: 'Dumbbell Fly', sets: 4, reps: '12-15', restSeconds: 60, tips: ['Deep stretch.', 'Controlled arc.'] },
           { name: 'Cable Crossover', sets: 3, reps: '15-20', restSeconds: 60, tips: ['Burn the muscle out.'] },
@@ -280,7 +280,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Back', 'Biceps'],
         estimatedMinutes: 75,
         exercises: [
-          { name: 'Deadlift', sets: 5, reps: '5,5,3,3,1', restSeconds: 240, tips: ["CT's bread and butter.", 'Treat every session like a max attempt.'] },
+          { name: 'Deadlift', sets: 5, reps: '5,5,3,3,1', restSeconds: 240, tips: ["The Commander's bread and butter.", 'Treat every session like a max attempt.'] },
           { name: 'Pull-Up', sets: 5, reps: 'Max', restSeconds: 90, tips: ['All the way up, all the way down.'] },
           { name: 'T-Bar Row', sets: 4, reps: '8-10', restSeconds: 120, tips: ['Heavy weight.', 'Full range.'] },
           { name: 'Seated Cable Row', sets: 3, reps: '12', restSeconds: 75, tips: ['Squeeze the back at peak contraction.'] },
@@ -294,7 +294,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Quads', 'Hamstrings', 'Calves'],
         estimatedMinutes: 85,
         exercises: [
-          { name: 'Barbell Back Squat', sets: 6, reps: '10,8,6,4,4,4', restSeconds: 240, tips: ["CT: squat like your life depends on it.", 'Below parallel every rep.'] },
+          { name: 'Barbell Back Squat', sets: 6, reps: '10,8,6,4,4,4', restSeconds: 240, tips: ["The Commander:squat like your life depends on it.", 'Below parallel every rep.'] },
           { name: 'Leg Press', sets: 4, reps: '12-15', restSeconds: 120, tips: ['Do not stop the set. ISYMFS.'] },
           { name: 'Walking Lunge', sets: 3, reps: '20 each', restSeconds: 90, tips: ['Full stride, stay upright.'] },
           { name: 'Leg Curl', sets: 4, reps: '12-15', restSeconds: 60, tips: ['Slow negative.'] },
@@ -309,8 +309,8 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         estimatedMinutes: 65,
         exercises: [
           { name: 'Seated Barbell Press', sets: 5, reps: '8,6,6,4,4', restSeconds: 150, tips: ['Strict form.', 'Full overhead lockout.'] },
-          { name: 'Dumbbell Lateral Raise', sets: 5, reps: '15-20', restSeconds: 60, tips: ['CT does high volume laterals.', 'No swinging.'] },
-          { name: 'Arnold Press', sets: 4, reps: '10-12', restSeconds: 90, tips: ['Full rotation at top.'] },
+          { name: 'Dumbbell Lateral Raise', sets: 5, reps: '15-20', restSeconds: 60, tips: ['The Commander does high volume laterals.', 'No swinging.'] },
+          { name: 'Rotating DB Press', sets: 4, reps: '10-12', restSeconds: 90, tips: ['Full rotation at top.'] },
           { name: 'Barbell Shrug', sets: 4, reps: '12-15', restSeconds: 60, tips: ['Full upward squeeze.', 'Hold 1 second at top.'] },
           { name: 'Rear Delt Fly', sets: 3, reps: '15-20', restSeconds: 45, tips: ['Bent over.', 'Lead with elbows.'] },
         ],
@@ -322,7 +322,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Biceps', 'Triceps', 'Forearms'],
         estimatedMinutes: 70,
         exercises: [
-          { name: 'Barbell Curl', sets: 6, reps: '10,8,6,6,20,20', restSeconds: 75, tips: ["Compulsory curls are CT's religion.", 'Every set to failure.'] },
+          { name: 'Barbell Curl', sets: 6, reps: '10,8,6,6,20,20', restSeconds: 75, tips: ["Compulsory curls are The Commander's religion.", 'Every set to failure.'] },
           { name: 'Skull Crusher', sets: 5, reps: '10-12', restSeconds: 75, tips: ['Lower bar to forehead.', 'Full extension.'] },
           { name: 'Dumbbell Hammer Curl', sets: 4, reps: '12-15', restSeconds: 60, tips: ['Brachialis for arm thickness.'] },
           { name: 'Tricep Pushdown', sets: 4, reps: '15-20', restSeconds: 60, tips: ['Lock elbows.', 'Full extension.'] },
@@ -336,7 +336,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
   dr_mike_mav: {
     id: 'dr_mike_mav',
     name: 'MAV Hypertrophy',
-    expert: 'Dr. Mike Israetel',
+    expert: 'Dr. Growth',
     quote: "Train at your Maximum Adaptive Volume. More volume is better — but only up to the point your recovery can handle.",
     emoji: '📊',
     difficulty: 'Intermediate',

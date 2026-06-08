@@ -2,8 +2,8 @@
  * Voice Cues
  *
  * Text-to-speech in each coach's "voice". Pitch + rate vary per persona so
- * CT sounds intense, CBUM sounds calm, Arnold sounds slow + deep, etc.
- * The COPY for each cue is also persona-specific — CT shouts where Arnold inspires.
+ * CT sounds intense, THE SCULPTOR sounds calm, The Governor sounds slow + deep, etc.
+ * The COPY for each cue is also persona-specific — CT shouts where The Governor inspires.
  *
  * Backed by expo-speech (Android TextToSpeech / iOS AVSpeechSynthesizer).
  * No external TTS API, fully offline once the device's TTS engine has voices.

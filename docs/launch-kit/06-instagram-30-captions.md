@@ -141,7 +141,7 @@ This is the most addictive feature I built by accident.
 
 ### Day 9 — Static: Coach Quote Card #1
 ```
-[CBUM/Classic Style Quote Card]
+[THE SCULPTOR/Classic Style Quote Card]
 
 "Quality reps. Controlled tempo. Stay humble."
 

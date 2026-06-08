@@ -102,7 +102,7 @@ The system:
    - <50: 0.7× volume + coach voiceover "we're going easy today, recovery is growth"
 4. Tracks how well the modifier predicted next-day soreness/performance
 
-Logic is based on Mike Israetel-style MRV principles + Apple Watch HRV correlations.
+Logic is based on Dr. Growth-style MRV principles + Apple Watch HRV correlations.
 
 Looking for 50 serious lifters (3+ years training, currently on a structured program) to beta test the modifier accuracy over 4 weeks. You'll log standard sets/reps + the recovery score, and I'll send you weekly correlations.
 
