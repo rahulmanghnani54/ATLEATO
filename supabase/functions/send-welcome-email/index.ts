@@ -15,8 +15,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 // IMPORTANT: This needs to be from your verified domain in Resend
 // Use a personal-sounding from address to land in Primary tab
-const FROM_EMAIL = 'Rahul from Atleato <rahul@atleato.com>';
-const REPLY_TO = 'rahul@atleato.com';
+const FROM_EMAIL = 'Rahul from Atleato <hello@atleato.com>';
+const REPLY_TO = 'hello@atleato.com';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
