@@ -10,10 +10,16 @@ fs.mkdirSync(OUT, { recursive: true });
 const HTML = 'file:///' + path.join(__dirname, '..', 'docs', 'product-images.html').replace(/\\/g, '/');
 
 const targets = [
-  ['#img-01-hero',     '01-hero-vip-pass.png'],
-  ['#img-02-coaches',  '02-5-legend-coaches.png'],
-  ['#img-03-call',     '03-your-coach-calls.png'],
-  ['#img-04-pass',     '04-cta-1-99-lifetime.png'],
+  ['#img-01-hero',       '01-hero-vip-pass.png'],
+  ['#img-02-coaches',    '02-5-legend-coaches.png'],
+  ['#img-03-call',       '03-your-coach-calls.png'],
+  ['#img-04-pass',       '04-cta-1-99-lifetime.png'],
+  ['#img-05-form',       '05-ai-form-coach.png'],
+  ['#img-06-nutrition',  '06-nutrition-macros.png'],
+  ['#img-07-territory',  '07-territory-map.png'],
+  ['#img-08-stats',      '08-stats-strip.png'],
+  ['#img-09-start',      '09-60-second-start.png'],
+  ['#img-10-closing',    '10-your-coach-calls.png'],
 ];
 
 (async () => {
