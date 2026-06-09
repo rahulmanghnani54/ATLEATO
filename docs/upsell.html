@@ -375,6 +375,27 @@
       requestAnimationFrame(tick);
     }
 
+    // ══════════════════════════════════════════════════════
+    // SCARCITY MODEL — makes "VIP CLAIMED" feel alive
+    // - Baseline grows over time (mimics real claims trickling in)
+    // - +1 claim every ~25 minutes of real time (so site visitors at
+    //   different hours see different numbers)
+    // - +1 claim per 5 real waitlist signups (organic correlation)
+    // - Capped at 499 (last spot can't auto-trigger; only manual)
+    // - LAUNCH_EPOCH = a fixed past moment from which the counter advances
+    // ══════════════════════════════════════════════════════
+    var LAUNCH_EPOCH = Date.UTC(2026, 5, 1, 0, 0, 0); // June 1, 2026 UTC
+    var SCARCITY_BASELINE = 380;
+    var MINUTES_PER_CLAIM = 25;
+    var SIGNUPS_PER_CLAIM = 5;
+
+    function computeClaimed(realSignups) {
+      var minutesSinceEpoch = Math.max(0, (Date.now() - LAUNCH_EPOCH) / 60000);
+      var timeClaims = Math.floor(minutesSinceEpoch / MINUTES_PER_CLAIM);
+      var signupClaims = Math.floor(realSignups / SIGNUPS_PER_CLAIM);
+      return Math.min(SCARCITY_BASELINE + timeClaims + signupClaims, 499);
+    }
+
     // ── Refresh stats (accurate real-time) ──
     function refreshStats() {
       fetchCount('').then(function (total) {
@@ -383,14 +404,12 @@
         var posEl = document.getElementById('waitlist-position');
         var posMetaEl = document.getElementById('position-meta');
         if (posEl) {
-          var prevText = posEl.textContent.replace(/[^\d]/g, '');
-          var prev = parseInt(prevText, 10) || (position - 1);
           posEl.textContent = '#' + position.toLocaleString();
           if (posMetaEl) posMetaEl.innerHTML = '<span class="meta-dot meta-dot-green"></span> Live · updates every 15s';
         }
 
-        // Scarcity: synthetic claimed = 412 base + 1 per 8 real signups, capped 499
-        var claimed = Math.min(412 + Math.floor(total / 8), 499);
+        // Scarcity: time-based + signup-based (dynamic, different each hour)
+        var claimed = computeClaimed(total);
         var remaining = 500 - claimed;
         var pct = Math.round((claimed / 500) * 100);
         var cEl = document.getElementById('scarcity-claimed');
@@ -403,11 +422,12 @@
         if (rEl) rEl.textContent = remaining;
         if (fEl) fEl.style.width = pct + '%';
 
-        // Online count (synthetic, rotates)
+        // Online count — varies by minute, looks dynamic
         var onlineEl = document.getElementById('online-count');
         if (onlineEl) {
-          var base = 180 + (Date.now() % 120);
-          onlineEl.textContent = base;
+          var minute = Math.floor(Date.now() / 60000);
+          var base = 180 + (minute % 130) + Math.floor(Math.sin(minute / 30) * 20);
+          onlineEl.textContent = Math.max(120, base);
         }
       });
     }
@@ -438,16 +458,36 @@
     refreshReferralCount();
     setInterval(refreshReferralCount, 10000);
 
-    // ── 30-minute countdown ──
+    // ══════════════════════════════════════════════════════
+    // 30-MIN RESERVATION COUNTDOWN — per-email
+    // Each unique email gets its OWN 30-min hold.
+    // Same email refreshing the page = timer continues (preserves urgency).
+    // New email = fresh 30 minutes (no cross-email leakage).
+    // Uses localStorage so it survives tab close (real reservation feel).
+    // ══════════════════════════════════════════════════════
     var countdownEl = document.getElementById('countdown');
-    var KEY = 'vanguard_reservation_start_v2';
-    var start = sessionStorage.getItem(KEY);
-    if (!start) {
-      start = Date.now();
-      sessionStorage.setItem(KEY, start);
-    }
-    start = parseInt(start, 10);
     var DURATION = 30 * 60 * 1000; // 30 minutes
+    var KEY_PREFIX = 'vanguard_hold_v3:';
+    // Key is per-email so different emails get independent holds
+    var KEY = KEY_PREFIX + (email || 'guest');
+    var start;
+    try {
+      var stored = localStorage.getItem(KEY);
+      if (stored) {
+        start = parseInt(stored, 10);
+        // If stored start is corrupted or in the future, reset
+        if (!start || start > Date.now()) {
+          start = Date.now();
+          localStorage.setItem(KEY, String(start));
+        }
+      } else {
+        start = Date.now();
+        localStorage.setItem(KEY, String(start));
+      }
+    } catch (e) {
+      // localStorage blocked (private mode / cookies disabled) — use in-memory
+      start = Date.now();
+    }
 
     function tickCountdown() {
       if (!countdownEl) return;
