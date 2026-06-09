@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atleato™ — You're In.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Semi+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#070809;
+    --page:#040506;
+    --surface:#101216;
+    --surface-2:#16191f;
+    --surface-3:#1c2027;
+    --line:rgba(255,255,255,.09);
+    --line-strong:rgba(255,255,255,.16);
+    --ink:#f5f6f3;
+    --muted:#8b909a;
+    --muted-2:#5d626b;
+    --accent:#d4ff3d;          /* volt */
+    --accent-ink:#0a0b0d;
+    --accent-glow:rgba(212,255,61,.35);
+    --danger:#ff3b30;
+    --gold:#f4b53a;
+    --ice:#3bd6ff;
+    --violet:#b06bff;
+    --grad: radial-gradient(120% 80% at 50% -10%, rgba(212,255,61,.10) 0%, rgba(212,255,61,0) 55%);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--page);
+    color:var(--ink);
+    font-family:"Barlow",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+    background-image:
+      radial-gradient(60% 50% at 50% 0%, rgba(212,255,61,.06), transparent 70%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.012) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.012) 0 1px, transparent 1px 64px);
+  }
+  .preheader{display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;font-size:1px;line-height:1px;}
+
+  /* ---------- shell ---------- */
+  .browserbar{
+    text-align:center;font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.18em;
+    color:var(--muted-2);text-transform:uppercase;padding:18px 16px 6px;
+  }
+  .browserbar a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line-strong);padding-bottom:1px;}
+  .wrap{max-width:640px;margin:0 auto;padding:14px 14px 60px;}
+  .email{
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 40px 120px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.02);
+    background-image:var(--grad);
+  }
+  .pad{padding:0 34px;}
+  @media(max-width:520px){ .pad{padding:0 22px;} }
+
+  /* ---------- masthead ---------- */
+  .mast{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:22px 34px;border-bottom:1px solid var(--line);
+  }
+  @media(max-width:520px){ .mast{padding:20px 22px;} }
+  .word{
+    font-family:"Anton",sans-serif;font-size:23px;letter-spacing:.12em;color:var(--ink);
+    text-transform:uppercase;display:flex;align-items:center;gap:2px;
+  }
+  .word sup{font-size:10px;color:var(--accent);top:-.9em;}
+  .word .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent-glow);margin-right:10px;}
+  .mast .tagchip{
+    font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.16em;color:var(--muted);
+    text-transform:uppercase;border:1px solid var(--line);border-radius:999px;padding:6px 11px;
+  }
+  @media(max-width:520px){ .mast .tagchip{display:none;} }
+
+  /* ---------- hero ---------- */
+  .hero{padding:46px 34px 30px;position:relative;text-align:center;}
+  @media(max-width:520px){ .hero{padding:38px 22px 26px;} }
+  .kicker{
+    display:inline-flex;align-items:center;gap:9px;
+    font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent);border:1px solid rgba(212,255,61,.3);border-radius:999px;
+    padding:7px 14px;background:rgba(212,255,61,.05);
+  }
+  .live{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 var(--accent-glow);}
+  h1.big{
+    font-family:"Anton",sans-serif;font-weight:400;text-transform:uppercase;
+    font-size:clamp(64px,16vw,116px);line-height:.86;letter-spacing:.01em;margin:22px 0 0;
+    color:var(--ink);
+  }
+  h1.big .stroke{
+    color:transparent;-webkit-text-stroke:2px var(--accent);
+    text-shadow:0 0 38px var(--accent-glow);
+  }
+  .lead{
+    max-width:430px;margin:20px auto 0;color:#c4c8cd;font-size:17.5px;font-weight:500;text-wrap:pretty;
+  }
+  .lead b{color:var(--ink);font-weight:800;}
+
+  /* coach marquee */
+  .marquee{
+    margin-top:30px;overflow:hidden;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+            mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+  }
+  .marquee .track{display:flex;gap:34px;width:max-content;padding:13px 0;animation:slide 22s linear infinite;}
+  .marquee span{
+    font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;text-transform:uppercase;
+    font-size:14px;letter-spacing:.13em;color:var(--muted);display:flex;align-items:center;gap:34px;white-space:nowrap;
+  }
+  .marquee span::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.7;}
+
+  /* ---------- VIP pass ticket ---------- */
+  .ticket-sec{padding:34px 34px 8px;}
+  @media(max-width:520px){ .ticket-sec{padding:30px 22px 4px;} }
+  .ticket{
+    position:relative;border:1px solid var(--line-strong);border-radius:18px;overflow:hidden;
+    background:
+      linear-gradient(135deg, rgba(212,255,61,.10), rgba(212,255,61,0) 40%),
+      var(--surface);
+  }
+  .ticket::before{
+    /* shimmer sweep */
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.14) 48%,transparent 64%);
+    transform:translateX(-120%);animation:sweep 4.6s ease-in-out infinite;
+  }
+  .ticket .row{display:flex;align-items:stretch;position:relative;z-index:1;}
+  .ticket .stub{
+    flex:0 0 96px;border-right:2px dashed var(--line-strong);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+    padding:22px 10px;background:rgba(212,255,61,.04);
+  }
+  .ticket .stub .barcode{display:flex;gap:2px;height:54px;align-items:stretch;}
+  .ticket .stub .barcode i{width:2px;background:var(--accent);opacity:.85;display:block;border-radius:1px;}
+  .ticket .stub small{font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;}
+  .ticket .body{flex:1;padding:22px 22px 22px 24px;}
+  .ticket .label{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.22em;color:var(--accent);text-transform:uppercase;}
+  .ticket .ttl{font-family:"Anton",sans-serif;font-size:30px;line-height:1;letter-spacing:.02em;text-transform:uppercase;margin:9px 0 2px;}
+  .ticket .meta{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap;}
+  .ticket .meta div{min-width:64px;}
+  .ticket .meta dt{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.16em;color:var(--muted-2);text-transform:uppercase;margin-bottom:4px;}
+  .ticket .meta dd{margin:0;font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;font-size:18px;color:var(--ink);}
+  .ticket .meta dd .of{color:var(--muted);font-weight:600;font-size:13px;}
+
+  /* ---------- incoming call ---------- */
+  .call-sec{padding:42px 34px 8px;text-align:center;}
+  @media(max-width:520px){ .call-sec{padding:38px 22px 4px;} }
+  .seclabel{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);}
+  .sechead{font-family:"Anton",sans-serif;font-size:clamp(32px,7vw,46px);line-height:.95;text-transform:uppercase;letter-spacing:.01em;margin:13px 0 0;}
+  .sechead .accent{color:var(--accent);}
+  .call{
+    margin:28px auto 0;max-width:360px;border:1px solid var(--line);border-radius:20px;
+    background:linear-gradient(180deg,var(--surface-2),var(--surface));padding:28px 26px 24px;position:relative;
+  }
+  .ring-wrap{position:relative;width:104px;height:104px;margin:4px auto 0;}
+  .ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--accent);opacity:0;animation:ring 2.6s ease-out infinite;}
+  .ring:nth-child(2){animation-delay:.8s;}
+  .ring:nth-child(3){animation-delay:1.6s;}
+  .avatar{
+    position:absolute;inset:14px;border-radius:50%;background:linear-gradient(150deg,#23272e,#0e1014);
+    border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;
+    font-family:"Anton",sans-serif;font-size:30px;color:var(--ink);
+  }
+  .avatar .badge{position:absolute;bottom:-2px;right:-2px;width:26px;height:26px;border-radius:50%;background:var(--accent);
+    display:flex;align-items:center;justify-content:center;border:3px solid var(--surface);animation:shake 1.2s ease-in-out infinite;}
+  .avatar .badge svg{width:13px;height:13px;}
+  .call .who{font-family:"Anton",sans-serif;font-size:24px;text-transform:uppercase;margin:18px 0 2px;letter-spacing:.02em;}
+  .call .status{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;}
+  .call .status .pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:6px;vertical-align:middle;animation:blink 1s steps(2) infinite;}
+  .call .btns{display:flex;gap:12px;margin-top:22px;}
+  .call .btns a{flex:1;text-decoration:none;border-radius:13px;padding:13px 0;font-family:"Barlow Semi Condensed",sans-serif;
+    font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:14px;}
+  .call .decline{background:rgba(255,59,48,.12);color:#ff756d;border:1px solid rgba(255,59,48,.35);}
+  .call .accept{background:var(--accent);color:var(--accent-ink);box-shadow:0 12px 30px -10px var(--accent-glow);}
+  .call-cap{max-width:380px;margin:20px auto 0;color:var(--muted);font-size:15px;font-weight:500;}
+  .call-cap b{color:var(--ink);font-weight:800;}
+
+  /* ---------- coaches ---------- */
+  .coaches-sec{padding:46px 34px 10px;}
+  @media(max-width:520px){ .coaches-sec{padding:40px 22px 6px;} }
+  .coaches-head{text-align:center;margin-bottom:24px;}
+  .cgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media(max-width:480px){ .cgrid{grid-template-columns:1fr;} }
+  .coach{
+    border:1px solid var(--line);border-radius:15px;background:var(--surface);padding:15px 16px;
+    display:flex;gap:13px;align-items:center;position:relative;overflow:hidden;
+    transition:border-color .25s ease, transform .25s ease;
+  }
+  .coach::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--c);}
+  .coach .ini{
+    flex:0 0 46px;height:46px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    font-family:"Anton",sans-serif;font-size:18px;color:#0a0b0d;background:var(--c);
+    box-shadow:0 8px 22px -8px var(--c);
+  }
+  .coach .info{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center;}
+  .coach .nm{font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;text-transform:uppercase;font-size:15px;letter-spacing:.02em;line-height:1.15;white-space:nowrap;}
+  .coach .tg{font-size:12px;color:var(--muted);font-weight:500;margin-top:3px;line-height:1.25;}
+  .coach.span2{grid-column:1 / -1;}
+
+  /* ---------- stats ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:15px;overflow:hidden;margin:30px 34px 0;}
+  @media(max-width:520px){ .stats{margin:28px 22px 0;grid-template-columns:repeat(2,1fr);} }
+  .stat{background:var(--bg);padding:20px 12px;text-align:center;}
+  .stat .num{font-family:"Anton",sans-serif;font-size:32px;color:var(--accent);line-height:1;letter-spacing:.01em;}
+  .stat .lbl{font-family:"JetBrains Mono",monospace;font-size:9.5px;letter-spacing:.13em;color:var(--muted);text-transform:uppercase;margin-top:8px;}
+
+  /* ---------- steps ---------- */
+  .steps-sec{padding:48px 34px 10px;}
+  @media(max-width:520px){ .steps-sec{padding:42px 22px 6px;} }
+  .step{display:flex;gap:18px;padding:20px 0;border-top:1px solid var(--line);align-items:flex-start;}
+  .step:first-of-type{border-top:none;}
+  .step .no{font-family:"Anton",sans-serif;font-size:34px;color:transparent;-webkit-text-stroke:1.5px var(--line-strong);line-height:1;flex:0 0 auto;width:54px;}
+  .step h3{font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;text-transform:uppercase;font-size:19px;margin:2px 0 5px;letter-spacing:.02em;}
+  .step p{margin:0;color:var(--muted);font-size:14.5px;font-weight:500;text-wrap:pretty;}
+  .step p b{color:#c4c8cd;font-weight:700;}
+
+  /* ---------- CTA ---------- */
+  .cta-sec{padding:44px 34px 50px;text-align:center;}
+  @media(max-width:520px){ .cta-sec{padding:40px 22px 44px;} }
+  .cta-card{
+    border:1px solid rgba(212,255,61,.25);border-radius:20px;padding:38px 26px;position:relative;overflow:hidden;
+    background:
+      radial-gradient(90% 120% at 50% 0%, rgba(212,255,61,.10), transparent 60%),
+      var(--surface);
+  }
+  .cta-card h2{font-family:"Anton",sans-serif;font-size:clamp(30px,7vw,42px);line-height:.95;text-transform:uppercase;margin:0 0 12px;}
+  .cta-card p{color:var(--muted);font-size:15px;font-weight:500;margin:0 auto 24px;max-width:340px;}
+  .btn{
+    display:inline-block;text-decoration:none;background:var(--accent);color:var(--accent-ink);white-space:nowrap;
+    font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.05em;
+    font-size:18px;padding:17px 36px;border-radius:14px;
+    box-shadow:0 16px 40px -12px var(--accent-glow);transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .btn:hover{transform:translateY(-2px);box-shadow:0 22px 50px -12px var(--accent-glow);}
+  .cta-fine{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.1em;color:var(--muted-2);text-transform:uppercase;margin-top:18px;}
+  .playrow{display:inline-flex;align-items:center;gap:8px;margin-top:16px;color:var(--muted);font-size:12.5px;font-weight:600;}
+  .playrow svg{width:16px;height:16px;}
+
+  /* ---------- footer ---------- */
+  .foot{border-top:1px solid var(--line);padding:30px 34px 34px;text-align:center;}
+  @media(max-width:520px){ .foot{padding:28px 22px 30px;} }
+  .foot .fword{font-family:"Anton",sans-serif;font-size:18px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;}
+  .foot .social{display:flex;gap:10px;justify-content:center;margin:16px 0 18px;}
+  .foot .social a{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:.2s;}
+  .foot .social a:hover{border-color:var(--line-strong);color:var(--ink);}
+  .foot .social svg{width:17px;height:17px;}
+  .foot .links{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;font-size:12px;font-weight:600;color:var(--muted);}
+  .foot .links a{color:var(--muted);text-decoration:none;}
+  .foot .links span{color:var(--muted-2);}
+  .foot .fine{color:var(--muted-2);font-size:11px;margin-top:16px;line-height:1.6;max-width:440px;margin-left:auto;margin-right:auto;}
+  .foot .fine a{color:var(--muted);}
+
+  /* ---------- reveal (content visible by default; motion is pure enhancement) ---------- */
+  @media (prefers-reduced-motion: no-preference){
+    .ready .reveal{opacity:0;transform:translateY(22px);animation:revealUp .7s cubic-bezier(.2,.7,.2,1) both;}
+  }
+  /* JS safety net: if the timeline is frozen/throttled, force the end-state */
+  body.snap .reveal{opacity:1!important;transform:none!important;animation:none!important;}
+
+  /* ---------- keyframes ---------- */
+  @keyframes revealUp{from{opacity:0;transform:translateY(22px);}to{opacity:1;transform:none;}}
+  @keyframes slide{to{transform:translateX(-50%);}}
+  @keyframes sweep{0%{transform:translateX(-120%);}55%,100%{transform:translateX(120%);}}
+  @keyframes ring{0%{transform:scale(.62);opacity:.9;}80%{opacity:0;}100%{transform:scale(1.25);opacity:0;}}
+  @keyframes shake{0%,100%{transform:rotate(0);}20%{transform:rotate(-16deg);}40%{transform:rotate(13deg);}60%{transform:rotate(-9deg);}80%{transform:rotate(6deg);}}
+  @keyframes blink{50%{opacity:.25;}}
+  @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 var(--accent-glow);}50%{box-shadow:0 0 0 7px rgba(212,255,61,0);}}
+  .live{animation:pulseGlow 2s ease-out infinite;}
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;}
+    .reveal{opacity:1!important;transform:none!important;}
+    .ticket::before{display:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="preheader">You're in. Your VIP Vanguard pass is reserved — train under a legend. No excuses.</div>
+
+  <div class="browserbar">Hosted preview · <a href="https://atleato.com">atleato.com</a></div>
+
+  <div class="wrap">
+    <div class="email" id="email">
+
+      <!-- masthead -->
+      <div class="mast">
+        <div class="word"><span class="dot"></span>ATLEATO<sup>™</sup></div>
+        <div class="tagchip">YOUR COACH CALLS</div>
+      </div>
+
+      <!-- hero -->
+      <div class="hero">
+        <div class="kicker reveal"><span class="live"></span> VIP VANGUARD · ACCESS CONFIRMED</div>
+        <h1 class="big reveal">YOU'RE<br /><span class="stroke">IN.</span></h1>
+        <p class="lead reveal" id="leadText"><span id="greetName">Hey,</span> your spot to <b>train under a legend</b> is locked. You're <span id="spotText">one of the first <b>500</b></span> — before the world even gets a download link.</p>
+
+        <div class="marquee reveal">
+          <div class="track">
+            <span>The Sculptor</span><span>The Governor</span><span>The Scientist</span><span>The Commander</span><span>Dr. Growth</span>
+            <span>The Sculptor</span><span>The Governor</span><span>The Scientist</span><span>The Commander</span><span>Dr. Growth</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIP pass -->
+      <div class="ticket-sec">
+        <div class="ticket reveal">
+          <div class="row">
+            <div class="stub">
+              <div class="barcode" id="barcode"></div>
+              <small>VANGUARD</small>
+            </div>
+            <div class="body">
+              <div class="label">// VIP VANGUARD PASS</div>
+              <div class="ttl">EARLY ACCESS</div>
+              <dl class="meta">
+                <div><dt>Pass No.</dt><dd id="passNo">0147 <span class="of">/ 500</span></dd></div>
+                <div><dt>Tier</dt><dd>Lifetime Pro</dd></div>
+                <div><dt>Status</dt><dd style="color:var(--accent)">Active</dd></div>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- incoming call -->
+      <div class="call-sec">
+        <div class="seclabel reveal">// THIS IS HOW TRAINING STARTS</div>
+        <h2 class="sechead reveal">YOUR COACH<br /><span class="accent">CALLS.</span></h2>
+        <div class="call reveal">
+          <div class="ring-wrap">
+            <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+            <div class="avatar">CT
+              <span class="badge"><svg viewBox="0 0 24 24" fill="#0a0b0d"><path d="M6.6 10.8a15.3 15.3 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.4 11.4 0 0 0 .58 3.6 1 1 0 0 1-.24 1z"/></svg></span>
+            </div>
+          </div>
+          <div class="who">The Commander</div>
+          <div class="status"><span class="pulse"></span>INCOMING CALL · 06:00 AM</div>
+          <div class="btns">
+            <a class="decline" href="https://atleato.com/#waitlist">Snooze</a>
+            <a class="accept" href="https://atleato.com/#waitlist">Answer</a>
+          </div>
+        </div>
+        <p class="call-cap reveal">Not a notification you can swipe away — <b>an actual incoming call.</b> Decline, and your coach rings back in 5 minutes. No excuses.</p>
+      </div>
+
+      <!-- coaches -->
+      <div class="coaches-sec">
+        <div class="coaches-head reveal">
+          <div class="seclabel">// YOUR LINEUP</div>
+          <h2 class="sechead">5 LEGENDS. <span class="accent">1 APP.</span></h2>
+        </div>
+        <div class="cgrid">
+          <div class="coach reveal" style="--c:#d4ff3d"><div class="ini">CB</div><div class="info"><div class="nm">The Sculptor</div><div class="tg">Classic Physique · 5× Champion</div></div></div>
+          <div class="coach reveal" style="--c:#f4b53a"><div class="ini">AS</div><div class="info"><div class="nm">The Governor</div><div class="tg">Golden Era · 7× Mr. O</div></div></div>
+          <div class="coach reveal" style="--c:#3bd6ff"><div class="ini">JN</div><div class="info"><div class="nm">The Scientist</div><div class="tg">Evidence-Based · PubMed</div></div></div>
+          <div class="coach reveal" style="--c:#ff3b30"><div class="ini">CT</div><div class="info"><div class="nm">The Commander</div><div class="tg">Iron Asylum · No Excuses</div></div></div>
+          <div class="coach span2 reveal" style="--c:#b06bff"><div class="ini">MI</div><div class="info"><div class="nm">Dr. Growth</div><div class="tg">Hypertrophy Science · MEV / MAV / MRV</div></div></div>
+        </div>
+      </div>
+
+      <!-- stats -->
+      <div class="stats reveal">
+        <div class="stat"><div class="num" data-count="5">5</div><div class="lbl">Legend Coaches</div></div>
+        <div class="stat"><div class="num" data-count="17">17</div><div class="lbl">Joints Tracked</div></div>
+        <div class="stat"><div class="num" data-count="1.2" data-suffix="M">1.2M</div><div class="lbl">Foods DB</div></div>
+        <div class="stat"><div class="num">24/7</div><div class="lbl">Wake-Up Calls</div></div>
+      </div>
+
+      <!-- steps -->
+      <div class="steps-sec">
+        <div class="coaches-head reveal" style="text-align:left;margin-bottom:8px;">
+          <div class="seclabel">// WHEN WE LAUNCH</div>
+          <h2 class="sechead">START IN <span class="accent">60 SECONDS.</span></h2>
+        </div>
+        <div class="step reveal"><div class="no">01</div><div><h3>Pick a coach</h3><p>The whole app <b>transforms</b> around their philosophy — colors, programs, nutrition, and voice.</p></div></div>
+        <div class="step reveal"><div class="no">02</div><div><h3>Set your wake-up</h3><p>Pick a time and a ringtone. Tomorrow your phone <b>rings like a real call.</b></p></div></div>
+        <div class="step reveal"><div class="no">03</div><div><h3>Train. Eat. Conquer.</h3><p>Live form check, global macro tracking, and <b>territory you claim</b> with every run.</p></div></div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-sec">
+        <div class="cta-card reveal">
+          <h2>DON'T LOSE<br />YOUR SPOT.</h2>
+          <p>Vanguard passes are first-come. Confirm yours and lock in lifetime Pro pricing.</p>
+          <a class="btn" id="ctaBtn" href="https://atleato.com/upsell.html">CONFIRM MY PASS →</a>
+          <div class="cta-fine">FREE FOREVER · NO CREDIT CARD</div>
+          <div class="playrow">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 3l16 9-16 9zM5 6.5v11l9.8-5.5z"/></svg>
+            Launching first on Google Play
+          </div>
+        </div>
+      </div>
+
+      <!-- footer -->
+      <div class="foot">
+        <div class="fword">ATLEATO™</div>
+        <div class="social">
+          <a href="https://atleato.com" aria-label="Web"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18"/></svg></a>
+          <a href="https://github.com/rahulmanghnani54/ATLEATO" aria-label="GitHub"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.36 1.09 2.94.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.38.2 2.4.1 2.65.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg></a>
+          <a href="mailto:hello@atleato.com" aria-label="Email"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg></a>
+        </div>
+        <div class="links">
+          <a href="https://atleato.com/#features">Features</a><span>·</span>
+          <a href="https://atleato.com/#pricing">Pricing</a><span>·</span>
+          <a href="https://atleato.com/#coaches">Coaches</a><span>·</span>
+          <a href="https://atleato.com/privacy">Privacy</a>
+        </div>
+        <p class="fine">You're receiving this because you joined the Atleato waitlist. Coach personas are fictional AI characters and are not affiliated with any real individuals.<br />© 2026 Atleato™ · <a href="#">Unsubscribe</a> · <a href="#">Manage preferences</a></p>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+  // build barcode
+  (function(){
+    var bc=document.getElementById('barcode');
+    if(bc){var w=[3,1,2,4,1,3,1,2,3,1,4,1,2,1,3,1,2];
+      w.forEach(function(x){var i=document.createElement('i');i.style.width=x+'px';bc.appendChild(i);});}
+  })();
+
+  // staggered entrance: handled by CSS animation; JS only sets per-element delay + ready flag
+  var reveals=[].slice.call(document.querySelectorAll('.reveal'));
+  reveals.forEach(function(el,i){ el.style.animationDelay=(Math.min(i,16)*70)+'ms'; });
+  document.body.classList.add('ready');
+
+  // SAFETY NET: if the animation timeline is frozen/throttled (background tab,
+  // some email/preview sandboxes), force every element to its visible end-state.
+  setTimeout(function(){
+    var k=document.querySelector('.kicker');
+    if(k && parseFloat(getComputedStyle(k).opacity) < 0.9){ document.body.classList.add('snap'); }
+  }, 1700);
+
+  // personalize from URL query params (?name=John&pos=2481&pass=147&email=...)
+  (function(){
+    try {
+      var qs = new URLSearchParams(location.search);
+      var name = qs.get('name');
+      var pos  = qs.get('pos');
+      var pass = qs.get('pass');
+      var em   = qs.get('email');
+      if (name) {
+        var safe = name.replace(/[^a-zA-ZÀ-ɏ\s'\-]/g,'').slice(0,30);
+        if (safe) document.getElementById('greetName').textContent = 'Hey ' + safe + ',';
+      }
+      if (pos) {
+        var p = parseInt(pos,10);
+        if (!isNaN(p)) document.getElementById('spotText').innerHTML = 'spot <b>#' + p.toLocaleString() + '</b> of the first 500';
+      }
+      if (pass) {
+        var pn = parseInt(pass,10);
+        if (!isNaN(pn) && pn>0 && pn<=500) {
+          document.getElementById('passNo').innerHTML = String(pn).padStart(4,'0') + ' <span class="of">/ 500</span>';
+        }
+      }
+      if (em) {
+        var url = 'https://atleato.com/upsell.html?email=' + encodeURIComponent(em);
+        document.getElementById('ctaBtn').href = url;
+        var snooze = document.querySelector('.call .decline');
+        var answer = document.querySelector('.call .accept');
+        if (snooze) snooze.href = url;
+        if (answer) answer.href = url;
+      }
+    } catch(e){}
+  })();
+
+  // count up (degrades to the final number already in the HTML if rAF is frozen)
+  function countUp(el){
+    var target=parseFloat(el.getAttribute('data-count'));
+    var suffix=el.getAttribute('data-suffix')||'';
+    var dec=(target%1!==0)?1:0;
+    var t0=null, dur=1100;
+    function step(ts){ if(!t0)t0=ts; var p=Math.min((ts-t0)/dur,1);
+      var e=1-Math.pow(1-p,3);
+      el.textContent=(target*e).toFixed(dec)+suffix;
+      if(p<1)requestAnimationFrame(step); else el.textContent=target.toFixed(dec)+suffix;
+    }
+    requestAnimationFrame(step);
+  }
+  var nums=[].slice.call(document.querySelectorAll('.num[data-count]'));
+  setTimeout(function(){ nums.forEach(countUp); }, 450);
+</script>
+</body>
+</html>
