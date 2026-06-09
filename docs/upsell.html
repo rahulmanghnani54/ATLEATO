@@ -147,8 +147,10 @@
           <li><span class="benefit-tick">✓</span> VIP Community Access at launch</li>
           <li><span class="benefit-tick">✓</span> Founder pricing locked forever</li>
         </ul>
-        <a href="https://YOUR_PAYMENT_LINK" class="upsell-cta-primary" id="pay-cta"
-           onclick="if(this.getAttribute('href').indexOf('YOUR_PAYMENT_LINK')>=0){event.preventDefault();alert('Payment link not configured yet.\n\nSet it up in 5 minutes:\n• Stripe → see docs/STRIPE_SETUP.md\n• Lemon Squeezy → see docs/LEMONSQUEEZY_SETUP.md');return false;}">
+        <a href="https://atleato.lemonsqueezy.com/checkout/buy/d2568399-3aff-46ea-95cc-d4dc60807be1"
+           class="upsell-cta-primary" id="pay-cta"
+           data-base-checkout="https://atleato.lemonsqueezy.com/checkout/buy/d2568399-3aff-46ea-95cc-d4dc60807be1"
+           rel="noopener">
           <span class="cta-arrow">→</span>
           <span>CLAIM MY VIP PASS — $1.99</span>
         </a>
@@ -562,6 +564,46 @@
     renderClaimers();
     setInterval(renderClaimers, 60000); // refresh every minute
 
+  })();
+
+  // ═══════════════════════════════════════════════════════════════
+  // Lemon Squeezy checkout — prefill email + post-purchase confirmation
+  // ═══════════════════════════════════════════════════════════════
+  (function(){
+    var qs = new URLSearchParams(location.search);
+    var email = (qs.get('email') || '').trim();
+    var paid  = qs.get('paid') === 'true';
+    var cta   = document.getElementById('pay-cta');
+
+    // Prefill the buyer's email into the Lemon Squeezy checkout
+    if (cta && email) {
+      var base = cta.getAttribute('data-base-checkout') || cta.href;
+      var sep  = base.indexOf('?') >= 0 ? '&' : '?';
+      cta.href = base + sep + 'checkout%5Bemail%5D=' + encodeURIComponent(email);
+    }
+
+    // Post-purchase confirmation state (when LS sends them back with ?paid=true)
+    if (paid && cta) {
+      cta.style.pointerEvents = 'none';
+      cta.style.opacity = '0.85';
+      cta.style.background = 'linear-gradient(135deg, #39e08a, #2bb56e)';
+      cta.style.boxShadow = '0 12px 40px rgba(57,224,138,0.35)';
+      cta.innerHTML = '<span class="cta-arrow">✓</span><span>VANGUARD PASS CONFIRMED</span>';
+      cta.removeAttribute('href');
+
+      // Show success banner above the CTA
+      var banner = document.createElement('div');
+      banner.style.cssText = 'background:linear-gradient(135deg,rgba(57,224,138,0.15),rgba(57,224,138,0.05));border:2px solid #39e08a;border-radius:14px;padding:20px 24px;margin:0 0 24px;text-align:center;';
+      banner.innerHTML = '<div style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:#39e08a;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">● PAYMENT CONFIRMED</div>' +
+                        '<div style="font-family:\'Archivo Black\',sans-serif;font-size:22px;color:#fff;letter-spacing:-0.3px;">You\'re a Vanguard. 🎯</div>' +
+                        '<div style="font-size:14px;color:rgba(255,255,255,0.7);margin-top:8px;">Check your inbox — welcome email + receipt sent.</div>';
+      cta.parentNode.insertBefore(banner, cta);
+
+      // Clear the 30-min reservation hold for this email (no longer needed)
+      try {
+        if (email) localStorage.removeItem('vanguard_hold_v3:' + email.toLowerCase());
+      } catch(e){}
+    }
   })();
   </script>
 </body>
