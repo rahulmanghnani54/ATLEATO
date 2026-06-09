@@ -422,7 +422,7 @@ Slide 9: "→ atleato.com"
 3 DAYS.
 
 Final Vanguard Passes available.
-Final founder pricing locks.
+Final $1.99 one-time charges.
 Final chance to be #001-500.
 
 → atleato.com/upsell.html
