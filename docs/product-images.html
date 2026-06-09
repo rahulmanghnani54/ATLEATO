@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Atleato Product Images — 1600×1200 source pages</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Semi+Condensed:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Archivo+Black&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+  /* Brand tokens — match welcome-email.html (Anthropic design) */
+  :root {
+    --bg:#070809; --page:#040506; --surface:#101216; --surface-2:#16191f;
+    --line:rgba(255,255,255,.09); --line-strong:rgba(255,255,255,.16);
+    --ink:#f5f6f3; --muted:#8b909a; --muted-2:#5d626b;
+    --accent:#d4ff3d; --accent-ink:#0a0b0d; --accent-glow:rgba(212,255,61,.35);
+    --orange:#ff8050; --orange-deep:#e84d20;
+    --c-sculptor:#d4ff3d; --c-governor:#f4b53a; --c-scientist:#3bd6ff;
+    --c-commander:#ff3b30; --c-growth:#b06bff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#1a1a1a;font-family:"Barlow",-apple-system,sans-serif;padding:20px;}
+
+  /* Each card = exactly 1600x1200 — what puppeteer captures */
+  .card{
+    width:1600px;height:1200px;margin:0 auto 30px;
+    background:var(--page);color:var(--ink);position:relative;overflow:hidden;
+    font-family:"Barlow",sans-serif;
+  }
+  .card[data-img="01-hero"]{
+    background:
+      radial-gradient(60% 50% at 50% 30%,rgba(212,255,61,.10),transparent 70%),
+      radial-gradient(80% 60% at 50% 100%,rgba(232,77,32,.12),transparent 70%),
+      var(--page);
+  }
+
+  /* Reusable: brand mark with crossbar cutout */
+  .a-mark{display:inline-block;vertical-align:middle;}
+
+  /* ═══════════════════════════════════ */
+  /* IMAGE 1: HERO                       */
+  /* ═══════════════════════════════════ */
+  .hero{padding:120px 100px;text-align:center;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;}
+  .hero .kicker{
+    display:inline-flex;align-items:center;gap:14px;
+    font-family:"JetBrains Mono",monospace;font-size:18px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--accent);border:1.5px solid rgba(212,255,61,.4);border-radius:999px;
+    padding:10px 22px;background:rgba(212,255,61,.05);margin-bottom:36px;
+  }
+  .hero .kicker::before{
+    content:"";width:10px;height:10px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 16px var(--accent-glow);
+  }
+  .hero h1{
+    font-family:"Anton",sans-serif;font-weight:400;text-transform:uppercase;
+    font-size:230px;line-height:.85;letter-spacing:.01em;margin:0;color:var(--ink);
+  }
+  .hero h1 .stroke{
+    color:transparent;-webkit-text-stroke:3px var(--accent);
+    text-shadow:0 0 50px var(--accent-glow);
+  }
+  .hero .sub{
+    margin-top:46px;color:#c4c8cd;font-size:34px;font-weight:500;max-width:900px;
+  }
+  .hero .sub b{color:var(--ink);font-weight:800;}
+  .hero .price-strip{
+    margin-top:60px;display:inline-flex;align-items:center;gap:38px;
+    font-family:"JetBrains Mono",monospace;font-size:22px;letter-spacing:.18em;color:var(--muted);
+    text-transform:uppercase;
+  }
+  .hero .price-strip b{color:var(--accent);font-weight:700;}
+  .hero .dot-sep{width:8px;height:8px;border-radius:50%;background:var(--muted-2);}
+
+  /* ═══════════════════════════════════ */
+  /* IMAGE 2: 5 COACHES                  */
+  /* ═══════════════════════════════════ */
+  .coaches-img{padding:110px 90px;}
+  .coaches-img .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:48px;}
+  .coaches-img .top .brand{display:flex;align-items:center;gap:20px;}
+  .coaches-img .top .brand .nm{font-family:"Anton",sans-serif;font-size:46px;letter-spacing:.10em;}
+  .coaches-img .top .tag{font-family:"JetBrains Mono",monospace;font-size:22px;color:var(--muted);letter-spacing:.32em;text-transform:uppercase;}
+  .coaches-img h2{
+    font-family:"Anton",sans-serif;font-size:160px;line-height:.92;
+    text-transform:uppercase;letter-spacing:.005em;margin-bottom:60px;
+  }
+  .coaches-img h2 .accent{color:var(--accent);}
+  .coaches-img .grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;}
+  .coaches-img .coach{
+    background:var(--surface);border:1.5px solid var(--line);border-radius:24px;
+    padding:32px 32px;display:flex;gap:24px;align-items:center;position:relative;overflow:hidden;
+    min-height:180px;
+  }
+  .coaches-img .coach::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--c);}
+  .coaches-img .coach.span2{grid-column:span 2;justify-content:flex-start;}
+  .coaches-img .ini{
+    flex:0 0 90px;width:90px;height:90px;border-radius:22px;
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Anton",sans-serif;font-size:38px;color:#0a0b0d;background:var(--c);
+    box-shadow:0 14px 40px -10px var(--c);
+  }
+  .coaches-img .info .nm{font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;text-transform:uppercase;font-size:28px;letter-spacing:.02em;line-height:1.1;}
+  .coaches-img .info .tg{font-size:20px;color:var(--muted);font-weight:500;margin-top:6px;}
+  .coaches-img .foot{margin-top:42px;text-align:center;font-family:"JetBrains Mono",monospace;font-size:22px;color:var(--muted);letter-spacing:.18em;text-transform:uppercase;}
+  .coaches-img .foot b{color:var(--accent);}
+
+  /* ═══════════════════════════════════ */
+  /* IMAGE 3: INCOMING CALL              */
+  /* ═══════════════════════════════════ */
+  .call-img{
+    padding:0;height:100%;position:relative;
+    background:
+      radial-gradient(60% 50% at 50% 50%,rgba(255,59,48,.18),transparent 60%),
+      var(--page);
+  }
+  .call-img .left{position:absolute;top:120px;left:90px;right:760px;}
+  .call-img .left .lbl{font-family:"JetBrains Mono",monospace;font-size:22px;color:var(--muted);letter-spacing:.30em;text-transform:uppercase;margin-bottom:24px;}
+  .call-img .left h2{font-family:"Anton",sans-serif;font-size:170px;line-height:.9;text-transform:uppercase;letter-spacing:.01em;}
+  .call-img .left h2 .accent{color:var(--accent);}
+  .call-img .left p{margin-top:48px;font-size:30px;color:var(--muted);line-height:1.45;max-width:600px;}
+  .call-img .left p b{color:var(--ink);font-weight:800;}
+  .call-img .phone{
+    position:absolute;right:130px;top:130px;
+    width:560px;height:940px;border-radius:64px;
+    background:linear-gradient(180deg,var(--surface-2),var(--surface));
+    border:14px solid #1a1c22;
+    box-shadow:0 60px 140px -30px rgba(0,0,0,.8), 0 0 80px rgba(255,59,48,.3);
+    overflow:hidden;
+  }
+  .call-img .phone::before{
+    content:"";position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    width:200px;height:40px;background:#0a0b0d;border-radius:22px;
+  }
+  .call-img .phone-inner{padding:90px 40px 50px;display:flex;flex-direction:column;align-items:center;height:100%;}
+  .call-img .ring-wrap{position:relative;width:240px;height:240px;margin-top:60px;}
+  .call-img .ring{position:absolute;inset:0;border-radius:50%;border:3px solid var(--c-commander);opacity:.6;}
+  .call-img .ring:nth-child(2){inset:-30px;opacity:.35;}
+  .call-img .ring:nth-child(3){inset:-60px;opacity:.18;}
+  .call-img .avatar{
+    position:absolute;inset:30px;border-radius:50%;
+    background:linear-gradient(150deg,#ef4444,#b91c1c);
+    border:3px solid rgba(255,255,255,.15);
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Anton",sans-serif;font-size:78px;color:#fff;
+  }
+  .call-img .who{font-family:"Anton",sans-serif;font-size:54px;text-transform:uppercase;margin-top:46px;letter-spacing:.03em;}
+  .call-img .status{font-family:"JetBrains Mono",monospace;font-size:20px;letter-spacing:.22em;color:var(--c-commander);text-transform:uppercase;margin-top:14px;}
+  .call-img .btns{display:flex;gap:24px;margin-top:60px;width:100%;}
+  .call-img .btns a{
+    flex:1;text-align:center;border-radius:22px;padding:24px 0;
+    font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;text-transform:uppercase;
+    letter-spacing:.08em;font-size:22px;text-decoration:none;
+  }
+  .call-img .decline{background:rgba(255,59,48,.14);color:#ff756d;border:1.5px solid rgba(255,59,48,.4);}
+  .call-img .accept{background:var(--accent);color:var(--accent-ink);}
+
+  /* ═══════════════════════════════════ */
+  /* IMAGE 4: VIP PASS TICKET            */
+  /* ═══════════════════════════════════ */
+  .pass-img{padding:100px 100px;height:100%;display:flex;flex-direction:column;justify-content:center;}
+  .pass-img .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:50px;}
+  .pass-img .top .brand{display:flex;align-items:center;gap:20px;}
+  .pass-img .top .brand .nm{font-family:"Anton",sans-serif;font-size:46px;letter-spacing:.10em;}
+  .pass-img .top .tag{font-family:"JetBrains Mono",monospace;font-size:20px;color:var(--accent);letter-spacing:.28em;text-transform:uppercase;border:1.5px solid rgba(212,255,61,.4);padding:10px 18px;border-radius:999px;background:rgba(212,255,61,.05);}
+  .pass-img .ticket{
+    position:relative;border:2px solid var(--line-strong);border-radius:32px;overflow:hidden;
+    background:linear-gradient(135deg,rgba(212,255,61,.10),rgba(212,255,61,0) 40%),var(--surface);
+    display:flex;height:480px;
+  }
+  .pass-img .ticket .stub{
+    flex:0 0 220px;border-right:3px dashed var(--line-strong);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+    background:rgba(212,255,61,.04);
+  }
+  .pass-img .ticket .barcode{display:flex;gap:5px;height:140px;align-items:stretch;}
+  .pass-img .ticket .barcode i{display:block;width:6px;background:var(--accent);opacity:.88;border-radius:2px;}
+  .pass-img .ticket .stub small{font-family:"JetBrains Mono",monospace;font-size:16px;letter-spacing:.30em;color:var(--muted);text-transform:uppercase;}
+  .pass-img .ticket .body{flex:1;padding:50px 60px;display:flex;flex-direction:column;justify-content:center;}
+  .pass-img .ticket .label{font-family:"JetBrains Mono",monospace;font-size:22px;letter-spacing:.30em;color:var(--accent);text-transform:uppercase;}
+  .pass-img .ticket .ttl{font-family:"Anton",sans-serif;font-size:110px;line-height:.95;letter-spacing:.02em;text-transform:uppercase;margin:18px 0 10px;}
+  .pass-img .ticket .meta{display:flex;gap:60px;margin-top:36px;}
+  .pass-img .ticket .meta dt{font-family:"JetBrains Mono",monospace;font-size:16px;letter-spacing:.22em;color:var(--muted-2);text-transform:uppercase;margin-bottom:10px;}
+  .pass-img .ticket .meta dd{margin:0;font-family:"Barlow Semi Condensed",sans-serif;font-weight:800;font-size:36px;color:var(--ink);}
+  .pass-img .ticket .meta dd .of{color:var(--muted);font-weight:600;font-size:26px;}
+  .pass-img .foot{margin-top:50px;display:flex;justify-content:space-between;align-items:center;}
+  .pass-img .foot .feats{display:flex;gap:34px;font-family:"Barlow Semi Condensed",sans-serif;font-size:24px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.04em;}
+  .pass-img .foot .feats span::before{content:"✓ ";color:var(--accent);}
+  .pass-img .foot .price{font-family:"Anton",sans-serif;font-size:90px;color:var(--accent);}
+
+  /* Card label (visible only outside the card, for human reference; cropped by screenshot) */
+  .card-tag{
+    position:fixed;left:20px;top:20px;background:#000;color:#0ff;font-family:monospace;
+    font-size:12px;padding:4px 8px;border-radius:4px;z-index:9999;
+    pointer-events:none;
+  }
+
+  @media print{ .card{page-break-after:always;} }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ IMAGE 01: HERO ═══════════════════════ -->
+<div class="card" id="img-01-hero" data-img="01-hero">
+  <div class="hero">
+    <div class="kicker">VIP VANGUARD · ACCESS</div>
+
+    <!-- Real polygon-A logo with crossbar cutout -->
+    <svg width="200" height="200" viewBox="0 0 100 100" style="margin-bottom:30px;">
+      <defs>
+        <linearGradient id="lg-hero" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/>
+        </linearGradient>
+      </defs>
+      <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg-hero)"/>
+      <rect x="29" y="64" width="42" height="6" rx="3" fill="#070809"/>
+    </svg>
+
+    <h1>YOU'RE<br/><span class="stroke">IN.</span></h1>
+    <p class="sub">Your spot to <b>train under a legend</b> is locked. One of the first <b>500</b> — before the world gets a download link.</p>
+    <div class="price-strip">
+      <span><b>$1.99</b> RESERVES YOUR SPOT</span>
+      <span class="dot-sep"></span>
+      <span>LIFETIME PRICING LOCKED</span>
+      <span class="dot-sep"></span>
+      <span>ATLEATO.COM</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ IMAGE 02: 5 COACHES ═══════════════════════ -->
+<div class="card" id="img-02-coaches">
+  <div class="coaches-img">
+    <div class="top">
+      <div class="brand">
+        <svg width="60" height="60" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="lg-c1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/>
+            </linearGradient>
+          </defs>
+          <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg-c1)"/>
+          <rect x="29" y="64" width="42" height="6" rx="3" fill="#070809"/>
+        </svg>
+        <div class="nm">ATLEATO</div>
+      </div>
+      <div class="tag">// YOUR LINEUP</div>
+    </div>
+    <h2>5 LEGENDS.<br/><span class="accent">1 APP.</span></h2>
+    <div class="grid">
+      <div class="coach" style="--c:#d4ff3d"><div class="ini">TS</div><div class="info"><div class="nm">The Sculptor</div><div class="tg">Classic Physique · 5× Champion</div></div></div>
+      <div class="coach" style="--c:#f4b53a"><div class="ini">TG</div><div class="info"><div class="nm">The Governor</div><div class="tg">Golden Era · 7× Mr. O</div></div></div>
+      <div class="coach" style="--c:#3bd6ff"><div class="ini">SC</div><div class="info"><div class="nm">The Scientist</div><div class="tg">Evidence-Based · PubMed</div></div></div>
+      <div class="coach" style="--c:#ff3b30"><div class="ini">CM</div><div class="info"><div class="nm">The Commander</div><div class="tg">Iron Asylum · No Excuses</div></div></div>
+      <div class="coach span2" style="--c:#b06bff"><div class="ini">DG</div><div class="info"><div class="nm">Dr. Growth</div><div class="tg">Hypertrophy Science · MEV / MAV / MRV</div></div></div>
+    </div>
+    <div class="foot">App <b>TRANSFORMS</b> around your pick · colors · programs · voice · nutrition</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ IMAGE 03: INCOMING CALL ═══════════════════════ -->
+<div class="card" id="img-03-call">
+  <div class="call-img">
+    <div class="left">
+      <div class="lbl">// THIS IS HOW TRAINING STARTS</div>
+      <h2>YOUR<br/>COACH<br/><span class="accent">CALLS.</span></h2>
+      <p>Not a notification you can swipe away — <b>an actual incoming call</b> at 5:00 AM. Decline, and your coach rings back in 5 minutes. <b>No excuses.</b></p>
+    </div>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="ring-wrap">
+          <div class="ring"></div><div class="ring"></div><div class="ring"></div>
+          <div class="avatar">CM</div>
+        </div>
+        <div class="who">The Commander</div>
+        <div class="status">● INCOMING · 05:00 AM</div>
+        <div class="btns">
+          <a class="decline">SNOOZE</a>
+          <a class="accept">ANSWER</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ IMAGE 04: VIP PASS TICKET ═══════════════════════ -->
+<div class="card" id="img-04-pass">
+  <div class="pass-img">
+    <div class="top">
+      <div class="brand">
+        <svg width="60" height="60" viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="lg-p1" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/>
+            </linearGradient>
+          </defs>
+          <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg-p1)"/>
+          <rect x="29" y="64" width="42" height="6" rx="3" fill="#070809"/>
+        </svg>
+        <div class="nm">ATLEATO</div>
+      </div>
+      <div class="tag">● ACCESS CONFIRMED · 1 OF 500</div>
+    </div>
+    <div class="ticket">
+      <div class="stub">
+        <div class="barcode">
+          <i style="height:65%"></i><i style="height:90%"></i><i style="height:50%"></i><i style="height:100%"></i>
+          <i style="height:70%"></i><i style="height:85%"></i><i style="height:55%"></i><i style="height:95%"></i>
+          <i style="height:60%"></i><i style="height:100%"></i><i style="height:70%"></i><i style="height:80%"></i>
+          <i style="height:50%"></i><i style="height:90%"></i><i style="height:65%"></i>
+        </div>
+        <small>VANGUARD</small>
+      </div>
+      <div class="body">
+        <div class="label">// VIP VANGUARD PASS</div>
+        <div class="ttl">EARLY<br/>ACCESS</div>
+        <dl class="meta">
+          <div><dt>PASS NO.</dt><dd>0147 <span class="of">/ 500</span></dd></div>
+          <div><dt>TIER</dt><dd>Lifetime Pro</dd></div>
+          <div><dt>STATUS</dt><dd style="color:#d4ff3d">● ACTIVE</dd></div>
+        </dl>
+      </div>
+    </div>
+    <div class="foot">
+      <div class="feats">
+        <span>Generative Badge</span>
+        <span>Beta Day 1</span>
+        <span>Lifetime 50% Off</span>
+      </div>
+      <div class="price">$1.99</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
