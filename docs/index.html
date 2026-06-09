@@ -142,8 +142,13 @@
       </form>
       <div class="hero-stats">
         <div class="stat">
-          <span class="stat-number">5</span>
-          <span class="stat-label">Legend Coaches</span>
+          <span class="stat-number" id="live-waitlist-count">5</span>
+          <span class="stat-label">On Waitlist</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-number"><span id="live-vanguard-count">0</span>/500</span>
+          <span class="stat-label">Vanguards Claimed</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat">
@@ -152,15 +157,36 @@
         </div>
         <div class="stat-divider"></div>
         <div class="stat">
-          <span class="stat-number">1.2M</span>
-          <span class="stat-label">Foods Database</span>
-        </div>
-        <div class="stat-divider"></div>
-        <div class="stat">
           <span class="stat-number">24/7</span>
           <span class="stat-label">Wake-Up Calls</span>
         </div>
       </div>
+      <!-- Real-time stat fetcher — pulls counts from Supabase every 20s -->
+      <script>
+      (function(){
+        var SUPA = 'https://kbldncrurztfwlqzajen.supabase.co';
+        var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njg3NDcsImV4cCI6MjA5NDE0NDc0N30.rIT9u4d5dht_UWJ9er7ic1-TBa4C5ISRMdDwOolgIUA';
+        function headCount(path) {
+          return fetch(SUPA + '/rest/v1/' + path, {
+            method: 'HEAD',
+            headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, Prefer: 'count=exact', Range: '0-0' }
+          }).then(function(r){ var cr=r.headers.get('content-range'); return cr && cr.indexOf('/')>=0 ? (parseInt(cr.split('/')[1],10)||0) : 0; }).catch(function(){return 0;});
+        }
+        function refresh() {
+          Promise.all([
+            headCount('waitlist?select=id'),
+            headCount('vanguard_orders?select=id&status=eq.paid')
+          ]).then(function(r){
+            var w = document.getElementById('live-waitlist-count');
+            var v = document.getElementById('live-vanguard-count');
+            if (w) w.textContent = (r[0]||0).toLocaleString();
+            if (v) v.textContent = Math.min(r[1]||0, 500);
+          });
+        }
+        refresh();
+        setInterval(refresh, 20000);
+      })();
+      </script>
     </div>
     <div class="scroll-indicator">
       <div class="scroll-line"></div>

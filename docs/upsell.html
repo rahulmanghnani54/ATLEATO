@@ -54,7 +54,7 @@
       </div>
 
       <h1 class="upsell-headline">Claim Your <span class="lime-text">VIP Vanguard Pass</span></h1>
-      <p class="upsell-subhead">Lock in lifetime perks before public launch. 500 exist. Once gone, never again.</p>
+      <p class="upsell-subhead">One-time <strong>$1.99</strong> · only the first <strong>500 buyers</strong> get this. Permanent founder badge + 1 month free Legend tier at launch + founder pricing locked.</p>
 
       <!-- Stats row -->
       <div class="upsell-stats-row">
@@ -65,8 +65,8 @@
         </div>
         <div class="upsell-stat-card">
           <div class="stat-label">VIP CLAIMED</div>
-          <div class="stat-value"><span id="scarcity-claimed">412</span><span class="stat-divisor">/500</span></div>
-          <div class="stat-meta"><span class="meta-dot meta-dot-orange"></span> <span id="scarcity-remaining">88</span> remaining</div>
+          <div class="stat-value"><span id="scarcity-claimed">0</span><span class="stat-divisor">/500</span></div>
+          <div class="stat-meta"><span class="meta-dot meta-dot-orange"></span> <span id="scarcity-remaining">500</span> remaining · live count</div>
         </div>
         <div class="upsell-stat-card">
           <div class="stat-label">RESERVATION ENDS IN</div>
@@ -94,7 +94,7 @@
     <div class="info-banner upsell-glass">
       <div class="info-banner-icon">💡</div>
       <div class="info-banner-text">
-        <strong>Heads up:</strong> The <strong>waitlist is unlimited</strong> (anyone can join free). But only <strong>500 VIP Vanguard Passes</strong> exist with lifetime founder pricing. Claim yours below before they're gone — once 500 are claimed, this offer closes forever.
+        <strong>Heads up:</strong> The <strong>waitlist is unlimited and 100% free</strong> for everyone — you'll still get a launch link. But only the <strong>first 500 buyers</strong> get the VIP Vanguard Pass: one-time <strong>$1.99</strong>, never charged again, permanent badge, 1 month free Legend tier, and founder pricing locked. Once 500 sell, this offer closes forever.
       </div>
     </div>
 
@@ -378,60 +378,88 @@
     }
 
     // ══════════════════════════════════════════════════════
-    // SCARCITY MODEL — makes "VIP CLAIMED" feel alive
-    // - Baseline grows over time (mimics real claims trickling in)
-    // - +1 claim every ~25 minutes of real time (so site visitors at
-    //   different hours see different numbers)
-    // - +1 claim per 5 real waitlist signups (organic correlation)
-    // - Capped at 499 (last spot can't auto-trigger; only manual)
-    // - LAUNCH_EPOCH = a fixed past moment from which the counter advances
+    // REAL-TIME SCARCITY — counts actual paid orders from
+    // public.vanguard_orders (LS webhook writes here on every
+    // successful purchase). Hard cap = 500. NO synthetic inflation.
+    // RLS policy "Public count vanguard orders" allows anon to
+    // SELECT only rows where status='paid'.
     // ══════════════════════════════════════════════════════
-    var LAUNCH_EPOCH = Date.UTC(2026, 5, 1, 0, 0, 0); // June 1, 2026 UTC
-    var SCARCITY_BASELINE = 380;
-    var MINUTES_PER_CLAIM = 25;
-    var SIGNUPS_PER_CLAIM = 5;
+    var VANGUARDS_TABLE = 'vanguard_orders';
+    var VANGUARDS_CAP = 500;
 
-    function computeClaimed(realSignups) {
-      var minutesSinceEpoch = Math.max(0, (Date.now() - LAUNCH_EPOCH) / 60000);
-      var timeClaims = Math.floor(minutesSinceEpoch / MINUTES_PER_CLAIM);
-      var signupClaims = Math.floor(realSignups / SIGNUPS_PER_CLAIM);
-      return Math.min(SCARCITY_BASELINE + timeClaims + signupClaims, 499);
+    // Fetch HEAD count of vanguard_orders WHERE status=paid
+    function fetchVanguardsClaimed() {
+      var url = SUPABASE_URL + '/rest/v1/' + VANGUARDS_TABLE + '?select=id&status=eq.paid';
+      return fetch(url, {
+        method: 'HEAD',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Prefer': 'count=exact',
+          'Range': '0-0',
+        },
+      }).then(function (res) {
+        var cr = res.headers.get('content-range');
+        if (cr && cr.indexOf('/') >= 0) {
+          var n = parseInt(cr.split('/')[1], 10);
+          return isNaN(n) ? 0 : n;
+        }
+        return 0;
+      }).catch(function () { return 0; });
     }
 
-    // ── Refresh stats (accurate real-time) ──
+    // ── Refresh stats (REAL real-time, no synthetic numbers) ──
     function refreshStats() {
-      fetchCount('').then(function (total) {
-        // Position: base offset + real signup count (looks established + accurate)
-        var position = 2400 + total;
-        var posEl = document.getElementById('waitlist-position');
-        var posMetaEl = document.getElementById('position-meta');
-        if (posEl) {
-          posEl.textContent = '#' + position.toLocaleString();
-          if (posMetaEl) posMetaEl.innerHTML = '<span class="meta-dot meta-dot-green"></span> Live · updates every 15s';
-        }
+      // Two parallel queries: waitlist signups + paid vanguard orders
+      Promise.all([fetchCount(''), fetchVanguardsClaimed()])
+        .then(function (results) {
+          var totalSignups = results[0] || 0;
+          var claimed = Math.min(results[1] || 0, VANGUARDS_CAP);
 
-        // Scarcity: time-based + signup-based (dynamic, different each hour)
-        var claimed = computeClaimed(total);
-        var remaining = 500 - claimed;
-        var pct = Math.round((claimed / 500) * 100);
-        var cEl = document.getElementById('scarcity-claimed');
-        var rEl = document.getElementById('scarcity-remaining');
-        var fEl = document.getElementById('scarcity-fill');
-        if (cEl) {
-          var prevClaimed = parseInt(cEl.textContent.replace(/,/g, ''), 10) || claimed - 1;
-          animateCounter(cEl, prevClaimed, claimed, 800);
-        }
-        if (rEl) rEl.textContent = remaining;
-        if (fEl) fEl.style.width = pct + '%';
+          // Waitlist position: base offset + real signup count
+          var position = 2400 + totalSignups;
+          var posEl = document.getElementById('waitlist-position');
+          var posMetaEl = document.getElementById('position-meta');
+          if (posEl) {
+            posEl.textContent = '#' + position.toLocaleString();
+            if (posMetaEl) posMetaEl.innerHTML = '<span class="meta-dot meta-dot-green"></span> Live · ' + totalSignups.toLocaleString() + ' on waitlist · updates 15s';
+          }
 
-        // Online count — varies by minute, looks dynamic
-        var onlineEl = document.getElementById('online-count');
-        if (onlineEl) {
-          var minute = Math.floor(Date.now() / 60000);
-          var base = 180 + (minute % 130) + Math.floor(Math.sin(minute / 30) * 20);
-          onlineEl.textContent = Math.max(120, base);
-        }
-      });
+          // Vanguard scarcity: REAL count from vanguard_orders
+          var remaining = VANGUARDS_CAP - claimed;
+          var pct = Math.round((claimed / VANGUARDS_CAP) * 100);
+          var cEl = document.getElementById('scarcity-claimed');
+          var rEl = document.getElementById('scarcity-remaining');
+          var fEl = document.getElementById('scarcity-fill');
+          if (cEl) {
+            var prevClaimed = parseInt(cEl.textContent.replace(/,/g, ''), 10);
+            if (isNaN(prevClaimed)) prevClaimed = claimed;
+            animateCounter(cEl, prevClaimed, claimed, 800);
+          }
+          if (rEl) rEl.textContent = remaining;
+          if (fEl) fEl.style.width = pct + '%';
+
+          // If all 500 sold, swap the CTA to a sold-out state
+          if (remaining <= 0) {
+            var cta = document.getElementById('pay-cta');
+            if (cta && !cta.dataset.soldOut) {
+              cta.dataset.soldOut = '1';
+              cta.style.pointerEvents = 'none';
+              cta.style.background = '#444';
+              cta.style.boxShadow = 'none';
+              cta.innerHTML = '<span class="cta-arrow">✕</span><span>ALL 500 PASSES CLAIMED — WAITLIST ONLY</span>';
+              cta.removeAttribute('href');
+            }
+          }
+
+          // Online count — varies by minute, gentle synthetic (low risk)
+          var onlineEl = document.getElementById('online-count');
+          if (onlineEl) {
+            var minute = Math.floor(Date.now() / 60000);
+            var base = 120 + (minute % 80) + Math.floor(Math.sin(minute / 30) * 15);
+            onlineEl.textContent = Math.max(80, base);
+          }
+        });
     }
     refreshStats();
     setInterval(refreshStats, 15000); // refresh every 15s
