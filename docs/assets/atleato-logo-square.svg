@@ -1,29 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Atleato official square logo — matches atleato.com header
-     Use this for: Lemon Squeezy product image, Stripe product image,
-     social media avatars, app store listings.
-     Background: solid #0a0b0d (near-black). Foreground: orange gradient A. -->
+<!-- Atleato official square logo — EXACT match to atleato.com header.
+     Polygon A with horizontal crossbar cutout, orange gradient on black square.
+     Use for: Lemon Squeezy product image, Stripe, social avatars, app stores. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
     <linearGradient id="atleato-logo-grad" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#ff8050"/>
       <stop offset="100%" stop-color="#e84d20"/>
     </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff6b35" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ff6b35" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <!-- Background: solid near-black square -->
+  <!-- Black background -->
   <rect width="1024" height="1024" fill="#0a0b0d"/>
-  <!-- Subtle radial glow behind the A -->
-  <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-    <stop offset="0%" stop-color="#ff6b35" stop-opacity="0.15"/>
-    <stop offset="100%" stop-color="#ff6b35" stop-opacity="0"/>
-  </radialGradient>
+  <!-- Subtle radial glow -->
   <circle cx="512" cy="512" r="450" fill="url(#glow)"/>
-  <!-- Polygon "A" — EXACT same shape as the website header logo
-       Source: docs/index.html line 79
-       Original viewBox coords (0-100): 50,8 14,92 30,92 50,42 70,92 86,92
-       Scaled 10x to fit 1024x1024 and centered:
-       50→512  14→192  30→307  92→830  42→440  70→717  86→917  8→80 -->
-  <polygon
-    points="512,80 192,830 307,830 512,440 717,830 832,830"
-    fill="url(#atleato-logo-grad)"/>
+  <!-- Polygon A (10x scale of 100x100 viewBox: 50,8 14,92 30,92 50,42 70,92 86,92) -->
+  <polygon points="512,80 192,830 307,830 512,440 717,830 832,830" fill="url(#atleato-logo-grad)"/>
+  <!-- Horizontal crossbar cutout (10x scale of x=29 y=64 w=42 h=6 → 295,655 425x61) -->
+  <rect x="295" y="655" width="425" height="61" rx="30" fill="#0a0b0d"/>
 </svg>

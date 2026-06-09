@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Atleato icon — official polygon-A on solid BLACK square. For social/app stores. -->
+<!-- Atleato icon — orange polygon-A with black crossbar cutout, on BLACK square.
+     Matches atleato.com header exactly. For social/app stores. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
   <defs>
     <linearGradient id="atleatoGradBlk" x1="0" y1="0" x2="0" y2="1">
@@ -9,4 +10,5 @@
   </defs>
   <rect x="0" y="0" width="100" height="100" fill="#0a0b0d"/>
   <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#atleatoGradBlk)"/>
+  <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
 </svg>

@@ -49,6 +49,7 @@
             <rect width="1024" height="1024" fill="#0a0b0d"/>
             <circle cx="512" cy="512" r="450" fill="url(#glow1)"/>
             <polygon points="512,80 192,830 307,830 512,440 717,830 832,830" fill="url(#g1)"/>
+            <rect x="295" y="655" width="425" height="61" rx="30" fill="#0a0b0d"/>
           </svg>
         </div>
         <p style="color:#aaa;font-size:12px;">1024×1024 · PNG with black bg</p>
@@ -64,8 +65,9 @@
               <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/>
               </linearGradient>
+              <mask id="m2"><rect width="1024" height="1024" fill="#fff"/><rect x="295" y="655" width="425" height="61" rx="30" fill="#000"/></mask>
             </defs>
-            <polygon points="512,80 192,830 307,830 512,440 717,830 832,830" fill="url(#g2)"/>
+            <polygon points="512,80 192,830 307,830 512,440 717,830 832,830" fill="url(#g2)" mask="url(#m2)"/>
           </svg>
         </div>
         <p style="color:#aaa;font-size:12px;">1024×1024 · transparent</p>
@@ -84,6 +86,7 @@
             </defs>
             <rect width="1024" height="1024" fill="#ffffff"/>
             <polygon points="512,80 192,830 307,830 512,440 717,830 832,830" fill="url(#g3)"/>
+            <rect x="295" y="655" width="425" height="61" rx="30" fill="#ffffff"/>
           </svg>
         </div>
         <p style="color:#aaa;font-size:12px;">1024×1024 · white bg</p>
@@ -101,6 +104,7 @@
               </linearGradient>
             </defs>
             <polygon points="180,80 60,330 100,330 180,180 260,330 300,330" fill="url(#g4)"/>
+            <rect x="113" y="265" width="135" height="20" rx="10" fill="#0a0b0d"/>
             <text x="360" y="265" fill="#fff" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="135" font-weight="800" letter-spacing="-3">Atleato</text>
           </svg>
         </div>
