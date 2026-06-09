@@ -25,6 +25,9 @@ const LS_SECRET = Deno.env.get('LEMONSQUEEZY_WEBHOOK_SECRET') || '';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const FROM_EMAIL = 'Rahul from Atleato <hello@atleato.com>';
 const REPLY_TO = 'hello@atleato.com';
+// Set via: supabase secrets set DISCORD_INVITE_URL=https://discord.gg/yourcode
+// If unset, the email omits the Discord block gracefully.
+const DISCORD_INVITE_URL = Deno.env.get('DISCORD_INVITE_URL') || '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -93,15 +96,16 @@ async function sendVanguardConfirmedEmail(opts: {
 PAYMENT CONFIRMED. Pass #${passStr} of 500 is yours forever.
 
 Your identity: ${opts.badge} #${passStr}
-Permanently yours · 1 of 500 ever created · Lifetime Pro tier
+Permanently yours · 1 of 500 ever created · Founder Tier
 
 Order #${opts.orderNumber} · ${opts.totalFormatted}
 
 What happens next:
 - TODAY: this confirmation + Lemon Squeezy receipt in your inbox
-- +2 WEEKS: first Vanguards-only build update from me
+${DISCORD_INVITE_URL ? `- TODAY: Join the private Vanguard Discord → ${DISCORD_INVITE_URL}\n` : ''}- +2 WEEKS: first Vanguards-only build update from me
 - LAUNCH -14d: Google Play closed-testing invite (before public sees it)
-- LAUNCH DAY: Legend tier auto-activates on your account for 30 days
+- LAUNCH DAY: Legend tier auto-activates for 30 days FREE
+- LAUNCH +30d: drops back to Free tier (NO auto-charge). Continue at $19.99/mo only if you choose.
 
 Your Vanguard page: ${upsellUrl}
 View animated welcome: ${hostedUrl}
@@ -128,7 +132,7 @@ P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. 
     <div style="border:1px solid #e8e3da;border-radius:12px;padding:24px;background:linear-gradient(135deg,#fffaf3 0%,#fff5e8 100%);text-align:center;">
       <p style="margin:0 0 8px;font-size:11px;font-weight:600;letter-spacing:1.5px;color:#8b6f4e;text-transform:uppercase;">Your 1-of-500 Identity</p>
       <p style="margin:0 0 6px;font-family:Georgia,serif;font-size:28px;font-weight:700;color:#e84d20;letter-spacing:-0.5px;line-height:1.2;">${opts.badge} #${passStr}</p>
-      <p style="margin:0;font-size:13px;color:#7a6a52;">Permanently yours · Lifetime Pro tier · 1 of 500</p>
+      <p style="margin:0;font-size:13px;color:#7a6a52;">Permanently yours · Founder Tier · 1 of 500</p>
     </div>
   </div>
   <div style="padding:28px 32px 0;">
@@ -142,9 +146,11 @@ P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. 
   </div>
   <div style="padding:0 32px 0;">
     <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#0a0b0d;">What happens next:</p>
+    ${DISCORD_INVITE_URL ? `<p style="margin:0 0 10px;font-size:14px;color:#444;padding-left:14px;border-left:3px solid #5865F2;"><strong>Today</strong> — <a href="${DISCORD_INVITE_URL}" style="color:#5865F2;font-weight:700;text-decoration:none;border-bottom:2px solid #5865F2;">Join the private Vanguard Discord →</a></p>` : ''}
     <p style="margin:0 0 10px;font-size:14px;color:#444;padding-left:14px;border-left:3px solid #ff6b35;"><strong>+2 weeks</strong> — first Vanguards-only build update from me</p>
     <p style="margin:0 0 10px;font-size:14px;color:#444;padding-left:14px;border-left:3px solid #ff6b35;"><strong>Launch -14d</strong> — Google Play closed-testing invite (before public)</p>
-    <p style="margin:0 0 24px;font-size:14px;color:#444;padding-left:14px;border-left:3px solid #39e08a;"><strong>Launch day (Q3 2026)</strong> — Legend tier auto-activates for 30 days</p>
+    <p style="margin:0 0 10px;font-size:14px;color:#444;padding-left:14px;border-left:3px solid #39e08a;"><strong>Launch day (Q3 2026)</strong> — Legend tier auto-activates for 30 days FREE</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#444;padding-left:14px;border-left:3px solid #999;"><strong>Launch +30 days</strong> — drops back to Free tier (no auto-charge). Continue at $19.99/mo only if you choose.</p>
   </div>
   <div style="padding:0 32px 8px;">
     <p style="margin:0 0 8px;font-size:14px;color:#666;">Your Vanguard page:</p>

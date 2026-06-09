@@ -150,7 +150,7 @@ Atleato is live on Google Play TODAY.
 🥇 PRO ($9.99): 3 coaches, AI form, reward chests, physique photos
 👑 LEGEND ($19.99): All 5 coaches, video review, voice customization
 
-Founders get $1.99 lifetime lock.
+First 500 Vanguards: $1.99 one-time + 1 month Legend free at launch + private Discord. After the free month: drop to Free or continue at regular $19.99/mo. No auto-charge.
 ```
 
 ---

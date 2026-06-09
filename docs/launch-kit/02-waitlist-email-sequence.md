@@ -153,9 +153,8 @@ Vanguard Pass status:
 
 After launch:
 • Legend tier = $19.99/mo, every month
-• Vanguard holders = $0 for month 1, then $18 deposit unlocks lifetime tier
-
-Math: 12 months of Legend = $239.88/yr. Vanguard 1st year = $19.99.
+• Vanguard holders = $1.99 ONE-TIME now → 1 month FREE Legend at launch → then drop to Free OR continue at $19.99/mo (your call, no auto-charge)
+• Private Vanguard Discord from day one
 
 That's $219 in savings. For a $1.99 deposit today.
 
