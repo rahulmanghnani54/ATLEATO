@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator, Switch,
+  TextInput, Alert, ActivityIndicator, Switch, Linking, Share,
 } from 'react-native';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -450,6 +450,44 @@ export default function ProfileScreen() {
               />
             </>
           )}
+        </SettingsGroup>
+
+        {/* ── About Atleato — marketing links + share ── */}
+        <SettingsGroup title="ABOUT ATLEATO">
+          <SettingsRow
+            label="🎬  Watch the Showreel"
+            sub="60-second cinematic — share with friends"
+            trail="↗"
+            onPress={() => Linking.openURL('https://atleato.com/showreel.html').catch(() => {})}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="📺  Full Demo Video"
+            sub="16:9 timeline walkthrough of every feature"
+            trail="↗"
+            onPress={() => Linking.openURL('https://atleato.com/demo-video.html').catch(() => {})}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="🌐  Visit atleato.com"
+            sub="Marketing site · waitlist · pricing"
+            trail="↗"
+            onPress={() => Linking.openURL('https://atleato.com').catch(() => {})}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="📤  Share Atleato"
+            sub="Send the showreel to a friend"
+            trail="→"
+            onPress={() =>
+              Share.share({
+                message:
+                  "Atleato — your coach calls. 5 legend coaches, real wake-up calls, live AI form correction. Watch the 60-sec showreel: https://atleato.com/showreel.html",
+                url: 'https://atleato.com/showreel.html',
+                title: 'Atleato — Your Coach Calls',
+              }).catch(() => {})
+            }
+          />
         </SettingsGroup>
 
         {/* ── Account ── */}

@@ -56,6 +56,14 @@
   ]
 }
 </script>
+<style>
+  /* Mobile UI section card hover effects */
+  .mobile-ui-card:hover{transform:translateY(-4px);box-shadow:0 20px 50px -20px rgba(0,0,0,0.6);}
+  .mobile-ui-card:hover[style*="rgba(212,255,31"]{border-color:rgba(212,255,31,0.5) !important;}
+  .mobile-ui-card:hover[style*="rgba(255,107,53"]{border-color:rgba(255,107,53,0.5) !important;}
+  .mobile-ui-card:hover[style*="rgba(255,255,255,0.08)"]{border-color:rgba(255,255,255,0.2) !important;}
+  .mobile-ui-card:focus-visible{outline:2px solid var(--lime);outline-offset:3px;}
+</style>
 </head>
 <body>
 
@@ -84,6 +92,7 @@
       <div class="nav-links">
         <a href="#features">Features</a>
         <a href="#coaches">Coaches</a>
+        <a href="#mobile-ui">Mobile UI</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
         <a href="#waitlist" class="nav-cta">Join Waitlist</a>
@@ -561,6 +570,79 @@
             <p>Live form check at the gym. Macro tracking with global foods. Run to claim territory. Streak grows. Coach calls back if you skip.</p>
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MOBILE UI / SHOWREEL SECTION
+       Links to the two flagship demo experiences:
+       1. /showreel.html  — vertical cinematic 7-scene reel (scroll-snap)
+       2. /demo-video.html — 16:9 timeline-based animated walkthrough
+       Plus quick links to the welcome email + app screenshots.
+       ═══════════════════════════════════════════════════════════════ -->
+  <section id="mobile-ui" class="section" style="padding:80px 0;background:linear-gradient(180deg,rgba(212,255,31,0.02),transparent);">
+    <div class="container">
+      <div class="section-header" style="text-align:center;margin-bottom:48px;">
+        <span class="section-eyebrow">SEE IT IN MOTION</span>
+        <h2 class="section-title">Watch the <span class="lime-text">Show.</span></h2>
+        <p class="demo-subtext" style="margin:16px auto 0;max-width:680px;">
+          Two ways to experience Atleato before you ever install it. Both built with the actual app's design system — same fonts, same volt-green, same DNA.
+        </p>
+      </div>
+
+      <div class="mobile-ui-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;max-width:1100px;margin:0 auto;">
+
+        <!-- Card 1: Showreel -->
+        <a href="/showreel.html" class="mobile-ui-card" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(212,255,31,0.05),rgba(212,255,31,0.01));border:1px solid rgba(212,255,31,0.18);border-radius:18px;padding:28px;transition:transform .25s, border-color .25s, box-shadow .25s;position:relative;overflow:hidden;">
+          <div style="display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--lime);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(212,255,31,0.3);padding:6px 12px;border-radius:100px;background:rgba(212,255,31,0.06);margin-bottom:22px;">
+            <span style="display:inline-block;width:6px;height:6px;background:var(--lime);border-radius:50%;box-shadow:0 0 8px var(--lime);"></span> NEW · 60-SECOND SHOWREEL
+          </div>
+          <h3 style="font-family:'Archivo Black',sans-serif;font-size:28px;letter-spacing:-0.5px;margin:0 0 8px;line-height:1.1;">Cinematic Vertical Reel</h3>
+          <p style="color:var(--text-secondary);font-size:14px;line-height:1.55;margin:0 0 20px;">Scroll-snap through 7 scenes: cold-open clock → wake-up call → 5 coaches → AI form coach → territory map → stats → CTA. Built for mobile + desktop.</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">🎬 7 scenes</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">📱 mobile-first</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">⌨ keyboard nav</div>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:8px;color:var(--lime);font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;">
+            Watch the showreel <span style="font-size:18px;">→</span>
+          </div>
+        </a>
+
+        <!-- Card 2: Demo Video -->
+        <a href="/demo-video.html" class="mobile-ui-card" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(255,107,53,0.06),rgba(255,107,53,0.01));border:1px solid rgba(255,107,53,0.22);border-radius:18px;padding:28px;transition:transform .25s, border-color .25s, box-shadow .25s;position:relative;overflow:hidden;">
+          <div style="display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--orange);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(255,107,53,0.35);padding:6px 12px;border-radius:100px;background:rgba(255,107,53,0.06);margin-bottom:22px;">
+            <span style="display:inline-block;width:6px;height:6px;background:var(--orange);border-radius:50%;box-shadow:0 0 8px var(--orange);"></span> 16:9 PRODUCT DEMO
+          </div>
+          <h3 style="font-family:'Archivo Black',sans-serif;font-size:28px;letter-spacing:-0.5px;margin:0 0 8px;line-height:1.1;">Full Walkthrough Video</h3>
+          <p style="color:var(--text-secondary);font-size:14px;line-height:1.55;margin:0 0 20px;">Timeline-based animated demo at 16:9. Press Space to play. Cold open → call → coach transform → live AI form correction → nutrition → outro. ~50 sec.</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">⏱ ~50 sec</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">📺 16:9 widescreen</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">⏯ space to play</div>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:8px;color:var(--orange);font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;">
+            Open the demo video <span style="font-size:18px;">→</span>
+          </div>
+        </a>
+
+        <!-- Card 3: App Preview Screenshots -->
+        <a href="/app-preview.html" class="mobile-ui-card" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:28px;transition:transform .25s, border-color .25s, box-shadow .25s;">
+          <div style="display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(255,255,255,0.12);padding:6px 12px;border-radius:100px;margin-bottom:22px;">📷 8 SCREENS</div>
+          <h3 style="font-family:'Archivo Black',sans-serif;font-size:24px;letter-spacing:-0.4px;margin:0 0 8px;line-height:1.1;">App Screenshots</h3>
+          <p style="color:var(--text-secondary);font-size:13.5px;line-height:1.55;margin:0 0 18px;">8 phone-frame mockups of the real React Native app screens — launch, onboarding, dashboard, workout, form coach, territory, nutrition.</p>
+          <div style="color:var(--text-tertiary);font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;">View screenshots →</div>
+        </a>
+
+        <!-- Card 4: Welcome Email -->
+        <a href="/welcome-email.html" class="mobile-ui-card" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:28px;transition:transform .25s, border-color .25s, box-shadow .25s;">
+          <div style="display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(255,255,255,0.12);padding:6px 12px;border-radius:100px;margin-bottom:22px;">✉️ EMAIL PREVIEW</div>
+          <h3 style="font-family:'Archivo Black',sans-serif;font-size:24px;letter-spacing:-0.4px;margin:0 0 8px;line-height:1.1;">Welcome Email</h3>
+          <p style="color:var(--text-secondary);font-size:13.5px;line-height:1.55;margin:0 0 18px;">The animated "YOU'RE IN" email every Vanguard receives. VIP pass ticket with shimmer sweep, incoming-call card, 5-coach lineup, CTA.</p>
+          <div style="color:var(--text-tertiary);font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;">Preview email →</div>
+        </a>
+
       </div>
     </div>
   </section>

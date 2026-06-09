@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://atleato.com/</loc><lastmod>2026-06-08</lastmod><priority>1.0</priority><changefreq>daily</changefreq></url>
-  <url><loc>https://atleato.com/upsell.html</loc><lastmod>2026-06-08</lastmod><priority>0.9</priority><changefreq>weekly</changefreq></url>
-  <url><loc>https://atleato.com/privacy</loc><lastmod>2026-06-08</lastmod><priority>0.5</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://atleato.com/</loc><lastmod>2026-06-09</lastmod><priority>1.0</priority><changefreq>daily</changefreq></url>
+  <url><loc>https://atleato.com/upsell.html</loc><lastmod>2026-06-09</lastmod><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://atleato.com/showreel.html</loc><lastmod>2026-06-09</lastmod><priority>0.9</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://atleato.com/demo-video.html</loc><lastmod>2026-06-09</lastmod><priority>0.8</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://atleato.com/app-preview.html</loc><lastmod>2026-06-09</lastmod><priority>0.7</priority><changefreq>weekly</changefreq></url>
+  <url><loc>https://atleato.com/welcome-email.html</loc><lastmod>2026-06-09</lastmod><priority>0.6</priority><changefreq>monthly</changefreq></url>
+  <url><loc>https://atleato.com/privacy</loc><lastmod>2026-06-09</lastmod><priority>0.5</priority><changefreq>monthly</changefreq></url>
 </urlset>
