@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Atleato icon — official polygon-A on solid BLACK square. For social/app stores. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
   <defs>
     <linearGradient id="atleatoGradBlk" x1="0" y1="0" x2="0" y2="1">
@@ -6,10 +7,6 @@
       <stop offset="100%" stop-color="#e84d20"/>
     </linearGradient>
   </defs>
-  <!-- Solid black square background -->
-  <rect x="0" y="0" width="100" height="100" rx="22" fill="#0a0b0d"/>
-  <!-- Bold A letterform -->
-  <path d="M 28 78 L 44 22 L 56 22 L 72 78 L 62 78 L 58 64 L 42 64 L 38 78 Z" fill="url(#atleatoGradBlk)"/>
-  <rect x="38" y="52" width="24" height="6" rx="3" fill="url(#atleatoGradBlk)"/>
-  <path d="M 46 50 L 50 36 L 54 50 Z" fill="#0a0b0d"/>
+  <rect x="0" y="0" width="100" height="100" fill="#0a0b0d"/>
+  <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#atleatoGradBlk)"/>
 </svg>
