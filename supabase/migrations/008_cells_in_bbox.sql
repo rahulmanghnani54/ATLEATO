@@ -11,6 +11,13 @@
 -- generated (lat_b, lon_b) column + composite index, but premature.
 -- ─────────────────────────────────────────────────────────────────────────────
 
+-- Drop any prior version first — Postgres won't allow CREATE OR REPLACE to
+-- change the OUT-parameter row type (RETURNS TABLE columns), so re-running
+-- this migration against a DB that has an older signature fails with 42P13.
+-- Safe no-op if the function doesn't exist yet.
+DROP FUNCTION IF EXISTS public.cells_in_bbox(NUMERIC, NUMERIC, NUMERIC, NUMERIC, INT);
+DROP FUNCTION IF EXISTS public.cells_in_bbox(NUMERIC, NUMERIC, NUMERIC, NUMERIC);
+
 CREATE OR REPLACE FUNCTION public.cells_in_bbox(
   p_lat_min    NUMERIC,
   p_lat_max    NUMERIC,

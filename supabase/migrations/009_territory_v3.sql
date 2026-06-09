@@ -158,6 +158,12 @@ REVOKE ALL ON FUNCTION public.claim_cells(TEXT[], NUMERIC) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.claim_cells(TEXT[], NUMERIC) TO authenticated;
 
 -- ── 4. cells_in_bbox v2 — include change_count for heatmap rendering ──────
+-- Drop the v1 signature defined in 008 first; CREATE OR REPLACE can't change
+-- the OUT-parameter row type (RETURNS TABLE columns differ between v1 and v2).
+-- Without this, re-running migrations against an existing DB fails with
+-- SQLSTATE 42P13: "cannot change return type of existing function".
+DROP FUNCTION IF EXISTS public.cells_in_bbox(NUMERIC, NUMERIC, NUMERIC, NUMERIC, INT);
+
 CREATE OR REPLACE FUNCTION public.cells_in_bbox(
   p_lat_min    NUMERIC,
   p_lat_max    NUMERIC,
