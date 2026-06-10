@@ -32,8 +32,8 @@ export interface ExpertProgram {
 export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
   arnold_blueprint: {
     id: 'arnold_blueprint',
-    name: "The Governor's Blueprint",
-    expert: 'The Governor',
+    name: "The Monument's Blueprint",
+    expert: 'The Monument',
     quote: "The last three or four reps is what makes the muscle grow. This area of pain divides the champion from someone else.",
     emoji: '🏆',
     difficulty: 'Advanced',
@@ -49,7 +49,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
         muscleGroups: ['Chest', 'Back'],
         estimatedMinutes: 75,
         exercises: [
-          { name: 'Barbell Bench Press', sets: 5, reps: '8-10', restSeconds: 120, tips: ['Touch chest, full lockout.', 'The Governor pressed to failure on the last set.'] },
+          { name: 'Barbell Bench Press', sets: 5, reps: '8-10', restSeconds: 120, tips: ['Touch chest, full lockout.', 'The Monument pressed to failure on the last set.'] },
           { name: 'Wide-Grip Pull-Up', sets: 5, reps: '10-12', restSeconds: 90, tips: ['Full dead hang at bottom.', 'Chin clears the bar at top.'] },
           { name: 'Incline Dumbbell Press', sets: 4, reps: '10-12', restSeconds: 90, tips: ['30-45° angle.', 'Squeeze at top, stretch at bottom.'] },
           { name: 'Barbell Row', sets: 4, reps: '8-10', restSeconds: 90, tips: ['Overhand grip, pull to lower chest.', 'Keep chest against bar.'] },
@@ -177,7 +177,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
   nippard_fundamentals: {
     id: 'nippard_fundamentals',
     name: 'Science Fundamentals',
-    expert: 'The Scientist',
+    expert: 'The Analyst',
     quote: "The best program is one based on evidence, not broscience. Frequency, volume, and progressive overload — that's the formula.",
     emoji: '🔬',
     difficulty: 'Intermediate',
@@ -336,7 +336,7 @@ export const EXPERT_PROGRAMS: Record<string, ExpertProgram> = {
   dr_mike_mav: {
     id: 'dr_mike_mav',
     name: 'MAV Hypertrophy',
-    expert: 'Dr. Growth',
+    expert: 'The Architect',
     quote: "Train at your Maximum Adaptive Volume. More volume is better — but only up to the point your recovery can handle.",
     emoji: '📊',
     difficulty: 'Intermediate',

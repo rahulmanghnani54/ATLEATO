@@ -6,7 +6,7 @@
  *   - Accent color and tone
  *   - Greeting and headline copy
  *   - Nutrition philosophy and macro targets
- *   - Voice rules (The Commander yells, The Governor inspires, Dr. Growth calculates)
+ *   - Voice rules (The Commander yells, The Monument inspires, The Architect calculates)
  *   - A daily quote in their voice
  *
  * The five personas map 1:1 to the EXPERT_PROGRAMS in `constants/experts.ts`.
@@ -63,8 +63,8 @@ export interface PersonaTheme {
 
 const ARNOLD: PersonaTheme = {
   id: 'arnold',
-  shortName: 'THE GOVERNOR',
-  fullName: 'The Governor',
+  shortName: 'THE MONUMENT',
+  fullName: 'The Monument',
   era: 'Old School Volume · Golden Era Mass',
   initials: 'TG',
 
@@ -159,8 +159,8 @@ const CBUM: PersonaTheme = {
 
 const NIPPARD: PersonaTheme = {
   id: 'nippard',
-  shortName: 'THE SCIENTIST',
-  fullName: 'The Scientist',
+  shortName: 'THE ANALYST',
+  fullName: 'The Analyst',
   era: 'Evidence-Based · Hypertrophy Research',
   initials: 'SC',
 
@@ -255,9 +255,9 @@ const CT_FLETCHER: PersonaTheme = {
 
 const DR_MIKE: PersonaTheme = {
   id: 'dr_mike',
-  shortName: 'DR. GROWTH',
-  fullName: 'Dr. Growth',
-  era: 'Hypertrophy Science · Periodization Specialist',
+  shortName: 'THE ARCHITECT',
+  fullName: 'The Architect',
+  era: 'Hypertrophy & Periodization · Periodization Specialist',
   initials: 'DG',
 
   accent: '#00e0a4',

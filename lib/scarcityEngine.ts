@@ -127,10 +127,10 @@ export async function markTipSeen(personaId: PersonaId): Promise<void> {
 /** Coach short-name for notification copy */
 const COACH_NAMES: Record<PersonaId, string> = {
   cbum: 'THE SCULPTOR',
-  arnold: 'The Governor',
-  nippard: 'The Scientist',
+  arnold: 'The Monument',
+  nippard: 'The Analyst',
   ct_fletcher: 'The Commander',
-  dr_mike: 'Dr. Growth',
+  dr_mike: 'The Architect',
 };
 
 /**

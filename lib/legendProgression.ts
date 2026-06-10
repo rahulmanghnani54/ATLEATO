@@ -77,7 +77,7 @@ const PERSONA_TITLES: Record<PersonaId, Record<LevelName, string>> = {
     Grinder: 'MAV Builder',
     Athlete: 'MRV Pusher',
     Elite:   'RP Athlete',
-    Legend:  'Dr. Growth Status',
+    Legend:  'The Architect Status',
   },
 };
 

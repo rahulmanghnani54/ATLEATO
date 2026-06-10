@@ -46,7 +46,7 @@ interface ProgramCard {
 
 const PROGRAM_CARDS: ProgramCard[] = [
   { programId: 'cbum_evolved',         personaId: 'cbum',        difficulty: 'INTERMEDIATE', daysPerWeek: 5, programLabel: 'The Sculptor Method',   focus: 'CLASSIC PHYSIQUE' },
-  { programId: 'arnold_blueprint',     personaId: 'arnold',      difficulty: 'ADVANCED',     daysPerWeek: 6, programLabel: "The Governor's Blueprint", focus: 'HYPERTROPHY' },
+  { programId: 'arnold_blueprint',     personaId: 'arnold',      difficulty: 'ADVANCED',     daysPerWeek: 6, programLabel: "The Monument's Blueprint", focus: 'HYPERTROPHY' },
   { programId: 'nippard_fundamentals', personaId: 'nippard',     difficulty: 'BEGINNER',     daysPerWeek: 4, programLabel: 'Science Fundamentals',  focus: 'EVIDENCE-BASED' },
   { programId: 'ct_strength',          personaId: 'ct_fletcher', difficulty: 'ADVANCED',     daysPerWeek: 5, programLabel: 'Commander Strength',    focus: 'STRENGTH + MASS' },
   { programId: 'dr_mike_mav',          personaId: 'dr_mike',     difficulty: 'INTERMEDIATE', daysPerWeek: 5, programLabel: 'MAV Hypertrophy',        focus: 'RP METHOD' },

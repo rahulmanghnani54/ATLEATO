@@ -49,8 +49,8 @@ const SQUADS: Squad[] = [
   },
   {
     id: 'arnold_blueprint',
-    name: 'Team The Governor',
-    coach: 'The Governor',
+    name: 'Team The Monument',
+    coach: 'The Monument',
     accent: '#ffb13a',
     members: 892,
     challenge: '6 training days. Double split Monday.',
@@ -64,8 +64,8 @@ const SQUADS: Squad[] = [
   },
   {
     id: 'nippard_fundamentals',
-    name: 'Team The Scientist',
-    coach: 'The Scientist',
+    name: 'Team The Analyst',
+    coach: 'The Analyst',
     accent: '#5b8cff',
     members: 634,
     challenge: '4 sessions, track every rep. Science wins.',
@@ -94,8 +94,8 @@ const SQUADS: Squad[] = [
   },
   {
     id: 'dr_mike_mav',
-    name: 'Team Dr. Growth',
-    coach: 'Dr. Growth',
+    name: 'Team The Architect',
+    coach: 'The Architect',
     accent: '#00e0a4',
     members: 891,
     challenge: 'MEV to MAV progression. Deload Friday.',

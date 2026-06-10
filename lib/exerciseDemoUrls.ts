@@ -14,18 +14,18 @@
 
 const PRO_SEARCH_NAME: Record<string, string> = {
   cbum:        'The Sculptor',
-  arnold:      'The Governor',
-  nippard:     'The Scientist',
+  arnold:      'The Monument',
+  nippard:     'The Analyst',
   ct_fletcher: 'The Commander',
-  dr_mike:     'Dr. Growth',
+  dr_mike:     'The Architect',
 };
 
 const PRO_DISPLAY: Record<string, string> = {
   cbum:        'THE SCULPTOR',
-  arnold:      'THE GOVERNOR',
-  nippard:     'THE SCIENTIST',
+  arnold:      'THE MONUMENT',
+  nippard:     'THE ANALYST',
   ct_fletcher: 'CT',
-  dr_mike:     'DR. GROWTH',
+  dr_mike:     'THE ARCHITECT',
 };
 
 /** Map any program-id (e.g. "cbum_evolved", "dr_mike_mav") to a persona key. */
@@ -41,7 +41,7 @@ export function programIdToPersona(programId: string | null | undefined): string
 
 /** Build a YouTube search URL for "<Pro's full name> <exercise> form". */
 export function getProDemoUrl(exerciseName: string, persona: string): string {
-  const pro = PRO_SEARCH_NAME[persona] ?? 'The Scientist'; // safe default: evidence-based coach
+  const pro = PRO_SEARCH_NAME[persona] ?? 'The Analyst'; // safe default: evidence-based coach
   const query = encodeURIComponent(`${pro} ${exerciseName} form technique`);
   return `https://www.youtube.com/results?search_query=${query}`;
 }

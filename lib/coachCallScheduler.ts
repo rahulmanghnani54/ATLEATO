@@ -6,7 +6,7 @@
  *
  * Each notification:
  *   - Uses the coach's voice in the title and body (CT shouts in CAPS,
- *     The Governor inspires, The Scientist data-talks, Dr. Growth calculates, THE SCULPTOR is calm)
+ *     The Monument inspires, The Analyst data-talks, The Architect calculates, THE SCULPTOR is calm)
  *   - Is tagged with a persistent ID so we can cancel/replace cleanly
  *   - On tap, deep-links into the right screen via the `data` payload
  *     (consumed by `app/_layout.tsx`'s notification response listener)
@@ -39,11 +39,11 @@ const WAKEUP_LINES: Record<PersonaId, CallCopy> = {
     body: "Good morning. The mat's ready. Are you?",
   },
   arnold: {
-    title: '📞 THE GOVERNOR CALLING',
+    title: '📞 THE MONUMENT CALLING',
     body: 'Rise up, champion. Today is yours to take.',
   },
   nippard: {
-    title: '📞 THE SCIENTIST CALLING',
+    title: '📞 THE ANALYST CALLING',
     body: 'Morning check-in: hydrate, eat protein, get moving.',
   },
   ct_fletcher: {
@@ -51,7 +51,7 @@ const WAKEUP_LINES: Record<PersonaId, CallCopy> = {
     body: 'WAKE THE HELL UP! I COMMAND YOU TO MOVE!',
   },
   dr_mike: {
-    title: '📞 DR. GROWTH CALLING',
+    title: '📞 THE ARCHITECT CALLING',
     body: 'Mesocycle progress check — your day starts now.',
   },
 };
@@ -62,11 +62,11 @@ const WORKOUT_LINES: Record<PersonaId, CallCopy> = {
     body: "Session time. Let's get to work — control every rep.",
   },
   arnold: {
-    title: '📞 THE GOVERNOR CALLING',
+    title: '📞 THE MONUMENT CALLING',
     body: 'The gym is waiting. The last three reps build the muscle.',
   },
   nippard: {
-    title: '📞 THE SCIENTIST CALLING',
+    title: '📞 THE ANALYST CALLING',
     body: 'Training window open. RIR 1-3 on top sets today.',
   },
   ct_fletcher: {
@@ -74,7 +74,7 @@ const WORKOUT_LINES: Record<PersonaId, CallCopy> = {
     body: 'GET TO THAT GYM! NO EXCUSES! I COMMAND YOU TO GROW!',
   },
   dr_mike: {
-    title: '📞 DR. GROWTH CALLING',
+    title: '📞 THE ARCHITECT CALLING',
     body: 'Volume window: now. Hit your sets, log the data, deload Friday.',
   },
 };

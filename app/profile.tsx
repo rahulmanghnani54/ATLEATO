@@ -17,7 +17,7 @@ import { getUserTier, canAccess } from '@/lib/featureGates';
 
 const PROGRAM_NAMES: Record<string, string> = {
   cbum_evolved:          'The Sculptor Method',
-  arnold_blueprint:      "The Governor's Blueprint",
+  arnold_blueprint:      "The Monument's Blueprint",
   nippard_fundamentals:  'Science Fundamentals',
   ct_strength:           'Commander Strength',
   dr_mike_mav:           'RP Hypertrophy',

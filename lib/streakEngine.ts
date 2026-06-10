@@ -52,7 +52,7 @@ function nextMilestoneFor(days: number): { next: number; label: string } {
 
 /**
  * Per-persona coach-voice sublines per tier.
- * Each coach lives in their lane: The Governor poetic, CT shouts, Dr. Growth calculates, etc.
+ * Each coach lives in their lane: The Monument poetic, CT shouts, The Architect calculates, etc.
  */
 const SUBLINE: Record<StreakTier, Partial<Record<string, string>>> = {
   fresh: {

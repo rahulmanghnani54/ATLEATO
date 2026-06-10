@@ -2,10 +2,10 @@
  * Exercise Form Library
  *
  * Ideal joint angle ranges and form cues sourced from:
- * - The Governor's "Encyclopedia of Modern Bodybuilding"
- * - The Scientist's evidence-based technique series
+ * - The Monument's "Encyclopedia of Modern Bodybuilding"
+ * - The Analyst's evidence-based technique series
  * - The Sculptor's Classic Physique coaching content
- * - Dr. Growth's RP Strength technique guides
+ * - The Architect's RP Strength technique guides
  * - ACE & NSCA exercise science standards
  *
  * Joint angles measured at the joint named (e.g. knee = femur–tibia angle).

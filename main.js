@@ -631,7 +631,7 @@ const coachConfigs = {
     color2: '#ff6b35',
     headline: 'PUMP UNDER<br/><span class="lime-text">A LEGEND.</span>',
     quote: 'The pump is the greatest feeling in the world. <span class="lime-text">Don\'t wait, get to work immediately!</span>',
-    speech: "Come on! Get up! Stop being a couch potato. You have to lift, there is no time to sleep!",
+    speech: "Come on! Get up! Stop being a stay in motion. You have to lift, there is no time to sleep!",
     pitch: 0.75, rate: 0.9
   },
   nippard: {
@@ -661,7 +661,7 @@ const coachConfigs = {
     color2: '#5dd3fa', // cyan
     headline: 'GROW UNDER<br/><span class="lime-text">A LEGEND.</span>',
     quote: 'Your muscle fibers will literally atrophy if you leave range of motion short. <span class="lime-text">Go deep, or go home.</span>',
-    speech: "Hey guys, Dr. Growth here. Time to get some hypertrophy going. If you stay in bed, your gains are going to literally shrink.",
+    speech: "Hey guys, The Architect here. Time to get some hypertrophy going. If you stay in bed, your gains start to stall.",
     pitch: 1.15, rate: 1.1
   }
 };

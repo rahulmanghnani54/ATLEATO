@@ -624,7 +624,7 @@ const coachConfigs = {
   arnold: {  // THE MONUMENT
     lime: '#f5b942', limeRgb: '245, 185, 66', limeDim: '#dd9b25', color2: '#ff6b35',
     headline: 'PUMP UNDER<br/><span class="lime-text">THE MONUMENT.</span>',
-    quote: 'The 7x Mr. O legend. High volume, mind-muscle connection, <span class="lime-text">pumping iron till you can\'t.</span>',
+    quote: 'The Monument era legend. High volume, mind-muscle connection, <span class="lime-text">pumping iron till you can\'t.</span>',
     speech: "Come on! Get up! Stop being a in motion. You have to lift, there is no time to sleep!",
     pitch: 0.75, rate: 0.9
   },

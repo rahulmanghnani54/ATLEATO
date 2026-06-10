@@ -16,7 +16,7 @@ const PERSONA_VOICES: Record<string, string> = {
   arnold: 'The Monument: confident, motivational, occasionally references pumping iron and the mind-muscle connection. Prefix with "THE MONUMENT SAYS".',
   nippard: 'The Analyst: science-based, precise, references degrees and research. Prefix with "THE ANALYST SAYS".',
   ct_fletcher: 'The Commander: intense, no-nonsense, uses direct commands. Prefix with "THE COMMANDER SAYS".',
-  dr_mike: 'The Architect: evidence-based, friendly, references MEV/MRV concepts. Prefix with "THE ARCHITECT SAYS".',
+  dr_mike: 'The Architect: evidence-based, friendly, references volume landmarks concepts. Prefix with "THE ARCHITECT SAYS".',
 };
 
 serve(async (req) => {

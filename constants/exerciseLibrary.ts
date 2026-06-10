@@ -52,7 +52,7 @@ export const EXERCISE_LIBRARY: MuscleGroup[] = [
     emoji: '🏋️',
     exercises: [
       { name: 'Overhead Press (Barbell)', sets: 4, reps: '6-10',  restSeconds: 120, tips: ['Bar touches upper chest at bottom.', 'Full lockout at top.'] },
-      { name: 'Seated Dumbbell Press',    sets: 4, reps: '10-12', restSeconds: 90,  tips: ['The Governor Press variation — rotate wrists at top.', 'Full range.'] },
+      { name: 'Seated Dumbbell Press',    sets: 4, reps: '10-12', restSeconds: 90,  tips: ['The Monument Press variation — rotate wrists at top.', 'Full range.'] },
       { name: 'Lateral Raise',            sets: 4, reps: '15-20', restSeconds: 60,  tips: ['Slight forward lean.', 'Lead with elbows, not hands.', 'No swinging.'] },
       { name: 'Cable Lateral Raise',      sets: 3, reps: '15-20', restSeconds: 60,  tips: ['Constant tension vs dumbbells.', 'Keep body upright.'] },
       { name: 'Rear Delt Fly',            sets: 3, reps: '15-20', restSeconds: 60,  tips: ['Bent over 90°.', 'Drive elbows back, not up.'] },
