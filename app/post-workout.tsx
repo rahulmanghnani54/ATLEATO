@@ -12,6 +12,7 @@ import { getPersona, type PersonaId } from '@/lib/personaTheme';
 import { getTomorrowIntention } from '@/lib/implementationIntention';
 import { format } from 'date-fns';
 import { addXP } from '@/lib/legendProgression';
+import { supabase } from '@/lib/supabase';
 
 function SendIcon() {
   return (
@@ -81,6 +82,20 @@ export default function PostWorkout() {
         setTimeout(() => { if (!cancelled) setXpBadge(null); }, 3500);
       }
     });
+
+    // V2 §5 ADD #1 — contribute this workout's volume to the user's squad.
+    // volume comes in as a string like "8.4" representing thousands of kg
+    // (legacy units from the session screen). Convert to integer kg and submit.
+    // Best-effort: failures are silent — squad RPC handles unauthenticated +
+    // not-in-a-squad cases with a no-op return.
+    try {
+      const vKg = Math.round(parseFloat(volume) * 1000);
+      if (vKg > 0 && vKg < 50000) {
+        supabase.rpc('submit_squad_volume', { p_volume_kg: vKg })
+          .then(({ error }) => { if (error) console.warn('submit_squad_volume:', error.message); });
+      }
+    } catch (e) { /* never block post-workout UX */ }
+
     const id = setTimeout(() => {
       if (!cancelled) setChestOpen(true);
     }, 1200);
