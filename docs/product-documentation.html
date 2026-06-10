@@ -202,6 +202,18 @@
     <div class="page-tag">01 · EXECUTIVE SUMMARY</div>
   </div>
 
+  <div class="card info" style="margin-bottom:18px;">
+    <span class="chip blue">DOC v1.1 · 2026-06-10</span>
+    <h4>What's new since v1 (the V2 master-plan execution)</h4>
+    <p><b>Coach de-identification:</b> renamed the three coaches with closest real-world parallels (Governor → Monument, Scientist → Analyst, Dr. Growth → Architect). Stripped identifying catchphrases across all 30+ files. §3.2 disclaimer corrected from the false "designed in-house" claim to an honest reconciliation.</p>
+    <p><b>Security hardening (migration 012):</b> dropped the over-permissive anon SELECT policy on <code>waitlist</code> that was exposing every email. Replaced with count-only RPCs. Verified live: anon now returns <code>[]</code>.</p>
+    <p><b>Real multiplayer squads (migration 013):</b> rewrote <code>squads</code> from solo UI to real multiplayer with Supabase Realtime, anonymized handles, weekly volume leaderboard.</p>
+    <p><b>Form-AI safety layer:</b> visibility check (won't coach when can't see) + near-max-attempt refusal (won't coach 1RM grinds).</p>
+    <p><b>Outcome-based XP + adaptive real-life mode:</b> new XP sources reward consistency/PRs/physique change instead of just activity. New <code>adaptToLife()</code> handles illness/travel/sleep-debt without streak-shaming.</p>
+    <p><b>Dark patterns removed:</b> 30-min "reservation timer" deleted. Real 500-cap scarcity (DB-enforced) stays.</p>
+    <p><b>Admin URL rotated:</b> token from leaked PDF invalidated. Data inaccessible via anon key regardless.</p>
+  </div>
+
   <h1 class="section"><span class="num">// 01 · EXECUTIVE SUMMARY</span>The 30-second pitch.</h1>
   <p class="section-lead">Atleato is a mobile fitness coaching app built around 5 distinct AI coach personas. Each persona changes the entire app — colors, programs, voice, nutrition rules. Buyers reserve a "Vanguard Pass" pre-launch for $1.99 (one-time, capped at 500 buyers). Launch target: Q3 2026 on Google Play.</p>
 
@@ -226,7 +238,7 @@
       <ul>
         <li>iOS app (Android-first; iOS post-launch)</li>
         <li>In-app purchases via Google Play Billing (Vanguard Pass uses Lemon Squeezy web-checkout for now)</li>
-        <li>Live multiplayer features (squads exist as solo UI)</li>
+        <li>iOS-native build (Android-first; iOS post-launch)</li>
         <li>Coach voice TTS in production (TTS engine wired in dev, voices being recorded)</li>
         <li>Apple HealthKit integration</li>
         <li>Public beta / closed-testing release</li>
@@ -240,7 +252,7 @@
     <tr><td>Build time</td><td>~14 months solo</td><td>Started 2025</td></tr>
     <tr><td>App screens (RN)</td><td>41 (6 tabs + 35 secondary)</td><td><code>app/*.tsx</code></td></tr>
     <tr><td>Edge functions</td><td>13</td><td><code>supabase/functions/</code></td></tr>
-    <tr><td>DB migrations</td><td>11 (002–011)</td><td><code>supabase/migrations/</code></td></tr>
+    <tr><td>DB migrations</td><td>13 (001–013)</td><td><code>supabase/migrations/</code></td></tr>
     <tr><td>Website pages</td><td>12</td><td><code>docs/*.html</code></td></tr>
     <tr><td>External cost run rate</td><td>$0/mo</td><td>Free tiers across all services</td></tr>
     <tr><td>Vanguard cap</td><td>500 buyers</td><td>DB-enforced via <code>vanguard_orders</code></td></tr>
@@ -483,7 +495,7 @@
   <h2 class="sub"><span class="num">5.8</span>Community (2 screens)</h2>
   <table>
     <tr><th>Screen</th><th>Purpose</th></tr>
-    <tr><td><code>squads</code></td><td>Join or create a squad (up to 12 members). Shared weekly volume goal. Currently solo UI; live multiplayer pending</td></tr>
+    <tr><td><code>squads</code></td><td>Real multiplayer. One squad at a time, anonymized handles, live weekly volume leaderboard via Supabase Realtime. Backed by <code>squads</code> + <code>squad_members</code> + <code>squad_volume_log</code> tables (migration 013) + RPCs (<code>join_squad</code>, <code>submit_squad_volume</code>, <code>squad_leaderboard</code>, <code>my_squad</code>)</td></tr>
     <tr><td><code>referral</code></td><td>Invite friends to the waitlist. Each successful invite earns "Vanguard credit" toward founder pricing</td></tr>
   </table>
 
@@ -630,7 +642,7 @@
   <h1 class="section"><span class="num">// 07 · BACKEND DATABASE</span>Supabase Postgres schema.</h1>
   <p class="section-lead">Hosted on Supabase. All tables have Row-Level Security (RLS) enabled. Public anon key only sees what's needed for the marketing funnel; user-scoped data gates behind <code>auth.uid()</code>.</p>
 
-  <h2 class="sub"><span class="num">7.1</span>11 migrations applied (in order)</h2>
+  <h2 class="sub"><span class="num">7.1</span>13 migrations applied (in order)</h2>
   <table>
     <tr><th>#</th><th>File</th><th>What it does</th></tr>
     <tr><td>001</td><td><code>initial_schema.sql</code></td><td>profiles, workouts, exercises, sets, programs, foods, nutrition_log</td></tr>
@@ -644,6 +656,8 @@
     <tr><td>009</td><td><code>territory_v3.sql</code></td><td>v2 of claim_cells with stricter pace cap; change_count for heatmaps; nearby_leaderboard RPC</td></tr>
     <tr><td>010</td><td><code>waitlist.sql</code></td><td>public.waitlist table with unique-email index, public insert RLS</td></tr>
     <tr><td>011</td><td><code>vanguard_orders.sql</code></td><td>vanguard_orders ledger + is_vanguard / vanguard_pass_no on waitlist + atomic assign_next_vanguard_pass_no() RPC</td></tr>
+    <tr><td>012</td><td><code>lockdown_waitlist_pii.sql</code></td><td><b>Security:</b> dropped permissive anon SELECT on waitlist + vanguard_orders. Replaced with count-only RPCs (<code>waitlist_count</code>, <code>vanguard_claimed_count</code>). Anon key can no longer read row contents</td></tr>
+    <tr><td>013</td><td><code>squads_multiplayer.sql</code></td><td><b>Multiplayer:</b> squads + squad_members + squad_volume_log tables, 5 RPCs, anonymized handles, weekly volume tracking, Realtime publication enabled</td></tr>
   </table>
 
   <h2 class="sub"><span class="num">7.2</span>Key tables &amp; row counts</h2>
@@ -1058,10 +1072,12 @@
   <h2 class="sub"><span class="num">17.1</span>Blocking before launch</h2>
   <table>
     <tr><th>Issue</th><th>Impact</th><th>Fix path</th></tr>
-    <tr><td>SPF DNS record missing for atleato.com</td><td>Welcome emails silently dropped by Gmail (Resend says "Delivered", recipient never sees)</td><td>Add TXT record in Namecheap: <code>v=spf1 include:amazonses.com ~all</code></td></tr>
+    <tr><td>SPF / DKIM / DMARC missing for atleato.com</td><td>Welcome emails silently dropped by Gmail (Resend says "Delivered", recipient never sees)</td><td>Add 3 TXT records in Cloudflare DNS (now active) per Resend dashboard instructions</td></tr>
     <tr><td>Lemon Squeezy in Test Mode</td><td>No real $$ collected yet</td><td>Submit for review → flip to Live Mode → swap checkout URL in upsell.html</td></tr>
     <tr><td>EAS Build failing on npm install</td><td>Can't ship Vanguards an APK yet</td><td>Investigate npm dependency conflict; pin RN package versions</td></tr>
     <tr><td>Discord server channels empty</td><td>First-arrival Vanguards see empty rooms</td><td>10 min: create #welcome, #announcements, #feedback channels with seed content</td></tr>
+    <tr><td>Cloudflare proxy verification pending</td><td>Real HTTP HSTS / X-Frame-Options headers not yet served</td><td>Verify nameservers + orange-cloud proxy + add Transform Rule with the 4 security headers</td></tr>
+    <tr><td>MFA across providers</td><td>Single password compromise = full account takeover risk</td><td>Enable MFA on Namecheap, GitHub, Supabase, Lemon Squeezy, Firebase, hello@atleato.com</td></tr>
   </table>
 
   <h2 class="sub"><span class="num">17.2</span>Known fragility</h2>
@@ -1076,7 +1092,7 @@
   <h2 class="sub"><span class="num">17.3</span>Deferred to v2</h2>
   <ul>
     <li>iOS-native build</li>
-    <li>Real-time squad sync (currently solo UI)</li>
+    <li>Apple iOS native build (Android-first)</li>
     <li>Apple HealthKit integration (Android Health Connect partially wired)</li>
     <li>Wearable rep counter (Apple Watch / Wear OS)</li>
     <li>Localized content (English-only at launch)</li>
