@@ -11,7 +11,7 @@ Rahul Manghnani is the solo founder of Atleato, an AI fitness coaching app where
 ```
 Rahul Manghnani is the founder and solo developer of Atleato, an AI-powered fitness coaching platform. Frustrated by years of fitness apps that "all felt the same," he spent 12 months building a system with five distinct AI coach personas, each with their own training philosophy, color scheme, and voice — switching coaches dynamically retunes the entire app experience.
 
-Atleato also pioneered the use of system-level incoming-call escalation as a wake-up mechanism, replacing dismissable notifications with full-screen phone calls. The app is bootstrapped with $0 in external funding and launched on Google Play in 2026.
+Atleato uses system-level incoming-call escalation as its wake-up mechanism — replacing dismissable notifications with full-screen phone calls, applied specifically to fitness coaching. The app is bootstrapped with $0 in external funding and launched on Google Play in 2026.
 
 Rahul builds in public on Twitter/X @rahulmanghnani.
 ```

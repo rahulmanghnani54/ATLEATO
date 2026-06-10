@@ -15,7 +15,7 @@ Atleato — Your Coach Calls
 ```
 🏆 TRAIN UNDER A LEGEND
 
-The only fitness app where your coach actually calls your phone. Five AI personas modeled after the greatest training philosophies in history — each with their own colors, programs, nutrition style, and voice.
+A new kind of AI fitness app where your coach actually calls your phone. Five AI personas modeled after legendary training philosophies — each with their own colors, programs, nutrition style, and voice. The whole app transforms around your pick.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🥇 5 LEGEND COACHES (1 FREE)
