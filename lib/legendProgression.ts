@@ -22,13 +22,34 @@ export interface LevelInfo {
   progress: number;            // 0-1 within current level band
 }
 
-export type XPSource = 'workout' | 'streak_milestone' | 'pr' | 'territory';
+// V2 §5 ADD #2 — Outcome-based reward sources.
+// Previously XP only rewarded ACTIVITY (showing up, hitting a streak). The
+// V2 plan correctly argued that this rewards going-through-the-motions
+// rather than real progress. The new sources reward MEASURABLE PROGRESS:
+//   • volume_pr       — surpassed last week's total session volume
+//   • consistency_4w  — averaged ≥3 sessions/wk over the last 4 weeks
+//   • physique_change — analyze-physique flagged a visible change
+//   • body_composition — weight + estimated lean mass moved in goal direction
+//   • adherence_recovery — followed recommended deload when prescribed
+// Activity sources are kept (with reduced weight) so beginners still get
+// dopamine — but the heavy XP now lives on outcomes.
+export type XPSource =
+  | 'workout' | 'streak_milestone' | 'pr' | 'territory'                       // activity (legacy)
+  | 'volume_pr' | 'consistency_4w' | 'physique_change'                        // outcomes
+  | 'body_composition' | 'adherence_recovery';                                // outcomes
 
 export const XP_AWARDS: Record<XPSource, number> = {
-  workout:          50,
-  streak_milestone: 100,
+  // Activity rewards — kept smaller so they don't dominate
+  workout:          30,   // was 50; reduced to make room for outcomes
+  streak_milestone: 80,   // was 100
   pr:               75,
   territory:        5,
+  // Outcome rewards — bigger because they signal real progress
+  volume_pr:         120, // beat last week's total volume
+  consistency_4w:    250, // averaged 3+ sessions/wk for 4 weeks straight
+  physique_change:   200, // analyze-physique returned positive delta
+  body_composition:  150, // weight + lean mass moved toward stated goal
+  adherence_recovery: 90, // honored a recommended deload week
 };
 
 // ─── Level thresholds ─────────────────────────────────────────────────────────

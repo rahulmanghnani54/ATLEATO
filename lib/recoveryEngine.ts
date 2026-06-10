@@ -90,3 +90,112 @@ export function scoreLabel(score: number): string {
   if (score >= 35) return 'Low';
   return 'Poor';
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// V2 §5 ADD #3 — ADAPTIVE REAL-LIFE MODE
+//
+// The existing recovery engine handles "I'm tired today." But the V2 plan
+// correctly noted that fitness apps fail when life happens — illness,
+// travel, missed days. Most apps respond with guilt mechanics ("you broke
+// your streak!"). Atleato responds by adapting WITHOUT guilt.
+//
+// Inputs: lifestyle disruption flags + day-gap since last workout.
+// Output: a context-aware program adjustment + a sane coach message.
+// ═══════════════════════════════════════════════════════════════════════════
+
+export type LifeContext =
+  | 'normal'
+  | 'illness'        // user marked themselves sick / off
+  | 'travel'         // away from usual gym
+  | 'busy_week'     // self-flagged "too much going on"
+  | 'sleep_debt'     // multi-day sub-5h sleep streak
+  | 'returning';     // returning after 4+ day gap
+
+export interface AdaptiveContextInput {
+  daysSinceLastWorkout: number;
+  recoveryScore: number;          // most recent score from calculateRecovery()
+  sleepDebtNights: number;        // consecutive nights < 5h sleep
+  userFlag?: 'sick' | 'travel' | 'busy' | null;  // user can self-flag in /recovery-checkin
+}
+
+export interface AdaptiveResult {
+  context: LifeContext;
+  volumeModifier: number;         // applied AFTER the recovery-engine modifier
+  programAdjustment: string;      // human-readable change
+  coachMessage: string;           // shown to user; no guilt, no streak-shaming
+  shouldOfferDeload: boolean;
+  shouldOfferRestDay: boolean;
+}
+
+export function adaptToLife(input: AdaptiveContextInput): AdaptiveResult {
+  // Priority order: illness > travel > sleep debt > returning > busy > normal
+  // Each higher-priority context overrides milder ones.
+
+  if (input.userFlag === 'sick') {
+    return {
+      context: 'illness',
+      volumeModifier: 0.0,        // train zero — illness compounds
+      programAdjustment: 'Today off. Hydrate. Sleep. Streak stays — illness is not a missed day.',
+      coachMessage: "Sick? Don't train. The body adapts in recovery, not while fighting an infection. We'll resume the day after symptoms clear. Your streak is preserved.",
+      shouldOfferDeload: false,
+      shouldOfferRestDay: true,
+    };
+  }
+
+  if (input.userFlag === 'travel') {
+    return {
+      context: 'travel',
+      volumeModifier: 0.65,
+      programAdjustment: 'Travel mode: 45-min full-body session. No gym needed — bodyweight + hotel-room work.',
+      coachMessage: "On the road. Today's a 4-exercise bodyweight session that takes 35 min. Squats, push-ups, rows on a sturdy table, plank. No gym, no excuses, no guilt.",
+      shouldOfferDeload: false,
+      shouldOfferRestDay: false,
+    };
+  }
+
+  if (input.sleepDebtNights >= 3 || input.userFlag === 'busy') {
+    return {
+      context: input.userFlag === 'busy' ? 'busy_week' : 'sleep_debt',
+      volumeModifier: 0.70,
+      programAdjustment: 'Compressed: only the top 3 compound lifts. 40-min session, no accessories.',
+      coachMessage: input.userFlag === 'busy'
+        ? "Busy week. Today's a 40-min priority session — just the lifts that move the needle. Skip the accessories. We'll catch up next week."
+        : "Multi-night sleep debt. Volume drops 30% so we preserve the lifts without dipping into recovery. Sleep tonight = full session tomorrow.",
+      shouldOfferDeload: false,
+      shouldOfferRestDay: false,
+    };
+  }
+
+  if (input.daysSinceLastWorkout >= 4) {
+    return {
+      context: 'returning',
+      volumeModifier: 0.75,
+      programAdjustment: 'Return week: -25% volume, +1 warmup set per lift. Easing back, not punishing.',
+      coachMessage: `Welcome back — ${input.daysSinceLastWorkout} days off. Today is a re-entry session: lighter loads, more warmup, no PR attempts. We don't punish missed days; we restart well. Tomorrow we ramp.`,
+      shouldOfferDeload: false,
+      shouldOfferRestDay: false,
+    };
+  }
+
+  // Normal day — defer entirely to the recovery-score-based modifier
+  return {
+    context: 'normal',
+    volumeModifier: 1.0,
+    programAdjustment: 'Standard programmed session.',
+    coachMessage: '',
+    shouldOfferDeload: false,
+    shouldOfferRestDay: false,
+  };
+}
+
+/**
+ * Compose the recovery-engine modifier with the adaptive-context modifier.
+ * Both are multiplicative — e.g., recovery 0.8 × travel 0.65 = 0.52 final.
+ * Floor at 0.0 (zero training) and ceiling at 1.2 to prevent over-prescription.
+ */
+export function combinedVolumeModifier(
+  recovery: RecoveryResult,
+  adaptive: AdaptiveResult,
+): number {
+  return Math.max(0, Math.min(1.2, recovery.volumeModifier * adaptive.volumeModifier));
+}
