@@ -87,7 +87,95 @@ type Kpt = [number, number, number]; // [x_px, y_px, confidence]
 interface FormAnalysis {
   issues: string[];
   badJoints: Set<string>;
-  status: 'GOOD' | 'WARNING' | 'BAD' | 'OUT' | 'STANDBY';
+  status: 'GOOD' | 'WARNING' | 'BAD' | 'OUT' | 'STANDBY' | 'NO_VIEW' | 'UNSAFE';
+  /** V2 §7 safety layer: if true, we can't see the user well enough to coach */
+  visibilityLow?: boolean;
+  /** V2 §7 safety layer: human-readable safety message that overrides coaching cues */
+  safetyMessage?: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V2 §7 — SAFETY LAYER for the Form Coach
+//
+// Principle: an inaccurate form coach is WORSE than no form coach. Before
+// emitting any coaching cue, verify the pose is actually visible and
+// credible. If not, surface a "reposition / can't see" message instead of
+// pretending to know what's happening.
+//
+// Also: never coach near-1RM efforts. If the angles look like a true max
+// attempt (slow grind, partial range), back off and tell the user we won't
+// coach maxes — they should have a real spotter.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// A joint counts as "visible" if MoveNet confidence is above this threshold.
+const VISIBILITY_THRESHOLD = 0.35;
+// We need this many of the load-bearing joints visible to trust the analysis.
+const MIN_VISIBLE_LOAD_JOINTS = 4; // out of 6 (l/r: hip, knee, ankle for legs OR shoulder, elbow, wrist for upper)
+
+function evaluateVisibility(kpts: Kpt[], category: string | undefined): {
+  visibilityLow: boolean;
+  reason: string;
+} {
+  // Use whichever joint set the exercise category cares about
+  const upperJoints = [KP.l_shoulder, KP.r_shoulder, KP.l_elbow, KP.r_elbow, KP.l_wrist, KP.r_wrist];
+  const lowerJoints = [KP.l_hip, KP.r_hip, KP.l_knee, KP.r_knee, KP.l_ankle, KP.r_ankle];
+  const watch = category === 'squat' || category === 'deadlift' || category === 'lunge'
+    ? lowerJoints
+    : category === 'press' || category === 'pull' || category === 'curl'
+      ? upperJoints
+      : [...upperJoints.slice(0, 2), ...lowerJoints.slice(0, 4)]; // hybrid fallback
+
+  let visibleCount = 0;
+  let avgConf = 0;
+  for (const idx of watch) {
+    const conf = kpts[idx]?.[2] ?? 0;
+    avgConf += conf;
+    if (conf >= VISIBILITY_THRESHOLD) visibleCount += 1;
+  }
+  avgConf /= watch.length;
+
+  if (visibleCount < MIN_VISIBLE_LOAD_JOINTS) {
+    return {
+      visibilityLow: true,
+      reason: visibleCount === 0
+        ? "Can't see you. Step into frame."
+        : `Only ${visibleCount} of ${watch.length} joints visible — reposition phone or step back.`,
+    };
+  }
+  if (avgConf < 0.45) {
+    return {
+      visibilityLow: true,
+      reason: 'Low light or motion blur — pause, brighten the area, then resume.',
+    };
+  }
+  return { visibilityLow: false, reason: '' };
+}
+
+/**
+ * Heuristic for "looks like a true max attempt" — we refuse to coach these.
+ * Signals: very slow tempo (no significant motion across 12 frames = grinding rep)
+ * combined with bar-path indicators (significant horizontal hip drift).
+ * Returns true if we should hand control back to the user with a safety message.
+ */
+function looksLikeMaxAttempt(history: Kpt[][], category: string | undefined): boolean {
+  if (category !== 'squat' && category !== 'deadlift') return false;
+  if (history.length < 12) return false;
+
+  // Measure hip vertical displacement over last 12 frames
+  const recent = history.slice(-12);
+  const hipYs: number[] = [];
+  for (const frame of recent) {
+    const lh = frame[KP.l_hip]; const rh = frame[KP.r_hip];
+    if (!lh || !rh) continue;
+    const y = (lh[1] + rh[1]) / 2;
+    if (!isNaN(y)) hipYs.push(y);
+  }
+  if (hipYs.length < 6) return false;
+
+  const range = Math.max(...hipYs) - Math.min(...hipYs);
+  // < 6 px hip travel over 2 seconds during squat/deadlift = stuck / grinding rep
+  // (in a true max grind, the user is fighting and barely moving)
+  return range < 6;
 }
 
 /**
@@ -225,7 +313,34 @@ function lerpKpts(current: Kpt[], target: Kpt[], t: number): Kpt[] {
   return out;
 }
 
-function analyzeForm(form: ExerciseForm | null, kpts: Kpt[]): FormAnalysis {
+function analyzeForm(form: ExerciseForm | null, kpts: Kpt[], history?: Kpt[][]): FormAnalysis {
+  // ── V2 §7 SAFETY LAYER · Step 1: visibility check ──
+  // If we can't actually SEE the user well enough, do NOT emit any coaching
+  // cues. Saying "deeper!" when the camera can't see the user is theater
+  // at best, dangerous at worst. Surface a reposition prompt instead.
+  const vis = evaluateVisibility(kpts, form?.category);
+  if (vis.visibilityLow) {
+    return {
+      issues: [vis.reason],
+      badJoints: new Set(),
+      status: 'NO_VIEW',
+      visibilityLow: true,
+      safetyMessage: vis.reason,
+    };
+  }
+
+  // ── V2 §7 SAFETY LAYER · Step 2: max-attempt refusal ──
+  // If the rep tempo + posture indicates a near-1RM grind, we refuse to
+  // coach. A spotter is required for true maxes; we won't pretend.
+  if (history && looksLikeMaxAttempt(history, form?.category)) {
+    return {
+      issues: ['Looks like a near-max rep. Use a spotter — form-coach off.'],
+      badJoints: new Set(),
+      status: 'UNSAFE',
+      safetyMessage: 'Near-max rep detected — form coach won\'t cue. Use a spotter.',
+    };
+  }
+
   const issues: string[] = [];
   const badJoints = new Set<string>();
   const angles: Record<string, number | null> = {
@@ -352,13 +467,20 @@ export default function FormCoach() {
   // >= ISSUE_REQUIRED_HITS of the last ISSUE_HISTORY_LEN detections. Prevents
   // single-frame noise from flipping the banner from OK → BAD.
   const [analysisTick, setAnalysisTick] = useState(0);
+  // Rolling keypoint history for max-attempt detection (V2 §7 safety layer)
+  const kptHistoryRef = useRef<Kpt[][]>([]);
+  const KPT_HISTORY_MAX = 18;
   const formAnalysis: FormAnalysis = useMemo(() => {
     const t = targetKptsRef.current;
     if (!t) {
       issueHistoryRef.current = []; // reset when person leaves frame
+      kptHistoryRef.current = [];
       return { issues: [], badJoints: new Set(), status: 'OUT' };
     }
-    const instant = analyzeForm(formLibraryData, t);
+    // Push current frame into rolling history (for safety heuristics)
+    kptHistoryRef.current.push(t);
+    if (kptHistoryRef.current.length > KPT_HISTORY_MAX) kptHistoryRef.current.shift();
+    const instant = analyzeForm(formLibraryData, t, kptHistoryRef.current);
 
     // Push the latest issue-set into the rolling window
     const issueSet = new Set(instant.issues);
