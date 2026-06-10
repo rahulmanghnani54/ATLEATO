@@ -75,7 +75,7 @@ Start in 60 seconds:
 2. Set your wake-up — tomorrow your phone rings like a real call
 3. Train. Eat. Conquer.
 
-Don't lose your spot. Vanguard passes are first-come, capped at 500 — one-time $1.99, 1 month free Legend tier at launch, private Discord, refundable till launch.
+Claim your Vanguard Pass. 500 total, first-come — one-time $1.99, 1 month free Legend tier at launch, private Discord, refundable any time before launch.
 
 Confirm my pass: ${upsellUrl}
 
@@ -303,8 +303,8 @@ function generateHTML(name: string, email: string, position: number, badge: stri
       </div>
       <div class="cta-sec">
         <div class="cta-card">
-          <h2>DON'T LOSE<br />YOUR SPOT.</h2>
-          <p>Vanguard passes are first-come. One-time $1.99 · 1 month free Legend tier at launch · private Discord · refundable till launch.</p>
+          <h2>CLAIM YOUR<br />VANGUARD PASS.</h2>
+          <p>500 passes total, first-come. One-time $1.99 · 1 month free Legend tier at launch · private Discord · refundable any time before launch.</p>
           <a class="btn" href="${upsellUrl}">CONFIRM MY PASS →</a>
           <div class="cta-fine">FREE FOREVER · NO CREDIT CARD</div>
           <div class="playrow">
