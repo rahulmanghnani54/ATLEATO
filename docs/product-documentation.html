@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Atleato — Product Documentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  @page { size: A4; margin: 0; }
+  :root {
+    --bg:#fafaf7; --paper:#ffffff; --ink:#0a0b0d; --ink-2:#1a1a1a;
+    --muted:#666; --muted-2:#999; --line:#e8e3da; --line-2:#d4cfc4;
+    --accent:#ff6b35; --accent-dark:#e84d20; --lime:#dfff1f; --lime-dark:#b4d018;
+    --info:#5b8cff; --success:#39e08a; --warn:#ffb13a; --danger:#ff5b3a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);color:var(--ink);font-family:"Inter",-apple-system,sans-serif;font-size:11px;line-height:1.55;}
+  .page{
+    width:210mm;min-height:297mm;background:var(--paper);
+    padding:16mm 16mm 14mm;position:relative;page-break-after:always;overflow:hidden;
+  }
+  .page:last-child{page-break-after:auto;}
+
+  /* ── HEADERS ── */
+  .page-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;border-bottom:1.5px solid var(--line);margin-bottom:18px;}
+  .brand{display:flex;align-items:center;gap:8px;}
+  .brand svg{width:22px;height:22px;}
+  .brand .nm{font-family:"Anton",sans-serif;font-size:15px;letter-spacing:.10em;color:var(--ink);}
+  .brand .nm sup{font-size:7px;color:var(--accent);top:-.7em;}
+  .page-tag{font-family:"JetBrains Mono",monospace;font-size:8px;letter-spacing:.22em;color:var(--muted);text-transform:uppercase;}
+
+  /* ── COVER ── */
+  .cover{
+    background:linear-gradient(180deg,#0a0b0d 0%,#1a1a1a 100%);
+    color:#fff;display:flex;flex-direction:column;justify-content:space-between;
+    padding:30mm 18mm;min-height:297mm;
+  }
+  .cover .top{display:flex;justify-content:space-between;align-items:center;}
+  .cover .top .brand .nm{color:#fff;font-size:22px;}
+  .cover .top .doc-meta{font-family:"JetBrains Mono",monospace;font-size:9px;letter-spacing:.26em;color:#888;text-transform:uppercase;text-align:right;}
+  .cover .mid{}
+  .cover .kicker{display:inline-flex;align-items:center;gap:8px;font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.30em;color:var(--lime);border:1px solid rgba(223,255,31,.3);border-radius:999px;padding:6px 14px;text-transform:uppercase;margin-bottom:30px;}
+  .cover .kicker::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--lime);}
+  .cover h1{font-family:"Anton",sans-serif;font-size:88px;line-height:.9;text-transform:uppercase;letter-spacing:.01em;margin-bottom:24px;}
+  .cover h1 .stroke{color:transparent;-webkit-text-stroke:1.5px var(--lime);}
+  .cover .subtitle{font-size:18px;color:#c4c8cd;max-width:140mm;font-weight:500;line-height:1.45;}
+  .cover .subtitle b{color:#fff;font-weight:800;}
+  .cover .bottom{}
+  .cover .meta-block{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;border-top:1px solid rgba(255,255,255,0.1);padding-top:22px;}
+  .cover .meta-block .b{font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.20em;color:#888;text-transform:uppercase;margin-bottom:5px;}
+  .cover .meta-block .v{font-size:13px;color:#fff;font-weight:600;}
+  .cover .colophon{margin-top:18px;font-family:"JetBrains Mono",monospace;font-size:8px;letter-spacing:.18em;color:#666;text-transform:uppercase;}
+
+  /* ── SECTION HEADINGS ── */
+  h1.section{font-family:"Anton",sans-serif;font-size:42px;line-height:.95;text-transform:uppercase;letter-spacing:.02em;color:var(--ink);margin:8px 0 4px;}
+  h1.section .accent{color:var(--accent);}
+  h1.section .num{display:block;font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--muted);letter-spacing:.30em;margin-bottom:10px;}
+  .section-lead{font-size:13px;color:var(--muted);margin-bottom:22px;max-width:170mm;line-height:1.6;}
+  .section-lead b{color:var(--ink);font-weight:700;}
+
+  h2.sub{font-family:"Anton",sans-serif;font-size:22px;text-transform:uppercase;letter-spacing:.02em;color:var(--ink);margin:24px 0 8px;padding-bottom:6px;border-bottom:1.5px solid var(--line);}
+  h2.sub .num{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--accent);letter-spacing:.20em;margin-right:10px;}
+  h3.sub{font-family:"Inter",sans-serif;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink);margin:16px 0 6px;}
+  h4.sub{font-family:"Inter",sans-serif;font-size:12px;font-weight:700;color:var(--ink);margin:10px 0 4px;}
+  p{margin-bottom:8px;font-size:11px;color:var(--ink-2);line-height:1.55;}
+  p b{color:var(--ink);font-weight:700;}
+  ul,ol{margin:6px 0 12px 18px;}
+  li{margin-bottom:3px;font-size:10.5px;color:var(--ink-2);}
+
+  /* ── CARDS / CALLOUTS ── */
+  .card{border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:8px 0;background:#fff;}
+  .card.tinted{background:#fffaf3;border-color:#f0d9a8;}
+  .card.success{background:#ecfdf3;border-color:#a7f0c5;}
+  .card.warn{background:#fff8e6;border-color:#f5d57a;}
+  .card.info{background:#eef4ff;border-color:#a8c4f5;}
+  .card.danger{background:#ffeded;border-color:#f5a8a8;}
+  .card h4{margin-top:0;}
+  .card p:last-child{margin-bottom:0;}
+  .chip{display:inline-block;font-family:"JetBrains Mono",monospace;font-size:8px;letter-spacing:.18em;color:var(--accent);background:rgba(255,107,53,.10);padding:3px 7px;border-radius:5px;text-transform:uppercase;margin-bottom:6px;}
+  .chip.lime{color:var(--lime-dark);background:rgba(223,255,31,.18);}
+  .chip.green{color:#1f8a4d;background:#d6f7e3;}
+  .chip.blue{color:#345dc6;background:#dde9ff;}
+  .chip.gray{color:var(--muted);background:#f0eee9;}
+  .chip.red{color:#c92424;background:#ffe2e2;}
+
+  /* ── TABLES ── */
+  table{width:100%;border-collapse:collapse;margin:10px 0 14px;font-size:10px;}
+  table th{background:#f5f1eb;color:var(--ink);font-weight:700;text-align:left;padding:7px 10px;border-bottom:1.5px solid var(--line-2);font-family:"JetBrains Mono",monospace;font-size:8.5px;letter-spacing:.10em;text-transform:uppercase;}
+  table td{padding:7px 10px;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:top;}
+  table tr:last-child td{border-bottom:none;}
+  table code{font-family:"JetBrains Mono",monospace;font-size:9.5px;background:#f0eee9;padding:1px 5px;border-radius:3px;color:#5b3010;}
+
+  code, .mono{font-family:"JetBrains Mono",monospace;font-size:10px;background:#f0eee9;padding:1px 5px;border-radius:3px;color:#5b3010;}
+  pre{background:#0a0b0d;color:#dfff1f;font-family:"JetBrains Mono",monospace;font-size:9px;padding:12px 14px;border-radius:8px;overflow:hidden;margin:8px 0 12px;line-height:1.55;white-space:pre-wrap;}
+
+  /* ── COLUMNS ── */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+
+  /* ── TOC ── */
+  .toc{margin-top:20px;}
+  .toc-row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 0;border-bottom:1px dotted var(--line-2);}
+  .toc-row:last-child{border-bottom:none;}
+  .toc-row .num{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--accent);letter-spacing:.20em;width:30px;}
+  .toc-row .ttl{flex:1;font-size:13px;font-weight:600;color:var(--ink);margin-left:8px;}
+  .toc-row .sub{font-size:10px;color:var(--muted);margin-left:8px;}
+  .toc-row .pg{font-family:"JetBrains Mono",monospace;font-size:10px;color:var(--muted);font-weight:600;}
+
+  /* ── FOOTER ── */
+  .page-footer{
+    position:absolute;bottom:8mm;left:16mm;right:16mm;
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:"JetBrains Mono",monospace;font-size:7px;letter-spacing:.22em;color:var(--muted-2);
+    text-transform:uppercase;padding-top:8px;border-top:1px solid var(--line);
+  }
+
+  /* ── SCREEN LIST (mobile screens) ── */
+  .screen-card{border:1px solid var(--line);border-radius:7px;padding:10px 12px;margin-bottom:7px;background:#fff;}
+  .screen-card .head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+  .screen-card .nm{font-weight:700;font-size:11px;color:var(--ink);}
+  .screen-card .path{font-family:"JetBrains Mono",monospace;font-size:8.5px;color:var(--accent);}
+  .screen-card .desc{font-size:10px;color:var(--muted);line-height:1.5;}
+
+  /* ── DIAGRAM-ish ── */
+  .flow-box{border:1.5px solid var(--ink);border-radius:8px;padding:12px;background:#fff;text-align:center;font-weight:700;font-size:11px;}
+  .flow-arrow{text-align:center;font-size:18px;color:var(--accent);margin:5px 0;}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════ PAGE 1 — COVER ════════════════════ -->
+<div class="page cover">
+  <div class="top">
+    <div class="brand">
+      <svg viewBox="0 0 100 100"><defs><linearGradient id="lg0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg0)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/></svg>
+      <div class="nm">ATLEATO<sup>™</sup></div>
+    </div>
+    <div class="doc-meta">PRODUCT DOC · V1 · 2026-06-09</div>
+  </div>
+
+  <div class="mid">
+    <div class="kicker">COMPLETE TECHNICAL & PRODUCT REFERENCE</div>
+    <h1>THE<br/>ATLEATO<br/><span class="stroke">DOCUMENT.</span></h1>
+    <p class="subtitle">Every screen, every endpoint, every page, every database table, every business decision — documented in one place. <b>What's built, what isn't, and where everything lives.</b></p>
+  </div>
+
+  <div class="bottom">
+    <div class="meta-block">
+      <div><div class="b">PROJECT</div><div class="v">Atleato — AI Fitness Coaching App</div></div>
+      <div><div class="b">STAGE</div><div class="v">Pre-launch · Waitlist live</div></div>
+      <div><div class="b">FOUNDER</div><div class="v">Rahul Manghnani</div></div>
+      <div><div class="b">LAUNCH</div><div class="v">Q3 2026 · Google Play</div></div>
+      <div><div class="b">WEBSITE</div><div class="v">atleato.com</div></div>
+      <div><div class="b">REPO</div><div class="v">github.com/rahulmanghnani54/ATLEATO</div></div>
+    </div>
+    <div class="colophon">PRODUCT DOCUMENTATION · NOT MARKETING · INTERNAL & INVESTOR-FACING</div>
+  </div>
+</div>
+
+<!-- ════════════════════ PAGE 2 — TABLE OF CONTENTS ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand">
+      <svg viewBox="0 0 100 100"><defs><linearGradient id="lg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg1)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg>
+      <div class="nm">ATLEATO</div>
+    </div>
+    <div class="page-tag">TABLE OF CONTENTS</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 00 · CONTENTS</span>What's in this document</h1>
+  <p class="section-lead">A complete reference of the Atleato product as of 9 June 2026. Read it in order or jump straight to the section you need. <b>If something isn't in this document, it isn't built.</b></p>
+
+  <div class="toc">
+    <div class="toc-row"><div class="num">01</div><div class="ttl">Executive summary</div><div class="pg">03</div></div>
+    <div class="toc-row"><div class="num">02</div><div class="ttl">What Atleato is (and isn't)</div><div class="pg">04</div></div>
+    <div class="toc-row"><div class="num">03</div><div class="ttl">The 5 coach archetypes</div><div class="pg">05</div></div>
+    <div class="toc-row"><div class="num">04</div><div class="ttl">Mobile app — 6 tab screens (primary nav)</div><div class="pg">06</div></div>
+    <div class="toc-row"><div class="num">05</div><div class="ttl">Mobile app — 35 secondary screens (full list)</div><div class="pg">07–09</div></div>
+    <div class="toc-row"><div class="num">06</div><div class="ttl">Mobile app — core feature workflows</div><div class="pg">10–11</div></div>
+    <div class="toc-row"><div class="num">07</div><div class="ttl">Backend — Supabase database schema</div><div class="pg">12</div></div>
+    <div class="toc-row"><div class="num">08</div><div class="ttl">Backend — 13 edge functions documented</div><div class="pg">13</div></div>
+    <div class="toc-row"><div class="num">09</div><div class="ttl">Backend — integrations &amp; secrets</div><div class="pg">14</div></div>
+    <div class="toc-row"><div class="num">10</div><div class="ttl">Website — 12 live pages</div><div class="pg">15</div></div>
+    <div class="toc-row"><div class="num">11</div><div class="ttl">The marketing funnel — signup to purchase</div><div class="pg">16</div></div>
+    <div class="toc-row"><div class="num">12</div><div class="ttl">Pricing &amp; business model</div><div class="pg">17</div></div>
+    <div class="toc-row"><div class="num">13</div><div class="ttl">Tech stack &amp; tools</div><div class="pg">18</div></div>
+    <div class="toc-row"><div class="num">14</div><div class="ttl">Roadmap &amp; launch timeline</div><div class="pg">19</div></div>
+    <div class="toc-row"><div class="num">15</div><div class="ttl">Honest competitive landscape</div><div class="pg">20</div></div>
+    <div class="toc-row"><div class="num">16</div><div class="ttl">Security, privacy, legal</div><div class="pg">21</div></div>
+    <div class="toc-row"><div class="num">17</div><div class="ttl">Open issues &amp; known limitations</div><div class="pg">22</div></div>
+    <div class="toc-row"><div class="num">18</div><div class="ttl">Contact &amp; links</div><div class="pg">23</div></div>
+  </div>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 02 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 3 — EXECUTIVE SUMMARY ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg2)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">01 · EXECUTIVE SUMMARY</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 01 · EXECUTIVE SUMMARY</span>The 30-second pitch.</h1>
+  <p class="section-lead">Atleato is a mobile fitness coaching app built around 5 distinct AI coach personas. Each persona changes the entire app — colors, programs, voice, nutrition rules. Buyers reserve a "Vanguard Pass" pre-launch for $1.99 (one-time, capped at 500 buyers). Launch target: Q3 2026 on Google Play.</p>
+
+  <div class="two-col">
+    <div class="card tinted">
+      <span class="chip">SCOPE</span>
+      <h4>What is built today</h4>
+      <ul>
+        <li>React Native mobile app: 41 screens, 6 nav tabs</li>
+        <li>13 Supabase edge functions (AI + email + payments)</li>
+        <li>11 database migrations (auth, workouts, nutrition, territory, waitlist, orders)</li>
+        <li>12 live website pages (marketing + funnel)</li>
+        <li>Stripe-alternative Lemon Squeezy checkout, live</li>
+        <li>Resend transactional email pipeline, deployed</li>
+        <li>Real-time order ledger with 500-cap enforcement</li>
+        <li>Private Discord (founder + Vanguards)</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <span class="chip" style="color:#c97607;background:#fde6c0;">NOT BUILT YET</span>
+      <h4>Known gaps / roadmap items</h4>
+      <ul>
+        <li>iOS app (Android-first; iOS post-launch)</li>
+        <li>In-app purchases via Google Play Billing (Vanguard Pass uses Lemon Squeezy web-checkout for now)</li>
+        <li>Live multiplayer features (squads exist as solo UI)</li>
+        <li>Coach voice TTS in production (TTS engine wired in dev, voices being recorded)</li>
+        <li>Apple HealthKit integration</li>
+        <li>Public beta / closed-testing release</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="sub"><span class="num">1.1</span>Key numbers at a glance</h2>
+  <table>
+    <tr><th>Metric</th><th>Value</th><th>Source / notes</th></tr>
+    <tr><td>Build time</td><td>~14 months solo</td><td>Started 2025</td></tr>
+    <tr><td>App screens (RN)</td><td>41 (6 tabs + 35 secondary)</td><td><code>app/*.tsx</code></td></tr>
+    <tr><td>Edge functions</td><td>13</td><td><code>supabase/functions/</code></td></tr>
+    <tr><td>DB migrations</td><td>11 (002–011)</td><td><code>supabase/migrations/</code></td></tr>
+    <tr><td>Website pages</td><td>12</td><td><code>docs/*.html</code></td></tr>
+    <tr><td>External cost run rate</td><td>$0/mo</td><td>Free tiers across all services</td></tr>
+    <tr><td>Vanguard cap</td><td>500 buyers</td><td>DB-enforced via <code>vanguard_orders</code></td></tr>
+    <tr><td>Vanguard price</td><td>$1.99 USD one-time</td><td>No subscription bundled</td></tr>
+    <tr><td>Legend tier price</td><td>$19.99/mo (post-launch)</td><td>Opt-in only, no auto-charge</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">1.2</span>The one-paragraph elevator pitch</h2>
+  <p>Most fitness apps give you a spreadsheet and a generic voice. Atleato builds an app where <b>5 distinct AI coach personas</b> each transform the entire experience — colors, programs, nutrition rules, voice cues, even the ringtone of your morning wake-up call. The wake-up isn't a notification you can swipe away; <b>it rings like a real incoming call</b>. The form coach uses 17-keypoint pose tracking to catch and correct rep-by-rep. Runs claim GPS territory you can lose if rivals out-run you. It's free forever — but the first 500 buyers get a permanent Vanguard Pass with one month of Legend tier on us.</p>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 03 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 4 — WHAT IT IS / ISN'T ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg3)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">02 · POSITIONING</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 02 · POSITIONING</span>What Atleato is — and what it isn't.</h1>
+  <p class="section-lead">Honest framing for investors, press, and partners. No "first-ever" or "world's only" claims.</p>
+
+  <h2 class="sub"><span class="num">2.1</span>What it is</h2>
+  <ul>
+    <li>An <b>AI-powered fitness coaching mobile app</b> for Android (iOS post-launch).</li>
+    <li>Built around <b>5 distinct coach personas</b> that each completely retune the app (colors, programs, voice, nutrition rules, ringtones).</li>
+    <li>A <b>workout, nutrition, recovery, and territory-conquest</b> super-app in one bundle.</li>
+    <li>Free forever for everyone, with a paid <b>Legend tier ($19.99/mo)</b> for premium features.</li>
+    <li>Currently in <b>pre-launch waitlist mode</b> with a 500-buyer Vanguard Pass ladder at $1.99 one-time.</li>
+  </ul>
+
+  <h2 class="sub"><span class="num">2.2</span>What it isn't</h2>
+  <ul>
+    <li><b>Not a personal trainer marketplace</b> — no human coaches involved.</li>
+    <li><b>Not a video class library</b> — no recorded workouts à la Peloton.</li>
+    <li><b>Not a social network</b> — no public feed, no DMs, no follower graph.</li>
+    <li><b>Not a calorie counter alone</b> — nutrition is integrated, not the headline.</li>
+    <li><b>Not a medical or clinical tool</b> — no diagnosis, no insurance billing.</li>
+  </ul>
+
+  <h2 class="sub"><span class="num">2.3</span>Who it's for (and who it isn't)</h2>
+  <div class="two-col">
+    <div class="card success">
+      <span class="chip green">CORE USER</span>
+      <h4>Built for</h4>
+      <ul>
+        <li>Self-trained gym-goers (1–5 years experience)</li>
+        <li>Runners who want a goal beyond pace</li>
+        <li>People who skip workouts because their alarm gets snoozed</li>
+        <li>People who want a "coach voice" but can't afford a real trainer</li>
+        <li>Late-20s to mid-40s, Android-first markets (US, UK, IN, BR)</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <span class="chip" style="color:#c97607;background:#fde6c0;">NOT BUILT FOR</span>
+      <h4>Probably not for</h4>
+      <ul>
+        <li>Pro athletes with sport-specific coaches</li>
+        <li>Rehab / clinical patients (no medical claims)</li>
+        <li>Couch-to-5K absolute beginners (too intense)</li>
+        <li>Pure-bodyweight / yoga-only practitioners (gym-leaning programs)</li>
+        <li>Kids under 16 (age-gated)</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 class="sub"><span class="num">2.4</span>The honest moat</h2>
+  <p>Each individual feature exists somewhere on the market (see Section 15 for the competitive teardown). Atleato's defensible position is:</p>
+  <ol>
+    <li><b>Combination depth</b> — coaching + form + nutrition + territory + wake-up calls all in one app, all themed per coach.</li>
+    <li><b>The 5 specific archetype personalities</b> + their persona-driven UX swap.</li>
+    <li><b>The brand DNA</b> — dark + electric-lime + Anton-display typography, paired with the "Your Coach Calls" tone.</li>
+    <li><b>Solo-built credibility</b> — the founder reads every reply and ships every feature himself.</li>
+    <li><b>The $1.99 / 500-cap Vanguard model</b> — pre-launch validation with skin in the game.</li>
+  </ol>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 04 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 5 — THE 5 COACHES ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg4" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg4)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">03 · 5 COACH ARCHETYPES</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 03 · COACH PERSONAS</span>5 archetypes, 5 apps in one.</h1>
+  <p class="section-lead">Each persona is a fictional AI character — not modeled on any real individual. Picking a coach <b>re-themes the entire app</b>: colors, training programs, nutrition macros, voice cues, even the wake-up ringtone.</p>
+
+  <table>
+    <tr><th>Coach</th><th>Color</th><th>Philosophy</th><th>Voice tone</th><th>Programs</th></tr>
+    <tr><td><b>The Sculptor</b></td><td><span style="color:#c8ff3d;">●</span> Lime</td><td>Classic Physique · aesthetic over numbers</td><td>Calm, encouraging, "stay thavage"</td><td>5-day PPL · vacuum focus · cinematic photos</td></tr>
+    <tr><td><b>The Governor</b></td><td><span style="color:#f5b942;">●</span> Gold</td><td>Golden Era · pump &amp; volume</td><td>Heavy accent · "the pump is the greatest feeling"</td><td>6-day double splits · drop sets · German Volume</td></tr>
+    <tr><td><b>The Scientist</b></td><td><span style="color:#5DD3FA;">●</span> Cyan</td><td>Evidence-based · PubMed-driven</td><td>Measured, precise, "what does the data say"</td><td>4-day upper/lower · RIR 1–3 · meta-analysis cites</td></tr>
+    <tr><td><b>The Commander</b></td><td><span style="color:#ef4444;">●</span> Red</td><td>Iron Asylum · no excuses</td><td>Loud, declarative, "ANSWER THE CALL"</td><td>5×5 + accessory · forced reps · 5AM wake-ups</td></tr>
+    <tr><td><b>Dr. Growth</b></td><td><span style="color:#7be38c;">●</span> Mint</td><td>Hypertrophy science · MEV / MAV / MRV</td><td>Nerdy professor · "stay in your volume landmarks"</td><td>Volume landmarks · mesocycle deloads · RIR tracking</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">3.1</span>What changes when you switch coach</h2>
+  <div class="three-col">
+    <div class="card"><h4>Visual layer</h4><ul><li>Primary accent color</li><li>Tab bar active color</li><li>Splash screen tint</li><li>Avatar SVG silhouette</li><li>Headline icons</li></ul></div>
+    <div class="card"><h4>Content layer</h4><ul><li>Default training program</li><li>Macro split (P/C/F %)</li><li>Recovery rules (RIR, rest, deload weeks)</li><li>Slang in tip cards</li><li>Daily wake-up greeting</li></ul></div>
+    <div class="card"><h4>Audio layer</h4><ul><li>TTS voice pitch + speed</li><li>Set-complete cue phrase</li><li>Rest-over cue phrase</li><li>Form-break cue phrase</li><li>PR-celebration cue phrase</li></ul></div>
+  </div>
+
+  <h2 class="sub"><span class="num">3.2</span>Coach IP &amp; legal safety</h2>
+  <div class="card info">
+    <p><b>All personas are fictional AI characters.</b> They are not modeled on, affiliated with, or endorsed by any real-world athlete, coach, or trainer. Names, color palettes, and signature phrases were designed in-house to avoid any IP collision with real individuals. The "modeled after legendary training philosophies" framing refers to public-domain training concepts (volume landmarks, German Volume Training, etc.) — not to specific persons.</p>
+  </div>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 05 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 6 — TAB SCREENS ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg5" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg5)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">04 · TAB SCREENS</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 04 · MOBILE APP</span>The 6 tab screens.</h1>
+  <p class="section-lead">The bottom-tab navigation is the always-visible primary nav. Every other screen in the app pushes on top of these.</p>
+
+  <div class="screen-card"><div class="head"><div class="nm">Home / Dashboard</div><div class="path">app/(tabs)/index.tsx</div></div><div class="desc">Streak hero card (current streak in days), today's workout summary with start CTA, "daily tip" card from your active coach (rotates daily), recovery score, territory snapshot, and access to Coach Hub. Default landing tab.</div></div>
+
+  <div class="screen-card"><div class="head"><div class="nm">Workouts</div><div class="path">app/(tabs)/workouts.tsx</div></div><div class="desc">Weekly schedule view of your coach's program, exercise library, recent sessions, PR shelf, and "start workout" entry point. Each exercise card shows tempo, RIR, rest, and last session's weight.</div></div>
+
+  <div class="screen-card"><div class="head"><div class="nm">Nutrition</div><div class="path">app/(tabs)/nutrition.tsx</div></div><div class="desc">Daily macros ring (calories + P/C/F bars), meal log, AI food scanner entry, weekly trend chart. Targets retune when you switch coach.</div></div>
+
+  <div class="screen-card"><div class="head"><div class="nm">Coach</div><div class="path">app/(tabs)/coach.tsx</div></div><div class="desc">Chat-style interface with your active coach (powered by Claude API). Ask form questions, get program adjustments, request a deload week. Coach responds in their distinct voice / philosophy.</div></div>
+
+  <div class="screen-card"><div class="head"><div class="nm">Territory</div><div class="path">app/(tabs)/territory.tsx</div></div><div class="desc">GPS-based map showing claimed cells (lime), enemy cells (red), and contested cells (striped). Stats: cells owned, contested, city rank. CTA to start a run that claims cells along your route.</div></div>
+
+  <div class="screen-card"><div class="head"><div class="nm">Progress</div><div class="path">app/(tabs)/progress.tsx</div></div><div class="desc">Long-term progress: streak calendar, PR trend graphs, physique compare (before/after photos), Legend-tier XP bar, badge collection. Aggregates data from all other tabs.</div></div>
+
+  <h2 class="sub"><span class="num">4.1</span>Tab visibility &amp; gating</h2>
+  <p>All 6 tabs are visible to free-tier users. Inside tabs, certain features ("video review", "AI form coach", "AI food scanner full mode", "advanced PR analytics") gate behind Legend tier via the <code>canAccess(featureKey)</code> hook.</p>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 06 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 7 — SECONDARY SCREENS PT 1 ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg6" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg6)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">05 · SECONDARY SCREENS (1/3)</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 05 · ALL 35 SECONDARY SCREENS</span>Every screen, documented.</h1>
+  <p class="section-lead">Pushed on top of tab screens via Expo Router. Grouped by user-journey category.</p>
+
+  <h2 class="sub"><span class="num">5.1</span>Workout flow (8 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>workout-lobby</code></td><td>Pre-session warm-up screen; shows today's exercises, warm-up timer, last session's data</td></tr>
+    <tr><td><code>workout-picker</code></td><td>Pick a different workout than your scheduled one (e.g., swap Push Day for Pull Day)</td></tr>
+    <tr><td><code>workout-session</code></td><td>Live workout: set tracker, rest timer, voice cues, RIR input, weight auto-fill from last session</td></tr>
+    <tr><td><code>post-workout</code></td><td>Session summary: total volume, PRs hit, streak update, share card generator</td></tr>
+    <tr><td><code>form-coach</code></td><td>17-keypoint pose tracker via device camera. Live skeleton overlay, knee/back/depth telemetry, voice corrections</td></tr>
+    <tr><td><code>video-review</code></td><td>Record a set on camera, get AI feedback on form post-rep (Legend tier)</td></tr>
+    <tr><td><code>progressive-overload</code></td><td>Coach-recommended weight bumps for next session, based on RIR + bar speed history</td></tr>
+    <tr><td><code>pr-celebration</code></td><td>Confetti screen + share card when a new personal record is hit. Coach voice congratulates</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">5.2</span>Nutrition flow (2 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>add-food</code></td><td>Manual food entry. Search 1.2M USDA + branded food DB. Quick-add favorites</td></tr>
+    <tr><td><code>food-photo-scan</code></td><td>Camera-based AI food recognition. Snap a plate → returns estimated macros + portion size</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">5.3</span>Coach Calls &amp; Wake-Up flow (3 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>incoming-call</code></td><td>Full-screen "incoming call" UI mimicking the OS call screen. Pulsing avatar, snooze/answer buttons</td></tr>
+    <tr><td><code>ringtone-picker</code></td><td>Pick from 12 coach-themed ringtones per coach (5 coaches × 12 = 60 total options)</td></tr>
+    <tr><td><code>coach-reminders</code></td><td>Schedule wake-up calls, workout reminders, "eat now" reminders. Per-day toggle</td></tr>
+  </table>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 07 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 8 — SECONDARY SCREENS PT 2 ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg7" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg7)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">05 · SECONDARY SCREENS (2/3)</div>
+  </div>
+
+  <h2 class="sub"><span class="num">5.4</span>Territory &amp; running (3 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>run</code></td><td>Live GPS run tracker. Cells claimed in real-time as you cross them. Pace + distance + heart rate (if connected)</td></tr>
+    <tr><td><code>territory-leaderboard</code></td><td>City-level ranking of cells owned. Filter by your city or global</td></tr>
+    <tr><td><code>leaderboard</code></td><td>Global Legend-tier XP leaderboard. Top 100 + your rank</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">5.5</span>Recovery &amp; physique (4 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>recovery-checkin</code></td><td>Daily 5-question check-in (sleep, soreness, stress, energy, motivation). Feeds into <code>volumeModifier</code> for next workout</td></tr>
+    <tr><td><code>physique-checkin</code></td><td>Weekly photos (front/side/back). Private — never uploaded</td></tr>
+    <tr><td><code>physique-compare</code></td><td>Side-by-side photo timeline. Slider scrub between dates</td></tr>
+    <tr><td><code>health-dashboard</code></td><td>Sleep, HRV, resting heart rate (from Google Fit). Trends vs training load</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">5.6</span>Progression &amp; rewards (5 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>legend-progress</code></td><td>XP bar, current rank tier, next-rank unlocks, badge gallery</td></tr>
+    <tr><td><code>my-avatar</code></td><td>Generative avatar based on body stats + progress. Evolves with rank</td></tr>
+    <tr><td><code>streak-calendar</code></td><td>365-day grid showing every workout day, missed day, and freeze used</td></tr>
+    <tr><td><code>daily-tip</code></td><td>Today's tip from your active coach. Time-limited (expires at midnight)</td></tr>
+    <tr><td><code>paywall</code></td><td>Legend tier upsell screen. Triggers when a free-tier user taps a gated feature</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">5.7</span>Accountability (4 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>social-stake</code></td><td>Pick a "witness" contact who gets notified if you skip a week</td></tr>
+    <tr><td><code>charity-stake</code></td><td>Stake $5 against a cause you dislike if you miss your weekly target (virtual, opt-in)</td></tr>
+    <tr><td><code>daily-selfie</code></td><td>Private 7-day selfie streak (face-only, on-device, never uploaded)</td></tr>
+    <tr><td><code>friend-scoreboard</code></td><td>Weekly leaderboard among invited friends. Loss-framed copy ("you're behind by 2 sessions")</td></tr>
+  </table>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 08 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 9 — SECONDARY SCREENS PT 3 ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg8" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg8)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">05 · SECONDARY SCREENS (3/3)</div>
+  </div>
+
+  <h2 class="sub"><span class="num">5.8</span>Community (2 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>squads</code></td><td>Join or create a squad (up to 12 members). Shared weekly volume goal. Currently solo UI; live multiplayer pending</td></tr>
+    <tr><td><code>referral</code></td><td>Invite friends to the waitlist. Each successful invite earns "Vanguard credit" toward founder pricing</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">5.9</span>Settings &amp; profile (3 screens)</h2>
+  <table>
+    <tr><th>Screen</th><th>Purpose</th></tr>
+    <tr><td><code>profile</code></td><td>Main settings hub. Body stats, goals, active coach, voice cues toggle, accountability config, account, About Atleato (links to showreel + demo video + share)</td></tr>
+    <tr><td><code>voice-settings</code></td><td>Adjust TTS pitch and speed per-coach (Legend tier)</td></tr>
+    <tr><td><code>design-test</code></td><td>Internal dev-only — design system showcase</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">5.10</span>Screen-count summary</h2>
+  <table>
+    <tr><th>Category</th><th>Screens</th></tr>
+    <tr><td>Tab screens (primary nav)</td><td>6</td></tr>
+    <tr><td>Workout flow</td><td>8</td></tr>
+    <tr><td>Nutrition flow</td><td>2</td></tr>
+    <tr><td>Coach Calls &amp; Wake-Up</td><td>3</td></tr>
+    <tr><td>Territory &amp; running</td><td>3</td></tr>
+    <tr><td>Recovery &amp; physique</td><td>4</td></tr>
+    <tr><td>Progression &amp; rewards</td><td>5</td></tr>
+    <tr><td>Accountability</td><td>4</td></tr>
+    <tr><td>Community</td><td>2</td></tr>
+    <tr><td>Settings &amp; profile</td><td>3</td></tr>
+    <tr><td>Auth + system + layouts</td><td>1 (<code>_layout.tsx</code>)</td></tr>
+    <tr><th>Total</th><th>41 screens</th></tr>
+  </table>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 09 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 10 — CORE WORKFLOWS PT 1 ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lg9" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg9)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">06 · CORE WORKFLOWS</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 06 · KEY USER WORKFLOWS</span>How the app actually works.</h1>
+  <p class="section-lead">Five end-to-end flows that define the Atleato experience.</p>
+
+  <h2 class="sub"><span class="num">6.1</span>Workflow: Wake-up call</h2>
+  <div class="card">
+    <ol>
+      <li>User configures wake-up in <code>coach-reminders</code> (time, days, coach, ringtone)</li>
+      <li>Local scheduled notification (via <code>expo-notifications</code>) fires at the chosen time</li>
+      <li>Notification action launches deep-link to <code>/incoming-call</code></li>
+      <li>Full-screen call UI renders with pulsing avatar, coach's ringtone audio plays</li>
+      <li>User taps <b>Snooze</b> → reschedules for +5 min · or <b>Answer</b> → opens today's workout in <code>workout-lobby</code></li>
+      <li>Streak counter increments; missed wake-ups log to <code>recovery-checkin</code> data</li>
+    </ol>
+  </div>
+
+  <h2 class="sub"><span class="num">6.2</span>Workflow: Live workout session</h2>
+  <div class="card">
+    <ol>
+      <li>User enters <code>workout-session</code> from lobby</li>
+      <li>Exercise card shows: name, sets, target reps, RIR, last session's weight</li>
+      <li>User completes a set → taps weight + reps + RIR → coach voice cue plays ("Quality reps. Stay humble.")</li>
+      <li>Auto rest timer starts (90s, 120s, etc. per exercise config)</li>
+      <li>10s before rest ends, voice cue: "Get ready"</li>
+      <li>On rest-over, vibration + voice: "Go" · timer transitions to next set</li>
+      <li>If form-coach enabled, camera tracks 17 keypoints during set; live HUD shows knee/back angles, depth</li>
+      <li>Session ends → routes to <code>post-workout</code> with session summary, PRs hit, share card</li>
+      <li>If PR detected, <code>pr-celebration</code> animates with confetti + voice congrats</li>
+    </ol>
+  </div>
+
+  <h2 class="sub"><span class="num">6.3</span>Workflow: AI form correction</h2>
+  <div class="card">
+    <ol>
+      <li>User opens <code>form-coach</code> screen and selects exercise (squat, deadlift, bench, etc.)</li>
+      <li>Camera permission requested; user sets phone at floor angle</li>
+      <li>MediaPipe Pose Landmarker tracks 17 keypoints at ~30 FPS</li>
+      <li>Frontend computes joint angles (knee, hip, back, elbow) per frame</li>
+      <li>Telemetry overlay updates live (KNEE 94° · DEPTH DEEP · BACK -12°)</li>
+      <li>If a "fault pattern" matches (e.g., knees-cave-inward), overlay turns red + voice plays correction in coach's signature voice</li>
+      <li>Final form score computed (0–100) at end of set</li>
+      <li>Legend-tier users get post-set video review via <code>video-review</code> screen</li>
+    </ol>
+  </div>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 10 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 11 — CORE WORKFLOWS PT 2 ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lga" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lga)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">06 · CORE WORKFLOWS (CONT.)</div>
+  </div>
+
+  <h2 class="sub"><span class="num">6.4</span>Workflow: AI food scanner</h2>
+  <div class="card">
+    <ol>
+      <li>User taps "Scan food" in <code>(tabs)/nutrition</code> → opens <code>food-photo-scan</code></li>
+      <li>Camera captures plate; image sent to <code>analyze-food-photo</code> edge function</li>
+      <li>Function calls Claude vision API with the photo + structured prompt asking for foods, portions, and macros</li>
+      <li>Response parsed into food items with estimated grams + calories + P/C/F</li>
+      <li>User confirms or edits each item; saved to <code>nutrition_log</code> table</li>
+      <li>Nutrition tab macro ring updates immediately</li>
+    </ol>
+  </div>
+
+  <h2 class="sub"><span class="num">6.5</span>Workflow: Territory conquest</h2>
+  <div class="card">
+    <ol>
+      <li>User taps "Start 5K run" from <code>(tabs)/territory</code> → opens <code>run</code> screen</li>
+      <li>GPS tracking begins; user sees live pace, distance, route</li>
+      <li>Each GPS coordinate is mapped to a "cell" — a 0.0018° × 0.0018° grid square (~200m²)</li>
+      <li>As user crosses a cell, it's added to a local claim queue</li>
+      <li>At run end, <code>claim_cells()</code> PG RPC validates the run (anti-cheat: rejects runs faster than 30 km/h sustained pace)</li>
+      <li>Valid cells inserted into <code>territory_cells</code> table with owner_id and timestamp</li>
+      <li>If a cell was previously owned by someone else, ownership flips and <code>notify-steal</code> edge function emails the previous owner</li>
+      <li>Territory tab map refreshes via <code>cells_in_bbox()</code> RPC</li>
+    </ol>
+  </div>
+
+  <h2 class="sub"><span class="num">6.6</span>Workflow: Recovery-aware programming</h2>
+  <div class="card">
+    <ol>
+      <li>Each morning user fills <code>recovery-checkin</code> (5 sliders: sleep, soreness, stress, energy, motivation)</li>
+      <li>Frontend computes a <code>recoveryScore</code> 0–100</li>
+      <li>Edge function <code>recovery-plan</code> returns a <code>volumeModifier</code> (0.7–1.1) based on score</li>
+      <li>Today's workout's sets/reps multiply by <code>volumeModifier</code> — e.g., recovery score 45 → 0.8× volume → fewer sets</li>
+      <li>Coach voice cue acknowledges: "Going lighter today. Trust the process."</li>
+      <li>If 3+ consecutive low scores, coach proposes a deload week in <code>(tabs)/coach</code></li>
+    </ol>
+  </div>
+
+  <h2 class="sub"><span class="num">6.7</span>Cross-cutting: theming engine</h2>
+  <p>When user switches active coach in <code>profile</code>, the global <code>themeStore</code> (Zustand) updates. Every component subscribes via <code>useTheme()</code> hook and re-renders with the new persona's color tokens, font weights, voice profile, and program templates. No app restart needed.</p>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 11 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 12 — DATABASE SCHEMA ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgb" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgb)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">07 · DATABASE</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 07 · BACKEND DATABASE</span>Supabase Postgres schema.</h1>
+  <p class="section-lead">Hosted on Supabase. All tables have Row-Level Security (RLS) enabled. Public anon key only sees what's needed for the marketing funnel; user-scoped data gates behind <code>auth.uid()</code>.</p>
+
+  <h2 class="sub"><span class="num">7.1</span>11 migrations applied (in order)</h2>
+  <table>
+    <tr><th>#</th><th>File</th><th>What it does</th></tr>
+    <tr><td>001</td><td><code>initial_schema.sql</code></td><td>profiles, workouts, exercises, sets, programs, foods, nutrition_log</td></tr>
+    <tr><td>002</td><td><code>rls.sql</code></td><td>Row-level security policies for all tables</td></tr>
+    <tr><td>003</td><td><code>security_hardening.sql</code></td><td>Revoke public schema grants, lock down extensions</td></tr>
+    <tr><td>004</td><td><code>profile_trigger.sql</code></td><td>Auto-create profile row on new auth user signup</td></tr>
+    <tr><td>005</td><td><code>physique.sql</code></td><td>physique_checkin table + storage bucket policy (private photos)</td></tr>
+    <tr><td>006</td><td><code>global_leaderboard.sql</code></td><td>Materialized view for top-100 ranking + refresh cron</td></tr>
+    <tr><td>007</td><td><code>territory_conquest.sql</code></td><td>territory_cells, runs, claim_cells() RPC, anti-cheat checks</td></tr>
+    <tr><td>008</td><td><code>cells_in_bbox.sql</code></td><td>cells_in_bbox() RPC — returns cells inside a viewport bounding box</td></tr>
+    <tr><td>009</td><td><code>territory_v3.sql</code></td><td>v2 of claim_cells with stricter pace cap; change_count for heatmaps; nearby_leaderboard RPC</td></tr>
+    <tr><td>010</td><td><code>waitlist.sql</code></td><td>public.waitlist table with unique-email index, public insert RLS</td></tr>
+    <tr><td>011</td><td><code>vanguard_orders.sql</code></td><td>vanguard_orders ledger + is_vanguard / vanguard_pass_no on waitlist + atomic assign_next_vanguard_pass_no() RPC</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">7.2</span>Key tables &amp; row counts</h2>
+  <table>
+    <tr><th>Table</th><th>Purpose</th><th>Sensitive?</th></tr>
+    <tr><td><code>profiles</code></td><td>User profile, active coach, body stats, goals</td><td>Yes (RLS: own row only)</td></tr>
+    <tr><td><code>workouts</code> / <code>exercises</code> / <code>sets</code></td><td>Session logs, PR history</td><td>Yes (own data only)</td></tr>
+    <tr><td><code>nutrition_log</code></td><td>Food entries with macros</td><td>Yes (own data only)</td></tr>
+    <tr><td><code>physique_checkin</code></td><td>Weekly photo paths (storage URLs)</td><td>Yes (private bucket)</td></tr>
+    <tr><td><code>territory_cells</code></td><td>(cell_id, owner_id, claimed_at, change_count)</td><td>Public read (anonymized handle)</td></tr>
+    <tr><td><code>runs</code></td><td>GPS run log (path, distance, pace)</td><td>Yes (own data only)</td></tr>
+    <tr><td><code>waitlist</code></td><td>(email, source, is_vanguard, vanguard_pass_no, vanguard_at)</td><td>Public count read; insert OK; no PII via anon</td></tr>
+    <tr><td><code>vanguard_orders</code></td><td>(ls_order_id, email, pass_no, total_cents, status, raw_payload)</td><td>Public count of paid rows only</td></tr>
+  </table>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 12 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 13 — EDGE FUNCTIONS ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgc" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgc)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">08 · EDGE FUNCTIONS</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 08 · 13 EDGE FUNCTIONS</span>All backend serverless code.</h1>
+  <p class="section-lead">Written in Deno + TypeScript. Deployed on Supabase Edge Functions runtime. All have logs visible in Supabase Dashboard → Functions.</p>
+
+  <table>
+    <tr><th>Function</th><th>What it does</th><th>Called by</th></tr>
+    <tr><td><code>ai-coach-chat</code></td><td>Streams conversation with active coach via Claude API. Persona-tuned system prompt</td><td><code>(tabs)/coach</code></td></tr>
+    <tr><td><code>analyze-food-photo</code></td><td>Vision API call: image → list of foods with portion estimates + macros</td><td><code>food-photo-scan</code></td></tr>
+    <tr><td><code>analyze-physique</code></td><td>Compare two physique photos; returns visible-change summary (Legend tier)</td><td><code>physique-compare</code></td></tr>
+    <tr><td><code>analyze-workout</code></td><td>Reads last 30 days of workouts; returns trends + recommendations</td><td><code>(tabs)/progress</code></td></tr>
+    <tr><td><code>form-feedback</code></td><td>Takes joint-angle timeseries from a set; returns text feedback + score</td><td><code>form-coach</code> / <code>video-review</code></td></tr>
+    <tr><td><code>generate-meal-plan</code></td><td>Creates a 7-day meal plan from macros + dietary prefs</td><td><code>(tabs)/nutrition</code></td></tr>
+    <tr><td><code>nutrition-advice</code></td><td>Q&amp;A about specific meals; "is this enough protein?"</td><td><code>(tabs)/coach</code></td></tr>
+    <tr><td><code>recovery-plan</code></td><td>Recovery score → volumeModifier + deload recommendation</td><td><code>workout-session</code> (pre-fetch)</td></tr>
+    <tr><td><code>weekly-summary</code></td><td>Sunday cron: emails users their weekly volume, PRs, streak, suggestions</td><td>pg_cron weekly trigger</td></tr>
+    <tr><td><code>notify-steal</code></td><td>Sends "your cell was taken" notification when territory ownership flips</td><td><code>claim_cells</code> trigger</td></tr>
+    <tr><td><code>send-welcome-email</code></td><td>Sends branded welcome email via Resend on waitlist signup</td><td>DB webhook on <code>waitlist INSERT</code></td></tr>
+    <tr><td><code>lemonsqueezy-webhook</code></td><td>Verifies LS HMAC, assigns 1-500 pass, flips waitlist.is_vanguard, sends confirmation email</td><td>Lemon Squeezy on <code>order_created</code> / <code>order_refunded</code></td></tr>
+    <tr><td><code>_shared</code></td><td>Shared helpers: CORS headers, Claude client, types</td><td>Imported by all functions</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">8.1</span>Idempotency &amp; reliability</h2>
+  <p>Webhook receivers (LS, Resend bounces) are idempotent on external IDs. Cron-driven functions are wrapped in advisory locks to prevent double-fires. All functions log every invocation with structured JSON for grep-able debugging.</p>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 13 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 14 — INTEGRATIONS ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgd" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgd)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">09 · INTEGRATIONS</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 09 · THIRD-PARTY INTEGRATIONS</span>What talks to what.</h1>
+  <p class="section-lead">All third-party services with their role in the stack and the secrets they need.</p>
+
+  <table>
+    <tr><th>Service</th><th>Role</th><th>Secret name</th><th>Free tier OK?</th></tr>
+    <tr><td><b>Supabase</b></td><td>Postgres DB, auth, edge functions, storage</td><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Yes — free up to 500 MB DB</td></tr>
+    <tr><td><b>Anthropic Claude</b></td><td>All AI (coach chat, form, nutrition, vision)</td><td><code>ANTHROPIC_API_KEY</code></td><td>Pay-as-you-go</td></tr>
+    <tr><td><b>Resend</b></td><td>Transactional email (welcome, confirmation, weekly summary)</td><td><code>RESEND_API_KEY</code></td><td>Yes — 100 emails/day, 3K/mo</td></tr>
+    <tr><td><b>Lemon Squeezy</b></td><td>Merchant of Record for Vanguard Pass checkout</td><td><code>LEMONSQUEEZY_WEBHOOK_SECRET</code></td><td>5% fee, no monthly</td></tr>
+    <tr><td><b>USDA FoodData Central</b></td><td>Foods database (1.2M items)</td><td><code>USDA_API_KEY</code> (in .env.local)</td><td>Yes — free, rate-limited</td></tr>
+    <tr><td><b>Discord</b></td><td>Private Vanguard community</td><td><code>DISCORD_INVITE_URL</code></td><td>Yes — free server</td></tr>
+    <tr><td><b>GitHub Pages</b></td><td>Hosts atleato.com static site</td><td>—</td><td>Yes — free</td></tr>
+    <tr><td><b>Namecheap</b></td><td>DNS for atleato.com</td><td>—</td><td>~$10/yr domain only</td></tr>
+    <tr><td><b>Firebase</b></td><td>Google Sign-in OAuth, push notifications</td><td><code>google-services.json</code> (gitignored)</td><td>Yes — Spark free tier</td></tr>
+    <tr><td><b>MediaPipe</b></td><td>On-device pose detection (no API key, runs locally)</td><td>—</td><td>Yes — open source</td></tr>
+    <tr><td><b>Expo / EAS</b></td><td>React Native build + OTA updates</td><td>—</td><td>Yes — free for solo</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">9.1</span>Monthly cost run-rate today</h2>
+  <div class="card success">
+    <h4>Total external cost: $0 / month</h4>
+    <p>Every service used is on its free tier. Claude API is the only metered cost — currently ~$0–5/day during dev. At launch (estimated 500 active users), projected to be ~$50–150/mo. Lemon Squeezy fees only apply on actual sales (5%).</p>
+  </div>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 14 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 15 — WEBSITE PAGES ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lge" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lge)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">10 · WEBSITE</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 10 · WEBSITE</span>12 live pages on atleato.com.</h1>
+  <p class="section-lead">Static HTML hosted on GitHub Pages. No backend rendering. All marketing + funnel pages.</p>
+
+  <table>
+    <tr><th>Path</th><th>Purpose</th></tr>
+    <tr><td><code>/</code> (index.html)</td><td>Marketing landing — hero, 5 coaches, features, pricing, Mobile UI section, FAQ, waitlist form</td></tr>
+    <tr><td><code>/upsell.html</code></td><td>Post-signup VIP Vanguard Pass conversion page — real-time count, scarcity stats, 2 paths (pay or invite), Lemon Squeezy checkout</td></tr>
+    <tr><td><code>/showreel.html</code></td><td>60-sec cinematic vertical reel — 7 scroll-snap scenes (cold open → call → coaches → form → territory → stats → CTA)</td></tr>
+    <tr><td><code>/demo-video.html</code></td><td>16:9 timeline-based animated demo, ~50 sec, press Space to play. Full app walkthrough</td></tr>
+    <tr><td><code>/app-preview.html</code></td><td>8 phone-frame mockups of real app screens — splash, onboarding, dashboard, workout, AI form, territory, nutrition, call</td></tr>
+    <tr><td><code>/welcome-email.html</code></td><td>Hosted preview of the animated welcome email. Query params <code>?name=&amp;pos=&amp;pass=</code> personalize</td></tr>
+    <tr><td><code>/logo-download.html</code></td><td>4 logo variants (black square, transparent, white bg, wordmark). Right-click to save</td></tr>
+    <tr><td><code>/product-images.html</code></td><td>Source page for the 10 1600×1200 Lemon Squeezy product images. Puppeteer captures from this</td></tr>
+    <tr><td><code>/vanguard-welcome-letter.html</code></td><td>Source for the 3-page A4 welcome PDF that Vanguards download from LS Files</td></tr>
+    <tr><td><code>/product-documentation.html</code></td><td>Source for this document (the PDF you're reading)</td></tr>
+    <tr><td><code>/privacy</code></td><td>Privacy policy (GDPR-compliant)</td></tr>
+    <tr><td><code>/404</code></td><td>"Coach didn't pick up." 404 page with branded design</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">10.1</span>Hidden / admin pages</h2>
+  <p><code>/admin-509eb77ff6a02df244b3502d31027b08.html</code> — admin dashboard with waitlist stats, recent signups, referral leaderboard. The path includes a random token so it isn't discoverable via sitemap; only the founder has the URL.</p>
+
+  <h2 class="sub"><span class="num">10.2</span>SEO &amp; security</h2>
+  <ul>
+    <li><b>Sitemap:</b> <code>/sitemap.xml</code> lists 7 public pages with priorities</li>
+    <li><b>Robots:</b> <code>/robots.txt</code> allows all crawlers, disallows /admin*</li>
+    <li><b>JSON-LD:</b> WebApplication schema on landing page</li>
+    <li><b>OG / Twitter cards:</b> Set on showreel + index for social previews</li>
+    <li><b>Headers:</b> CSP, X-Frame-Options, Referrer-Policy, HSTS all set via meta + Pages defaults</li>
+    <li><b>GDPR:</b> Cookie consent banner on first visit; declines non-essential cookies by default</li>
+  </ul>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 15 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 16 — FUNNEL ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgf" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgf)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">11 · FUNNEL</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 11 · MARKETING FUNNEL</span>Signup to purchase, end-to-end.</h1>
+  <p class="section-lead">Every step a visitor takes from first landing to becoming a paid Vanguard.</p>
+
+  <div class="card">
+    <h3 class="sub">Step 1 — Visitor lands on atleato.com</h3>
+    <p>Source: organic search, social share, ads, referral. Lands on <code>/</code>. Sees hero, real-time waitlist count, real-time Vanguard count, coach lineup, features, pricing.</p>
+  </div>
+  <div class="flow-arrow">↓</div>
+
+  <div class="card">
+    <h3 class="sub">Step 2 — Submits email to waitlist</h3>
+    <p>Form POSTs directly to Supabase <code>/rest/v1/waitlist</code> using public anon key. Row inserts with email + source ("landing-page" or "hero" or "...ref_friend@x.com"). Hero stat counter increments on next refresh.</p>
+  </div>
+  <div class="flow-arrow">↓</div>
+
+  <div class="card">
+    <h3 class="sub">Step 3 — Database webhook fires</h3>
+    <p>Supabase DB webhook on <code>waitlist INSERT</code> calls <code>send-welcome-email</code> edge function. Function generates deterministic Vanguard Badge from email hash (e.g., "Obsidian Sentinel #042"), renders branded HTML + plain-text email, sends via Resend.</p>
+  </div>
+  <div class="flow-arrow">↓</div>
+
+  <div class="card">
+    <h3 class="sub">Step 4 — Visitor immediately redirected to /upsell.html</h3>
+    <p>Front-end JS routes them with their email in query string. Upsell page shows: their position (#X on waitlist), real-time "X/500 claimed" count, 30-min reservation timer, 2 paths (pay $1.99 OR invite 3 friends free), 7 social-share buttons.</p>
+  </div>
+  <div class="flow-arrow">↓</div>
+
+  <div class="card">
+    <h3 class="sub">Step 5 — Clicks "Claim My VIP Pass"</h3>
+    <p>CTA href is the Lemon Squeezy checkout URL with the buyer's email pre-filled via <code>?checkout[email]=...</code>. Lands on LS-hosted Stripe-like form. Pays $1.99 with card / Apple Pay / Google Pay.</p>
+  </div>
+  <div class="flow-arrow">↓</div>
+
+  <div class="card">
+    <h3 class="sub">Step 6 — Lemon Squeezy processes payment + fires webhook</h3>
+    <p>LS sends POST to <code>/functions/v1/lemonsqueezy-webhook</code> with order details. Function HMAC-verifies signature, atomically assigns pass # 1–500, inserts row in <code>vanguard_orders</code> (idempotent on order_id), flips <code>waitlist.is_vanguard = true</code> for the email.</p>
+  </div>
+  <div class="flow-arrow">↓</div>
+
+  <div class="card">
+    <h3 class="sub">Step 7 — Confirmation email + Discord invite</h3>
+    <p>Webhook function calls Resend to send a branded "Pass #XXXX confirmed" email with: order #, badge name, pass number, Discord invite link, "what happens next" timeline.</p>
+  </div>
+  <div class="flow-arrow">↓</div>
+
+  <div class="card">
+    <h3 class="sub">Step 8 — LS redirects buyer back to /upsell.html?paid=true</h3>
+    <p>Page detects <code>?paid=true</code>, transforms CTA into green "✓ VANGUARD PASS CONFIRMED" banner. Clears 30-min reservation hold. Buyer's funnel complete.</p>
+  </div>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 16 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 17 — PRICING ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgg)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">12 · PRICING</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 12 · PRICING &amp; BUSINESS MODEL</span>Three tiers, one promise.</h1>
+  <p class="section-lead">Free is genuinely free forever. No surprise charges. Vanguard Pass is the only pre-launch purchase available.</p>
+
+  <table>
+    <tr><th>Tier</th><th>Price</th><th>What's included</th><th>Available</th></tr>
+    <tr><td><b>Free</b></td><td>$0 forever</td><td>1 active coach (pick from 5), basic workout tracking, basic nutrition log, single-day streak history, Daily Tip</td><td>At launch, to everyone</td></tr>
+    <tr><td><b>Legend</b></td><td>$19.99 / month</td><td>All 5 coaches switchable any time, AI form correction (video review), AI food scanner unlimited, advanced PR analytics, voice customization, weekly AI summary email</td><td>At launch, opt-in (no auto-charge)</td></tr>
+    <tr><td><b>Vanguard Pass</b></td><td>$1.99 one-time</td><td>Permanent 1-of-500 badge + 1 month Legend FREE at launch + private Discord + beta access 2 weeks early + refundable till launch</td><td>Now (pre-launch only, capped at 500 buyers, 100% closes at launch)</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">12.1</span>The mechanic, in plain English</h2>
+  <div class="card tinted">
+    <p><b>Today:</b> pay $1.99 once. Never charged again. (Capped at first 500 buyers.)</p>
+    <p><b>Launch day (Q3 2026):</b> your account automatically activates Legend tier free for 30 days.</p>
+    <p><b>30 days later:</b> account automatically drops to Free tier. <b>NO auto-charge.</b></p>
+    <p><b>Your choice:</b> stay on Free (no charge ever again) OR subscribe to Legend at $19.99/mo if you want premium features.</p>
+  </div>
+
+  <h2 class="sub"><span class="num">12.2</span>Revenue forecast (honest)</h2>
+  <table>
+    <tr><th>Period</th><th>Source</th><th>Estimate</th></tr>
+    <tr><td>Now → launch (Q3 2026)</td><td>500 × $1.99 Vanguard Passes (max)</td><td>$995 gross (less 5% LS fee = $945)</td></tr>
+    <tr><td>Launch month</td><td>Vanguards on free Legend trial</td><td>$0 (all on free trial)</td></tr>
+    <tr><td>Launch + 1 month</td><td>~30% convert from free Legend trial to paid</td><td>~150 paid × $19.99 = $3K/mo</td></tr>
+    <tr><td>+6 months</td><td>Organic growth from launch, ~2K MAU est.</td><td>~500 paid × $19.99 = $10K/mo</td></tr>
+    <tr><td>Year 1 conservative</td><td>—</td><td>~$60K ARR</td></tr>
+  </table>
+  <p><i>All numbers are estimates. Real performance depends on launch reception, marketing spend, and product-market fit signals during beta.</i></p>
+
+  <h2 class="sub"><span class="num">12.3</span>Refund policy</h2>
+  <p>Vanguard Pass: full refund within 14 days of purchase, no questions. If app doesn't launch by Q4 2026, automatic full refund to all Vanguard holders. Legend tier: standard 14-day refund via Lemon Squeezy support; no questions.</p>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 17 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 18 — TECH STACK ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgh" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgh)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">13 · TECH STACK</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 13 · TECH STACK</span>Every tool, every reason.</h1>
+  <p class="section-lead">Conservative, boring, proven stack. Built for solo maintenance + zero infrastructure overhead.</p>
+
+  <h2 class="sub"><span class="num">13.1</span>Mobile app</h2>
+  <table>
+    <tr><th>Layer</th><th>Tool</th><th>Why this</th></tr>
+    <tr><td>Framework</td><td>React Native 0.81.5 + Expo SDK 54</td><td>Single codebase iOS/Android, fast dev cycle, OTA updates</td></tr>
+    <tr><td>Language</td><td>TypeScript</td><td>Type safety; refactoring confidence for solo dev</td></tr>
+    <tr><td>Routing</td><td>Expo Router (file-based)</td><td>Conventional, deep-link-friendly, no router setup boilerplate</td></tr>
+    <tr><td>State</td><td>Zustand</td><td>Tiny (1KB), no boilerplate, theming + auth stores</td></tr>
+    <tr><td>Forms</td><td>react-hook-form</td><td>Performance, validation primitives</td></tr>
+    <tr><td>Charts</td><td>Victory Native</td><td>Streak charts, PR graphs, macro rings</td></tr>
+    <tr><td>Camera + pose</td><td>expo-camera + MediaPipe Pose Landmarker</td><td>On-device, no cloud inference cost, private</td></tr>
+    <tr><td>Audio (voice cues)</td><td>expo-av + custom TTS profiles</td><td>Per-coach pitch / rate adjustment</td></tr>
+    <tr><td>Notifications</td><td>expo-notifications</td><td>Schedules wake-up calls locally</td></tr>
+    <tr><td>Maps</td><td>react-native-maps</td><td>Territory grid overlay</td></tr>
+    <tr><td>Storage</td><td>AsyncStorage + Supabase storage</td><td>Local cache + cloud photos</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">13.2</span>Backend</h2>
+  <table>
+    <tr><th>Layer</th><th>Tool</th><th>Notes</th></tr>
+    <tr><td>Database</td><td>Supabase Postgres 15</td><td>Free tier, RLS-protected</td></tr>
+    <tr><td>Auth</td><td>Supabase Auth (email + Google OAuth)</td><td>JWT tokens, refresh handling built-in</td></tr>
+    <tr><td>Edge functions</td><td>Supabase Edge Functions (Deno)</td><td>TypeScript, deployed via CLI</td></tr>
+    <tr><td>Cron jobs</td><td>pg_cron extension</td><td>Weekly summaries, leaderboard refresh</td></tr>
+    <tr><td>Object storage</td><td>Supabase Storage (S3-compatible)</td><td>Physique photos, private buckets</td></tr>
+    <tr><td>Realtime</td><td>Supabase Realtime (WebSocket)</td><td>Live territory updates, leaderboard ticks</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">13.3</span>Website</h2>
+  <table>
+    <tr><th>Layer</th><th>Tool</th><th>Notes</th></tr>
+    <tr><td>Hosting</td><td>GitHub Pages</td><td>Free, ~90 sec deploy on push</td></tr>
+    <tr><td>Format</td><td>Static HTML / CSS / vanilla JS</td><td>No build step, no framework</td></tr>
+    <tr><td>Animations</td><td>CSS keyframes + Three.js (landing)</td><td>3D hero, scroll-snap reveals</td></tr>
+    <tr><td>Forms</td><td>POST to Supabase REST</td><td>No backend on the website itself</td></tr>
+  </table>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 18 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 19 — ROADMAP ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgi" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgi)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">14 · ROADMAP</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 14 · ROADMAP</span>What's next, when.</h1>
+  <p class="section-lead">Conservative dates. Solo dev. No pressure to ship before quality.</p>
+
+  <table>
+    <tr><th>Phase</th><th>When</th><th>Deliverables</th></tr>
+    <tr><td><b>Today (June 2026)</b></td><td>—</td><td>Waitlist live · Vanguard Pass live · App in private dev · Site + demo + showreel public</td></tr>
+    <tr><td><b>Pre-launch</b></td><td>+1 week</td><td>Lemon Squeezy approved · DNS SPF added · first 50 Vanguards onboarded via Reddit + Twitter posts</td></tr>
+    <tr><td><b>Build update #1</b></td><td>+2 weeks</td><td>Email to Vanguards: closed Discord, feature progress, screenshots of beta builds</td></tr>
+    <tr><td><b>Closed alpha</b></td><td>+4 weeks</td><td>5-10 Vanguards get APK via Discord. Bug triage week</td></tr>
+    <tr><td><b>Closed beta</b></td><td>+6 weeks</td><td>Google Play Internal Testing track. All 500 Vanguards invited</td></tr>
+    <tr><td><b>Open beta</b></td><td>+8 weeks</td><td>Google Play Closed Testing. Waitlist invited progressively</td></tr>
+    <tr><td><b>Public launch</b></td><td>Q3 2026</td><td>Google Play production. Vanguard Pass closed. Legend tier auto-activates for Vanguards (1 mo free)</td></tr>
+    <tr><td><b>iOS launch</b></td><td>Q4 2026</td><td>App Store submission. iOS-specific QA pass</td></tr>
+    <tr><td><b>v1.1 — squads multiplayer</b></td><td>Q1 2027</td><td>Real-time squad data sync, weekly group challenges</td></tr>
+    <tr><td><b>v1.2 — Apple HealthKit</b></td><td>Q1 2027</td><td>Auto-import workouts, sleep, HRV</td></tr>
+    <tr><td><b>v1.3 — Wearable rep counter</b></td><td>Q2 2027</td><td>Apple Watch / Wear OS auto-set-tracking</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">14.1</span>Hard milestones (can't slip)</h2>
+  <ul>
+    <li><b>Lemon Squeezy approval:</b> blocks live Vanguard sales</li>
+    <li><b>DNS SPF record:</b> blocks email deliverability (currently bouncing into Gmail spam)</li>
+    <li><b>Google Play store listing approval:</b> blocks launch by 2-7 days typically</li>
+    <li><b>First 100 Vanguards purchased:</b> validates the model</li>
+  </ul>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 19 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 20 — COMPETITIVE LANDSCAPE ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgj" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgj)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">15 · COMPETITIVE LANDSCAPE</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 15 · COMPETITIVE LANDSCAPE</span>Honest market mapping.</h1>
+  <p class="section-lead">Every feature Atleato has exists somewhere on the market. The defensible position is the combination + persona depth + founder voice, not novelty on any single feature.</p>
+
+  <h2 class="sub"><span class="num">15.1</span>Feature-by-feature comparison</h2>
+  <table>
+    <tr><th>Feature</th><th>Also exists in</th></tr>
+    <tr><td>Phone-call wake-ups</td><td>Wakie, Alarmy "Mission" mode, Galarm, Yoga Wake-Up</td></tr>
+    <tr><td>AI form correction (pose tracking)</td><td>Onyx, FormCheck, Tonal, Fitbod (limited), Aaptiv</td></tr>
+    <tr><td>AI food scanner (photo macros)</td><td>Cal AI, MacroFactor (manual), Bite AI, Foodvisor, Yazio Pro</td></tr>
+    <tr><td>GPS territory conquest</td><td>Turf, City Strides, Strava Heatmap, Zombies Run, Pokémon Go</td></tr>
+    <tr><td>AI coach personas + voice</td><td>Future, Whoop Coach, BetterMe, Centr (Hemsworth)</td></tr>
+    <tr><td>Pre-launch paid badges</td><td>Superhuman, Robinhood, Linear, Arc Browser</td></tr>
+    <tr><td>Generative numbered identities</td><td>NFT projects, Linear (serial numbers)</td></tr>
+    <tr><td>Streak gamification</td><td>Duolingo (template), Habitica, Streaks</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">15.2</span>Atleato's defensible differentiation</h2>
+  <ol>
+    <li><b>The combination</b> — coaching + form + nutrition + territory + wake-up calls + community in one app, all themed per coach. No single competitor bundles all of these.</li>
+    <li><b>5 archetype personalities</b> with deep persona swap (colors, programs, voice, nutrition, ringtones, slang). Future et al. have personas but not at this depth.</li>
+    <li><b>The aesthetic</b> — dark + electric-lime + Anton-display typography + "Your Coach Calls" tone is uniquely Atleato.</li>
+    <li><b>Solo-built credibility</b> — founder reads every email reply. Centr is Hemsworth's brand; Future is a venture-funded team.</li>
+    <li><b>The $1.99 Vanguard ladder</b> — small price, hard cap, real scarcity. Standard SaaS uses "founding member" with no cap.</li>
+    <li><b>Coach Calls™ + system-level incoming-call wake-ups</b> — applied specifically to fitness coaching context, an angle most fitness apps don't take.</li>
+  </ol>
+
+  <h2 class="sub"><span class="num">15.3</span>Why this isn't a problem</h2>
+  <p>Spotify wasn't the first music streamer. Notion wasn't the first note-taking app. Instagram wasn't the first photo filter app. Winning is about execution + positioning + community, not first-mover. Atleato leans into a specific aesthetic + voice + persona-depth that nobody else combines.</p>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 20 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 21 — SECURITY / PRIVACY / LEGAL ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgk" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgk)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">16 · SECURITY / PRIVACY / LEGAL</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 16 · SECURITY &amp; PRIVACY</span>What's protected, how.</h1>
+  <p class="section-lead">Built privacy-first. No tracking pixels, no third-party analytics that share PII, GDPR-compliant by default.</p>
+
+  <h2 class="sub"><span class="num">16.1</span>Data handling</h2>
+  <table>
+    <tr><th>Data</th><th>Where stored</th><th>Who can read</th></tr>
+    <tr><td>Email (waitlist)</td><td>Supabase waitlist table</td><td>Service role only via RLS; anon sees count() only</td></tr>
+    <tr><td>Email (auth)</td><td>Supabase Auth schema</td><td>Owner only via JWT</td></tr>
+    <tr><td>Workouts / nutrition / runs</td><td>Owner-scoped tables</td><td>Owner only via <code>auth.uid() = owner_id</code> RLS</td></tr>
+    <tr><td>Physique photos</td><td>Private Supabase Storage bucket</td><td>Signed URLs, owner-only, never publicly listed</td></tr>
+    <tr><td>Vanguard order ledger</td><td>vanguard_orders table</td><td>Anon sees aggregate count of paid rows; full data service-role only</td></tr>
+    <tr><td>Order payload (LS raw)</td><td>Stored as JSONB for debugging</td><td>Service role only; auto-redact PCI fields (LS doesn't pass cards anyway)</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">16.2</span>Security hardening applied</h2>
+  <ul>
+    <li>RLS enabled on every public table (migration 002)</li>
+    <li>Public schema grants revoked from PUBLIC role (migration 003)</li>
+    <li>LS webhook HMAC-SHA256 signature verified (constant-time compare, Web Crypto API)</li>
+    <li>Resend List-Unsubscribe RFC 8058 header on all emails</li>
+    <li>CSP + X-Frame-Options + Referrer-Policy on all HTML pages</li>
+    <li>HSTS enforced via GitHub Pages</li>
+    <li>Admin dashboard at random-token URL, not linked anywhere</li>
+    <li>No PII in URL query parameters except email-prefill (URL-encoded)</li>
+    <li>google-services.json, .env.local, all secrets in .gitignore</li>
+  </ul>
+
+  <h2 class="sub"><span class="num">16.3</span>Legal &amp; compliance</h2>
+  <ul>
+    <li><b>Privacy Policy:</b> live at <code>/privacy</code> — GDPR-compliant, covers all data flows</li>
+    <li><b>Cookie consent:</b> first-visit banner; declines non-essential by default (ePrivacy compliant)</li>
+    <li><b>Coach personas:</b> all fictional AI characters, disclosed in welcome email footer + privacy policy</li>
+    <li><b>Trademarks:</b> Atleato™, Coach Hub™, PR Shelf™, Morning Brief™, Streak Hero™, Coach Calls™ claimed in profile screen footer</li>
+    <li><b>Refunds:</b> 14-day no-questions policy + automatic refund on launch-failure clause</li>
+    <li><b>No medical advice:</b> app disclaims medical claims in onboarding</li>
+    <li><b>Age gate:</b> 16+ minimum (compliance with COPPA + UK Online Safety Act)</li>
+  </ul>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 21 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 22 — OPEN ISSUES ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgl" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgl)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">17 · OPEN ISSUES</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 17 · OPEN ISSUES &amp; KNOWN LIMITATIONS</span>What isn't perfect yet.</h1>
+  <p class="section-lead">Honest list of everything that's incomplete, fragile, or pending. No hiding the warts.</p>
+
+  <h2 class="sub"><span class="num">17.1</span>Blocking before launch</h2>
+  <table>
+    <tr><th>Issue</th><th>Impact</th><th>Fix path</th></tr>
+    <tr><td>SPF DNS record missing for atleato.com</td><td>Welcome emails silently dropped by Gmail (Resend says "Delivered", recipient never sees)</td><td>Add TXT record in Namecheap: <code>v=spf1 include:amazonses.com ~all</code></td></tr>
+    <tr><td>Lemon Squeezy in Test Mode</td><td>No real $$ collected yet</td><td>Submit for review → flip to Live Mode → swap checkout URL in upsell.html</td></tr>
+    <tr><td>EAS Build failing on npm install</td><td>Can't ship Vanguards an APK yet</td><td>Investigate npm dependency conflict; pin RN package versions</td></tr>
+    <tr><td>Discord server channels empty</td><td>First-arrival Vanguards see empty rooms</td><td>10 min: create #welcome, #announcements, #feedback channels with seed content</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">17.2</span>Known fragility</h2>
+  <ul>
+    <li><b>Form coach calibration:</b> requires phone at floor angle, ~10 ft back. Doesn't auto-detect bad camera placement</li>
+    <li><b>Territory map performance:</b> works up to ~1K cells in viewport; needs spatial index if usage scales past 1M total cells</li>
+    <li><b>Voice TTS coverage:</b> only 3 of 5 coaches have full voice library; remaining 2 fall back to generic neutral voice</li>
+    <li><b>Cron weekly summary:</b> not load-tested past ~500 users; may need batching</li>
+    <li><b>Webhook idempotency:</b> tested for duplicates; not stress-tested for very high concurrency (LS unlikely to fire 100s/sec for our scale)</li>
+  </ul>
+
+  <h2 class="sub"><span class="num">17.3</span>Deferred to v2</h2>
+  <ul>
+    <li>iOS-native build</li>
+    <li>Real-time squad sync (currently solo UI)</li>
+    <li>Apple HealthKit integration (Android Health Connect partially wired)</li>
+    <li>Wearable rep counter (Apple Watch / Wear OS)</li>
+    <li>Localized content (English-only at launch)</li>
+    <li>Public API for third-party integrations</li>
+    <li>Coach video reviews from real human trainers (Legend+ tier idea)</li>
+  </ul>
+
+  <h2 class="sub"><span class="num">17.4</span>This document's accuracy disclaimer</h2>
+  <div class="card warn">
+    <p>Every fact in this document was verified against the live codebase on <b>9 June 2026</b>. Features marked "built" exist as runnable code. Features in "roadmap" or "deferred" are not built. If anything contradicts the live app, the live app is authoritative.</p>
+  </div>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 22 / 23</span></div>
+</div>
+
+<!-- ════════════════════ PAGE 23 — CONTACT ════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <div class="brand"><svg viewBox="0 0 100 100"><defs><linearGradient id="lgm" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lgm)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#fff"/></svg><div class="nm">ATLEATO</div></div>
+    <div class="page-tag">18 · CONTACT</div>
+  </div>
+
+  <h1 class="section"><span class="num">// 18 · CONTACT &amp; LINKS</span>Where to find everything.</h1>
+  <p class="section-lead">All public links to Atleato resources. Founder is reachable directly.</p>
+
+  <h2 class="sub"><span class="num">18.1</span>Public links</h2>
+  <table>
+    <tr><th>Resource</th><th>URL</th></tr>
+    <tr><td>Marketing site</td><td>https://atleato.com</td></tr>
+    <tr><td>Showreel (60 sec)</td><td>https://atleato.com/showreel.html</td></tr>
+    <tr><td>Demo video (50 sec)</td><td>https://atleato.com/demo-video.html</td></tr>
+    <tr><td>App screenshots</td><td>https://atleato.com/app-preview.html</td></tr>
+    <tr><td>VIP Vanguard Pass checkout</td><td>https://atleato.com/upsell.html</td></tr>
+    <tr><td>Welcome email preview</td><td>https://atleato.com/welcome-email.html</td></tr>
+    <tr><td>Logo download</td><td>https://atleato.com/logo-download.html</td></tr>
+    <tr><td>Privacy policy</td><td>https://atleato.com/privacy</td></tr>
+    <tr><td>GitHub repo (public)</td><td>https://github.com/rahulmanghnani54/ATLEATO</td></tr>
+  </table>
+
+  <h2 class="sub"><span class="num">18.2</span>Founder contact</h2>
+  <div class="card tinted" style="text-align:center;padding:24px;">
+    <div style="font-family:'Anton',sans-serif;font-size:32px;letter-spacing:.04em;">RAHUL MANGHNANI</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:.20em;margin-top:4px;">FOUNDER · ATLEATO</div>
+    <div style="margin-top:18px;font-size:14px;font-weight:600;">hello@atleato.com</div>
+    <div style="margin-top:6px;font-size:11px;color:var(--muted);">Replies to every message. Usually within 24 hours.</div>
+  </div>
+
+  <h2 class="sub"><span class="num">18.3</span>For press / investors / partners</h2>
+  <ul>
+    <li><b>Founder bio:</b> see <code>docs/launch-kit/08-founder-bio.md</code> in repo</li>
+    <li><b>Pitch one-pager:</b> see <code>docs/launch-kit/07-pitch-one-pager.md</code></li>
+    <li><b>Press kit:</b> logo download page + this document</li>
+    <li><b>Brand assets:</b> all logos at <code>assets/logo/</code> in repo (SVG + PNG variants)</li>
+    <li><b>Interview availability:</b> open. Schedule via email above</li>
+  </ul>
+
+  <h2 class="sub"><span class="num">18.4</span>For users</h2>
+  <ul>
+    <li><b>Support:</b> reply to any Atleato email; founder reads</li>
+    <li><b>Bug reports:</b> hello@atleato.com with screenshot + device + OS version</li>
+    <li><b>Feature requests:</b> Private Vanguard Discord (after $1.99 pass) OR direct email</li>
+    <li><b>Refund requests:</b> reply to Lemon Squeezy receipt OR email founder</li>
+  </ul>
+
+  <div style="margin-top:30px;padding:18px;border-top:1px solid var(--line);text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:.16em;">
+    ATLEATO™ · YOUR COACH CALLS. NO EXCUSES.<br/>
+    DOCUMENT VERSION 1.0 · GENERATED 2026-06-09<br/>
+    © 2026 ATLEATO · ALL RIGHTS RESERVED
+  </div>
+
+  <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 23 / 23 · END</span></div>
+</div>
+
+</body>
+</html>
