@@ -136,7 +136,7 @@
       <svg viewBox="0 0 100 100"><defs><linearGradient id="lg0" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#lg0)"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/></svg>
       <div class="nm">ATLEATO<sup>™</sup></div>
     </div>
-    <div class="doc-meta">PRODUCT DOC · V1 · 2026-06-09</div>
+    <div class="doc-meta">PRODUCT DOC · V1.1 · 2026-06-10</div>
   </div>
 
   <div class="mid">
@@ -479,7 +479,7 @@
     <tr><td><code>social-stake</code></td><td>Pick a "witness" contact who gets notified if you skip a week</td></tr>
     <tr><td><code>charity-stake</code></td><td>Stake $5 against a cause you dislike if you miss your weekly target (virtual, opt-in)</td></tr>
     <tr><td><code>daily-selfie</code></td><td>Private 7-day selfie streak (face-only, on-device, never uploaded)</td></tr>
-    <tr><td><code>friend-scoreboard</code></td><td>Weekly leaderboard among invited friends. Loss-framed copy ("you're behind by 2 sessions")</td></tr>
+    <tr><td><code>friend-scoreboard</code></td><td>Weekly leaderboard among invited friends. Neutral/encouraging copy ("X sessions to catch the leader" — no loss-framing per V2 plan, no "you're losing" language)</td></tr>
   </table>
 
   <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 08 / 23</span></div>
@@ -569,7 +569,7 @@
     <ol>
       <li>User opens <code>form-coach</code> screen and selects exercise (squat, deadlift, bench, etc.)</li>
       <li>Camera permission requested; user sets phone at floor angle</li>
-      <li>MediaPipe Pose Landmarker tracks 17 keypoints at ~30 FPS</li>
+      <li>MoveNet Lightning (17-keypoint COCO topology) runs every ~150ms (~6 FPS detection); visual skeleton interpolated to 30 FPS via One-Euro smoothing</li>
       <li>Frontend computes joint angles (knee, hip, back, elbow) per frame</li>
       <li>Telemetry overlay updates live (KNEE 94° · DEPTH DEEP · BACK -12°)</li>
       <li>If a "fault pattern" matches (e.g., knees-cave-inward), overlay turns red + voice plays correction in coach's signature voice</li>
@@ -815,7 +815,7 @@
 
   <div class="card">
     <h3 class="sub">Step 4 — Visitor immediately redirected to /upsell.html</h3>
-    <p>Front-end JS routes them with their email in query string. Upsell page shows: their position (#X on waitlist), real-time "X/500 claimed" count, 30-min reservation timer, 2 paths (pay $1.99 OR invite 3 friends free), 7 social-share buttons.</p>
+    <p>Front-end JS routes them with their email in query string. Upsell page shows: their position (#X on waitlist), real-time "X/500 claimed" count (live count from <code>vanguard_orders</code>), launch-target info card, 2 paths (pay $1.99 OR invite 3 friends free), 7 social-share buttons. <b>No reservation countdown</b> — removed as a dark pattern; the real 500-cap is the only scarcity, and it's DB-enforced.</p>
   </div>
   <div class="flow-arrow">↓</div>
 
@@ -839,7 +839,7 @@
 
   <div class="card">
     <h3 class="sub">Step 8 — LS redirects buyer back to /upsell.html?paid=true</h3>
-    <p>Page detects <code>?paid=true</code>, transforms CTA into green "✓ VANGUARD PASS CONFIRMED" banner. Clears 30-min reservation hold. Buyer's funnel complete.</p>
+    <p>Page detects <code>?paid=true</code>, transforms CTA into green "✓ VANGUARD PASS CONFIRMED" banner. Buyer's funnel complete.</p>
   </div>
 
   <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 16 / 23</span></div>
@@ -906,7 +906,7 @@
     <tr><td>State</td><td>Zustand</td><td>Tiny (1KB), no boilerplate, theming + auth stores</td></tr>
     <tr><td>Forms</td><td>react-hook-form</td><td>Performance, validation primitives</td></tr>
     <tr><td>Charts</td><td>Victory Native</td><td>Streak charts, PR graphs, macro rings</td></tr>
-    <tr><td>Camera + pose</td><td>expo-camera + MediaPipe Pose Landmarker</td><td>On-device, no cloud inference cost, private</td></tr>
+    <tr><td>Camera + pose</td><td>expo-camera + MoveNet Lightning (17-keypoint COCO model)</td><td>On-device, no cloud inference cost, private</td></tr>
     <tr><td>Audio (voice cues)</td><td>expo-av + custom TTS profiles</td><td>Per-coach pitch / rate adjustment</td></tr>
     <tr><td>Notifications</td><td>expo-notifications</td><td>Schedules wake-up calls locally</td></tr>
     <tr><td>Maps</td><td>react-native-maps</td><td>Territory grid overlay</td></tr>
@@ -1038,8 +1038,8 @@
     <li>Public schema grants revoked from PUBLIC role (migration 003)</li>
     <li>LS webhook HMAC-SHA256 signature verified (constant-time compare, Web Crypto API)</li>
     <li>Resend List-Unsubscribe RFC 8058 header on all emails</li>
-    <li>CSP + X-Frame-Options + Referrer-Policy on all HTML pages</li>
-    <li>HSTS enforced via GitHub Pages</li>
+    <li>CSP, X-Content-Type-Options, Referrer-Policy set via meta tags (browsers honor these in meta)</li>
+    <li>HSTS, X-Frame-Options, Permissions-Policy: configured via Cloudflare Transform Rules (NOT via meta tags — browsers ignore those in meta). Live verification pending (§17.1) — pending a green securityheaders.com scan after Cloudflare proxy + Transform Rules are confirmed active</li>
     <li>Admin dashboard at random-token URL, not linked anywhere</li>
     <li>No PII in URL query parameters except email-prefill (URL-encoded)</li>
     <li>google-services.json, .env.local, all secrets in .gitignore</li>

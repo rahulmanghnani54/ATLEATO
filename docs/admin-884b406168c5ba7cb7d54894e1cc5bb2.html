@@ -43,7 +43,70 @@
     .ref-link-out { font-family:'JetBrains Mono',monospace; font-size:12px; word-break:break-all; background:rgba(255,255,255,0.04); padding:10px; border-radius:8px; margin-top:8px; color:#c8ff3d; }
   </style>
 </head>
-<body class="admin-body">
+<body class="admin-body" style="display:none">
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ADMIN AUTH GATE (defense-in-depth, V2 runbook §1.1)
+     The real security is migration 012 (RLS lockdown — emails can't
+     be read via anon key even without this gate). This adds a UX
+     barrier so visitors don't see the admin UI without the passphrase.
+     For production-grade auth: Cloudflare Access or Supabase Auth role.
+
+     Default passphrase: 'atleato-launch-2026'  ← CHANGE BEFORE LAUNCH
+     To rotate, run in JS console:
+       crypto.subtle.digest('SHA-256', new TextEncoder().encode('your-pass'))
+         .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
+     Then replace ADMIN_PASS_HASH below.
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="auth-gate" style="position:fixed;inset:0;background:#0a0b0d;display:flex;align-items:center;justify-content:center;z-index:99999;font-family:'Inter',sans-serif;">
+  <div style="max-width:380px;width:90%;text-align:center;">
+    <svg width="60" height="60" viewBox="0 0 100 100" style="margin-bottom:24px;">
+      <defs><linearGradient id="adminG" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff8050"/><stop offset="100%" stop-color="#e84d20"/></linearGradient></defs>
+      <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#adminG)"/>
+      <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+    </svg>
+    <div style="font-family:'Archivo Black',sans-serif;font-size:22px;color:#fff;letter-spacing:1px;margin-bottom:8px;">RESTRICTED</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#888;letter-spacing:2px;margin-bottom:28px;">ATLEATO ADMIN · FOUNDER ONLY</div>
+    <input id="auth-pass" type="password" placeholder="passphrase"
+           style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:14px 18px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:0.5px;outline:none;text-align:center;" />
+    <button id="auth-go" style="margin-top:14px;width:100%;background:#ff6b35;color:#fff;border:none;padding:14px;border-radius:10px;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:1.5px;cursor:pointer;">UNLOCK →</button>
+    <div id="auth-err" style="margin-top:14px;font-size:11px;color:#ff5b3a;font-family:'JetBrains Mono',monospace;letter-spacing:1px;display:none;">ACCESS DENIED</div>
+    <div style="margin-top:30px;font-size:10px;color:#444;font-family:'JetBrains Mono',monospace;letter-spacing:1.5px;">DATA PROTECTED BY RLS · MIGRATION 012</div>
+  </div>
+</div>
+<script>
+(function(){
+  // SHA-256 of "atleato-launch-2026" — ROTATE BEFORE LAUNCH
+  var ADMIN_PASS_HASH = '0c39669e86440271e11cb6ca4590e3653aec98f6d60032d0f02d11993689e9cb';
+  var SESSION_KEY = 'atleato_admin_ok_v1';
+  function sha256Hex(s) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+      .then(function(b){ return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join(''); });
+  }
+  function unlock(){
+    document.getElementById('auth-gate').remove();
+    document.body.style.display='';
+    sessionStorage.setItem(SESSION_KEY,'1');
+  }
+  if(sessionStorage.getItem(SESSION_KEY)==='1'){ unlock(); return; }
+  function tryUnlock(){
+    var input=document.getElementById('auth-pass').value||'';
+    sha256Hex(input).then(function(h){
+      if(h===ADMIN_PASS_HASH){ unlock(); }
+      else {
+        var err=document.getElementById('auth-err');
+        err.style.display='block';
+        setTimeout(function(){err.style.display='none';},2500);
+        document.getElementById('auth-pass').value='';
+      }
+    });
+  }
+  document.getElementById('auth-go').addEventListener('click',tryUnlock);
+  document.getElementById('auth-pass').addEventListener('keydown',function(e){ if(e.key==='Enter') tryUnlock(); });
+  setTimeout(function(){ document.getElementById('auth-pass').focus(); },50);
+})();
+</script>
+
   <!-- LOGIN VIEW -->
   <div id="login-view" class="admin-login-wrap">
     <div class="admin-login-card">

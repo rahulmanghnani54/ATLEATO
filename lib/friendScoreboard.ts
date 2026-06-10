@@ -145,7 +145,9 @@ export async function getFriends(): Promise<Friend[]> {
 }
 
 /**
- * Returns the scoreboard header message based on loss-framing psychology.
+ * Returns the scoreboard header message — neutral/encouraging framing only.
+ * V2 plan §1.2: refactored from loss-framing ('you're behind') to positive
+ * social proof. The goal is shared visibility, not guilt.
  *
  * @param userTrained - whether the current user has logged a workout today
  * @param trainedFriendCount - how many friends trained today
@@ -153,19 +155,19 @@ export async function getFriends(): Promise<Friend[]> {
 export function getScoreboardMessage(userTrained: boolean, trainedFriendCount: number): string {
   if (userTrained) {
     if (trainedFriendCount === 0) {
-      return "You trained today. None of your friends have yet.";
+      return "You trained today. First on the board.";
     }
     if (trainedFriendCount === 1) {
-      return "You trained today. 1 of your friends also did.";
+      return "You and 1 friend trained today. Good company.";
     }
-    return `You trained today. ${trainedFriendCount} of your friends also did.`;
+    return `You and ${trainedFriendCount} friends trained today. Strong day for the crew.`;
   } else {
     if (trainedFriendCount === 0) {
-      return "No one has trained today. Don't be the last.";
+      return "Clean slate. Any session today puts you on the board.";
     }
     if (trainedFriendCount === 1) {
-      return "1 friend trained today. You haven't.";
+      return "1 friend trained today. Join them whenever you're ready.";
     }
-    return `${trainedFriendCount} friends trained today. You're behind.`;
+    return `${trainedFriendCount} friends trained today. Join them whenever you're ready.`;
   }
 }

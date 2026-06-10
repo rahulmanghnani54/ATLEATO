@@ -1,12 +1,18 @@
 /**
- * Friend Scoreboard — loss-framed social accountability (MVP)
+ * Friend Scoreboard — neutral/encouraging social accountability (MVP)
+ *
+ * V2 plan §1.2 (Reconcile dark patterns): refactored from the original
+ * loss-framed copy ("you're behind by 2 sessions") to neutral/encouraging
+ * framing. The goal is shared visibility + light positive nudges, not
+ * guilt or pressure. Opt-in social-stake / charity-stake remain for
+ * users who explicitly want commitment devices — those are legitimate.
  *
  * Shows weekly workout counts for manually-added friends.
  * No contacts access — friends join by referral code.
  * All friend data is simulated (generated deterministically from their code).
  * Weekly reset every Monday.
  *
- * Loss-framing header: "3 friends trained today. You're behind."
+ * Encouraging header: "3 friends trained today. Join them."
  */
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -153,7 +159,10 @@ export default function FriendScoreboardScreen() {
   // User's simulated rank — their workoutsThisWeek from useSessionsThisWeek
   // For MVP we just show the board without inserting the user row inline.
 
-  const isLosing = !userTrainedToday && trainedFriendCount > 0;
+  // V2 §1.2 — no more "isLosing" / red-pressure UI. Use neutral accent always.
+  // The opt-in commitment devices (social-stake, charity-stake) provide
+  // accountability without guilt-shaming the dashboard.
+  const isLosing = false;
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -221,7 +230,7 @@ export default function FriendScoreboardScreen() {
             <Text style={styles.emptyTitle}>No friends yet</Text>
             <Text style={styles.emptySub}>
               Add friends by their referral code. Once added, you'll see how your
-              weekly workouts stack up — and feel the pressure when they're ahead.
+              weekly workouts compare — light, friendly accountability without the pressure.
             </Text>
           </View>
         ) : (
