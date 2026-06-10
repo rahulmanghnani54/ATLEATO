@@ -17,10 +17,10 @@ After a year of building, I just launched Atleato — an AI coaching app that tu
 The big insight: people don't quit fitness apps because the app is bad. They quit because every fitness app feels the same. So I built five completely different coaches, each modeled on a different training philosophy:
 
 🟢 Classic physique style (PPL, controlled tempo, "quality reps")
-🟠 Golden era volume (double splits, "stop being a couch potato")
+🟠 Golden era volume (double splits, "stop being a in motion")
 🔵 Evidence-based (RIR programming, "scientifically speaking...")
 🔴 Raw intensity (heavy sets, "I COMMAND YOU TO GROW")
-🟢 RP-style periodization (MEV→MAV→MRV, "your gains will literally shrink")
+🟢 landmark-style periodization (volume landmarks, "your gains will literally shrink")
 
 The wild part: switching coaches actually changes the ENTIRE app — colors, programs, nutrition philosophy, even the voice that talks to you mid-set. Five distinct experiences in one app.
 
@@ -50,7 +50,7 @@ Happy to answer any questions about the build, the science behind the persona sw
 
 ## POST 2 — r/bodybuilding
 
-**Title:** Built an AI trainer that lets you pick from 5 coach philosophies (classic, golden era, evidence-based, raw intensity, RP-style). Looking for feedback.
+**Title:** Built an AI trainer that lets you pick from 5 coach philosophies (classic, golden era, evidence-based, raw intensity, landmark-style). Looking for feedback.
 
 **Body:**
 ```
@@ -62,7 +62,7 @@ After getting frustrated with how generic every fitness app feels, I spent a yea
 - Golden Era: high volume double splits, lots of pump work, focus on mass
 - Evidence-Based: RIR-based intensity, periodization per muscle group
 - Raw Intensity: heavy compound focus, strict form, low rep schemes
-- RP-style: mesocycle periodization, MEV/MAV/MRV tracking, deload weeks
+- landmark-style: mesocycle periodization, volume landmarks tracking, deload weeks
 
 The app TRANSFORMS based on your pick. Different color schemes, different exercise libraries, different rest timer voice cues. The "Classic" coach speaks calmly about quality reps. The "Raw" coach yells "I COMMAND YOU TO GROW" at the top of each set.
 
@@ -102,7 +102,7 @@ The system:
    - <50: 0.7× volume + coach voiceover "we're going easy today, recovery is growth"
 4. Tracks how well the modifier predicted next-day soreness/performance
 
-Logic is based on Dr. Growth-style MRV principles + Apple Watch HRV correlations.
+Logic is based on The Architect-style MRV principles + Apple Watch HRV correlations.
 
 Looking for 50 serious lifters (3+ years training, currently on a structured program) to beta test the modifier accuracy over 4 weeks. You'll log standard sets/reps + the recovery score, and I'll send you weekly correlations.
 

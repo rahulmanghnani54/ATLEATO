@@ -62,7 +62,7 @@ So I built 5 coaches:
 
 🟢 The Classic — calm, controlled, PPL
 🟠 The Champion — golden era volume
-🔵 The Scientist — RIR, evidence
+🔵 The Analyst — RIR, evidence
 🔴 The Iron — "I COMMAND YOU TO GROW"
 🟢 The Professor — periodization
 

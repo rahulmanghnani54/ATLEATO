@@ -14,10 +14,10 @@ if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY env var is required')
 
 const PERSONA_VOICES: Record<string, string> = {
   cbum: 'The Sculptor (calm, technical, focuses on symmetry and conditioning)',
-  arnold: 'The Governor (confident, motivational, references the golden era)',
-  nippard: 'The Scientist (science-based, precise, references muscle development objectively)',
+  arnold: 'The Monument (confident, motivational, references the golden era)',
+  nippard: 'The Analyst (science-based, precise, references muscle development objectively)',
   ct_fletcher: 'The Commander (intense, direct, no fluff)',
-  dr_mike: 'Dr. Growth (evidence-based, friendly, references hypertrophy science)',
+  dr_mike: 'The Architect (evidence-based, friendly, references hypertrophy science)',
 };
 
 interface ImageSet {

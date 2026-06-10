@@ -55,9 +55,9 @@ Atleato has 5 AI coach personas, each modeled after a legendary training philoso
 
 🟢 THE CLASSIC — Lime green theme. PPL splits. "Quality reps. Stay humble."
 
-🟠 THE CHAMPION — Gold theme. Old-school volume. "Stop being a couch potato. There's no time to sleep!"
+🟠 THE CHAMPION — Gold theme. Old-school volume. "Stay in motion. Volume builds the temple!"
 
-🔵 THE SCIENTIST — Cyan theme. Evidence-based, RIR-based. "Skipping this workout = zero muscle protein synthesis."
+🔵 THE ANALYST — Cyan theme. Evidence-based, RIR-based. "Skipping this workout = zero muscle protein synthesis."
 
 🔴 THE IRON — Blood red theme. Heavy, brutal, raw. "I COMMAND YOU TO GROW!"
 
@@ -173,7 +173,7 @@ Funniest thing about building 5 distinct AI coach personas: they have different 
 
 Ask THE IRON about cardio: "If it ain't pickin' iron up and puttin' it down, IT AIN'T CARDIO!"
 
-Ask THE SCIENTIST: "Steady-state Zone 2 cardio improves mitochondrial density by 17% per the Norwegian Sports Sciences study..."
+Ask THE ANALYST: "Steady-state Zone 2 cardio improves mitochondrial density by 17% per the Norwegian Sports Sciences study..."
 
 Ask THE CLASSIC: "I do 30 min posing practice. Best cardio there is."
 

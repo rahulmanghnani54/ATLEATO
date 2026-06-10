@@ -617,21 +617,21 @@ const coachConfigs = {
   cbum: {  // THE SCULPTOR
     lime: '#c8ff3d', limeRgb: '200, 255, 61', limeDim: '#b4e632', color2: '#d4af37',
     headline: 'TRAIN UNDER<br/><span class="lime-text">THE SCULPTOR.</span>',
-    quote: 'Master the vacuum pose. Build timeless aesthetic lines. <span class="lime-text">Stay thavage.</span>',
-    speech: "Wake up, champion. It's time to build that classic physique. Stay thavage and let's get it today.",
+    quote: 'Master the vacuum pose. Build timeless aesthetic lines. <span class="lime-text">Build the statue.</span>',
+    speech: "Wake up, champion. It's time to build that classic physique. Build the statue and let's get it today.",
     pitch: 0.85, rate: 0.95
   },
-  arnold: {  // THE GOVERNOR
+  arnold: {  // THE MONUMENT
     lime: '#f5b942', limeRgb: '245, 185, 66', limeDim: '#dd9b25', color2: '#ff6b35',
-    headline: 'PUMP UNDER<br/><span class="lime-text">THE GOVERNOR.</span>',
+    headline: 'PUMP UNDER<br/><span class="lime-text">THE MONUMENT.</span>',
     quote: 'The 7x Mr. O legend. High volume, mind-muscle connection, <span class="lime-text">pumping iron till you can\'t.</span>',
-    speech: "Come on! Get up! Stop being a couch potato. You have to lift, there is no time to sleep!",
+    speech: "Come on! Get up! Stop being a in motion. You have to lift, there is no time to sleep!",
     pitch: 0.75, rate: 0.9
   },
-  nippard: {  // THE SCIENTIST
+  nippard: {  // THE ANALYST
     lime: '#5dd3fa', limeRgb: '93, 211, 250', limeDim: '#3cbbe5', color2: '#ff6b35',
-    headline: 'OPTIMIZE UNDER<br/><span class="lime-text">THE SCIENTIST.</span>',
-    quote: 'Every rep based on the latest PubMed literature. <span class="lime-text">Science-based hypertrophy.</span>',
+    headline: 'OPTIMIZE UNDER<br/><span class="lime-text">THE ANALYST.</span>',
+    quote: 'Every rep based on the latest peer-reviewed research. <span class="lime-text">Science-based hypertrophy.</span>',
     speech: "Good morning. Scientifically speaking, skipping this workout will lead to zero muscle protein synthesis. Let's start.",
     pitch: 1.02, rate: 1.05
   },
@@ -642,11 +642,11 @@ const coachConfigs = {
     speech: "WAKE YOUR ASS UP! IT'S CHERRY PICKIN' TIME! NO EXCUSES IN THE IRON ASYLUM!",
     pitch: 0.7, rate: 1.15
   },
-  mike: {  // DR. GROWTH
+  mike: {  // THE ARCHITECT
     lime: '#7be38c', limeRgb: '123, 227, 140', limeDim: '#5fc670', color2: '#a855f7',
-    headline: 'GROW UNDER<br/><span class="lime-text">DR. GROWTH.</span>',
+    headline: 'GROW UNDER<br/><span class="lime-text">THE ARCHITECT.</span>',
     quote: 'A PhD in Sports Physiology prescribing the exact MRV. <span class="lime-text">Build serious tissue.</span>',
-    speech: "Hey guys, Dr. Growth here. Time to get some hypertrophy going. If you stay in bed, your gains are going to literally shrink.",
+    speech: "Hey guys, The Architect here. Time to get some hypertrophy going. If you stay in bed, your gains start to stall.",
     pitch: 1.15, rate: 1.1
   }
 };

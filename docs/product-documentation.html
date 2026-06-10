@@ -333,11 +333,11 @@
 
   <table>
     <tr><th>Coach</th><th>Color</th><th>Philosophy</th><th>Voice tone</th><th>Programs</th></tr>
-    <tr><td><b>The Sculptor</b></td><td><span style="color:#c8ff3d;">●</span> Lime</td><td>Classic Physique · aesthetic over numbers</td><td>Calm, encouraging, "stay thavage"</td><td>5-day PPL · vacuum focus · cinematic photos</td></tr>
-    <tr><td><b>The Governor</b></td><td><span style="color:#f5b942;">●</span> Gold</td><td>Golden Era · pump &amp; volume</td><td>Heavy accent · "the pump is the greatest feeling"</td><td>6-day double splits · drop sets · German Volume</td></tr>
-    <tr><td><b>The Scientist</b></td><td><span style="color:#5DD3FA;">●</span> Cyan</td><td>Evidence-based · PubMed-driven</td><td>Measured, precise, "what does the data say"</td><td>4-day upper/lower · RIR 1–3 · meta-analysis cites</td></tr>
-    <tr><td><b>The Commander</b></td><td><span style="color:#ef4444;">●</span> Red</td><td>Iron Asylum · no excuses</td><td>Loud, declarative, "ANSWER THE CALL"</td><td>5×5 + accessory · forced reps · 5AM wake-ups</td></tr>
-    <tr><td><b>Dr. Growth</b></td><td><span style="color:#7be38c;">●</span> Mint</td><td>Hypertrophy science · MEV / MAV / MRV</td><td>Nerdy professor · "stay in your volume landmarks"</td><td>Volume landmarks · mesocycle deloads · RIR tracking</td></tr>
+    <tr><td><b>The Sculptor</b></td><td><span style="color:#c8ff3d;">●</span> Lime</td><td>Classic Physique · aesthetic over numbers</td><td>Calm, encouraging, "build the statue"</td><td>5-day PPL · vacuum focus · cinematic photos</td></tr>
+    <tr><td><b>The Monument</b></td><td><span style="color:#f5b942;">●</span> Gold</td><td>Golden Era · pump &amp; volume</td><td>Heavy accent · "the pump is the greatest feeling"</td><td>6-day double splits · drop sets · German Volume</td></tr>
+    <tr><td><b>The Analyst</b></td><td><span style="color:#5DD3FA;">●</span> Cyan</td><td>Evidence-based · data-driven</td><td>Measured, precise, "what does the data say"</td><td>4-day upper/lower · RIR 1–3 · meta-analysis cites</td></tr>
+    <tr><td><b>The Commander</b></td><td><span style="color:#ef4444;">●</span> Red</td><td>Iron Pact · no excuses</td><td>Loud, declarative, "ANSWER THE CALL"</td><td>5×5 + accessory · forced reps · 5AM wake-ups</td></tr>
+    <tr><td><b>The Architect</b></td><td><span style="color:#7be38c;">●</span> Mint</td><td>Hypertrophy science · Volume Landmarks</td><td>Nerdy professor · "stay in your volume landmarks"</td><td>Volume landmarks · mesocycle deloads · RIR tracking</td></tr>
   </table>
 
   <h2 class="sub"><span class="num">3.1</span>What changes when you switch coach</h2>
@@ -347,9 +347,12 @@
     <div class="card"><h4>Audio layer</h4><ul><li>TTS voice pitch + speed</li><li>Set-complete cue phrase</li><li>Rest-over cue phrase</li><li>Form-break cue phrase</li><li>PR-celebration cue phrase</li></ul></div>
   </div>
 
-  <h2 class="sub"><span class="num">3.2</span>Coach IP &amp; legal safety</h2>
-  <div class="card info">
-    <p><b>All personas are fictional AI characters.</b> They are not modeled on, affiliated with, or endorsed by any real-world athlete, coach, or trainer. Names, color palettes, and signature phrases were designed in-house to avoid any IP collision with real individuals. The "modeled after legendary training philosophies" framing refers to public-domain training concepts (volume landmarks, German Volume Training, etc.) — not to specific persons.</p>
+  <h2 class="sub"><span class="num">3.2</span>Coach IP &amp; legal safety — honest disclosure</h2>
+  <div class="card warn">
+    <p><b>Earlier drafts of this doc claimed the coaches were "designed in-house to avoid IP collision." That claim has now been corrected.</b> An external audit (June 2026) flagged that the original v1 personas used identity markers — catchphrases, accent descriptions, framing — that closely paralleled real public fitness figures. Those markers have been removed.</p>
+    <p>Current state: titles &amp; bios use generic archetypes (The Sculptor, The Monument, The Analyst, The Commander, The Architect). Each coach now has an original full name (Marcus Stone, Titus Gold, Dr. Elena Voss, Drake Ironside, Dr. Kane Okoro). Identifying catchphrases have been replaced. Training methods (PPL, GVT, volume landmarks, RIR, periodization) are public-domain concepts and remain referenced generically.</p>
+    <p><b>Official disclaimer (use in all customer-facing materials):</b> <i>"Coaches are original fictional characters. Any resemblance to real persons, living or fictional, is unintended."</i></p>
+    <p>If any user, journalist, or athlete management agency raises an IP concern, the response policy is: acknowledge the parallel, rename or adjust within 48 hours, document the change. Legal review before scaling marketing or signing licensing deals (Section 9 / Athlete Licensing) is required.</p>
   </div>
 
   <div class="page-footer"><span>ATLEATO™ · PRODUCT DOCUMENTATION</span><span>PAGE 05 / 23</span></div>
@@ -753,7 +756,7 @@
   </table>
 
   <h2 class="sub"><span class="num">10.1</span>Hidden / admin pages</h2>
-  <p><code>/admin-509eb77ff6a02df244b3502d31027b08.html</code> — admin dashboard with waitlist stats, recent signups, referral leaderboard. The path includes a random token so it isn't discoverable via sitemap; only the founder has the URL.</p>
+  <p>Admin dashboard exists at an unguessable random-token URL (not published anywhere) plus tightened DB access. As of migration 012, the anon Supabase key can ONLY call <code>waitlist_count()</code> and <code>vanguard_claimed_count()</code> RPCs — it cannot SELECT row contents. Even if the admin URL leaked, no PII is exposed via the anon key. The token URL rotates whenever leakage is suspected.</p>
 
   <h2 class="sub"><span class="num">10.2</span>SEO &amp; security</h2>
   <ul>
@@ -761,7 +764,7 @@
     <li><b>Robots:</b> <code>/robots.txt</code> allows all crawlers, disallows /admin*</li>
     <li><b>JSON-LD:</b> WebApplication schema on landing page</li>
     <li><b>OG / Twitter cards:</b> Set on showreel + index for social previews</li>
-    <li><b>Headers:</b> CSP, X-Frame-Options, Referrer-Policy, HSTS all set via meta + Pages defaults</li>
+    <li><b>Headers:</b> CSP, X-Content-Type-Options, Referrer-Policy set via meta tags (browsers honor these). <b>Limitation acknowledged:</b> HSTS and X-Frame-Options are ignored by browsers when set via meta — they require real HTTP response headers, which GitHub Pages cannot configure. Plan: front the site with Cloudflare to set real HSTS/X-Frame-Options/Permissions-Policy headers before launch announcement</li>
     <li><b>GDPR:</b> Cookie consent banner on first visit; declines non-essential cookies by default</li>
   </ul>
 

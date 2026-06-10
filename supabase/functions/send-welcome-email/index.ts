@@ -64,11 +64,11 @@ Permanently yours · 1 of 500 ever created
 Your coach calls. Not a notification you can swipe away — an actual incoming call. Decline, and your coach rings back in 5 minutes. No excuses.
 
 Your 5 legend coaches:
-- The Sculptor — Classic Physique · 5x Champion
-- The Governor — Golden Era · 7x Mr. O
-- The Scientist — Evidence-Based · PubMed
-- The Commander — Iron Asylum · No Excuses
-- Dr. Growth — Hypertrophy Science · MEV/MAV/MRV
+- The Sculptor — Classic Physique · 5x decorated
+- The Monument — Golden Era · Monument era
+- The Analyst — Evidence-driven
+- The Commander — Iron Pact · No Excuses
+- The Architect — Hypertrophy & Periodization · Volume Landmarks
 
 Start in 60 seconds:
 1. Pick a coach — the whole app transforms around their philosophy
@@ -230,8 +230,8 @@ function generateHTML(name: string, email: string, position: number, badge: stri
         <p class="lead">Hey ${safeName}, your spot to <b>train under a legend</b> is locked. You're <b>spot #${safePos}</b> of the first <b>500</b> — before the world even gets a download link.</p>
         <div class="marquee">
           <div class="track">
-            <span>The Sculptor</span><span>The Governor</span><span>The Scientist</span><span>The Commander</span><span>Dr. Growth</span>
-            <span>The Sculptor</span><span>The Governor</span><span>The Scientist</span><span>The Commander</span><span>Dr. Growth</span>
+            <span>The Sculptor</span><span>The Monument</span><span>The Analyst</span><span>The Commander</span><span>The Architect</span>
+            <span>The Sculptor</span><span>The Monument</span><span>The Analyst</span><span>The Commander</span><span>The Architect</span>
           </div>
         </div>
       </div>
@@ -279,11 +279,11 @@ function generateHTML(name: string, email: string, position: number, badge: stri
           <h2 class="sechead">5 LEGENDS. <span class="accent">1 APP.</span></h2>
         </div>
         <div class="cgrid">
-          <div class="coach" style="--c:#d4ff3d"><div class="ini">TS</div><div class="info"><div class="nm">The Sculptor</div><div class="tg">Classic Physique · 5× Champion</div></div></div>
-          <div class="coach" style="--c:#f4b53a"><div class="ini">TG</div><div class="info"><div class="nm">The Governor</div><div class="tg">Golden Era · 7× Mr. O</div></div></div>
-          <div class="coach" style="--c:#3bd6ff"><div class="ini">SC</div><div class="info"><div class="nm">The Scientist</div><div class="tg">Evidence-Based · PubMed</div></div></div>
-          <div class="coach" style="--c:#ff3b30"><div class="ini">CM</div><div class="info"><div class="nm">The Commander</div><div class="tg">Iron Asylum · No Excuses</div></div></div>
-          <div class="coach span2" style="--c:#b06bff"><div class="ini">DG</div><div class="info"><div class="nm">Dr. Growth</div><div class="tg">Hypertrophy Science · MEV / MAV / MRV</div></div></div>
+          <div class="coach" style="--c:#d4ff3d"><div class="ini">TS</div><div class="info"><div class="nm">The Sculptor</div><div class="tg">Classic Physique · 5× decorated</div></div></div>
+          <div class="coach" style="--c:#f4b53a"><div class="ini">TG</div><div class="info"><div class="nm">The Monument</div><div class="tg">Golden Era · Monument era</div></div></div>
+          <div class="coach" style="--c:#3bd6ff"><div class="ini">SC</div><div class="info"><div class="nm">The Analyst</div><div class="tg">Evidence-driven</div></div></div>
+          <div class="coach" style="--c:#ff3b30"><div class="ini">CM</div><div class="info"><div class="nm">The Commander</div><div class="tg">Iron Pact · No Excuses</div></div></div>
+          <div class="coach span2" style="--c:#b06bff"><div class="ini">DG</div><div class="info"><div class="nm">The Architect</div><div class="tg">Hypertrophy & Periodization · Volume Landmarks</div></div></div>
         </div>
       </div>
       <div class="stats">

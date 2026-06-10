@@ -26,10 +26,10 @@ Launching this month → atleato.com (link in bio)
 5 wildly different ways to train.
 
 🟢 The Sculptor — calm, controlled, classic physique
-🟠 The Governor — golden era volume, never skip a meal
-🔵 The Scientist — RIR programming, optimal ROM
+🟠 The Monument — golden era volume, never skip a meal
+🔵 The Analyst — RIR programming, optimal ROM
 🔴 The Commander — heavy raw intensity, "I COMMAND YOU TO GROW"
-🟢 Dr. Growth — RP-style periodization, MEV→MAV→MRV
+🟢 The Architect — landmark-style periodization, volume landmarks
 
 Free users get 1. PRO gets 3. LEGEND gets all 5.
 
@@ -97,7 +97,7 @@ Same exact screen. 5 wildly different feels.
 
 When you train under The Sculptor, the whole app feels disciplined.
 When you train under The Commander, it feels like a war zone.
-When you train under The Scientist, it feels like a lab.
+When you train under The Analyst, it feels like a lab.
 
 Pick the energy you need today.
 
@@ -172,10 +172,10 @@ Slide 7: "Only 500 Vanguard Passes ever. Claim: atleato.com"
 SAME prompt: "It's leg day."
 
 🟢 The Sculptor: "Today we build the foundation. Focus on tempo."
-🟠 The Governor: "LEG DAY! TIME TO PUMP! Don't be a couch potato!"
-🔵 The Scientist: "Quadriceps require 12-20 sets per week for optimal hypertrophy."
+🟠 The Monument: "LEG DAY! TIME TO PUMP! Stay in motion!"
+🔵 The Analyst: "Quadriceps require 12-20 sets per week for optimal hypertrophy."
 🔴 The Commander: "IT'S LEG DAY. I COMMAND YOU TO SQUAT DEEP!"
-🟢 Dr. Growth: "Day 1 of mesocycle 3. MEV check: hit 8 sets."
+🟢 The Architect: "Day 1 of mesocycle 3. MEV check: hit 8 sets."
 
 Which voice do YOU need today?
 
@@ -299,10 +299,10 @@ Choose your fighter:
 [5 quick clips of each coach's vibe]
 
 🟢 The Sculptor — for the disciplined builder
-🟠 The Governor — for the high-volume animal
-🔵 The Scientist — for the data nerd
+🟠 The Monument — for the high-volume animal
+🔵 The Analyst — for the data nerd
 🔴 The Commander — for the savage
-🟢 Dr. Growth — for the strategic athlete
+🟢 The Architect — for the strategic athlete
 
 Which one is YOU?
 

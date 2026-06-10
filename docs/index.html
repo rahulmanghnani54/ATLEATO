@@ -166,17 +166,15 @@
       (function(){
         var SUPA = 'https://kbldncrurztfwlqzajen.supabase.co';
         var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njg3NDcsImV4cCI6MjA5NDE0NDc0N30.rIT9u4d5dht_UWJ9er7ic1-TBa4C5ISRMdDwOolgIUA';
-        function headCount(path) {
-          return fetch(SUPA + '/rest/v1/' + path, {
-            method: 'HEAD',
-            headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, Prefer: 'count=exact', Range: '0-0' }
-          }).then(function(r){ var cr=r.headers.get('content-range'); return cr && cr.indexOf('/')>=0 ? (parseInt(cr.split('/')[1],10)||0) : 0; }).catch(function(){return 0;});
+        function rpc(name){
+          return fetch(SUPA + '/rest/v1/rpc/' + name, {
+            method: 'POST',
+            headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' },
+            body: '{}'
+          }).then(function(r){return r.ok?r.json():0;}).then(function(n){return typeof n==='number'?n:0;}).catch(function(){return 0;});
         }
         function refresh() {
-          Promise.all([
-            headCount('waitlist?select=id'),
-            headCount('vanguard_orders?select=id&status=eq.paid')
-          ]).then(function(r){
+          Promise.all([ rpc('waitlist_count'), rpc('vanguard_claimed_count') ]).then(function(r){
             var w = document.getElementById('live-waitlist-count');
             var v = document.getElementById('live-vanguard-count');
             if (w) w.textContent = (r[0]||0).toLocaleString();
@@ -209,14 +207,14 @@
         <div class="coach-chip" data-coach="arnold">
           <div class="coach-avatar">AS</div>
           <div class="coach-info">
-            <span class="coach-name">THE GOVERNOR</span>
+            <span class="coach-name">THE MONUMENT</span>
             <span class="coach-style">Old School Volume</span>
           </div>
         </div>
         <div class="coach-chip" data-coach="nippard">
           <div class="coach-avatar">JN</div>
           <div class="coach-info">
-            <span class="coach-name">THE SCIENTIST</span>
+            <span class="coach-name">THE ANALYST</span>
             <span class="coach-style">Science-Based</span>
           </div>
         </div>
@@ -230,8 +228,8 @@
         <div class="coach-chip" data-coach="mike">
           <div class="coach-avatar">MI</div>
           <div class="coach-info">
-            <span class="coach-name">DR. GROWTH</span>
-            <span class="coach-style">Hypertrophy Science</span>
+            <span class="coach-name">THE ARCHITECT</span>
+            <span class="coach-style">Hypertrophy & Periodization</span>
           </div>
         </div>
       </div>
@@ -384,7 +382,7 @@
           </div>
           <h3 class="feature-title">Coach-Designed Programs</h3>
           <p class="feature-desc">
-            The Governor's double-split, THE SCULPTOR's PPL, The Scientist's evidence-based hypertrophy, The Commander's heavy singles, Dr. Growth's mesocycle periodization. Each program is signature to the coach — not generic templates.
+            The Monument's double-split, THE SCULPTOR's PPL, The Analyst's evidence-based hypertrophy, The Commander's heavy singles, The Architect's mesocycle periodization. Each program is signature to the coach — not generic templates.
           </p>
         </div>
       </div>
@@ -499,31 +497,31 @@
             </svg>
           </div>
           <div class="coach-name" style="color: #c8ff3d;">THE SCULPTOR</div>
-          <div class="coach-tag">Classic Physique · 5x Champion</div>
-          <p class="coach-bio">Train under a 5x Classic Champion. Master the vacuum pose, build timeless aesthetic lines, and stay thavage.</p>
+          <div class="coach-tag">Classic Physique · 5x decorated</div>
+          <p class="coach-bio">Train under a 5x Classic Champion. Master the vacuum pose, build timeless aesthetic lines, and build the statue.</p>
         </div>
         <div class="coach-card" data-coach="arnold" style="--coach-accent: #f5b942;">
           <div class="coach-silhouette">
-            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#f5b942;" role="img" aria-label="The Governor flexing bicep silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#f5b942;" role="img" aria-label="The Monument flexing bicep silhouette">
               <path d="M14 50 C 14 42 22 36 30 36 C 38 36 44 40 50 44 C 58 50 64 46 66 38 C 68 30 60 26 52 28 L 48 22 C 56 16 70 18 72 30 C 74 44 64 56 50 56 C 38 56 30 50 24 50 L 18 56 L 14 50 Z" fill="currentColor" opacity="0.9"/>
             </svg>
           </div>
-          <div class="coach-name" style="color: #f5b942;">THE GOVERNOR</div>
-          <div class="coach-tag">Golden Era · 7x Mr. O Legend</div>
-          <p class="coach-bio">The 7x Mr. O and Golden Era legend. High volume, mind-muscle connection, and pumping iron till you can't.</p>
+          <div class="coach-name" style="color: #f5b942;">THE MONUMENT</div>
+          <div class="coach-tag">Golden Era · Monument era Legend</div>
+          <p class="coach-bio">The Monument era and Golden Era legend. High volume, mind-muscle connection, and pumping iron till you can't.</p>
         </div>
         <div class="coach-card" data-coach="nippard" style="--coach-accent: #5DD3FA;">
           <div class="coach-silhouette">
-            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#5DD3FA;" role="img" aria-label="The Scientist atom symbol">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#5DD3FA;" role="img" aria-label="The Analyst atom symbol">
               <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none"/>
               <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none" transform="rotate(60 40 40)"/>
               <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none" transform="rotate(120 40 40)"/>
               <circle cx="40" cy="40" r="5" fill="currentColor"/>
             </svg>
           </div>
-          <div class="coach-name" style="color: #5DD3FA;">THE SCIENTIST</div>
-          <div class="coach-tag">Evidence-Based · PubMed</div>
-          <p class="coach-bio">A powerhouse optimizing every rep based on the latest PubMed literature. Science-based hypertrophy.</p>
+          <div class="coach-name" style="color: #5DD3FA;">THE ANALYST</div>
+          <div class="coach-tag">Evidence-driven</div>
+          <p class="coach-bio">A powerhouse optimizing every rep based on the latest data literature. Science-based hypertrophy.</p>
         </div>
         <div class="coach-card" data-coach="ct" style="--coach-accent: #ef4444;">
           <div class="coach-silhouette">
@@ -535,12 +533,12 @@
             </svg>
           </div>
           <div class="coach-name" style="color: #ef4444;">THE COMMANDER</div>
-          <div class="coach-tag">Iron Asylum · No Excuses</div>
+          <div class="coach-tag">Iron Pact · No Excuses</div>
           <p class="coach-bio">It's still your set! A towering Iron Addict who commands you to push past the limits of human strength.</p>
         </div>
         <div class="coach-card" data-coach="mike" style="--coach-accent: #7be38c;">
           <div class="coach-silhouette">
-            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#7be38c;" role="img" aria-label="Dr. Growth professor with glasses silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#7be38c;" role="img" aria-label="The Architect professor with glasses silhouette">
               <ellipse cx="40" cy="34" rx="22" ry="26" fill="currentColor" opacity="0.85"/>
               <circle cx="30" cy="36" r="6" fill="#0a0b0d" stroke="#fff" stroke-width="1.5"/>
               <circle cx="50" cy="36" r="6" fill="#0a0b0d" stroke="#fff" stroke-width="1.5"/>
@@ -548,8 +546,8 @@
               <path d="M28 52 Q40 58 52 52" stroke="#0a0b0d" stroke-width="2" fill="none"/>
             </svg>
           </div>
-          <div class="coach-name" style="color: #7be38c;">DR. GROWTH</div>
-          <div class="coach-tag">Hypertrophy · MEV / MAV / MRV</div>
+          <div class="coach-name" style="color: #7be38c;">THE ARCHITECT</div>
+          <div class="coach-tag">Hypertrophy · Volume Landmarks</div>
           <p class="coach-bio">A PhD in Sports Physiology who will prescribe the exact Maximum Recoverable Volume to build serious tissue.</p>
         </div>
       </div>
@@ -569,7 +567,7 @@
           <div class="step-number">01</div>
           <div class="step-content">
             <h3>Pick a Coach</h3>
-            <p>Choose from THE SCULPTOR, The Governor, The Scientist, The Commander, or Dr. Growth. The app transforms around their philosophy — programs, nutrition, voice, colors.</p>
+            <p>Choose from THE SCULPTOR, The Monument, The Analyst, The Commander, or The Architect. The app transforms around their philosophy — programs, nutrition, voice, colors.</p>
           </div>
         </div>
 

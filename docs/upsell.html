@@ -69,9 +69,9 @@
           <div class="stat-meta"><span class="meta-dot meta-dot-orange"></span> <span id="scarcity-remaining">500</span> remaining · live count</div>
         </div>
         <div class="upsell-stat-card">
-          <div class="stat-label">RESERVATION ENDS IN</div>
-          <div class="stat-value countdown-mono" id="countdown">30:00</div>
-          <div class="stat-meta"><span class="meta-dot meta-dot-red"></span> Hold expires</div>
+          <div class="stat-label">LAUNCH TARGET</div>
+          <div class="stat-value" style="font-size:24px;">Q3 2026</div>
+          <div class="stat-meta"><span class="meta-dot meta-dot-green"></span> Google Play · beta access 2 weeks earlier</div>
         </div>
       </div>
 
@@ -343,9 +343,26 @@
       });
     }
 
-    // ── Supabase fetch helper ──
+    // ── Supabase RPC: count-only (RLS no longer permits SELECT * for anon) ──
+    function rpc(name) {
+      return fetch(SUPABASE_URL + '/rest/v1/rpc/' + name, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: '{}'
+      }).then(function (r) { return r.ok ? r.json() : 0; })
+        .then(function (n) { return typeof n === 'number' ? n : 0; })
+        .catch(function () { return 0; });
+    }
+    // Referral counter still needs filter-by-source — kept as legacy HEAD count
+    // until we add a per-email RPC. For now this only counts; can't read rows.
     function fetchCount(filter) {
-      var url = SUPABASE_URL + '/rest/v1/waitlist?select=id' + (filter ? '&' + filter : '');
+      // Backwards-compat shim — use RPCs for the main counters
+      if (!filter) return rpc('waitlist_count');
+      var url = SUPABASE_URL + '/rest/v1/waitlist?select=id&' + filter;
       return fetch(url, {
         method: 'HEAD',
         headers: {
@@ -388,25 +405,9 @@
     var VANGUARDS_TABLE = 'vanguard_orders';
     var VANGUARDS_CAP = 500;
 
-    // Fetch HEAD count of vanguard_orders WHERE status=paid
+    // RPC-only — no row exposure via anon key (RLS policy dropped in 012)
     function fetchVanguardsClaimed() {
-      var url = SUPABASE_URL + '/rest/v1/' + VANGUARDS_TABLE + '?select=id&status=eq.paid';
-      return fetch(url, {
-        method: 'HEAD',
-        headers: {
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
-          'Prefer': 'count=exact',
-          'Range': '0-0',
-        },
-      }).then(function (res) {
-        var cr = res.headers.get('content-range');
-        if (cr && cr.indexOf('/') >= 0) {
-          var n = parseInt(cr.split('/')[1], 10);
-          return isNaN(n) ? 0 : n;
-        }
-        return 0;
-      }).catch(function () { return 0; });
+      return rpc('vanguard_claimed_count');
     }
 
     // ── Refresh stats (REAL real-time, no synthetic numbers) ──
@@ -490,51 +491,21 @@
     setInterval(refreshReferralCount, 10000);
 
     // ══════════════════════════════════════════════════════
-    // 30-MIN RESERVATION COUNTDOWN — per-email
-    // Each unique email gets its OWN 30-min hold.
-    // Same email refreshing the page = timer continues (preserves urgency).
-    // New email = fresh 30 minutes (no cross-email leakage).
-    // Uses localStorage so it survives tab close (real reservation feel).
+    // RESERVATION COUNTDOWN — REMOVED (June 2026)
+    // The previous 30-min "reservation hold" was a dark pattern: it
+    // implied scarcity time-pressure that didn't actually exist. The
+    // 500 cap is the only real scarcity, and it's already shown in
+    // the VIP CLAIMED card above (live count from vanguard_orders).
+    // Removed per the V2 master plan §3 ("drop manipulative funnel
+    // mechanics; keep opt-in commitment devices").
     // ══════════════════════════════════════════════════════
-    var countdownEl = document.getElementById('countdown');
-    var DURATION = 30 * 60 * 1000; // 30 minutes
-    var KEY_PREFIX = 'vanguard_hold_v3:';
-    // Key is per-email so different emails get independent holds
-    var KEY = KEY_PREFIX + (email || 'guest');
-    var start;
+    // Clean up any stale localStorage keys from the old timer
     try {
-      var stored = localStorage.getItem(KEY);
-      if (stored) {
-        start = parseInt(stored, 10);
-        // If stored start is corrupted or in the future, reset
-        if (!start || start > Date.now()) {
-          start = Date.now();
-          localStorage.setItem(KEY, String(start));
-        }
-      } else {
-        start = Date.now();
-        localStorage.setItem(KEY, String(start));
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('vanguard_hold_v3:') === 0) localStorage.removeItem(k);
       }
-    } catch (e) {
-      // localStorage blocked (private mode / cookies disabled) — use in-memory
-      start = Date.now();
-    }
-
-    function tickCountdown() {
-      if (!countdownEl) return;
-      var remaining = DURATION - (Date.now() - start);
-      if (remaining <= 0) {
-        countdownEl.textContent = 'EXPIRED';
-        countdownEl.classList.add('expired');
-        return;
-      }
-      var mins = Math.floor(remaining / 60000);
-      var secs = Math.floor((remaining % 60000) / 1000);
-      countdownEl.textContent = ('0' + mins).slice(-2) + ':' + ('0' + secs).slice(-2);
-      if (remaining < 5 * 60000) countdownEl.classList.add('urgent');
-      setTimeout(tickCountdown, 1000);
-    }
-    tickCountdown();
+    } catch (e) {}
 
     // ══════════════════════════════════════════════════════
     // RECENT VANGUARDS LIST (social proof)

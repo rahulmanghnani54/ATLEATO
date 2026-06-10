@@ -69,10 +69,10 @@ Capture searches for specific coaches/philosophies. Use the AI-renamed personas 
 |---|---|
 | `classic physique workout app` | The Classic persona |
 | `golden era bodybuilding` | The Champion persona |
-| `evidence based lifting app` | The Scientist persona |
+| `evidence based lifting app` | The Analyst persona |
 | `raw intensity training` | The Iron persona |
 | `mesocycle periodization` | The Professor persona |
-| `mev mav mrv training` | RP-style searcher |
+| `mev mav mrv training` | landmark-style searcher |
 | `ppl workout split` | Coach-aligned |
 | `5x5 strength program` | Coach-aligned |
 | `arnold split workout` | Champion-aligned |
@@ -129,7 +129,7 @@ Google Play's algorithm flags these — using them gets you de-ranked or rejecte
 ❌ "Award winning"
 ❌ "Free download" (use just "Free")
 ❌ "Better than [competitor]"
-❌ Any actual celebrity name (THE SCULPTOR, The Governor, etc) — IP + ASO penalty
+❌ Any actual celebrity name (THE SCULPTOR, The Monument, etc) — IP + ASO penalty
 ❌ "Cure", "treat", "diagnose" — Health & Fitness category guideline
 
 ---
