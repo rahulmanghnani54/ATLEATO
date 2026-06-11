@@ -42,7 +42,7 @@
     },
     "android": {
       "package": "com.madsales.atleato",
-      "googleServicesFile": "${GOOGLE_SERVICES_JSON:-./google-services.json}",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0b0d"
