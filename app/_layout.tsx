@@ -14,6 +14,13 @@ import {
   JetBrainsMono_400Regular,
   JetBrainsMono_500Medium,
 } from '@expo-google-fonts/jetbrains-mono';
+// Direction C — Plus Jakarta Sans is the new display font (v1 theme).
+// Archivo Black + JetBrains Mono still loaded for legacy screens not yet migrated.
+import {
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
@@ -164,6 +171,11 @@ export default function RootLayout() {
     Inter_500Medium,
     Inter_600SemiBold,
     Inter_700Bold,
+    // Direction C display family
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+    // Legacy display + mono (kept for non-migrated screens)
     ArchivoBlack_400Regular,
     JetBrainsMono_400Regular,
     JetBrainsMono_500Medium,
