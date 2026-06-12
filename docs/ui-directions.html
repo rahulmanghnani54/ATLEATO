@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex,nofollow" />
+<title>Atleato UI Directions — Visual Comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{font-family:'Inter',-apple-system,sans-serif;background:#1a1a1a;color:#fff;line-height:1.5;}
+  body{padding:32px 16px 80px;}
+  .hdr{max-width:1400px;margin:0 auto 32px;text-align:center;}
+  .hdr h1{font-size:36px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;}
+  .hdr p{color:rgba(255,255,255,0.6);font-size:16px;max-width:680px;margin:0 auto;}
+
+  .grid{
+    max-width:1500px;margin:0 auto;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));
+    gap:24px;justify-items:center;align-items:start;
+  }
+  @media(min-width:1200px){.grid{grid-template-columns:repeat(4,1fr);}}
+
+  .col{width:100%;max-width:360px;}
+  .col-label{margin-bottom:16px;text-align:center;}
+  .col-label .name{font-size:18px;font-weight:700;color:#fff;margin-bottom:4px;}
+  .col-label .vibe{font-size:13px;color:rgba(255,255,255,0.55);}
+
+  /* Phone frame — same across all so comparison is honest */
+  .phone{
+    width:100%;aspect-ratio:9/19;
+    border-radius:36px;border:9px solid #1a1c22;
+    box-shadow:0 30px 80px rgba(0,0,0,0.6),inset 0 0 0 1px rgba(255,255,255,0.04);
+    overflow:hidden;position:relative;
+  }
+  .phone::before{
+    content:'';position:absolute;top:10px;left:50%;transform:translateX(-50%);
+    width:90px;height:22px;background:#0a0b0d;border-radius:14px;z-index:100;
+  }
+  .screen{height:100%;overflow:hidden;padding-top:48px;}
+  .statusbar{position:absolute;top:0;left:0;right:0;padding:14px 24px 4px;
+    display:flex;justify-content:space-between;font-size:11px;font-weight:600;z-index:50;}
+
+  /* ═════════════════════════════════════════════════════════════════
+     COL 1: CURRENT  (volt-green, Anton/Mono/Inter triad)
+     ═════════════════════════════════════════════════════════════════ */
+  .c1 .screen{background:#0a0b0d;color:#f5f5f4;}
+  .c1 .statusbar{color:#f5f5f4;}
+  .c1 .body{padding:16px 18px 80px;}
+  .c1 .greet{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(245,245,244,0.38);letter-spacing:1.5px;text-transform:uppercase;}
+  .c1 .name{font-family:'Archivo Black',sans-serif;font-size:22px;margin-top:2px;letter-spacing:-0.3px;}
+  .c1 .streak-hero{
+    background:linear-gradient(135deg,rgba(223,255,31,0.10),rgba(223,255,31,0.02));
+    border:1px solid rgba(223,255,31,0.25);
+    border-radius:16px;padding:18px;margin-top:18px;position:relative;overflow:hidden;
+  }
+  .c1 .streak-hero::before{
+    content:'🔥';position:absolute;right:-10px;top:-10px;font-size:64px;opacity:0.18;
+  }
+  .c1 .streak-eyebrow{font-family:'JetBrains Mono',monospace;font-size:9px;color:rgba(245,245,244,0.38);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}
+  .c1 .streak-num{font-family:'Archivo Black',sans-serif;font-size:48px;color:#dfff1f;line-height:1;}
+  .c1 .streak-num span{font-size:14px;color:rgba(245,245,244,0.62);margin-left:6px;}
+  .c1 .streak-sub{font-size:10px;color:rgba(245,245,244,0.62);margin-top:8px;display:flex;gap:14px;}
+  .c1 .card{background:#15171b;border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px;margin-top:10px;}
+  .c1 .card-eye{font-family:'JetBrains Mono',monospace;font-size:9px;color:#dfff1f;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+  .c1 .card-eye::before{content:'// ';color:rgba(223,255,31,0.5);}
+  .c1 .card-title{font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:-0.2px;margin-bottom:2px;}
+  .c1 .card-meta{font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(245,245,244,0.62);}
+  .c1 .card-tip{background:linear-gradient(135deg,rgba(91,140,255,0.10),rgba(91,140,255,0.02));border-color:rgba(91,140,255,0.30);}
+  .c1 .card-tip .card-eye{color:#5b8cff;}
+  .c1 .tabbar{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 16px;background:rgba(15,17,22,0.95);border-top:1px solid rgba(255,255,255,0.07);}
+  .c1 .tab{font-family:'JetBrains Mono',monospace;font-size:8px;color:rgba(245,245,244,0.38);text-align:center;}
+  .c1 .tab.active{color:#dfff1f;}
+  .c1 .tab .ico{font-size:18px;display:block;margin-bottom:3px;}
+
+  /* ═════════════════════════════════════════════════════════════════
+     COL 2: DIRECTION A — Apple Notes meets Strava
+     - Inter only (one family, 400 + 700)
+     - Dark mode stays
+     - Lime accent reduced (only active tab + primary CTA)
+     - Lucide-style icons (SVG, monochrome, 1.5px stroke)
+     - No // mono kickers, no Anton
+     ═════════════════════════════════════════════════════════════════ */
+  .c2 .screen{background:#0a0b0d;color:#f5f5f4;font-family:'Inter',sans-serif;}
+  .c2 .statusbar{color:#f5f5f4;}
+  .c2 .body{padding:20px 22px 80px;}
+  .c2 .greet{font-size:13px;color:rgba(245,245,244,0.55);font-weight:400;}
+  .c2 .name{font-size:24px;font-weight:700;margin-top:2px;letter-spacing:-0.5px;}
+  .c2 .streak-hero{
+    background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+    border-radius:14px;padding:20px;margin-top:22px;
+  }
+  .c2 .streak-eyebrow{font-size:12px;color:rgba(245,245,244,0.55);font-weight:500;margin-bottom:8px;}
+  .c2 .streak-num{font-size:42px;font-weight:700;color:#f5f5f4;line-height:1;letter-spacing:-1.5px;}
+  .c2 .streak-num span{font-size:15px;color:rgba(245,245,244,0.55);margin-left:6px;font-weight:400;}
+  .c2 .streak-sub{font-size:13px;color:rgba(245,245,244,0.55);margin-top:12px;display:flex;gap:16px;}
+  .c2 .streak-sub svg{display:inline-block;vertical-align:-3px;margin-right:5px;}
+  .c2 .card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px;margin-top:12px;display:flex;align-items:flex-start;gap:14px;}
+  .c2 .card .ico-wrap{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .c2 .card-content{flex:1;min-width:0;}
+  .c2 .card-title{font-size:15px;font-weight:600;letter-spacing:-0.2px;margin-bottom:3px;}
+  .c2 .card-meta{font-size:12.5px;color:rgba(245,245,244,0.55);font-weight:400;}
+  .c2 .chev{color:rgba(245,245,244,0.38);align-self:center;}
+  .c2 .tabbar{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 20px;background:rgba(10,11,13,0.95);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.06);}
+  .c2 .tab{font-size:9.5px;color:rgba(245,245,244,0.45);text-align:center;font-weight:500;}
+  .c2 .tab.active{color:#dfff1f;}
+  .c2 .tab .ico{display:block;margin:0 auto 4px;}
+
+  /* ═════════════════════════════════════════════════════════════════
+     COL 3: DIRECTION B — Cron Calendar meets Notion (LIGHT)
+     - Inter one family
+     - Off-white surfaces (#fafaf7)
+     - Single dark accent per persona
+     - Lucide icons, named labels
+     ═════════════════════════════════════════════════════════════════ */
+  .c3 .screen{background:#fafaf7;color:#0a0b0d;font-family:'Inter',sans-serif;}
+  .c3 .statusbar{color:#0a0b0d;}
+  .c3 .phone::before{background:#0a0b0d;}
+  .c3 .body{padding:20px 22px 80px;}
+  .c3 .greet{font-size:13px;color:rgba(10,11,13,0.55);font-weight:400;}
+  .c3 .name{font-size:24px;font-weight:700;margin-top:2px;letter-spacing:-0.5px;color:#0a0b0d;}
+  .c3 .streak-hero{
+    background:#ffffff;border:1px solid rgba(0,0,0,0.06);
+    border-radius:14px;padding:20px;margin-top:22px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .c3 .streak-eyebrow{font-size:11px;color:rgba(10,11,13,0.52);font-weight:500;margin-bottom:8px;letter-spacing:0.3px;text-transform:uppercase;}
+  .c3 .streak-num{font-size:44px;font-weight:700;color:#0a0b0d;line-height:1;letter-spacing:-1.5px;}
+  .c3 .streak-num span{font-size:15px;color:rgba(10,11,13,0.5);margin-left:6px;font-weight:400;}
+  .c3 .streak-sub{font-size:13px;color:rgba(10,11,13,0.52);margin-top:14px;display:flex;gap:18px;}
+  .c3 .streak-sub svg{display:inline-block;vertical-align:-3px;margin-right:5px;}
+  .c3 .card{background:#ffffff;border:1px solid rgba(0,0,0,0.06);border-radius:12px;padding:16px;margin-top:10px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 3px rgba(0,0,0,0.03);}
+  .c3 .card .ico-wrap{width:36px;height:36px;border-radius:9px;background:rgba(10,11,13,0.05);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .c3 .card-content{flex:1;min-width:0;}
+  .c3 .card-title{font-size:15px;font-weight:600;letter-spacing:-0.2px;margin-bottom:3px;}
+  .c3 .card-meta{font-size:12.5px;color:rgba(10,11,13,0.52);font-weight:400;}
+  .c3 .chev{color:rgba(10,11,13,0.32);align-self:center;}
+  .c3 .tabbar{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-around;padding:10px 0 20px;background:rgba(255,255,255,0.92);backdrop-filter:blur(20px);border-top:1px solid rgba(0,0,0,0.06);}
+  .c3 .tab{font-size:9.5px;color:rgba(10,11,13,0.40);text-align:center;font-weight:500;}
+  .c3 .tab.active{color:#0a0b0d;font-weight:700;}
+  .c3 .tab .ico{display:block;margin:0 auto 4px;}
+  .c3 .tab.active::before{content:'';position:absolute;top:0;height:2px;width:24px;background:#0a0b0d;border-radius:0 0 2px 2px;transform:translateX(-50%);left:50%;}
+  .c3 .tab{position:relative;}
+
+  /* ═════════════════════════════════════════════════════════════════
+     COL 4: DIRECTION C — Nike Training Club meets Telegram
+     - Inter + Plus Jakarta Sans (proxy for "custom display font")
+     - Persona accent prominent
+     - Edge-to-edge hero photos
+     - Anchored bottom CTA
+     ═════════════════════════════════════════════════════════════════ */
+  .c4 .screen{background:#0a0b0d;color:#fff;font-family:'Inter',sans-serif;}
+  .c4 .statusbar{color:#fff;}
+  .c4 .hero{
+    height:38%;position:relative;overflow:hidden;
+    background:linear-gradient(135deg,#ff6b35 0%,#e84d20 50%,#ff3b30 100%);
+  }
+  .c4 .hero::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(10,11,13,0) 40%,rgba(10,11,13,0.95) 100%);
+  }
+  .c4 .hero-pattern{
+    position:absolute;inset:0;
+    background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,0.15) 0%,transparent 40%),
+                     radial-gradient(circle at 80% 70%,rgba(0,0,0,0.3) 0%,transparent 50%);
+  }
+  .c4 .hero-content{position:absolute;bottom:18px;left:22px;right:22px;z-index:5;}
+  .c4 .hero-day{font-size:11px;font-weight:600;color:rgba(255,255,255,0.85);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;}
+  .c4 .hero-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:30px;font-weight:800;letter-spacing:-1px;line-height:1;}
+  .c4 .body{padding:18px 22px 100px;}
+  .c4 .row{display:flex;gap:10px;margin-bottom:14px;}
+  .c4 .stat{flex:1;background:rgba(255,255,255,0.04);border-radius:14px;padding:14px;}
+  .c4 .stat-num{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;letter-spacing:-0.8px;line-height:1;}
+  .c4 .stat-num.acc{color:#ff6b35;}
+  .c4 .stat-lbl{font-size:10.5px;color:rgba(255,255,255,0.55);margin-top:4px;font-weight:500;}
+  .c4 .card{background:rgba(255,255,255,0.04);border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+  .c4 .card .ico-wrap{width:42px;height:42px;border-radius:12px;background:rgba(255,107,53,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#ff6b35;}
+  .c4 .card-content{flex:1;min-width:0;}
+  .c4 .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:700;letter-spacing:-0.2px;margin-bottom:2px;}
+  .c4 .card-meta{font-size:12px;color:rgba(255,255,255,0.55);font-weight:400;}
+  .c4 .cta{
+    position:absolute;bottom:18px;left:18px;right:18px;
+    background:#ff6b35;color:#fff;border-radius:14px;padding:14px;
+    text-align:center;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14.5px;letter-spacing:0.3px;
+    box-shadow:0 8px 24px rgba(255,107,53,0.4);
+  }
+
+  /* Tells legend */
+  .tells{
+    max-width:1500px;margin:48px auto 0;background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:24px;
+  }
+  .tells h2{font-size:18px;font-weight:700;margin-bottom:14px;}
+  .tells-row{display:grid;grid-template-columns:120px 1fr 1fr 1fr 1fr;gap:14px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;}
+  .tells-row.head{font-weight:700;color:rgba(255,255,255,0.55);font-size:11px;text-transform:uppercase;letter-spacing:1px;}
+  .tells-row .lbl{color:rgba(255,255,255,0.55);}
+  .yes{color:#ff5b3a;font-weight:600;}
+  .no{color:#39e08a;font-weight:600;}
+  .partial{color:#ffb13a;font-weight:600;}
+
+  /* Decision */
+  .decide{
+    max-width:1500px;margin:32px auto 0;background:linear-gradient(135deg,rgba(255,107,53,0.10),rgba(255,107,53,0.02));
+    border:1px solid rgba(255,107,53,0.30);border-radius:14px;padding:24px;text-align:center;
+  }
+  .decide h2{font-size:20px;margin-bottom:10px;}
+  .decide p{color:rgba(255,255,255,0.65);font-size:14px;margin-bottom:18px;}
+  .choices{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+  .choice{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px 22px;font-size:14px;font-weight:600;}
+  .choice code{display:block;background:#0a0b0d;color:#dfff1f;font-family:'JetBrains Mono',monospace;padding:4px 8px;border-radius:5px;font-size:13px;margin-bottom:5px;}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>UI Directions — Side-by-Side Comparison</h1>
+  <p>Same dashboard screen. 4 versions. Pick the one that doesn't feel AI-generated to you.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ═══════════ COL 1 — CURRENT ═══════════ -->
+  <div class="col c1">
+    <div class="col-label">
+      <div class="name">CURRENT</div>
+      <div class="vibe">What you have today</div>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>● 5G ●● 100%</span></div>
+      <div class="screen">
+        <div class="body">
+          <div class="greet">Good morning</div>
+          <div class="name">Rahul</div>
+          <div class="streak-hero">
+            <div class="streak-eyebrow">CURRENT STREAK</div>
+            <div class="streak-num">47<span>days</span></div>
+            <div class="streak-sub"><span>❄ 3 freezes</span><span>🏆 #4 city</span></div>
+          </div>
+          <div class="card">
+            <div class="card-eye">TODAY'S WORKOUT</div>
+            <div class="card-title">Push Day · 6 Exercises</div>
+            <div class="card-meta">~55 min · chest, shoulders, triceps</div>
+          </div>
+          <div class="card card-tip">
+            <div class="card-eye">💡 TIP FROM THE SCULPTOR</div>
+            <div class="card-title">Pause 1 sec at bottom of every rep.</div>
+            <div class="card-meta">⏰ Expires in 2h 14m</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab active"><span class="ico">⌂</span>Home</div>
+          <div class="tab"><span class="ico">💪</span>Workouts</div>
+          <div class="tab"><span class="ico">🍽</span>Nutrition</div>
+          <div class="tab"><span class="ico">🗺</span>Territory</div>
+          <div class="tab"><span class="ico">⚙</span>Profile</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ COL 2 — DIRECTION A ═══════════ -->
+  <div class="col c2">
+    <div class="col-label">
+      <div class="name">A · APPLE/STRAVA</div>
+      <div class="vibe">Clean, calm, premium · 6h to ship</div>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>● 5G ●● 100%</span></div>
+      <div class="screen">
+        <div class="body">
+          <div class="greet">Good morning,</div>
+          <div class="name">Rahul</div>
+          <div class="streak-hero">
+            <div class="streak-eyebrow">Workout streak</div>
+            <div class="streak-num">47<span>days</span></div>
+            <div class="streak-sub">
+              <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 19 21 12 17 5 21"/></svg>
+                3 freezes
+              </span>
+              <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M6 9v8a6 6 0 0 0 12 0V9"/><path d="M6 9V2h12v7"/></svg>
+                Rank 4
+              </span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" stroke-width="1.5"><path d="M6.5 6.5h11"/><path d="M6.5 17.5h11"/><path d="M12 6.5v11"/><circle cx="4.5" cy="6.5" r="2.5"/><circle cx="19.5" cy="6.5" r="2.5"/><circle cx="4.5" cy="17.5" r="2.5"/><circle cx="19.5" cy="17.5" r="2.5"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">Push Day</div>
+              <div class="card-meta">6 exercises · 55 minutes</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">Pause at the bottom of every rep</div>
+              <div class="card-meta">Tip · 2 hours left today</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5f5f4" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">23 cells owned</div>
+              <div class="card-meta">2 contested · run to defend</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab active">
+            <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dfff1f" stroke-width="1.5"><path d="M3 9 12 2l9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            Home
+          </div>
+          <div class="tab">
+            <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6.5 6.5h11M12 6.5v11M6.5 17.5h11"/><circle cx="4.5" cy="6.5" r="2.5"/><circle cx="19.5" cy="6.5" r="2.5"/><circle cx="4.5" cy="17.5" r="2.5"/><circle cx="19.5" cy="17.5" r="2.5"/></svg>
+            Train
+          </div>
+          <div class="tab">
+            <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>
+            Eat
+          </div>
+          <div class="tab">
+            <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Map
+          </div>
+          <div class="tab">
+            <svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/></svg>
+            Me
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ COL 3 — DIRECTION B ═══════════ -->
+  <div class="col c3">
+    <div class="col-label">
+      <div class="name">B · NOTION (LIGHT)</div>
+      <div class="vibe">Sharp, dense, light mode · 10h</div>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span style="color:#0a0b0d">● 5G ●● 100%</span></div>
+      <div class="screen">
+        <div class="body">
+          <div class="greet">Tuesday, June 12</div>
+          <div class="name">Rahul</div>
+          <div class="streak-hero">
+            <div class="streak-eyebrow">Streak</div>
+            <div class="streak-num">47<span>days</span></div>
+            <div class="streak-sub">
+              <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 19 21 12 17 5 21"/></svg>
+                3 freezes
+              </span>
+              <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M6 9v8a6 6 0 0 0 12 0V9M6 9V2h12v7"/></svg>
+                Rank 4
+              </span>
+              <span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" x2="6" y1="6" y2="18"/><line x1="6" x2="18" y1="6" y2="18"/></svg>
+                0 missed
+              </span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0b0d" stroke-width="1.5"><path d="M6.5 6.5h11M12 6.5v11M6.5 17.5h11"/><circle cx="4.5" cy="6.5" r="2.5"/><circle cx="19.5" cy="6.5" r="2.5"/><circle cx="4.5" cy="17.5" r="2.5"/><circle cx="19.5" cy="17.5" r="2.5"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">Push Day</div>
+              <div class="card-meta">6 exercises · 55 min · 12,400 kg total</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0b0d" stroke-width="1.5"><path d="M12 22V8M5 12H2a10 10 0 0 0 20 0h-3"/><path d="M8 2v6M16 2v6"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">2,140 kcal logged</div>
+              <div class="card-meta">680 left · P 142g · C 218g · F 68g</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0b0d" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">23 cells · 2 contested</div>
+              <div class="card-meta">Mumbai · rank 4 city</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+        </div>
+        <div class="tabbar">
+          <div class="tab active">
+            <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9 12 2l9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            Home
+          </div>
+          <div class="tab">
+            <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4.5" cy="6.5" r="2.5"/><circle cx="19.5" cy="6.5" r="2.5"/><circle cx="4.5" cy="17.5" r="2.5"/><circle cx="19.5" cy="17.5" r="2.5"/><path d="M6.5 6.5h11M12 6.5v11M6.5 17.5h11"/></svg>
+            Train
+          </div>
+          <div class="tab">
+            <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3v7"/></svg>
+            Eat
+          </div>
+          <div class="tab">
+            <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Map
+          </div>
+          <div class="tab">
+            <svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2"/></svg>
+            Me
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ COL 4 — DIRECTION C ═══════════ -->
+  <div class="col c4">
+    <div class="col-label">
+      <div class="name">C · NIKE/TELEGRAM</div>
+      <div class="vibe">Energetic, photo-forward · 16h + assets</div>
+    </div>
+    <div class="phone">
+      <div class="statusbar"><span>9:41</span><span>● 5G ●● 100%</span></div>
+      <div class="screen">
+        <div class="hero">
+          <div class="hero-pattern"></div>
+          <div class="hero-content">
+            <div class="hero-day">Day 47 · Push</div>
+            <div class="hero-name">Let's go,<br/>Rahul</div>
+          </div>
+        </div>
+        <div class="body">
+          <div class="row">
+            <div class="stat">
+              <div class="stat-num acc">47</div>
+              <div class="stat-lbl">DAY STREAK</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">23</div>
+              <div class="stat-lbl">CELLS</div>
+            </div>
+            <div class="stat">
+              <div class="stat-num">12k</div>
+              <div class="stat-lbl">WEEK KG</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M12 6.5v11M6.5 17.5h11"/><circle cx="4.5" cy="6.5" r="2.5"/><circle cx="19.5" cy="6.5" r="2.5"/><circle cx="4.5" cy="17.5" r="2.5"/><circle cx="19.5" cy="17.5" r="2.5"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">Today's Workout</div>
+              <div class="card-meta">Push · 55 min · 6 exercises</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ico-wrap">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div class="card-content">
+              <div class="card-title">Defend Your Territory</div>
+              <div class="card-meta">2 contested · run to defend</div>
+            </div>
+          </div>
+        </div>
+        <div class="cta">START PUSH DAY →</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════ LEGEND ═══════════════════ -->
+<div class="tells">
+  <h2>The 6 AI Tells — How Each Direction Handles Them</h2>
+  <div class="tells-row head">
+    <div>Tell</div>
+    <div>Current</div>
+    <div>A · Apple</div>
+    <div>B · Notion</div>
+    <div>C · Nike</div>
+  </div>
+  <div class="tells-row">
+    <div class="lbl">3-font triad</div>
+    <div class="yes">YES (Anton+Mono+Inter)</div>
+    <div class="no">FIXED (Inter only)</div>
+    <div class="no">FIXED (Inter only)</div>
+    <div class="partial">PARTIAL (Inter + display)</div>
+  </div>
+  <div class="tells-row">
+    <div class="lbl">Volt-green everywhere</div>
+    <div class="yes">YES</div>
+    <div class="no">FIXED (active tab only)</div>
+    <div class="no">FIXED (replaced w/ black)</div>
+    <div class="no">FIXED (system actions only)</div>
+  </div>
+  <div class="tells-row">
+    <div class="lbl">// mono kickers</div>
+    <div class="yes">YES (many)</div>
+    <div class="no">FIXED (removed)</div>
+    <div class="no">FIXED (removed)</div>
+    <div class="no">FIXED (removed)</div>
+  </div>
+  <div class="tells-row">
+    <div class="lbl">Emoji as icons</div>
+    <div class="yes">YES (🔥🏆💪)</div>
+    <div class="no">FIXED (Lucide SVG)</div>
+    <div class="no">FIXED (Lucide SVG)</div>
+    <div class="no">FIXED (custom outlined)</div>
+  </div>
+  <div class="tells-row">
+    <div class="lbl">"Perfect" grid spacing</div>
+    <div class="yes">YES</div>
+    <div class="partial">PARTIAL (looser whitespace)</div>
+    <div class="partial">PARTIAL (8/16 stricter)</div>
+    <div class="no">FIXED (asymmetric)</div>
+  </div>
+  <div class="tells-row" style="border-bottom:none;">
+    <div class="lbl">Polygon identity</div>
+    <div class="yes">YES (logo + badge)</div>
+    <div class="partial">PARTIAL (keep logo only)</div>
+    <div class="partial">PARTIAL (keep logo only)</div>
+    <div class="no">FIXED (replaced w/ photo)</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ DECISION ═══════════════════ -->
+<div class="decide">
+  <h2>Pick a Direction</h2>
+  <p>Reply in chat with the letter. The mock takes ~30 min, the full retheme is the effort estimate on each card.</p>
+  <div class="choices">
+    <div class="choice"><code>A</code>Apple/Strava · 6h full · my pick</div>
+    <div class="choice"><code>B</code>Notion · 10h full</div>
+    <div class="choice"><code>C</code>Nike · 16h + assets</div>
+    <div class="choice"><code>mock A</code>1 screen first</div>
+    <div class="choice"><code>mock C</code>1 screen first</div>
+  </div>
+</div>
+
+</body>
+</html>
