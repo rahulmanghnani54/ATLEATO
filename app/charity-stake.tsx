@@ -1,16 +1,23 @@
 /**
- * Anti-Charity Stake — gamified commitment mechanic (100% opt-in)
+ * Anti-Charity Stake — REAL $2 USD commitment mechanic (100% opt-in)
  *
- * User "stakes" a virtual $5/week against a charity they dislike.
- * Hit the weekly workout goal → stake returned + badge.
- * Miss it → animated "donated" loss event (no real money, no real donation).
+ * User stakes REAL $2 per week against an anti-charity (a cause they dislike).
+ * Payment via Lemon Squeezy at https://atleato.com/upsell-stake (TODO: LS product).
+ * Hit the weekly workout goal → $2 refunded automatically + badge.
+ * Miss it → $2 forfeited to the anti-charity fund (settled weekly by cron).
  *
- * Storage: AsyncStorage `charity_stake:v1`
+ * V1 scope (this commit): UI + payment redirect + local tracking.
+ * V2 needed (post-launch):
+ *   - LS product 'Anti-Charity Stake — $2' configured in LS dashboard
+ *   - supabase/functions/charity-stake-webhook to credit stakes on payment
+ *   - supabase/functions/charity-stake-settle weekly cron for refund/forfeit
+ *
+ * Storage: AsyncStorage `charity_stake:v2`
  */
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, Animated,
+  Alert, Animated, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -22,7 +29,13 @@ import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 // ─── Types & constants ────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'charity_stake:v1';
+const STORAGE_KEY = 'charity_stake:v2';
+const STAKE_AMOUNT_USD = 2;
+// Lemon Squeezy checkout for the weekly $2 anti-stake.
+// TODO: replace with the actual LS product URL after creating it in the
+// LS dashboard. Until then, falls back to upsell.html with a query param
+// so the founder can see who's trying to stake.
+const STAKE_CHECKOUT_URL = 'https://atleato.com/upsell.html?stake=anti-charity-2usd';
 
 const CHARITIES = [
   { id: 'rival_team', label: 'Rival sports team fund 🏟', emoji: '🏟' },
@@ -216,12 +229,12 @@ export default function CharityStakeScreen() {
             ✦ LOSS-AVERSION MECHANIC
           </Text>
           <Text style={[styles.heroTitle, { color: persona.ink }]}>
-            Stake $5* against a cause you hate.
+            Stake ${STAKE_AMOUNT_USD} against a cause you hate.
           </Text>
           <Text style={[styles.heroSub, { color: persona.ink, opacity: 0.8 }]}>
-            Hit your weekly goal → stake returned + badge earned.{'\n'}
-            Miss it → stake "donated" to them.{'\n\n'}
-            *Virtual only. No real money. No real donations.
+            Hit your weekly goal → ${STAKE_AMOUNT_USD} refunded automatically.{'\n'}
+            Miss it → ${STAKE_AMOUNT_USD} forfeited to the anti-charity pool.{'\n\n'}
+            Real money. Refundable any time before launch.
           </Text>
         </View>
 
@@ -233,7 +246,7 @@ export default function CharityStakeScreen() {
               <Text style={[styles.eyebrow, { color: hitGoal ? Colors.success : persona.accent }]}>
                 {hitGoal ? '✓ GOAL HIT THIS WEEK' : 'STAKE ACTIVE'}
               </Text>
-              <Text style={styles.stakeAmount}>$5*</Text>
+              <Text style={styles.stakeAmount}>${STAKE_AMOUNT_USD}</Text>
               <Text style={styles.stakeAgainst}>staked against {charity?.label ?? stake.charityName}</Text>
 
               <Text style={styles.progressLabel}>
@@ -336,29 +349,42 @@ export default function CharityStakeScreen() {
 
             <View style={styles.stakePreview}>
               <Text style={styles.stakePreviewTitle}>YOUR STAKE</Text>
-              <Text style={styles.stakePreviewAmount}>$5 virtual*</Text>
+              <Text style={styles.stakePreviewAmount}>${STAKE_AMOUNT_USD} real</Text>
               <Text style={styles.stakePreviewNote}>
-                No real money. This is a gamified commitment device.
-                The sting of "donating" to them is the mechanic.
+                Real money held by Lemon Squeezy. Hit your weekly goal,
+                we refund automatically. Miss it, the ${STAKE_AMOUNT_USD} forfeits to
+                the anti-charity pool. Fully refundable any time before launch.
               </Text>
             </View>
 
             <TouchableOpacity
               style={[styles.primaryBtn, { backgroundColor: persona.accent }]}
-              onPress={handleActivate}
+              onPress={async () => {
+                // V1 flow: open LS checkout, locally mark stake as
+                // 'pending payment' so the UI shows pending state. The
+                // webhook (TODO) confirms and flips to 'active'.
+                await handleActivate();
+                Linking.openURL(STAKE_CHECKOUT_URL).catch(() => {
+                  Alert.alert(
+                    "Couldn't open checkout",
+                    `Visit ${STAKE_CHECKOUT_URL} to complete your $${STAKE_AMOUNT_USD} stake.`,
+                  );
+                });
+              }}
               activeOpacity={0.85}
             >
               <Text style={[styles.primaryBtnText, { color: persona.ink }]}>
-                LOCK IN MY STAKE →
+                PAY ${STAKE_AMOUNT_USD} & LOCK IN STAKE →
               </Text>
             </TouchableOpacity>
           </View>
         )}
 
         <Text style={styles.disclaimer}>
-          * No real money is charged, transferred, or donated. This is a gamified
-          commitment mechanic that uses loss-aversion psychology to increase
-          workout adherence. 100% opt-in and removable at any time.
+          Real ${STAKE_AMOUNT_USD} USD is charged via Lemon Squeezy when you tap
+          "PAY & LOCK IN STAKE". 100% opt-in. Fully refundable any time before
+          launch by replying to the receipt. Forfeited stakes go to a pooled
+          "anti-charity" fund that founders disclose monthly to all stakers.
         </Text>
       </ScrollView>
     </SafeAreaView>

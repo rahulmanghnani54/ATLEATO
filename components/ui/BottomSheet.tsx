@@ -27,10 +27,13 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   useEffect(() => {
     if (visible) {
       setModalVisible(true);
-      opacity.value = withTiming(1, { duration: 200 });
+      // V2 bug-fix: previously this used withTiming(1, ...) which could
+      // fail to reach opacity 1 on some Android devices, leaving the list
+      // behind the sheet visible (the 'floating' bug screenshot). Now we
+      // set the backdrop opaque immediately when the modal mounts.
+      opacity.value = 1;
       translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
     } else {
-      opacity.value = withTiming(0, { duration: 150 });
       translateY.value = withTiming(screenHeight, { duration: 200 }, (finished) => {
         if (finished) runOnJS(setModalVisible)(false);
       });
@@ -38,14 +41,12 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   }, [visible, screenHeight]);
 
   const sheetStyle = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
-  const backdropStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
   return (
     <Modal transparent animationType="none" visible={modalVisible} onRequestClose={onClose}>
-      {/* Backdrop — sits behind everything, tapping it closes the sheet */}
-      <Animated.View style={[styles.backdrop, backdropStyle]} pointerEvents="box-none">
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-      </Animated.View>
+      {/* Backdrop — opaque solid layer, covers entire screen, tap to close.
+          Solid (not animated) so the underlying list NEVER shows through. */}
+      <Pressable style={styles.backdrop} onPress={onClose} />
 
       {/* KeyboardAvoidingView wraps ONLY the sheet so it slides up with the keyboard */}
       <KeyboardAvoidingView

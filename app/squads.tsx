@@ -82,20 +82,31 @@ export default function SquadsScreen() {
   const [leaderboard, setLeaderboard] = useState<LeaderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Fetch user's current squad + leaderboard
   const refresh = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
-      const [{ data: squadData }, { data: lbData }] = await Promise.all([
+      // BUG-FIX (squads keeps loading): the RPCs could hang on flaky networks,
+      // leaving the spinner spinning forever. Race against a 10s timeout so we
+      // always resolve, and surface failures with a Retry button instead of
+      // an infinite loader.
+      const rpcs = Promise.all([
         supabase.rpc('my_squad'),
         supabase.rpc('squad_leaderboard', { p_limit: 20 }),
       ]);
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timed out — check your connection.')), 10_000),
+      );
+      const [{ data: squadData }, { data: lbData }] = (await Promise.race([rpcs, timeout])) as any;
       const row = (squadData as MySquadRow[] | null)?.[0] ?? null;
       setMySquad(row);
       setLeaderboard((lbData as LeaderRow[] | null) ?? []);
     } catch (e: any) {
       console.warn('Squad fetch failed:', e?.message);
+      setFetchError(e?.message ?? 'Could not load squads — pull to retry.');
     } finally {
       setLoading(false);
     }
@@ -129,6 +140,25 @@ export default function SquadsScreen() {
       setJoining(false);
     }
   };
+
+  // Error state — show retry instead of infinite spinner
+  if (!loading && fetchError) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.center}>
+          <Text style={[styles.loadingTxt, { color: Colors.error, marginBottom: 14, textAlign: 'center', paddingHorizontal: 24 }]}>
+            {fetchError}
+          </Text>
+          <TouchableOpacity
+            onPress={refresh}
+            style={{ paddingHorizontal: 24, paddingVertical: 12, backgroundColor: Colors.primary, borderRadius: Radius.md }}
+          >
+            <Text style={{ fontFamily: Fonts.display, color: Colors.ink, fontSize: 13, letterSpacing: 1 }}>RETRY</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (loading) {
     return (

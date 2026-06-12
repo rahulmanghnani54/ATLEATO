@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import type { WorkoutDay } from '@/constants/experts';
 import {
-  consumeFreezeForDate, checkAndAwardFreeze, isFrozen, resetFrozenDates,
+  consumeFreezeForDate, checkAndAwardFreeze, getFreezeState, resetFrozenDates,
 } from '@/lib/streakFreezes';
 
 // ── Streak (now freeze-aware) ─────────────────────────────────────────────────
@@ -41,20 +41,27 @@ export function useWorkoutStreak() {
       const cursor = new Date();
       if (!trainedDates.has(today)) cursor.setDate(cursor.getDate() - 1);
 
+      // BUG-FIX (stats keeps loading): previously did up to 180 sequential
+      // AsyncStorage reads (isFrozen + consumeFreezeForDate per missed day).
+      // On a cold cache that's 10+ seconds spinning. Read frozen-dates ONCE
+      // into a Set, check synchronously inside the loop, only call the async
+      // consume when we actually need to spend a freeze.
+      const freezeState = await getFreezeState();
+      const frozenSet = new Set<string>(freezeState.frozenDates);
+
       let streak = 0;
       for (let i = 0; i < 90; i++) {
         const dateISO = cursor.toISOString().slice(0, 10);
 
         if (trainedDates.has(dateISO)) {
           streak++;
+        } else if (frozenSet.has(dateISO)) {
+          // Already-frozen day — streak continues but does NOT increment
         } else {
-          // Missed this day — try to save with a freeze
-          const alreadyFrozen = await isFrozen(dateISO);
-          if (!alreadyFrozen) {
-            const used = await consumeFreezeForDate(dateISO);
-            if (!used) break; // no freeze available → streak ends here
-          }
-          // Frozen day: streak continues across but does NOT increment
+          // Missed AND not already frozen — try to spend a freeze
+          const used = await consumeFreezeForDate(dateISO);
+          if (!used) break; // no freeze available → streak ends here
+          frozenSet.add(dateISO); // keep loop state in sync with disk
         }
         cursor.setDate(cursor.getDate() - 1);
       }
