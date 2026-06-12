@@ -70,7 +70,7 @@ export async function searchUsdaFoods(query: string): Promise<FoodItem[]> {
       `&dataType=Survey%20%28FNDDS%29,SR%20Legacy,Foundation,Branded`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 7_000);
+    const timeout = setTimeout(() => controller.abort(), 4_000);
     const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
     if (!res.ok) return [];
     const data = await res.json();

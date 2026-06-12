@@ -6,7 +6,8 @@ export function useFoodSearch(query: string) {
   const [debouncedQuery, setDebouncedQuery] = useState(query);
 
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    // 200ms feels nearly instant while still batching keystrokes
+    const timer = setTimeout(() => setDebouncedQuery(query), 200);
     return () => clearTimeout(timer);
   }, [query]);
 
@@ -15,6 +16,9 @@ export function useFoodSearch(query: string) {
     queryFn: () => searchFood(debouncedQuery),
     enabled: debouncedQuery.length >= 2,
     staleTime: 5 * 60 * 1000, // 5 min — food data doesn't change often
-    placeholderData: (prev) => prev,
+    gcTime: 30 * 60 * 1000,    // keep recent searches warm in cache for 30 min
+    placeholderData: (prev) => prev, // show old results while new ones load
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 }

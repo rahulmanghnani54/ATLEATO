@@ -143,6 +143,24 @@ export default function TerritoryMapScreen() {
             <ActivityIndicator color={persona.accent} />
             <Text style={styles.muted}>Locating you…</Text>
           </View>
+        ) : !HAS_GOOGLE_KEY ? (
+          // No Google Maps key configured — render a friendly placeholder
+          // instead of a blank gray map. Add EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
+          // (and android.config.googleMaps.apiKey in app.json) to enable.
+          <View style={[styles.mapPlaceholder, { padding: 28 }]}>
+            <Text style={[styles.muted, { fontSize: 14, marginBottom: 6, color: persona.accent }]}>
+              📍 TERRITORY
+            </Text>
+            <Text style={[styles.muted, { textAlign: 'center', lineHeight: 20 }]}>
+              Map unavailable — Google Maps API key not configured.{'\n'}
+              Your run data still tracks cells; the live map activates with a key.
+            </Text>
+            {stats ? (
+              <Text style={[styles.muted, { marginTop: 18, color: persona.accent, fontSize: 24, fontFamily: Fonts.display }]}>
+                {stats.cells_owned ?? 0} cells owned
+              </Text>
+            ) : null}
+          </View>
         ) : (
           <MapView
             ref={mapRef}

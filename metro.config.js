@@ -38,4 +38,30 @@ config.resolver.extraNodeModules = {
   'perf_hooks': stub,
 };
 
+// ── Web-only: stub out native-only modules so `expo start --web` can boot ──
+// These packages have no web implementation and crash the web bundle at
+// import time. The stub returns a universal no-op Proxy (see the file).
+// Android/iOS bundles are untouched (platform check below).
+const nativeWebStub = path.resolve(__dirname, 'stubs/native-web-stub.js');
+const WEB_NATIVE_STUBS = [
+  '@notifee/react-native',
+  'react-native-maps',
+  'react-native-vision-camera',
+  'react-native-fast-tflite',
+  'react-native-callkeep',
+  'vision-camera-resize-plugin',
+  'react-native-worklets-core',
+];
+const prevResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (
+    platform === 'web' &&
+    WEB_NATIVE_STUBS.some((m) => moduleName === m || moduleName.startsWith(m + '/'))
+  ) {
+    return { type: 'sourceFile', filePath: nativeWebStub };
+  }
+  if (prevResolveRequest) return prevResolveRequest(context, moduleName, platform);
+  return context.resolveRequest(context, moduleName, platform);
+};
+
 module.exports = config;

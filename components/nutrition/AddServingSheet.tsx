@@ -47,7 +47,14 @@ export function AddServingSheet({ visible, food, mealType, date, onClose, onLogg
       sodium_mg: null,
     };
 
-    const { error } = await (supabase.from('nutrition_logs') as any).insert(payload);
+    // Bug-fix: previously the request could hang indefinitely on flaky
+    // networks, leaving the spinner spinning forever. Race with a 10s
+    // timeout so we always resolve to either success or actionable error.
+    const insertPromise = (supabase.from('nutrition_logs') as any).insert(payload);
+    const timeoutPromise = new Promise<{ error: any }>((resolve) =>
+      setTimeout(() => resolve({ error: { message: 'Request timed out — check your connection.', code: 'TIMEOUT' } }), 10_000),
+    );
+    const { error } = await Promise.race([insertPromise, timeoutPromise]);
     setLoading(false);
 
     if (error) {

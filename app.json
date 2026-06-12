@@ -6,7 +6,8 @@
     "scheme": "atleato",
     "platforms": [
       "ios",
-      "android"
+      "android",
+      "web"
     ],
     "plugins": [
       "./plugins/withReanimatedWorkletsPath",

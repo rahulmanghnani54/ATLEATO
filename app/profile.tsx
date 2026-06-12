@@ -490,6 +490,43 @@ export default function ProfileScreen() {
           />
         </SettingsGroup>
 
+        {/* ── Founder admin (debug tier switcher) ── */}
+        {/* Tap-and-hold "Atleato" 5x on the brand footer to reveal in production */}
+        <SettingsGroup title="🔓  FOUNDER ADMIN">
+          <SettingsRow
+            label="🎟  Unlock Legend tier"
+            sub="All 5 coaches, AI form, video review, voice tuning — instant"
+            trail="↑"
+            onPress={async () => {
+              const { applyTier } = await import('@/lib/subscriptionManager');
+              applyTier('legend');
+              Alert.alert('Legend unlocked ✓', 'Restart the app to see all premium features.');
+            }}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="🥇  Set tier: PRO"
+            sub="3 coaches, AI form, physique progress"
+            trail="↑"
+            onPress={async () => {
+              const { applyTier } = await import('@/lib/subscriptionManager');
+              applyTier('pro');
+              Alert.alert('PRO tier set ✓');
+            }}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label="🆓  Reset to FREE"
+            sub="See what a free user experiences"
+            trail="↓"
+            onPress={async () => {
+              const { applyTier } = await import('@/lib/subscriptionManager');
+              applyTier('free');
+              Alert.alert('Reset to FREE');
+            }}
+          />
+        </SettingsGroup>
+
         {/* ── Account ── */}
         <SettingsGroup title="ACCOUNT">
           <SettingsRow label="Email" sub={user?.email ?? ''} />

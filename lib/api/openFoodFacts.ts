@@ -47,15 +47,18 @@ function mapProduct(p: any): FoodItem {
 export async function searchFood(query: string): Promise<FoodItem[]> {
   if (!query.trim()) return [];
 
-  // Local DBs (fast — custom is async via AsyncStorage but cached after first load)
-  const [customResults, indianResults, globalResults] = await Promise.all([
+  // Kick off ALL sources in parallel — local + network simultaneously.
+  // Previously local ran first then awaited before kicking network → wasted RTT.
+  const [
+    customResults,
+    indianResults,
+    globalResults,
+    usdaResults,
+    offResults,
+  ] = await Promise.all([
     searchCustomFoods(query),
     Promise.resolve(searchIndianFoods(query)),
     Promise.resolve(searchGlobalFoods(query)),
-  ]);
-
-  // Both network sources fire in parallel — single round-trip latency
-  const [usdaResults, offResults] = await Promise.all([
     searchUsdaFoods(query),
     searchOpenFoodFacts(query),
   ]);
@@ -78,7 +81,7 @@ async function searchOpenFoodFacts(query: string): Promise<FoodItem[]> {
   try {
     const url = `${BASE}/cgi/search.pl?search_terms=${encodeURIComponent(query.trim())}&search_simple=1&action=process&json=1&page_size=20&fields=id,code,product_name,brands,nutriments,serving_quantity`;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8_000);
+    const timeout = setTimeout(() => controller.abort(), 4_000);
     const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
     if (!res.ok) return [];
     const data = await res.json();
