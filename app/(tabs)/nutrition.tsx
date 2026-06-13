@@ -1,29 +1,48 @@
+/**
+ * Nutrition Tab — Direction C (migrated 2026-06-13)
+ *
+ * Structure:
+ *   HeroBlock — persona gradient + day + "kcal eaten / goal"
+ *   3-up Stat row — protein / carbs / fat (with target/eaten ratio)
+ *   MacroRing card — single big radial ring (kept, persona-tinted)
+ *   RowCard list — Search foods, Photo scan, Water, then 4 meals, then AI gap analysis
+ *   AnchorCTA — "LOG A MEAL →"
+ *
+ * v0 backup at nutrition-v0.tsx.bak.
+ */
 import { useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { format } from 'date-fns';
 import Svg, { Circle } from 'react-native-svg';
+import {
+  Search, Camera, Droplets, UtensilsCrossed,
+  Sun, Pizza, Cookie, Moon, Sparkles,
+} from 'lucide-react-native';
+
 import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
 import { useAuthStore } from '@/stores/authStore';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
-import { personaFromProgramId, nutritionTipOfTheDay, styleText } from '@/lib/personaTheme';
-import { GlassScreen, GlassCard, SectionHeader } from '@/components/ui';
+import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { personaFromProgramId, nutritionTipOfTheDay } from '@/lib/personaTheme';
+import { HeroBlock, Stat, RowCard, AnchorCTA } from '@/components/ui/c';
 import type { MealType } from '@/types/index';
 
-const MEALS: { key: MealType; label: string; time: string }[] = [
-  { key: 'breakfast', label: 'BREAKFAST', time: '07:00' },
-  { key: 'lunch',     label: 'LUNCH',     time: '12:30' },
-  { key: 'snack',     label: 'SNACK',     time: '15:30' },
-  { key: 'dinner',    label: 'DINNER',    time: '19:00' },
+const MEALS: { key: MealType; label: string; time: string; Icon: any }[] = [
+  { key: 'breakfast', label: 'Breakfast', time: '07:00', Icon: Sun },
+  { key: 'lunch',     label: 'Lunch',     time: '12:30', Icon: Pizza },
+  { key: 'snack',     label: 'Snack',     time: '15:30', Icon: Cookie },
+  { key: 'dinner',    label: 'Dinner',    time: '19:00', Icon: Moon },
 ];
 
-function MacroRing({ eaten, goal, size = 140, color = Colors.primary }: { eaten: number; goal: number; size?: number; color?: string }) {
+// ─── Macro ring (kept — persona-tinted) ──────────────────────────────────────
+function MacroRing({ eaten, goal, color }: { eaten: number; goal: number; color: string }) {
   const r = 58, cx = 70, cy = 70;
   const circ = 2 * Math.PI * r;
   const pct = Math.min(eaten / Math.max(goal, 1), 1);
   return (
-    <Svg width={size} height={size} viewBox="0 0 140 140" style={{ transform: [{ rotate: '-90deg' }] }}>
+    <Svg width={140} height={140} viewBox="0 0 140 140" style={{ transform: [{ rotate: '-90deg' }] }}>
       <Circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.06)" strokeWidth={11} fill="none" />
       <Circle
         cx={cx} cy={cy} r={r}
@@ -36,8 +55,10 @@ function MacroRing({ eaten, goal, size = 140, color = Colors.primary }: { eaten:
 
 export default function Nutrition() {
   const router = useRouter();
-  const [date, setDate] = useState(new Date());
+  const [date] = useState(new Date());
   const profile = useAuthStore((s) => s.profile);
+  const persona = personaFromProgramId(profile?.selected_program);
+
   const { data: nutrition, refetch } = useDailyNutrition(date);
   const { glasses, goalGlasses, addGlass } = useWaterLog(date);
   const dateStr = format(date, 'yyyy-MM-dd');
@@ -52,262 +73,196 @@ export default function Nutrition() {
   const carbs = Math.round(nutrition?.carbsG ?? 0);
   const fat = Math.round(nutrition?.fatG ?? 0);
 
-  // Persona-driven nutrition philosophy
-  const persona = personaFromProgramId(profile?.selected_program);
-  const nutritionTip = nutritionTipOfTheDay(persona);
-
   useFocusEffect(useCallback(() => { refetch(); }, [refetch]));
 
-  return (
-    <GlassScreen persona={persona}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+  const weekday = format(date, 'EEE').toUpperCase();
+  const remaining = Math.max(0, goal - consumed);
+  const tip = nutritionTipOfTheDay(persona);
+  const gap = protein < proteinGoal * 0.8
+    ? `Protein at ${Math.round((protein / Math.max(proteinGoal, 1)) * 100)}%. Eat ${proteinGoal - protein}g more.`
+    : `Protein on track. Keep eating clean.`;
 
-        {/* ── HEADER ─────────────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <Text style={styles.monoLabel}>{format(date, 'EEE').toUpperCase()} · {persona.shortName} PROTOCOL</Text>
-            <Text style={[styles.monoLabel, { color: persona.accent }]}>TDEE {goal}</Text>
-          </View>
-          <Text style={styles.headline}>
-            {styleText(persona, persona.nutrition.headline)}
-          </Text>
-          <Text style={styles.philosophyLine}>
-            {styleText(persona, persona.nutrition.style)}
-          </Text>
+  return (
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── 1. HERO ─────────────────────────────────────────── */}
+        <HeroBlock
+          accent={persona.accent}
+          day={`${weekday} · ${persona.shortName} Protocol`}
+          name={consumed >= goal
+            ? `Done.\n${consumed} kcal.`
+            : `${remaining}\nkcal to go.`}
+        />
+
+        {/* ── 2. STATS ────────────────────────────────────────── */}
+        <View style={styles.statsRow}>
+          <Stat
+            value={`${protein}`}
+            label={`Protein / ${proteinGoal}g`}
+            accent
+            accentColor={persona.accent}
+          />
+          <Stat value={`${carbs}`} label={`Carbs / ${carbsGoal}g`} />
+          <Stat value={`${fat}`} label={`Fat / ${fatGoal}g`} />
         </View>
 
-        {/* ── TODAY · macros ───────────────────────────────────────── */}
-        <SectionHeader label="TODAY" accent={persona.accent} marginTop={6} />
-        <GlassCard>
-          <View style={styles.ringSection}>
+        {/* ── 3. MACRO RING ───────────────────────────────────── */}
+        <SafeAreaView edges={['left', 'right']} style={styles.body}>
+          <View style={styles.ringCard}>
             <View style={styles.ringWrap}>
               <MacroRing eaten={consumed} goal={goal} color={persona.accent} />
               <View style={styles.ringCenter}>
                 <Text style={styles.ringNum}>{consumed}</Text>
-                <Text style={styles.ringMeta}>/ {goal} KCAL</Text>
+                <Text style={styles.ringMeta}>of {goal}</Text>
               </View>
             </View>
-            <View style={styles.macroStack}>
-              {[
-                { l: 'PROTEIN', v: protein, t: proteinGoal, c: '#7be38c' },
-                { l: 'CARBS',   v: carbs,   t: carbsGoal,   c: persona.accent },
-                { l: 'FAT',     v: fat,     t: fatGoal,     c: '#f5b942' },
-              ].map((m) => (
-                <View key={m.l} style={{ marginBottom: 10 }}>
-                  <View style={styles.macroLabelRow}>
-                    <Text style={styles.macroMonoLabel}>{m.l}</Text>
-                    <Text style={styles.macroNums}>
-                      <Text style={[styles.macroVal, { color: m.c }]}>{m.v}</Text>
-                      <Text style={styles.macroOf}>/{m.t}g</Text>
-                    </Text>
-                  </View>
-                  <View style={styles.track}>
-                    <View style={[styles.fill, { width: `${Math.min((m.v / Math.max(m.t, 1)) * 100, 100)}%` as any, backgroundColor: m.c }]} />
-                  </View>
-                </View>
-              ))}
+            <View style={styles.ringRight}>
+              <Text style={styles.ringTitle}>Today's intake</Text>
+              <Text style={styles.ringSub}>
+                {consumed >= goal ? 'Target reached.' : `${remaining} kcal remaining for today.`}
+              </Text>
             </View>
           </View>
-        </GlassCard>
 
-        {/* Persona nutrition tip */}
-        <GlassCard style={{ marginTop: 12 }}>
-          <Text style={[styles.tipLabel, { color: persona.accent }]}>
-            ✦ {styleText(persona, `${persona.shortName} SAYS`)}
-          </Text>
-          <Text style={styles.tipText}>{nutritionTip}</Text>
-        </GlassCard>
-
-        {/* Quick-add row: search + AI scan */}
-        <View style={styles.quickAddRow}>
-          <TouchableOpacity
-            activeOpacity={0.7}
+          {/* ── 4. QUICK ADD ROWS ─────────────────────────────── */}
+          <RowCard
+            icon={<Search size={22} color={persona.accent} />}
+            iconTintColor={persona.accent}
+            title="Search foods"
+            meta="Type a food name to log it"
             onPress={() => router.push({ pathname: '/add-food', params: { mealType: 'lunch', date: dateStr } } as any)}
-            style={{ flex: 1 }}
-          >
-            <GlassCard style={styles.quickAddCard}>
-              <View style={styles.searchInput}>
-                <Text style={styles.searchIcon}>🔍</Text>
-                <Text style={styles.searchPlaceholder}>Search foods…</Text>
-              </View>
-            </GlassCard>
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.85}
+          />
+          <RowCard
+            icon={<Camera size={22} color={persona.accent} />}
+            iconTintColor={persona.accent}
+            title="Photo scan"
+            meta="Snap a plate · AI estimates macros"
             onPress={() => router.push('/food-photo-scan' as any)}
-            style={styles.scanBtn}
-          >
-            <Text style={styles.scanBtnIcon}>📷</Text>
-            <Text style={[styles.scanBtnLabel, { color: persona.accent }]}>SCAN</Text>
-          </TouchableOpacity>
-        </View>
+          />
 
-        {/* ── HYDRATION ─────────────────────────────────────────────── */}
-        <SectionHeader label="HYDRATION" accent={persona.accent} />
-        <GlassCard>
-          <View style={styles.waterRow}>
-            <Text style={{ fontSize: 18 }}>💧</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.waterLabel}>WATER</Text>
-              <View style={styles.waterBars}>
-                {Array.from({ length: goalGlasses || 8 }).map((_, i) => (
-                  <View key={i} style={[styles.waterBar, {
-                    backgroundColor: i < glasses ? '#5DD3FA' : 'rgba(255,255,255,0.08)',
-                  }]} />
-                ))}
-              </View>
+          {/* ── 5. WATER ─────────────────────────────────────── */}
+          <RowCard
+            icon={<Droplets size={22} color="#5DD3FA" />}
+            iconTintColor="#5DD3FA"
+            title="Water"
+            meta={`${glasses} / ${goalGlasses} glasses today`}
+            onPress={() => addGlass()}
+          />
+
+          {/* ── 6. MEALS ─────────────────────────────────────── */}
+          <Text style={styles.groupHead}>Meals</Text>
+          {MEALS.map((meal) => {
+            const mealKcal = Math.round(nutrition?.byMeal[meal.key] ?? 0);
+            const meta = mealKcal > 0
+              ? `${meal.time} · ${mealKcal} kcal logged`
+              : `${meal.time} · tap to log`;
+            return (
+              <RowCard
+                key={meal.key}
+                icon={<meal.Icon size={22} color={mealKcal > 0 ? persona.accent : Colors.textSecondary} />}
+                iconTintColor={mealKcal > 0 ? persona.accent : Colors.textSecondary}
+                title={meal.label}
+                meta={meta}
+                onPress={() => router.push({
+                  pathname: '/add-food',
+                  params: { mealType: meal.key, date: dateStr },
+                } as any)}
+              />
+            );
+          })}
+
+          {/* ── 7. AI COACH ──────────────────────────────────── */}
+          <Text style={styles.groupHead}>{persona.shortName} says</Text>
+          <View style={styles.tipCard}>
+            <View style={styles.tipHead}>
+              <Sparkles size={16} color={persona.accent} />
+              <Text style={[styles.tipKicker, { color: persona.accent }]}>Tip</Text>
             </View>
-            <Text style={styles.waterCount}>{glasses}<Text style={{ fontSize: 10, color: Colors.textSecondary }}>/{goalGlasses}</Text></Text>
-            <TouchableOpacity onPress={() => addGlass()} style={styles.waterPlus}>
-              <Text style={{ color: Colors.textSecondary, fontSize: 20 }}>+</Text>
-            </TouchableOpacity>
+            <Text style={styles.tipText}>{tip}</Text>
           </View>
-        </GlassCard>
 
-        {/* ── MEALS ────────────────────────────────────────────────── */}
-        <SectionHeader label="MEALS" accent={persona.accent} />
-        {MEALS.map((meal) => {
-          const mealKcal = Math.round(nutrition?.byMeal[meal.key] ?? 0);
-          const totalKcal = Math.max(1, Math.round(nutrition?.calories ?? 0));
-          const share = mealKcal / totalKcal;
-          const mP = Math.round((nutrition?.proteinG ?? 0) * share);
-          const mC = Math.round((nutrition?.carbsG ?? 0)   * share);
-          const mF = Math.round((nutrition?.fatG ?? 0)     * share);
-          const macroLine = mealKcal > 0 ? `${mP}P · ${mC}C · ${mF}F` : '— · — · —';
-          return (
-            <TouchableOpacity
-              key={meal.key}
-              activeOpacity={0.7}
-              onPress={() => router.push({
-                pathname: '/add-food',
-                params: { mealType: meal.key, date: dateStr },
-              } as any)}
-              style={{ marginBottom: 10 }}
-            >
-              <GlassCard>
-                <View style={styles.mealHeader}>
-                  <View style={styles.mealTime}>
-                    <Text style={[styles.mealTimeH, { color: persona.accent }]}>{meal.time.split(':')[0]}</Text>
-                    <Text style={styles.mealTimeM}>:{meal.time.split(':')[1]}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.mealLabel}>{meal.label}</Text>
-                    <Text style={styles.mealMacro}>{macroLine}</Text>
-                  </View>
-                  <View style={styles.mealRight}>
-                    <Text style={[styles.mealKcal, mealKcal > 0 && { color: persona.accent }]}>
-                      {mealKcal > 0 ? mealKcal : '—'}
-                    </Text>
-                    <Text style={styles.mealKcalUnit}>kcal</Text>
-                  </View>
-                  <Text style={[styles.addPlus, { color: persona.accent }]}>+</Text>
-                </View>
-              </GlassCard>
-            </TouchableOpacity>
-          );
-        })}
-
-        {/* ── AI GAP ANALYSIS ──────────────────────────────────────── */}
-        <SectionHeader label="AI COACH" accent={persona.accent} />
-        <GlassCard>
-          <View style={styles.aiRow}>
-            <Text style={[styles.tipLabel, { color: persona.accent, marginBottom: 6 }]}>
-              ✦ GAP ANALYSIS
-            </Text>
-            <Text style={styles.aiText}>
-              {protein < proteinGoal * 0.8
-                ? `Protein at ${Math.round((protein / Math.max(proteinGoal, 1)) * 100)}%. Add ${proteinGoal - protein}g protein to hit target.`
-                : `Looking good! Protein on track.`}
-            </Text>
+          <View style={styles.tipCard}>
+            <View style={styles.tipHead}>
+              <Sparkles size={16} color={persona.accent} />
+              <Text style={[styles.tipKicker, { color: persona.accent }]}>Gap analysis</Text>
+            </View>
+            <Text style={styles.tipText}>{gap}</Text>
           </View>
-        </GlassCard>
+        </SafeAreaView>
 
-        <View style={{ height: 48 }} />
+        <View style={{ height: 110 }} />
       </ScrollView>
-    </GlassScreen>
+
+      {/* ── 8. ANCHOR CTA ───────────────────────────────────── */}
+      <AnchorCTA
+        label="LOG A MEAL →"
+        accent={persona.accent}
+        accentInk={persona.ink}
+        onPress={() => router.push({
+          pathname: '/add-food',
+          params: { mealType: 'lunch', date: dateStr },
+        } as any)}
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingTop: 14 },
+  root: { flex: 1, backgroundColor: Colors.bg },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 0 },
 
-  header: { marginBottom: 20 },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  monoLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
-  headline: { fontFamily: Fonts.display, fontSize: 28, color: Colors.text, lineHeight: 32, letterSpacing: -0.6, marginTop: 6 },
-  philosophyLine: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 6, lineHeight: 18, fontStyle: 'italic' },
-  tipCard: {
-    borderLeftWidth: 3, borderRadius: 4, padding: 12, marginBottom: 16,
+  statsRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md + 2,
+    paddingTop: Spacing.md - 2,
+    marginBottom: Spacing.sm + 2,
   },
-  tipLabel: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 5 },
-  tipText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.text, lineHeight: 18, fontStyle: 'italic' },
 
-  ringSection: { flexDirection: 'row', alignItems: 'center', gap: 18, marginBottom: 16 },
-  ringWrap: { width: 140, height: 140, position: 'relative', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  body: {
+    paddingHorizontal: Spacing.md + 2,
+    paddingTop: Spacing.xs,
+  },
+
+  // Macro ring card — bigger visual centerpiece
+  ringCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.surfaceWarm,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    marginBottom: Spacing.md,
+  },
+  ringWrap: { width: 140, height: 140, alignItems: 'center', justifyContent: 'center' },
   ringCenter: { position: 'absolute', alignItems: 'center' },
-  ringNum: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text },
-  ringMeta: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 2 },
-  macroStack: { flex: 1 },
-  macroLabelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  macroMonoLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2 },
-  macroNums: {},
-  macroVal: { fontFamily: Fonts.display, fontSize: 16 },
-  macroOf: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary },
-  track: { height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, marginTop: 4, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 2 },
+  ringNum: { ...Typography.statNum, fontSize: 32 },
+  ringMeta: { ...Typography.statLabel, marginTop: 2 },
+  ringRight: { flex: 1 },
+  ringTitle: { ...Typography.sectionTitle, marginBottom: 4 },
+  ringSub: { ...Typography.cardMeta, lineHeight: 19 },
 
-  quickAddRow: { flexDirection: 'row', gap: 8, marginTop: 12, alignItems: 'stretch' },
-  quickAddCard: { flex: 1 },
-  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  searchInput: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 14, paddingVertical: 12,
-  },
-  searchIcon: { fontSize: 16 },
-  searchPlaceholder: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
-  scanBtn: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 12, paddingHorizontal: 14, alignItems: 'center', justifyContent: 'center', gap: 2,
-  },
-  scanBtnIcon: { fontSize: 20 },
-  scanBtnLabel: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1.2 },
-  barcodeBtn: {
-    width: 44, height: 44, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 4, alignItems: 'center', justifyContent: 'center',
+  // Group section heads (between RowCards)
+  groupHead: {
+    ...Typography.sectionTitle,
+    fontSize: 16,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
   },
 
-  waterCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 14, paddingVertical: 12, marginBottom: 12,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 4,
+  // AI tip cards
+  tipCard: {
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: Radius.lg,
+    padding: Spacing.md - 2,
+    marginBottom: Spacing.sm + 2,
   },
-  waterLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2 },
-  waterBars: { flexDirection: 'row', gap: 3, marginTop: 4 },
-  waterBar: { flex: 1, height: 6, borderRadius: 1 },
-  waterCount: { fontFamily: Fonts.display, fontSize: 16, color: Colors.text },
-  waterPlus: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-
-  mealCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, marginBottom: 10,
-  },
-  mealHeader: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 14 },
-  mealTime: {
-    width: 44, height: 44, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
-  },
-  mealTimeH: { fontFamily: Fonts.display, fontSize: 14, lineHeight: 16 },
-  mealTimeM: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary },
-  mealLabel: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, letterSpacing: 0.2 },
-  mealMacro: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.6 },
-  mealRight: { alignItems: 'flex-end' },
-  mealKcal: { fontFamily: Fonts.display, fontSize: 18, color: Colors.textSecondary },
-  mealKcalUnit: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1 },
-  addPlus: { fontSize: 22, color: Colors.primary, fontFamily: Fonts.display, paddingLeft: 4 },
-
-  // Glass-card-friendly inner rows (no padding/bg — provided by GlassCard)
-  waterRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  aiRow: { gap: 4 },
-  aiText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 19 },
+  tipHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  tipKicker: { ...Typography.cardMeta, fontSize: 11, letterSpacing: 0.3 },
+  tipText: { ...Typography.cardMeta, color: Colors.text, lineHeight: 19 },
 });
