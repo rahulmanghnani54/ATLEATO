@@ -14,6 +14,7 @@ import { calculateBMR, calculateTDEE, calculateMacros, getAgeFromDOB } from '@/l
 import type { ActivityLevel, Goal } from '@/lib/tdee';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import { getUserTier, canAccess } from '@/lib/featureGates';
+import { personaFromProgramId } from '@/lib/personaTheme';
 
 const PROGRAM_NAMES: Record<string, string> = {
   cbum_evolved:          'The Sculptor Method',
@@ -22,13 +23,8 @@ const PROGRAM_NAMES: Record<string, string> = {
   ct_strength:           'Commander Strength',
   dr_mike_mav:           'RP Hypertrophy',
 };
-const PROGRAM_COLORS: Record<string, string> = {
-  cbum_evolved:          '#dfff1f',
-  arnold_blueprint:      '#ffb13a',
-  nippard_fundamentals:  '#5b8cff',
-  ct_strength:           '#ff5b3a',
-  dr_mike_mav:           '#00e0a4',
-};
+// Persona color comes from the single source of truth — personaTheme.ts —
+// so when accent values change there, profile.tsx automatically follows.
 const GOAL_LABELS: Record<string, string> = {
   lose_fat:             'Lose Fat',
   build_muscle:         'Build Muscle',
@@ -88,7 +84,7 @@ export default function ProfileScreen() {
   const voice = useVoiceCues();
 
   const age = profile?.date_of_birth ? getAgeFromDOB(profile.date_of_birth) : null;
-  const programColor = PROGRAM_COLORS[profile?.selected_program ?? ''] ?? Colors.primary;
+  const programColor = personaFromProgramId(profile?.selected_program).accent;
   const initials = (profile?.full_name ?? 'U').slice(0, 2).toUpperCase();
   const programName = PROGRAM_NAMES[profile?.selected_program ?? ''] ?? profile?.selected_program ?? '—';
 

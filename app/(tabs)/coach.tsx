@@ -16,7 +16,7 @@
 import { useState, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Check, X as XIcon, Play, ArrowUp } from 'lucide-react-native';
@@ -24,10 +24,22 @@ import { aiCoachChat } from '@/lib/api/edgeFunctions';
 import type { ClaudeMessage } from '@/lib/api/types';
 import { useAuthStore } from '@/stores/authStore';
 import { useProgramSchedule } from '@/hooks/useDashboardStats';
+import { supabase } from '@/lib/supabase';
 import {
   personaFromProgramId, quoteOfTheDay, styleText, getPersona, type PersonaId,
 } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
+
+// Map persona.id → the program_id stored in profiles.selected_program.
+// Coach hub uses PersonaId in local state for the switcher chips; persisting
+// requires the matching program_id from constants/experts.
+const PROGRAM_FOR_PERSONA: Record<PersonaId, string> = {
+  cbum: 'cbum_evolved',
+  arnold: 'arnold_blueprint',
+  nippard: 'nippard_fundamentals',
+  ct_fletcher: 'ct_strength',
+  dr_mike: 'dr_mike_mav',
+};
 
 const PERSONA_ORDER: PersonaId[] = ['cbum', 'arnold', 'nippard', 'ct_fletcher', 'dr_mike'];
 
@@ -42,13 +54,17 @@ interface Message {
 export default function CoachHub() {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
+  const fetchProfile = useAuthStore((s) => s.fetchProfile);
   const { data: schedule = [] } = useProgramSchedule();
+  const [switching, setSwitching] = useState<PersonaId | null>(null);
 
-  // Local selection — default to user's chosen program coach, but allow exploring others
-  const userCoach = personaFromProgramId(profile?.selected_program);
-  const [selectedId, setSelectedId] = useState<PersonaId>(userCoach.id);
-  const persona = getPersona(selectedId);
-  const isUsersCoach = selectedId === userCoach.id;
+  // The user's current coach derives from profile.selected_program — that's
+  // the single source of truth. Tapping a different coach in the switcher
+  // PERSISTS the change (was preview-only previously, which left other
+  // screens out of sync).
+  const persona = personaFromProgramId(profile?.selected_program);
+  const selectedId = persona.id;
+  const isUsersCoach = true; // always — we always reflect the persisted choice
 
   const todayQuote = quoteOfTheDay(persona);
   const todaySchedule = schedule.find((d) => d.isToday);
@@ -86,9 +102,23 @@ export default function CoachHub() {
   }, [persona.id, chatLoading, messages]);
 
   // ── Switch coach handler ───────────────────────────────────────────────────
-  const switchTo = (id: PersonaId) => {
-    setSelectedId(id);
-    setMessages([]);  // fresh conversation with new coach
+  // Persists the change to profiles.selected_program so EVERY screen
+  // (dashboard hero, tab bar pill, nutrition macros, etc.) re-themes.
+  const switchTo = async (id: PersonaId) => {
+    if (id === selectedId || switching) return;
+    setSwitching(id);
+    const programId = PROGRAM_FOR_PERSONA[id];
+    const { error } = await (supabase.from('profiles') as any)
+      .update({ selected_program: programId })
+      .eq('id', profile?.id ?? '');
+    if (error) {
+      Alert.alert('Error', "Couldn't switch coach. Try again.");
+      setSwitching(null);
+      return;
+    }
+    setMessages([]); // fresh conversation with new coach
+    await fetchProfile(profile?.id ?? '');
+    setSwitching(null);
   };
 
   const startTodaysWorkout = () => {
@@ -115,9 +145,9 @@ export default function CoachHub() {
               <View style={[styles.heroAvatar, { borderColor: persona.ink }]}>
                 <Text style={[styles.heroInitials, { color: persona.ink }]}>{persona.initials}</Text>
               </View>
-              {!isUsersCoach && (
+              {switching && (
                 <View style={[styles.previewChip, { borderColor: persona.ink }]}>
-                  <Text style={[styles.previewChipText, { color: persona.ink }]}>Previewing</Text>
+                  <ActivityIndicator size="small" color={persona.ink} />
                 </View>
               )}
             </View>
@@ -133,7 +163,7 @@ export default function CoachHub() {
           </View>
 
           {/* ── TODAY'S SESSION CTA ───────────────────────────────────── */}
-          {isUsersCoach && (
+          {(
             <TouchableOpacity
               style={[styles.todayCard, { borderLeftColor: persona.accent }]}
               onPress={startTodaysWorkout}
@@ -232,9 +262,7 @@ export default function CoachHub() {
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>Explore other coaches</Text>
             <Text style={styles.signatureSub}>
-              {isUsersCoach
-                ? 'Tap to preview another coach\'s world. Your active coach stays as is.'
-                : 'You\'re previewing — tap your own coach to return.'}
+              Tap any coach to switch — the whole app re-themes around their world.
             </Text>
             <View style={styles.coachSwitchRow}>
               {PERSONA_ORDER.map((id) => {
