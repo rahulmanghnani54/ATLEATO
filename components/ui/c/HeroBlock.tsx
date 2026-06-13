@@ -16,7 +16,7 @@
  * that read as AI-designed. The big photo-style block + bottom-anchored copy
  * is the Nike Training Club / Telegram convention.
  */
-import { View, Text, StyleSheet, ImageSourcePropType, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, ImageSourcePropType, ImageBackground, useWindowDimensions } from 'react-native';
 import { Colors, Fonts, Spacing, Typography } from '@/constants/theme';
 
 interface Props {
@@ -28,6 +28,13 @@ interface Props {
 }
 
 export function HeroBlock({ accent, day, name, photo, heightRatio = 0.38 }: Props) {
+  // BUG-FIX: previous version used `height: '38%'` (percentage). Inside a
+  // ScrollView, percentage heights collapse to 0 because the ScrollView's
+  // height is defined by its content, not given to its content. That made
+  // the whole Dashboard appear frozen. Compute an absolute pixel value
+  // from the device window height instead.
+  const { height: screenH } = useWindowDimensions();
+  const heroH = Math.round(screenH * heightRatio);
   const content = (
     <>
       {/* Bottom-of-block dark gradient overlay so white text always reads */}
@@ -41,7 +48,7 @@ export function HeroBlock({ accent, day, name, photo, heightRatio = 0.38 }: Prop
 
   if (photo) {
     return (
-      <ImageBackground source={photo} style={[styles.wrap, { height: `${heightRatio * 100}%` }]} resizeMode="cover">
+      <ImageBackground source={photo} style={[styles.wrap, { height: heroH }]} resizeMode="cover">
         {content}
       </ImageBackground>
     );
@@ -51,7 +58,7 @@ export function HeroBlock({ accent, day, name, photo, heightRatio = 0.38 }: Prop
   // overlapping View backgrounds (RN doesn't support radial gradients without
   // a 3rd-party lib; this approximation reads as "branded hero").
   return (
-    <View style={[styles.wrap, styles.gradWrap, { height: `${heightRatio * 100}%`, backgroundColor: accent }]}>
+    <View style={[styles.wrap, styles.gradWrap, { height: heroH, backgroundColor: accent }]}>
       <View style={[styles.gradBlob, styles.gradBlobLight]} />
       <View style={[styles.gradBlobAccent, { backgroundColor: shadeDarker(accent) }]} />
       {content}

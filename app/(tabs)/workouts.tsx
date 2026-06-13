@@ -1,87 +1,73 @@
+/**
+ * Workouts Tab — Direction C (migrated 2026-06-12)
+ *
+ * Structure:
+ *   HeroBlock — persona gradient + Day-of-week / week-of-year + "TRAIN" or "REST"
+ *   3-up Stat row — program name / sessions per week / today's status
+ *   Toggle: TODAY | EXERCISES
+ *     TODAY:     RowCards for each exercise in today's session
+ *     EXERCISES: Muscle-group accordion (preserved from v0)
+ *   AnchorCTA — "START TODAY'S WORKOUT" or "PICK A WORKOUT"
+ *
+ * v0 backup at workouts-v0.tsx.bak.
+ */
 import { useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { ChevronDown, ChevronRight, Dumbbell, Library } from 'lucide-react-native';
+
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { EXERCISE_LIBRARY, type MuscleGroup } from '@/constants/exerciseLibrary';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
 import { personaFromProgramId } from '@/lib/personaTheme';
-import { GlassScreen } from '@/components/ui';
+import { HeroBlock, Stat, RowCard, AnchorCTA } from '@/components/ui/c';
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function getTodayWorkoutIndex(daysPerWeek: number): number | null {
-  const dayOfWeek = new Date().getDay();
-  const monBasedIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-  if (monBasedIndex >= daysPerWeek) return null;
-  return monBasedIndex;
+  const dow = new Date().getDay();
+  const idx = dow === 0 ? 6 : dow - 1;
+  return idx >= daysPerWeek ? null : idx;
 }
 
-const COACH_COLORS: Record<string, string> = {
-  cbum_evolved:         '#dfff1f',
-  arnold_blueprint:     '#ffb13a',
-  nippard_fundamentals: '#5b8cff',
-  ct_fletcher_iron:     '#ff5b3a',
-  dr_mike_mrd:          '#39e08a',
-};
+function weekOfYear(): number {
+  const d = new Date();
+  const start = new Date(d.getFullYear(), 0, 1);
+  return Math.ceil(((d.getTime() - start.getTime()) / 86_400_000 + start.getDay() + 1) / 7);
+}
 
-// ── Muscle-group accordion row ────────────────────────────────────────────────
-function MuscleGroupRow({
-  group,
-  programId,
-}: {
-  group: MuscleGroup;
-  programId: string;
-}) {
+// ─── Muscle-group accordion (preserved from v0 but restyled) ─────────────────
+function MuscleGroupRow({ group, accent }: { group: MuscleGroup; accent: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const accentColor = COACH_COLORS[programId] ?? Colors.primary;
-
   return (
     <View style={styles.groupCard}>
-      {/* Header */}
       <TouchableOpacity
-        style={styles.groupHeader}
+        style={styles.groupHead}
         onPress={() => setOpen((v) => !v)}
-        activeOpacity={0.75}
+        activeOpacity={0.8}
       >
-        <Text style={styles.groupEmoji}>{group.emoji}</Text>
-        <Text style={styles.groupLabel}>{group.label.toUpperCase()}</Text>
-        <Text style={styles.groupCount}>{group.exercises.length} exercises</Text>
-        <Text style={[styles.groupChevron, open && styles.groupChevronOpen]}>›</Text>
+        <Text style={styles.groupName}>{group.name}</Text>
+        {open ? <ChevronDown size={18} color={Colors.textSecondary} /> : <ChevronRight size={18} color={Colors.textSecondary} />}
       </TouchableOpacity>
-
-      {/* Exercise list */}
       {open && (
-        <View style={styles.exerciseList}>
-          {group.exercises.map((ex, i) => (
-            <View
-              key={ex.name}
-              style={[
-                styles.exerciseRow,
-                i === group.exercises.length - 1 && styles.exerciseRowLast,
-              ]}
+        <View style={styles.groupBody}>
+          {group.exercises.map((ex) => (
+            <TouchableOpacity
+              key={ex.id}
+              style={styles.groupExRow}
+              onPress={() =>
+                router.push({
+                  pathname: '/form-coach' as any,
+                  params: { exerciseName: ex.name, persona: 'cbum' },
+                })
+              }
             >
-              <View style={{ flex: 1 }}>
-                <Text style={styles.exerciseName}>{ex.name}</Text>
-                <Text style={styles.exerciseMeta}>{ex.sets} sets · {ex.reps}</Text>
-                {ex.tips[0] && (
-                  <Text style={styles.exerciseTip} numberOfLines={1}>
-                    {ex.tips[0]}
-                  </Text>
-                )}
-              </View>
-              <TouchableOpacity
-                style={[styles.formBtn, { backgroundColor: accentColor + '18', borderColor: accentColor + '55' }]}
-                onPress={() =>
-                  router.push({
-                    pathname: '/form-coach',
-                    params: { exerciseName: ex.name, persona: programId },
-                  } as any)
-                }
-              >
-                <Text style={[styles.formBtnText, { color: accentColor }]}>📷 FORM</Text>
-              </TouchableOpacity>
-            </View>
+              <Text style={styles.groupExName}>{ex.name}</Text>
+              <Text style={[styles.groupExTag, { color: accent }]}>Form check ›</Text>
+            </TouchableOpacity>
           ))}
         </View>
       )}
@@ -89,336 +75,206 @@ function MuscleGroupRow({
   );
 }
 
-// ── Main screen ───────────────────────────────────────────────────────────────
+// ─── Main screen ─────────────────────────────────────────────────────────────
 export default function Workouts() {
   const router = useRouter();
   const { profile, fetchProfile } = useAuthStore();
   const [switching, setSwitching] = useState(false);
-  const [activeSection, setActiveSection] = useState<'today' | 'library'>('today');
+  const [section, setSection] = useState<'today' | 'library'>('today');
 
   const programId = profile?.selected_program ?? 'cbum_evolved';
   const program = EXPERT_PROGRAMS[programId] ?? EXPERT_PROGRAMS.cbum_evolved;
   const persona = personaFromProgramId(programId);
-  const accentColor = persona.accent;
 
-  const todayIndex = getTodayWorkoutIndex(program.daysPerWeek);
-  const workoutIndex = todayIndex !== null ? todayIndex % program.schedule.length : 0;
-  const todayWorkout = todayIndex !== null ? program.schedule[workoutIndex] : null;
+  const todayIdx = getTodayWorkoutIndex(program.daysPerWeek);
+  const todayWorkout = todayIdx !== null ? program.schedule[todayIdx % program.schedule.length] : null;
+  const isRest = todayWorkout == null;
 
-  const handleSelectProgram = async (id: string) => {
+  const handleSwitchProgram = async (id: string) => {
     if (id === programId || switching) return;
     setSwitching(true);
     const { error } = await (supabase.from('profiles') as any)
       .update({ selected_program: id })
       .eq('id', profile?.id ?? '');
-    if (error) {
-      Alert.alert('Error', 'Could not switch program. Please try again.');
-    } else {
-      await fetchProfile(profile?.id ?? '');
-    }
+    if (error) Alert.alert('Error', 'Could not switch program. Try again.');
+    else await fetchProfile(profile?.id ?? '');
     setSwitching(false);
   };
 
+  const weekday = new Date().toLocaleDateString('en-US', { weekday: 'short' });
+
   return (
-    <GlassScreen persona={persona}>
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── 1. HERO ──────────────────────────────────────────── */}
+        <HeroBlock
+          accent={persona.accent}
+          day={`${weekday.toUpperCase()} · WEEK ${weekOfYear()}`}
+          name={isRest ? 'Rest day.' : `Train\n${todayWorkout!.name}.`}
+        />
 
-      {/* ── Top toggle: TODAY  |  LIBRARY ── */}
-      <View style={styles.sectionToggle}>
-        <TouchableOpacity
-          style={[styles.toggleBtn, activeSection === 'today' && { borderBottomColor: accentColor }]}
-          onPress={() => setActiveSection('today')}
-        >
-          <Text style={[styles.toggleBtnText, activeSection === 'today' && { color: accentColor }]}>
-            TODAY
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.toggleBtn, activeSection === 'library' && { borderBottomColor: accentColor }]}
-          onPress={() => setActiveSection('library')}
-        >
-          <Text style={[styles.toggleBtnText, activeSection === 'library' && { color: accentColor }]}>
-            EXERCISES
-          </Text>
-        </TouchableOpacity>
-      </View>
+        {/* ── 2. STATS ────────────────────────────────────────── */}
+        <View style={styles.statsRow}>
+          <Stat
+            value={String(program.daysPerWeek)}
+            label="Days/week"
+            accent
+            accentColor={persona.accent}
+          />
+          <Stat
+            value={String(program.schedule.length)}
+            label="Sessions"
+          />
+          <Stat
+            value={isRest ? '—' : `${todayWorkout!.exercises.length}`}
+            label={isRest ? 'Today' : 'Exercises'}
+          />
+        </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* ── 3. SECTION TOGGLE ───────────────────────────────── */}
+        <View style={styles.toggle}>
+          <TouchableOpacity
+            style={[styles.tab, section === 'today' && { borderBottomColor: persona.accent }]}
+            onPress={() => setSection('today')}
+          >
+            <Text style={[styles.tabText, section === 'today' && { color: persona.accent }]}>Today</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, section === 'library' && { borderBottomColor: persona.accent }]}
+            onPress={() => setSection('library')}
+          >
+            <Text style={[styles.tabText, section === 'library' && { color: persona.accent }]}>Exercises</Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* ══════════════════ TODAY section ══════════════════ */}
-        {activeSection === 'today' && (
-          <>
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.monoLabel}>
-                {new Date().toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()} · WEEK {getWeekOfYear()}
-              </Text>
-              <Text style={styles.headline}>
-                {todayWorkout ? 'TRAIN\nTODAY.' : 'REST\nTODAY.'}
-              </Text>
-            </View>
-
-            {/* Active program chip */}
-            <View style={[styles.activeChip, { borderColor: accentColor }]}>
-              <View style={[styles.activeChipDot, { backgroundColor: accentColor }]} />
-              <Text style={[styles.activeChipText, { color: accentColor }]}>
-                {program.name.toUpperCase()} — ACTIVE
-              </Text>
-            </View>
-
-            {/* Today's workout card */}
-            {todayWorkout ? (
-              <View style={styles.todayCard}>
-                <View style={styles.todayCardTop}>
-                  <View style={styles.todayMeta}>
-                    <Text style={styles.todayWorkoutName}>{todayWorkout.name.toUpperCase()}</Text>
-                    <Text style={styles.todayMuscles}>{todayWorkout.muscleGroups.join(' · ')}</Text>
-                  </View>
-                  <View style={styles.todayStats}>
-                    <View style={styles.statBox}>
-                      <Text style={[styles.statNum, { color: accentColor }]}>{todayWorkout.exercises.length}</Text>
-                      <Text style={styles.statLabel}>EXER</Text>
-                    </View>
-                    <View style={styles.statBox}>
-                      <Text style={[styles.statNum, { color: accentColor }]}>{todayWorkout.estimatedMinutes}</Text>
-                      <Text style={styles.statLabel}>MIN</Text>
-                    </View>
-                  </View>
-                </View>
-
-                {/* Exercise rows with FORM shortcut */}
-                <View style={styles.exListBordered}>
-                  {todayWorkout.exercises.slice(0, 5).map((ex, i) => (
-                    <View key={ex.name} style={styles.exRow}>
-                      <Text style={[styles.exNum, { color: accentColor }]}>{String(i + 1).padStart(2, '0')}</Text>
-                      <Text style={styles.exName}>{ex.name}</Text>
-                      <Text style={styles.exSets}>{ex.sets}×{ex.reps}</Text>
-                      <TouchableOpacity
-                        style={styles.formShortcut}
-                        onPress={() =>
-                          router.push({
-                            pathname: '/form-coach',
-                            params: { exerciseName: ex.name, persona: programId },
-                          } as any)
-                        }
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Text style={[styles.formShortcutText, { color: accentColor }]}>📷</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                  {todayWorkout.exercises.length > 5 && (
-                    <Text style={styles.moreExercises}>+{todayWorkout.exercises.length - 5} MORE</Text>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.startBtn, { backgroundColor: accentColor }]}
-                  onPress={() =>
-                    router.push('/workout-picker' as any)
-                  }
-                  activeOpacity={0.85}
-                >
-                  <Text style={[styles.startBtnText, { color: Colors.accentInk }]}>START WORKOUT</Text>
-                </TouchableOpacity>
+        {/* ── 4a. TODAY view ──────────────────────────────────── */}
+        {section === 'today' && (
+          <SafeAreaView edges={['left', 'right']} style={styles.body}>
+            {isRest ? (
+              <View style={styles.restCard}>
+                <Text style={styles.restEmoji}>·</Text>
+                <Text style={styles.restTitle}>Recovery day.</Text>
+                <Text style={styles.restMeta}>
+                  {persona.shortName} schedules rest after {program.daysPerWeek - 1} training days.
+                  Hydrate, walk, sleep early.
+                </Text>
               </View>
             ) : (
-              <View style={styles.restCard}>
-                <Text style={styles.restTitle}>RECOVER &amp; GROW</Text>
-                <Text style={styles.restSub}>Muscles build during rest. Light walk, stretching, or sleep.</Text>
-                <TouchableOpacity
-                  style={styles.browseBtn}
-                  onPress={() => setActiveSection('library')}
-                >
-                  <Text style={styles.browseBtnText}>BROWSE EXERCISES →</Text>
-                </TouchableOpacity>
-              </View>
+              todayWorkout.exercises.map((ex, i) => (
+                <RowCard
+                  key={`${ex.name}-${i}`}
+                  icon={<Dumbbell size={22} color={persona.accent} />}
+                  iconTintColor={persona.accent}
+                  title={ex.name}
+                  meta={`${ex.sets} sets · ${ex.reps} · ${ex.restSeconds}s rest`}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/form-coach' as any,
+                      params: { exerciseName: ex.name, persona: persona.id },
+                    })
+                  }
+                />
+              ))
             )}
-
-            {/* All Programs */}
-            <Text style={styles.sectionLabel}>ALL PROGRAMS</Text>
-            {Object.values(EXPERT_PROGRAMS).map((prog) => {
-              const hue = COACH_COLORS[prog.id] ?? Colors.primary;
-              const isActive = prog.id === programId;
-              return (
-                <TouchableOpacity
-                  key={prog.id}
-                  style={[styles.programCard, isActive && { borderColor: hue }]}
-                  onPress={() => handleSelectProgram(prog.id)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.programAccent, { backgroundColor: hue }]} />
-                  <View style={styles.programBody}>
-                    <View style={styles.programTopRow}>
-                      <Text style={styles.programName}>{prog.name}</Text>
-                      {isActive && (
-                        <View style={[styles.activePill, { backgroundColor: hue + '22', borderColor: hue }]}>
-                          <Text style={[styles.activePillText, { color: hue }]}>ACTIVE</Text>
-                        </View>
-                      )}
-                    </View>
-                    <Text style={styles.programExpert}>{prog.expert}</Text>
-                    <View style={styles.programTagRow}>
-                      <View style={styles.programTag}><Text style={styles.programTagText}>{prog.difficulty.toUpperCase()}</Text></View>
-                      <View style={styles.programTag}><Text style={styles.programTagText}>{prog.daysPerWeek}D/WK</Text></View>
-                      <View style={styles.programTag}><Text style={styles.programTagText}>{prog.focus.toUpperCase()}</Text></View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </>
+          </SafeAreaView>
         )}
 
-        {/* ══════════════════ EXERCISE LIBRARY section ══════════════════ */}
-        {activeSection === 'library' && (
-          <>
-            <View style={styles.header}>
-              <Text style={styles.monoLabel}>TAP A MUSCLE GROUP TO EXPAND</Text>
-              <Text style={styles.headline}>EXERCISE{'\n'}LIBRARY.</Text>
-            </View>
-            {EXERCISE_LIBRARY.map((group) => (
-              <MuscleGroupRow key={group.id} group={group} programId={programId} />
+        {/* ── 4b. EXERCISES library view ──────────────────────── */}
+        {section === 'library' && (
+          <SafeAreaView edges={['left', 'right']} style={styles.body}>
+            <RowCard
+              icon={<Library size={22} color={persona.accent} />}
+              iconTintColor={persona.accent}
+              title="Full exercise library"
+              meta={`${EXERCISE_LIBRARY.reduce((n, g) => n + g.exercises.length, 0)} exercises across ${EXERCISE_LIBRARY.length} muscle groups`}
+            />
+            {EXERCISE_LIBRARY.map((g) => (
+              <MuscleGroupRow key={g.id} group={g} accent={persona.accent} />
             ))}
-          </>
+          </SafeAreaView>
         )}
 
-        <View style={{ height: 24 }} />
+        <View style={{ height: 110 }} />
       </ScrollView>
-    </GlassScreen>
+
+      {/* ── 5. ANCHOR CTA ───────────────────────────────────── */}
+      <AnchorCTA
+        label={isRest ? 'PICK A WORKOUT →' : `${persona.workoutCTA} →`}
+        accent={persona.accent}
+        accentInk={persona.ink}
+        onPress={() => router.push((isRest ? '/workout-picker' : '/workout-lobby') as any)}
+      />
+    </View>
   );
 }
 
-function getWeekOfYear() {
-  const d = new Date();
-  const start = new Date(d.getFullYear(), 0, 1);
-  return Math.ceil(((d.getTime() - start.getTime()) / 86400000 + start.getDay() + 1) / 7);
-}
-
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingTop: 14 },
+  root: { flex: 1, backgroundColor: Colors.bg },
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 0 },
 
-  // ── Section toggle ──────────────────────────────────────────────────────────
-  sectionToggle: {
+  statsRow: {
     flexDirection: 'row',
+    gap: Spacing.sm + 2,
+    paddingHorizontal: Spacing.md + 2,
+    paddingTop: Spacing.md - 2,
+    marginBottom: Spacing.sm + 2,
+  },
+
+  toggle: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.md + 2,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    paddingHorizontal: 20,
+    marginBottom: Spacing.sm + 2,
   },
-  toggleBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  tab: {
+    paddingVertical: Spacing.sm + 2,
+    marginRight: Spacing.lg,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
-    marginBottom: -1,
   },
-  toggleBtnText: {
-    fontFamily: Fonts.mono,
-    fontSize: 10,
-    color: Colors.textTertiary,
-    letterSpacing: 1.4,
+  tabText: { ...Typography.cardTitle, color: Colors.textSecondary },
+
+  body: {
+    paddingHorizontal: Spacing.md + 2,
+    paddingTop: Spacing.xs,
   },
 
-  // ── Header ──────────────────────────────────────────────────────────────────
-  header: { marginBottom: 16 },
-  monoLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
-  headline: { fontFamily: Fonts.display, fontSize: 40, color: Colors.text, lineHeight: 38, letterSpacing: -1, marginTop: 6 },
-
-  // ── Active program chip ─────────────────────────────────────────────────────
-  activeChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    alignSelf: 'flex-start', borderWidth: 1, borderRadius: 2,
-    paddingHorizontal: 10, paddingVertical: 5, marginBottom: 16,
-  },
-  activeChipDot: { width: 6, height: 6, borderRadius: 3 },
-  activeChipText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4 },
-
-  // ── Today card ──────────────────────────────────────────────────────────────
-  todayCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, marginBottom: 24, overflow: 'hidden',
-  },
-  todayCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16 },
-  todayMeta: { flex: 1 },
-  todayWorkoutName: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, letterSpacing: 0.2 },
-  todayMuscles: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1, marginTop: 4 },
-  todayStats: { flexDirection: 'row', gap: 12 },
-  statBox: { alignItems: 'center' },
-  statNum: { fontFamily: Fonts.display, fontSize: 22 },
-  statLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1 },
-
-  exListBordered: { borderTopWidth: 1, borderTopColor: Colors.border, paddingHorizontal: 16 },
-  exRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  exNum: { fontFamily: Fonts.mono, fontSize: 11, letterSpacing: 0.5, width: 24 },
-  exName: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
-  exSets: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textSecondary },
-  formShortcut: { paddingLeft: 8 },
-  formShortcutText: { fontSize: 16 },
-  moreExercises: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, textAlign: 'center', paddingVertical: 10 },
-
-  startBtn: { margin: 16, borderRadius: 4, paddingVertical: 14, alignItems: 'center' },
-  startBtnText: { fontFamily: Fonts.display, fontSize: 14, letterSpacing: 1 },
-
-  // ── Rest card ───────────────────────────────────────────────────────────────
+  // Rest day
   restCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, padding: 24, marginBottom: 24, alignItems: 'center',
+    backgroundColor: Colors.surfaceWarm,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    alignItems: 'center',
   },
-  restTitle: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, marginBottom: 8 },
-  restSub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: 16 },
-  browseBtn: { borderWidth: 1, borderColor: Colors.border, borderRadius: 4, paddingHorizontal: 16, paddingVertical: 10 },
-  browseBtnText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1 },
+  restEmoji: { fontSize: 48, color: Colors.textTertiary, marginBottom: Spacing.sm },
+  restTitle: { ...Typography.sectionTitle, marginBottom: Spacing.xs + 1 },
+  restMeta: { ...Typography.cardMeta, textAlign: 'center', lineHeight: 19 },
 
-  // ── Programs ────────────────────────────────────────────────────────────────
-  sectionLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 2, marginBottom: 10 },
-  programCard: {
-    flexDirection: 'row', backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, marginBottom: 8, overflow: 'hidden',
-  },
-  programAccent: { width: 3 },
-  programBody: { flex: 1, padding: 14 },
-  programTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  programName: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, flex: 1 },
-  activePill: { borderWidth: 1, borderRadius: 2, paddingHorizontal: 6, paddingVertical: 2 },
-  activePillText: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1 },
-  programExpert: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, marginBottom: 8 },
-  programTagRow: { flexDirection: 'row', gap: 6 },
-  programTag: { borderWidth: 1, borderColor: Colors.border, borderRadius: 2, paddingHorizontal: 6, paddingVertical: 2 },
-  programTagText: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 0.8 },
-
-  // ── Exercise Library accordion ───────────────────────────────────────────────
+  // Exercise library accordion
   groupCard: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, marginBottom: 8, overflow: 'hidden',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.sm + 2,
+    overflow: 'hidden',
   },
-  groupHeader: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    paddingHorizontal: 16, paddingVertical: 14,
+  groupHead: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    padding: Spacing.md - 2,
   },
-  groupEmoji: { fontSize: 18 },
-  groupLabel: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text, flex: 1, letterSpacing: 0.3 },
-  groupCount: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1 },
-  groupChevron: { fontSize: 20, color: Colors.textSecondary, transform: [{ rotate: '0deg' }] },
-  groupChevronOpen: { transform: [{ rotate: '90deg' }] },
-
-  exerciseList: { borderTopWidth: 1, borderTopColor: Colors.border },
-  exerciseRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  groupName: { ...Typography.cardTitle },
+  groupBody: { paddingHorizontal: Spacing.md - 2, paddingBottom: Spacing.sm + 2 },
+  groupExRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
   },
-  exerciseRowLast: { borderBottomWidth: 0 },
-  exerciseName: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.text, marginBottom: 2 },
-  exerciseMeta: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 0.6 },
-  exerciseTip: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, marginTop: 2, fontStyle: 'italic' },
-  formBtn: {
-    borderWidth: 1, borderRadius: 3,
-    paddingHorizontal: 10, paddingVertical: 6, alignSelf: 'flex-start',
-  },
-  formBtnText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 0.8 },
+  groupExName: { ...Typography.cardMeta, color: Colors.text },
+  groupExTag: { fontSize: 12, fontFamily: 'Inter_500Medium' },
 });
