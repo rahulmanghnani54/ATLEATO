@@ -23,6 +23,12 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const LS_SECRET = Deno.env.get('LEMONSQUEEZY_WEBHOOK_SECRET') || '';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
+// Allow the dev/staging bypass only when explicitly opted in.
+// In production, missing LS_SECRET = reject every request (fail-closed).
+const ALLOW_UNSIGNED = Deno.env.get('LEMONSQUEEZY_ALLOW_UNSIGNED') === '1';
+// Replay window: drop webhooks whose payload created_at is older than this.
+// LS retries failed webhooks for ~3 days; 7 days gives generous headroom.
+const REPLAY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 const FROM_EMAIL = 'Rahul from Atleato <hello@atleato.com>';
 const REPLY_TO = 'hello@atleato.com';
 // Set via: supabase secrets set DISCORD_INVITE_URL=https://discord.gg/yourcode
@@ -212,7 +218,16 @@ serve(async (req) => {
   const signature = req.headers.get('x-signature') || '';
   const eventName = req.headers.get('x-event-name') || '';
 
-  // ── 1. Verify signature (skip if no secret configured — useful in dev) ──
+  // ── 1. Verify signature (FAIL-CLOSED) ──
+  // If the secret is missing in production we reject every request rather
+  // than silently accepting unsigned POSTs. Set LEMONSQUEEZY_ALLOW_UNSIGNED=1
+  // (and ONLY in dev/staging) to opt into the legacy bypass.
+  if (!LS_SECRET && !ALLOW_UNSIGNED) {
+    console.error('LEMONSQUEEZY_WEBHOOK_SECRET not configured — rejecting webhook');
+    return new Response(JSON.stringify({ error: 'webhook misconfigured' }), {
+      status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
   if (LS_SECRET) {
     const valid = await verifySignature(rawBody, signature, LS_SECRET);
     if (!valid) {
@@ -222,12 +237,27 @@ serve(async (req) => {
       });
     }
   } else {
-    console.warn('LEMONSQUEEZY_WEBHOOK_SECRET not set — skipping signature verification');
+    console.warn('LEMONSQUEEZY_ALLOW_UNSIGNED=1 — accepting unsigned webhook (DEV ONLY)');
   }
 
   let payload: any;
   try { payload = JSON.parse(rawBody); }
   catch { return new Response('invalid json', { status: 400, headers: corsHeaders }); }
+
+  // ── 1b. Replay-window check ──
+  // LS payloads include `data.attributes.created_at` (ISO 8601). A valid
+  // captured webhook replayed weeks later will fall outside the window and
+  // be rejected before we touch any DB row.
+  const createdAtIso = payload?.data?.attributes?.created_at;
+  if (createdAtIso) {
+    const ts = Date.parse(createdAtIso);
+    if (Number.isFinite(ts) && Date.now() - ts > REPLAY_WINDOW_MS) {
+      console.warn('Stale webhook rejected:', { eventName, createdAtIso });
+      return new Response(JSON.stringify({ error: 'stale webhook outside replay window' }), {
+        status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+  }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
