@@ -35,6 +35,10 @@ import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
 import { getExerciseForm, getCoachCue, type ExerciseForm } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { canAccess } from '@/lib/featureGates';
+import {
+  X as XIcon, RefreshCw, AlertTriangle, Check, Pause, Loader, Video, Sparkles,
+  Camera as CameraIcon,
+} from 'lucide-react-native';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -742,15 +746,16 @@ export default function FormCoach() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-          <Text style={styles.iconText}>✕</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn} hitSlop={10}>
+          <XIcon size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>{exerciseName ?? 'Form Coach'}</Text>
         <TouchableOpacity
           onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))}
           style={styles.iconBtn}
+          hitSlop={10}
         >
-          <Text style={styles.iconText}>↺</Text>
+          <RefreshCw size={18} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -808,27 +813,32 @@ export default function FormCoach() {
 
         {isTracking && formAnalysis.issues.length > 0 && (
           <View style={[styles.formBanner, styles.formBannerBad]}>
-            <Text style={styles.formBannerText}>⚠  {formAnalysis.issues[0]}</Text>
+            <AlertTriangle size={14} color="#fff" />
+            <Text style={styles.formBannerText}>{formAnalysis.issues[0]}</Text>
           </View>
         )}
         {isTracking && formAnalysis.issues.length === 0 && formAnalysis.status === 'GOOD' && (
           <View style={[styles.formBanner, styles.formBannerGood]}>
-            <Text style={styles.formBannerText}>✓  FORM LOOKS SOLID — keep going</Text>
+            <Check size={14} color="#fff" strokeWidth={3} />
+            <Text style={styles.formBannerText}>Form looks solid — keep going</Text>
           </View>
         )}
         {isTracking && formAnalysis.status === 'STANDBY' && (
           <View style={[styles.formBanner, styles.formBannerNeutral]}>
-            <Text style={styles.formBannerText}>⏸  STANDBY — start your set to begin form check</Text>
+            <Pause size={14} color="#fff" />
+            <Text style={styles.formBannerText}>Standby — start your set to begin form check</Text>
           </View>
         )}
         {!isTracking && !modelLoading && !modelError && (
           <View style={[styles.formBanner, styles.formBannerNeutral]}>
-            <Text style={styles.formBannerText}>📷  STEP INTO FRAME — full body visible</Text>
+            <CameraIcon size={14} color="#fff" />
+            <Text style={styles.formBannerText}>Step into frame — full body visible</Text>
           </View>
         )}
         {modelLoading && (
           <View style={[styles.formBanner, styles.formBannerNeutral]}>
-            <Text style={styles.formBannerText}>⏳  LOADING POSE MODEL…</Text>
+            <Loader size={14} color="#fff" />
+            <Text style={styles.formBannerText}>Loading pose model…</Text>
           </View>
         )}
       </View>
@@ -836,11 +846,16 @@ export default function FormCoach() {
       <ScrollView style={styles.feedbackPanel} contentContainerStyle={styles.feedbackContent}>
         {canAccess('video_review') && (
           <TouchableOpacity
-            style={{ backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 10, alignItems: 'center' }}
+            style={{
+              backgroundColor: Colors.primary, borderRadius: 100,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+              paddingHorizontal: 14, paddingVertical: 10,
+            }}
             onPress={() => router.push('/video-review' as any)}
           >
-            <Text style={{ fontFamily: Fonts.display, fontSize: 11, color: Colors.bg, letterSpacing: 1 }}>
-              📹 RECORD & REVIEW
+            <Video size={14} color={Colors.bg} />
+            <Text style={{ fontFamily: Fonts.displayMedium, fontSize: 13, color: Colors.bg, letterSpacing: 0.2 }}>
+              Record & review
             </Text>
           </TouchableOpacity>
         )}
@@ -851,25 +866,29 @@ export default function FormCoach() {
           disabled={!canCallCue}
           activeOpacity={0.85}
         >
+          <Sparkles size={14} color={Colors.primary} />
           <Text style={styles.cueBtnText}>
             {cooldownLeft > 0
-              ? `✦  ASK ${claudePersonaLabel.split(' ')[0]} AGAIN (${cooldownLeft}s)`
-              : `✦  ASK ${claudePersonaLabel.split(' ')[0]} FOR A CUE`}
+              ? `Ask ${claudePersonaLabel.split(' ')[0]} again (${cooldownLeft}s)`
+              : `Ask ${claudePersonaLabel.split(' ')[0]} for a cue`}
           </Text>
         </TouchableOpacity>
 
         {aiFeedback && (
           <View style={styles.cueCard}>
-            <Text style={styles.cueLabel}>✦ {claudePersonaLabel}</Text>
+            <View style={styles.cueLabelRow}>
+              <Sparkles size={12} color={Colors.primary} />
+              <Text style={styles.cueLabel}>{claudePersonaLabel}</Text>
+            </View>
             <Text style={styles.cueText}>{aiFeedback}</Text>
           </View>
         )}
 
-        <Text style={styles.sectionLabel}>FORM CUES — {(exerciseName ?? '').toUpperCase()}</Text>
+        <Text style={styles.sectionLabel}>Form cues — {exerciseName ?? ''}</Text>
         {libraryCheckpoints.length > 0
           ? libraryCheckpoints.map((cp, i) => (
               <View key={i} style={styles.tipRow}>
-                <Text style={styles.tipPhase}>{cp.phase.slice(0, 3).toUpperCase()}</Text>
+                <Text style={styles.tipPhase}>{cp.phase.slice(0, 3)}</Text>
                 <Text style={styles.tipText}>{cp.description}</Text>
               </View>
             ))
@@ -883,10 +902,10 @@ export default function FormCoach() {
 
         {libraryMistakes.length > 0 && (
           <>
-            <Text style={[styles.sectionLabel, { marginTop: 14 }]}>COMMON MISTAKES</Text>
+            <Text style={[styles.sectionLabel, { marginTop: 14 }]}>Common mistakes</Text>
             {libraryMistakes.map((m, i) => (
               <View key={i} style={styles.tipRow}>
-                <Text style={styles.mistakeBullet}>✗</Text>
+                <XIcon size={14} color="#ef4444" strokeWidth={3} style={{ marginTop: 2 }} />
                 <Text style={styles.tipText}>{m}</Text>
               </View>
             ))}
@@ -895,7 +914,7 @@ export default function FormCoach() {
 
         {libraryBreathing && (
           <View style={styles.breathCard}>
-            <Text style={styles.breathLabel}>BREATHING</Text>
+            <Text style={styles.breathLabel}>Breathing</Text>
             <Text style={styles.breathText}>{libraryBreathing}</Text>
           </View>
         )}
@@ -917,7 +936,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 12, backgroundColor: '#000',
   },
   iconBtn: { padding: 6, minWidth: 32, alignItems: 'center' },
-  iconText: { fontSize: 18, color: '#fff' },
   title: { fontSize: 15, fontFamily: Fonts.display, color: '#fff', flex: 1, textAlign: 'center' },
 
   cameraContainer: { width: '100%', overflow: 'hidden', backgroundColor: '#0d0f11' },
@@ -925,67 +943,70 @@ const styles = StyleSheet.create({
   statusPill: {
     position: 'absolute', top: 10, left: 10,
     paddingHorizontal: 10, paddingVertical: 5,
-    backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 4, borderWidth: 1,
+    backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 100, borderWidth: 1,
   },
-  statusText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2 },
+  statusText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
 
   formBanner: {
     position: 'absolute', top: 10, right: 10, maxWidth: '70%',
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 4, borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 100, borderWidth: 1,
   },
   formBannerGood:    { backgroundColor: 'rgba(0,224,164,0.18)', borderColor: '#00e0a4' },
   formBannerBad:     { backgroundColor: 'rgba(239,68,68,0.22)', borderColor: '#ef4444' },
   formBannerNeutral: { backgroundColor: 'rgba(0,0,0,0.65)',     borderColor: 'rgba(255,255,255,0.15)' },
-  formBannerText:    { fontFamily: Fonts.bodySemi, fontSize: 11, color: '#fff', letterSpacing: 0.3 },
+  formBannerText:    { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#fff', letterSpacing: 0.1, flexShrink: 1 },
 
   permissionText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, textAlign: 'center' },
   permissionBtn: {
     marginTop: 18, backgroundColor: Colors.primary,
-    paddingHorizontal: 24, paddingVertical: 14, borderRadius: 4,
+    paddingHorizontal: 24, paddingVertical: 14, borderRadius: 100,
   },
-  permissionBtnText: { fontFamily: Fonts.display, fontSize: 12, color: Colors.accentInk, letterSpacing: 1 },
+  permissionBtnText: { fontFamily: Fonts.displayMedium, fontSize: 13, color: Colors.accentInk, letterSpacing: 0.2 },
 
   feedbackPanel: { flex: 1, backgroundColor: '#111' },
   feedbackContent: { padding: Spacing.md, gap: Spacing.sm, paddingBottom: 40 },
 
   cueBtn: {
-    backgroundColor: Colors.primary, borderRadius: 4,
-    paddingVertical: 14, alignItems: 'center',
+    backgroundColor: 'rgba(255,107,53,0.12)', borderRadius: 100,
+    borderWidth: 1, borderColor: 'rgba(255,107,53,0.3)',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14,
   },
   cueBtnDisabled: { opacity: 0.45 },
-  cueBtnText: { fontFamily: Fonts.display, fontSize: 12, color: Colors.accentInk, letterSpacing: 1 },
+  cueBtnText: { fontFamily: Fonts.displayMedium, fontSize: 13, color: Colors.primary, letterSpacing: 0.2 },
 
   cueCard: {
-    backgroundColor: 'rgba(223,255,31,0.08)',
+    backgroundColor: 'rgba(255,107,53,0.08)',
     borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(223,255,31,0.2)', borderRadius: 6, padding: 14,
+    borderColor: 'rgba(255,107,53,0.2)', borderRadius: 10, padding: 14,
   },
-  cueLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 1.4, marginBottom: 6 },
+  cueLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  cueLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.primary, letterSpacing: 0.2 },
   cueText:  { fontFamily: Fonts.body, fontSize: 13, color: '#e5e7eb', lineHeight: 20, fontStyle: 'italic' },
 
   sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.8, marginTop: 8,
+    fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary,
+    letterSpacing: 0.2, marginTop: 8,
   },
   tipRow: { flexDirection: 'row', gap: 8, paddingVertical: 4, alignItems: 'flex-start' },
-  tipBullet: { fontFamily: Fonts.mono, fontSize: 13, color: Colors.primary, marginTop: 1 },
+  tipBullet: { fontFamily: Fonts.body, fontSize: 13, color: Colors.primary, marginTop: 1 },
   tipPhase: {
-    fontFamily: Fonts.mono, fontSize: 8, color: Colors.primary,
-    letterSpacing: 0.8, marginTop: 4, minWidth: 28,
+    fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.primary,
+    letterSpacing: 0.2, marginTop: 4, minWidth: 28, textTransform: 'capitalize',
   },
-  mistakeBullet: { fontFamily: Fonts.mono, fontSize: 11, color: '#ef4444', marginTop: 2 },
   tipText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: '#e5e7eb', lineHeight: 20 },
 
   breathCard: {
-    backgroundColor: 'rgba(223,255,31,0.06)',
+    backgroundColor: 'rgba(255,107,53,0.06)',
     borderLeftWidth: 2, borderLeftColor: Colors.primary,
-    borderRadius: 4, padding: 12, marginTop: 10,
+    borderRadius: 8, padding: 12, marginTop: 10,
   },
-  breathLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.primary, letterSpacing: 1.4, marginBottom: 5 },
+  breathLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.primary, letterSpacing: 0.2, marginBottom: 5 },
   breathText:  { fontFamily: Fonts.body, fontSize: 12, color: '#e5e7eb', lineHeight: 18, fontStyle: 'italic' },
 
   disclaimer: {
-    fontFamily: Fonts.mono, fontSize: 9, color: '#6b7280',
-    textAlign: 'center', marginTop: 16, letterSpacing: 0.5, fontStyle: 'italic',
+    fontFamily: Fonts.body, fontSize: 11, color: '#6b7280',
+    textAlign: 'center', marginTop: 16, letterSpacing: 0.1, fontStyle: 'italic',
   },
 });

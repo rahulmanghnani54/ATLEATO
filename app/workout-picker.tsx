@@ -22,6 +22,7 @@ import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, styleText } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
+import { ArrowLeft, Star, Play, Wrench, Moon, ArrowRight } from 'lucide-react-native';
 
 function getTodayProgramDayIndex(): number {
   const dow = new Date().getDay(); // 0=Sun
@@ -56,13 +57,14 @@ export default function WorkoutPicker() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.close}>← cancel</Text>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
+          <ArrowLeft size={18} color={Colors.textSecondary} />
+          <Text style={styles.close}>Cancel</Text>
         </TouchableOpacity>
         <Text style={[styles.title, { color: persona.accent }]}>
-          {styleText(persona, 'WHAT TO TRAIN')}
+          {styleText(persona, 'What to train')}
         </Text>
-        <View style={{ width: 60 }} />
+        <View style={{ width: 80 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -73,16 +75,17 @@ export default function WorkoutPicker() {
         {/* Recommended — today */}
         {todayDay ? (
           <>
-            <Text style={[styles.sectionLabel, { color: persona.accent }]}>RECOMMENDED · TODAY</Text>
+            <Text style={[styles.sectionLabel, { color: persona.accent }]}>Recommended · today</Text>
             <TouchableOpacity
               style={[styles.recCard, { borderColor: persona.accent, backgroundColor: persona.accentSoft }]}
               onPress={() => goTo(todayDay.day)}
               activeOpacity={0.85}
             >
               <View style={[styles.recRibbon, { backgroundColor: persona.accent }]}>
-                <Text style={[styles.recRibbonText, { color: persona.ink }]}>★ FOLLOW THE PLAN</Text>
+                <Star size={12} color={persona.ink} fill={persona.ink} />
+                <Text style={[styles.recRibbonText, { color: persona.ink }]}>Follow the plan</Text>
               </View>
-              <Text style={styles.recName}>{todayDay.name.toUpperCase()}</Text>
+              <Text style={styles.recName}>{todayDay.name}</Text>
               <Text style={styles.recMeta}>
                 {todayDay.muscleGroups.join(' · ')} · {todayDay.estimatedMinutes} min · {todayDay.exercises.length} lifts
               </Text>
@@ -90,20 +93,21 @@ export default function WorkoutPicker() {
                 {todayDay.focus}
               </Text>
               <View style={[styles.recBtn, { backgroundColor: persona.accent }]}>
-                <Text style={[styles.recBtnText, { color: persona.ink }]}>▶  START THIS</Text>
+                <Play size={16} color={persona.ink} fill={persona.ink} />
+                <Text style={[styles.recBtnText, { color: persona.ink }]}>Start this</Text>
               </View>
             </TouchableOpacity>
           </>
         ) : (
           <View style={styles.restCard}>
-            <Text style={styles.restEmoji}>🛌</Text>
+            <Moon size={36} color={Colors.textSecondary} strokeWidth={1.5} />
             <Text style={styles.restTitle}>Today is a rest day.</Text>
             <Text style={styles.restSub}>Recovery is when muscle grows. But pick another day below if you want to push.</Text>
           </View>
         )}
 
         {/* Other days from the program */}
-        <Text style={styles.sectionLabel}>OR PICK ANOTHER DAY</Text>
+        <Text style={styles.sectionLabel}>Or pick another day</Text>
         {otherDays.map((d) => (
           <TouchableOpacity
             key={d.day}
@@ -115,31 +119,31 @@ export default function WorkoutPicker() {
               <Text style={[styles.dayNum, { color: persona.accent }]}>
                 {String(d.day + 1).padStart(2, '0')}
               </Text>
-              <Text style={styles.dayLabel}>DAY</Text>
+              <Text style={styles.dayLabel}>Day</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.dayName}>{d.name.toUpperCase()}</Text>
+              <Text style={styles.dayName}>{d.name}</Text>
               <Text style={styles.dayMeta}>
                 {d.muscleGroups.join(' · ')} · {d.estimatedMinutes} min
               </Text>
             </View>
-            <Text style={styles.dayArrow}>→</Text>
+            <ArrowRight size={18} color={Colors.textSecondary} />
           </TouchableOpacity>
         ))}
 
         {/* Custom: route to library */}
-        <Text style={styles.sectionLabel}>OR BUILD YOUR OWN</Text>
+        <Text style={styles.sectionLabel}>Or build your own</Text>
         <TouchableOpacity
           style={styles.customCard}
           onPress={() => router.replace('/(tabs)/workouts' as any)}
           activeOpacity={0.85}
         >
-          <Text style={styles.customEmoji}>🛠</Text>
+          <Wrench size={26} color={persona.accent} />
           <View style={{ flex: 1 }}>
             <Text style={styles.customTitle}>Pick exercises yourself</Text>
             <Text style={styles.customSub}>Browse the full exercise library and build a session.</Text>
           </View>
-          <Text style={styles.dayArrow}>→</Text>
+          <ArrowRight size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
 
         <View style={{ height: 48 }} />
@@ -154,14 +158,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 12,
   },
-  close: { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textSecondary },
-  title: { fontFamily: Fonts.display, fontSize: 14, letterSpacing: 1.4 },
+  backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  close: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  title: { fontFamily: Fonts.display, fontSize: 15, letterSpacing: -0.2 },
 
   scroll: { paddingHorizontal: 16, paddingTop: 4 },
   sub:    { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginBottom: 24, lineHeight: 19 },
 
   sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.8,
+    fontFamily: Fonts.bodyMedium, fontSize: 12, letterSpacing: 0.2,
     color: Colors.textTertiary, marginBottom: 10, marginTop: 16,
   },
 
@@ -171,24 +176,25 @@ const styles = StyleSheet.create({
     position: 'relative', overflow: 'hidden',
   },
   recRibbon: {
-    alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5,
+    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5,
     borderRadius: 4, marginBottom: 12,
   },
-  recRibbonText: { fontFamily: Fonts.mono, fontSize: 9, fontWeight: '700', letterSpacing: 1.4 },
-  recName: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 32, color: Colors.text, letterSpacing: -0.8 },
-  recMeta: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textSecondary, marginTop: 8, letterSpacing: 0.6 },
+  recRibbonText: { fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 0.2 },
+  recName: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 28, color: Colors.text, letterSpacing: -0.6 },
+  recMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 8, letterSpacing: 0.1 },
   recFocus: { fontFamily: Fonts.body, fontSize: 13, marginTop: 6, fontStyle: 'italic' },
   recBtn: {
-    marginTop: 18, paddingVertical: 14, borderRadius: 100, alignItems: 'center',
+    marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: 100,
   },
-  recBtnText: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+  recBtnText: { fontFamily: Fonts.displayMedium, fontSize: 14, letterSpacing: 0.2 },
 
   // Rest day card
   restCard: {
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 12, padding: 20, alignItems: 'center',
+    borderRadius: 12, padding: 20, alignItems: 'center', gap: 6,
   },
-  restEmoji: { fontSize: 36 },
   restTitle: { fontFamily: Fonts.display, fontWeight: '700', fontSize: 18, color: Colors.text, marginTop: 8 },
   restSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, textAlign: 'center', marginTop: 6, lineHeight: 17 },
 
@@ -204,10 +210,9 @@ const styles = StyleSheet.create({
     borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.04)',
   },
   dayNum: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 18 },
-  dayLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 2 },
+  dayLabel: { fontFamily: Fonts.bodyMedium, fontSize: 10, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 2 },
   dayName: { fontFamily: Fonts.display, fontWeight: '700', fontSize: 16, color: Colors.text, letterSpacing: -0.2 },
-  dayMeta: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, marginTop: 4, letterSpacing: 0.6 },
-  dayArrow: { fontFamily: Fonts.display, fontSize: 20, color: Colors.textSecondary },
+  dayMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textTertiary, marginTop: 4, letterSpacing: 0.1 },
 
   // Custom card
   customCard: {
@@ -215,7 +220,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
     borderRadius: 10, padding: 14, marginBottom: 8,
   },
-  customEmoji: { fontSize: 28 },
   customTitle: { fontFamily: Fonts.display, fontWeight: '700', fontSize: 15, color: Colors.text },
   customSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 3, lineHeight: 16 },
 });

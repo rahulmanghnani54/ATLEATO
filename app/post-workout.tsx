@@ -4,8 +4,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import Svg, { Path } from 'react-native-svg';
 import { Colors, Fonts } from '@/constants/theme';
+import { X as XIcon, Zap, Trophy, MessageCircle, Send } from 'lucide-react-native';
 import { ImplementationIntentionSheet } from '@/components/dashboard/ImplementationIntentionSheet';
 import { RewardChestModal } from '@/components/dashboard/RewardChestModal';
 import { getPersona, type PersonaId } from '@/lib/personaTheme';
@@ -13,15 +13,6 @@ import { getTomorrowIntention } from '@/lib/implementationIntention';
 import { format } from 'date-fns';
 import { addXP } from '@/lib/legendProgression';
 import { supabase } from '@/lib/supabase';
-
-function SendIcon() {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M22 2L11 13" stroke={Colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-      <Path d="M22 2L15 22l-4-9-9-4 20-7z" stroke={Colors.text} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-    </Svg>
-  );
-}
 
 type ExerciseResult = {
   name: string;
@@ -118,14 +109,14 @@ export default function PostWorkout() {
     ? `${Math.floor(durationMin / 60)}h ${durationMin % 60}m`
     : `${durationMin}m`;
 
-  const coaches: Record<string, { initials: string; hue: string; name: string }> = {
-    cbum:        { initials: 'TS', hue: Colors.primary, name: "THE SCULPTOR'S BREAKDOWN" },
-    arnold:      { initials: 'TG', hue: '#f5b942',       name: "THE GOVERNOR'S BREAKDOWN" },
-    nippard:     { initials: 'SC', hue: Colors.info,     name: "THE SCIENTIST'S BREAKDOWN" },
-    ct_fletcher: { initials: 'TC', hue: Colors.danger,   name: "THE COMMANDER'S BREAKDOWN" },
-    dr_mike:     { initials: 'DG', hue: Colors.good,     name: "DR. GROWTH'S BREAKDOWN" },
+  // Coach card metadata derives from the persona theme so accent + initials
+  // always match the user's current coach (no hard-coded hues to drift).
+  const coach = {
+    initials: persona.initials,
+    hue: persona.accent,
+    ink: persona.ink,
+    name: `${persona.shortName}'s breakdown`,
   };
-  const coach = coaches[coachId] ?? coaches.cbum;
 
   const coachBreakdowns: Record<string, { body: string; win: string; fix: string }> = {
     cbum: {
@@ -178,25 +169,28 @@ export default function PostWorkout() {
 
         {/* Top bar */}
         <View style={styles.topBar}>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>SESSION COMPLETE · {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+          <View style={[styles.tag, { backgroundColor: persona.accent + '1a' }]}>
+            <Text style={[styles.tagText, { color: persona.accent }]}>
+              Session complete · {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </Text>
           </View>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.closeBtn}>✕</Text>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
+            <XIcon size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
         {/* XP Award Badge */}
         {xpBadge && (
-          <View style={styles.xpBadge}>
-            <Text style={styles.xpBadgeText}>⚡ {xpBadge}</Text>
+          <View style={[styles.xpBadge, { backgroundColor: persona.accent + '1a', borderColor: persona.accent + '44' }]}>
+            <Zap size={14} color={persona.accent} fill={persona.accent} />
+            <Text style={[styles.xpBadgeText, { color: persona.accent }]}>{xpBadge}</Text>
           </View>
         )}
 
         {/* Score headline */}
         <Text style={styles.headline}>
-          THAT WAS{'\n'}A{' '}
-          <Text style={{ color: Colors.primary }}>{score}/10</Text>.
+          That was{'\n'}a{' '}
+          <Text style={{ color: persona.accent }}>{score}/10</Text>.
         </Text>
         <Text style={styles.subline}>
           {sessionName} — {durationLabel} · The Sculptor Method, Week 3
@@ -205,9 +199,9 @@ export default function PostWorkout() {
         {/* Score grid */}
         <View style={styles.scoreGrid}>
           {[
-            { l: 'VOLUME',             v: volume,  u: 'k kg',     d: '+12%', good: true },
-            { l: 'INTENSITY',          v: avgRpe,  u: 'avg RPE',  d: 'on tgt', good: true },
-            { l: 'TIME UNDER\nTENSION', v: tut,    u: 'min',      d: '+3m', good: true },
+            { l: 'Volume',             v: volume,  u: 'k kg',     d: '+12%', good: true },
+            { l: 'Intensity',          v: avgRpe,  u: 'avg RPE',  d: 'on tgt', good: true },
+            { l: 'Time under\ntension', v: tut,    u: 'min',      d: '+3m', good: true },
           ].map((s, i) => (
             <View key={i} style={styles.scoreCard}>
               <Text style={styles.scoreCardLabel}>{s.l}</Text>
@@ -222,7 +216,7 @@ export default function PostWorkout() {
         {/* PR banner (if applicable) */}
         {hasPR && (
           <TouchableOpacity
-            style={styles.prBanner}
+            style={[styles.prBanner, { backgroundColor: persona.accent + '0d', borderColor: persona.accent + '33' }]}
             onPress={() => router.push({
               pathname: '/pr-celebration',
               params: {
@@ -233,11 +227,16 @@ export default function PostWorkout() {
             activeOpacity={0.85}
           >
             <View style={styles.prBannerLeft}>
-              <Text style={styles.prBannerLabel}>🏆 PERSONAL RECORD</Text>
+              <View style={styles.prBannerLabelRow}>
+                <Trophy size={14} color={persona.accent} />
+                <Text style={[styles.prBannerLabel, { color: persona.accent }]}>Personal record</Text>
+              </View>
               <Text style={styles.prBannerExercise}>{prExercise}</Text>
             </View>
             <View style={styles.prBannerRight}>
-              <Text style={styles.prBannerNum}>{prNewRM}<Text style={styles.prBannerUnit}> kg</Text></Text>
+              <Text style={[styles.prBannerNum, { color: persona.accent }]}>
+                {prNewRM}<Text style={styles.prBannerUnit}> kg</Text>
+              </Text>
               <Text style={styles.prBannerDelta}>
                 +{(parseFloat(prNewRM) - parseFloat(prPrevRM)).toFixed(1)} kg ↑
               </Text>
@@ -249,24 +248,24 @@ export default function PostWorkout() {
         <View style={styles.coachCard}>
           <View style={styles.coachHeader}>
             <View style={[styles.coachAvatar, { backgroundColor: coach.hue }]}>
-              <Text style={styles.coachInitials}>{coach.initials}</Text>
+              <Text style={[styles.coachInitials, { color: coach.ink }]}>{coach.initials}</Text>
             </View>
             <View>
               <Text style={styles.coachTitle}>{coach.name}</Text>
-              <Text style={styles.coachSubtitle}>POWERED BY AI</Text>
+              <Text style={styles.coachSubtitle}>Powered by AI</Text>
             </View>
           </View>
           <Text style={styles.coachBody}>{breakdown.body}</Text>
           <View style={styles.coachDivider} />
-          <Text style={[styles.coachTagLabel, { color: Colors.primary }]}>WIN OF THE SESSION</Text>
+          <Text style={[styles.coachTagLabel, { color: persona.accent }]}>Win of the session</Text>
           <Text style={styles.coachDetail}>{breakdown.win}</Text>
           <View style={styles.coachDivider} />
-          <Text style={[styles.coachTagLabel, { color: Colors.warning }]}>FIX NEXT WEEK</Text>
+          <Text style={[styles.coachTagLabel, { color: Colors.warning }]}>Fix next week</Text>
           <Text style={styles.coachDetail}>{breakdown.fix}</Text>
         </View>
 
         {/* Per-exercise list */}
-        <Text style={styles.sectionLabel}>EXERCISES</Text>
+        <Text style={styles.sectionLabel}>Exercises</Text>
         <View style={styles.exerciseCard}>
           {exercises.map((e, i) => (
             <View key={i} style={[styles.exerciseRow, i < exercises.length - 1 && styles.exerciseRowBorder]}>
@@ -284,14 +283,15 @@ export default function PostWorkout() {
         {/* CTAs */}
         <View style={styles.ctaRow}>
           <TouchableOpacity
-            style={styles.ctaPrimary}
+            style={[styles.ctaPrimary, { backgroundColor: persona.accent }]}
             onPress={() => router.push('/(tabs)/coach' as any)}
             activeOpacity={0.85}
           >
-            <Text style={styles.ctaPrimaryText}>CHAT WITH {coach.initials}</Text>
+            <MessageCircle size={16} color={persona.ink} />
+            <Text style={[styles.ctaPrimaryText, { color: persona.ink }]}>Chat with {coach.initials}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.ctaIcon} onPress={() => router.back()} activeOpacity={0.85}>
-            <SendIcon />
+            <Send size={18} color={Colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -321,14 +321,13 @@ const styles = StyleSheet.create({
 
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
   tag: {
-    backgroundColor: `${Colors.primary}1a`, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 100, paddingHorizontal: 12, paddingVertical: 6,
   },
-  tagText: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 1.4 },
-  closeBtn: { color: Colors.textSecondary, fontSize: 18 },
+  tagText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
 
   headline: {
     fontFamily: Fonts.display, fontSize: 38, color: Colors.text,
-    lineHeight: 36, letterSpacing: -1, marginBottom: 10,
+    lineHeight: 40, letterSpacing: -1, marginBottom: 10,
   },
   subline: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginBottom: 20 },
 
@@ -336,76 +335,79 @@ const styles = StyleSheet.create({
   scoreGrid: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   scoreCard: {
     flex: 1, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, padding: 12,
+    borderRadius: 10, padding: 12,
   },
-  scoreCardLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, lineHeight: 13, minHeight: 26 },
+  scoreCardLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, lineHeight: 14, minHeight: 28 },
   scoreCardValue: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, marginTop: 4 },
   scoreCardUnit: { fontSize: 10, color: Colors.textSecondary, fontFamily: Fonts.body },
-  scoreCardDelta: { fontFamily: Fonts.mono, fontSize: 10, marginTop: 4 },
+  scoreCardDelta: { fontFamily: Fonts.bodyMedium, fontSize: 11, marginTop: 4 },
 
   // PR banner
   prBanner: {
-    backgroundColor: `${Colors.primary}0d`, borderWidth: 1, borderColor: `${Colors.primary}33`,
-    borderRadius: 8, padding: 16, marginBottom: 16,
+    borderWidth: 1,
+    borderRadius: 12, padding: 16, marginBottom: 16,
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
   },
   prBannerLeft: {},
-  prBannerLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 1.4 },
+  prBannerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  prBannerLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2 },
   prBannerExercise: { fontFamily: Fonts.display, fontSize: 16, color: Colors.text, marginTop: 4 },
   prBannerRight: { alignItems: 'flex-end' },
-  prBannerNum: { fontFamily: Fonts.display, fontSize: 28, color: Colors.primary },
+  prBannerNum: { fontFamily: Fonts.display, fontSize: 28 },
   prBannerUnit: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecondary },
   prBannerDelta: { fontFamily: Fonts.display, fontSize: 14, color: Colors.good, marginTop: 2 },
 
   // Coach card
   coachCard: {
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, padding: 16, marginBottom: 20,
+    borderRadius: 12, padding: 16, marginBottom: 20,
   },
   coachHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  coachAvatar: { width: 36, height: 36, borderRadius: 4, alignItems: 'center', justifyContent: 'center' },
-  coachInitials: { fontFamily: Fonts.display, fontSize: 12, color: Colors.accentInk },
+  coachAvatar: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  coachInitials: { fontFamily: Fonts.display, fontSize: 12 },
   coachTitle: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text },
-  coachSubtitle: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 2 },
+  coachSubtitle: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 2 },
   coachBody: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20 },
   coachDivider: { height: 1, backgroundColor: Colors.border, marginVertical: 12 },
-  coachTagLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4, marginBottom: 4 },
+  coachTagLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, letterSpacing: 0.2, marginBottom: 4 },
   coachDetail: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20 },
 
-  sectionLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6, marginBottom: 8 },
+  sectionLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, letterSpacing: 0.2, marginBottom: 8 },
 
   // Exercise list
   exerciseCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 6, marginBottom: 20,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, marginBottom: 20,
   },
   exerciseRow: {
     flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
   },
   exerciseRowBorder: { borderBottomWidth: 1, borderColor: Colors.border },
   exerciseName: { fontFamily: Fonts.bodySemi, fontSize: 13, color: Colors.text },
-  exerciseMeta: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.8 },
+  exerciseMeta: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.1 },
   exerciseTag: {
-    paddingHorizontal: 6, paddingVertical: 3, borderRadius: 3,
+    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100,
     backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1,
   },
-  exerciseTagText: { fontFamily: Fonts.mono, fontSize: 9, fontWeight: '700', letterSpacing: 1.2 },
+  exerciseTagText: { fontFamily: Fonts.bodyBold, fontSize: 10, letterSpacing: 0.1 },
 
   // XP badge
   xpBadge: {
-    backgroundColor: `${Colors.primary}1a`, borderWidth: 1, borderColor: `${Colors.primary}44`,
-    borderRadius: 6, paddingHorizontal: 14, paddingVertical: 8, alignSelf: 'center', marginBottom: 12,
+    borderWidth: 1,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8,
+    alignSelf: 'center', marginBottom: 12,
   },
-  xpBadgeText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.primary, letterSpacing: 0.5 },
+  xpBadgeText: { fontFamily: Fonts.displayMedium, fontSize: 13, letterSpacing: 0.2 },
 
   // CTAs
   ctaRow: { flexDirection: 'row', gap: 8 },
   ctaPrimary: {
-    flex: 1, height: 54, backgroundColor: Colors.primary, borderRadius: 4,
-    alignItems: 'center', justifyContent: 'center',
+    flex: 1, height: 54, borderRadius: 100,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
-  ctaPrimaryText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 0.6 },
+  ctaPrimaryText: { fontFamily: Fonts.displayMedium, fontSize: 14, letterSpacing: 0.2 },
   ctaIcon: {
-    width: 56, height: 54, borderRadius: 4, borderWidth: 1, borderColor: Colors.borderStrong,
+    width: 56, height: 54, borderRadius: 100, borderWidth: 1, borderColor: Colors.borderStrong,
     alignItems: 'center', justifyContent: 'center',
   },
 });

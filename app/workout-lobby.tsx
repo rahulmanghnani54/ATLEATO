@@ -10,6 +10,8 @@ import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { Colors, Fonts } from '@/constants/theme';
 import { scoreLabel } from '@/lib/recoveryEngine';
 import { getTodayWorkoutModifier } from '@/lib/healthIntegration';
+import { personaFromProgramId } from '@/lib/personaTheme';
+import { ArrowLeft, AlertTriangle, HeartPulse, Play } from 'lucide-react-native';
 
 // ─── Weight suggestion for a single exercise ────────────────────────────────
 function WeightSuggestion({ exerciseName, reps }: { exerciseName: string; reps: string }) {
@@ -37,7 +39,7 @@ function RecoveryCard({
 }) {
   const pctDelta = Math.round((volumeModifier - 1) * 100);
   const pillLabel =
-    pctDelta > 0 ? `+${pctDelta}% VOLUME` : pctDelta < 0 ? `${pctDelta}% VOLUME` : 'NORMAL VOLUME';
+    pctDelta > 0 ? `+${pctDelta}% volume` : pctDelta < 0 ? `${pctDelta}% volume` : 'Normal volume';
   const pillColor =
     pctDelta > 0 ? Colors.success : pctDelta < 0 ? Colors.warning : Colors.textSecondary;
 
@@ -52,13 +54,13 @@ function RecoveryCard({
       ? Colors.warn
       : Colors.error;
 
-  const label = scoreLabel(score).toUpperCase();
+  const label = scoreLabel(score);
 
   return (
     <View style={[styles.recoveryCard, { borderColor: scoreColor + '44' }]}>
       <View style={styles.recoveryCardRow}>
         <View>
-          <Text style={styles.monoLabel}>RECOVERY SCORE</Text>
+          <Text style={styles.monoLabel}>Recovery score</Text>
           <Text style={[styles.recoveryScore, { color: scoreColor }]}>{score}</Text>
           <Text style={[styles.recoveryLabel, { color: scoreColor }]}>{label}</Text>
         </View>
@@ -77,6 +79,7 @@ export default function WorkoutLobby() {
   const { data: recovery, isLoading } = useTodayRecovery();
 
   const program = EXPERT_PROGRAMS[programId ?? 'cbum_evolved'] ?? EXPERT_PROGRAMS.cbum_evolved;
+  const persona = personaFromProgramId(programId);
   const idx = parseInt(dayIndex ?? '0');
   const workout = program.schedule[idx % program.schedule.length];
 
@@ -102,10 +105,10 @@ export default function WorkoutLobby() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backText}>✕</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
+            <ArrowLeft size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
-          <Text style={styles.headline}>{workout.name.toUpperCase()}</Text>
+          <Text style={styles.headline}>{workout.name}</Text>
           <Text style={styles.monoLabel}>{workout.muscleGroups.join(' · ')}</Text>
         </View>
 
@@ -125,7 +128,10 @@ export default function WorkoutLobby() {
               } as any)
             }
           >
-            <Text style={styles.noCheckinTitle}>⚠ NO MORNING CHECK-IN</Text>
+            <View style={styles.noCheckinTitleRow}>
+              <AlertTriangle size={14} color={Colors.warning} />
+              <Text style={styles.noCheckinTitle}>No morning check-in</Text>
+            </View>
             <Text style={styles.noCheckinSub}>
               Tap to check in — your volume will default to 100% if you skip.
             </Text>
@@ -142,23 +148,26 @@ export default function WorkoutLobby() {
                 : `${Colors.warning}44`,
             },
           ]}>
-            <Text style={styles.healthModifierLabel}>💓 HEALTH RECOVERY MODIFIER</Text>
+            <View style={styles.healthModifierLabelRow}>
+              <HeartPulse size={14} color={Colors.textTertiary} />
+              <Text style={styles.healthModifierLabel}>Health recovery modifier</Text>
+            </View>
             <Text style={[
               styles.healthModifierValue,
               { color: healthModifier >= 1 ? Colors.success : Colors.warning },
             ]}>
               {healthModifier > 1
-                ? `+${Math.round((healthModifier - 1) * 100)}% VOLUME`
+                ? `+${Math.round((healthModifier - 1) * 100)}% volume`
                 : healthModifier < 1
-                ? `${Math.round((healthModifier - 1) * 100)}% VOLUME`
-                : 'NORMAL VOLUME'}
+                ? `${Math.round((healthModifier - 1) * 100)}% volume`
+                : 'Normal volume'}
             </Text>
             <Text style={styles.healthModifierSub}>Applied from Health Dashboard</Text>
           </View>
         )}
 
         {/* Today's workout with adjusted set counts */}
-        <Text style={styles.sectionLabel}>TODAY'S WORKOUT</Text>
+        <Text style={styles.sectionLabel}>Today's workout</Text>
         <View style={styles.exerciseList}>
           {workout.exercises.map((ex) => {
             const adjustedSets = Math.max(1, Math.round(ex.sets * volumeModifier));
@@ -182,13 +191,14 @@ export default function WorkoutLobby() {
                   <TouchableOpacity
                     style={styles.demoLink}
                     onPress={() => {
-                      const persona = programIdToPersona(programId);
-                      Linking.openURL(getProDemoUrl(ex.name, persona));
+                      const personaSlug = programIdToPersona(programId);
+                      Linking.openURL(getProDemoUrl(ex.name, personaSlug));
                     }}
                     activeOpacity={0.7}
                   >
+                    <Play size={11} color="#fff" fill="#fff" />
                     <Text style={styles.demoLinkText}>
-                      ▶  {getProDemoLabel(programIdToPersona(programId))}
+                      {getProDemoLabel(programIdToPersona(programId))}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -198,9 +208,14 @@ export default function WorkoutLobby() {
           })}
         </View>
 
-        {/* BEGIN WORKOUT */}
-        <TouchableOpacity style={styles.beginBtn} onPress={handleBegin} activeOpacity={0.85}>
-          <Text style={styles.beginBtnText}>BEGIN WORKOUT</Text>
+        {/* BEGIN WORKOUT — persona-themed */}
+        <TouchableOpacity
+          style={[styles.beginBtn, { backgroundColor: persona.accent }]}
+          onPress={handleBegin}
+          activeOpacity={0.85}
+        >
+          <Play size={16} color={persona.ink} fill={persona.ink} />
+          <Text style={[styles.beginBtnText, { color: persona.ink }]}>Begin workout</Text>
         </TouchableOpacity>
 
         <View style={{ height: 24 }} />
@@ -214,37 +229,37 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingTop: 14 },
 
   header: { marginBottom: 20 },
-  backBtn: { marginBottom: 12 },
-  backText: { fontSize: 18, color: Colors.textSecondary },
+  backBtn: { marginBottom: 12, alignSelf: 'flex-start' },
   headline: { fontFamily: Fonts.display, fontSize: 28, color: Colors.text, letterSpacing: -0.5 },
-  monoLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4, marginTop: 4 },
+  monoLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 4 },
 
   recoveryCard: {
     backgroundColor: Colors.surface, borderWidth: 1,
-    borderRadius: 6, padding: 16, marginBottom: 20,
+    borderRadius: 10, padding: 16, marginBottom: 20,
   },
   recoveryCardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   recoveryScore: { fontFamily: Fonts.display, fontSize: 48, lineHeight: 48 },
-  recoveryLabel: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2, marginTop: 2 },
+  recoveryLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2, marginTop: 2 },
   volumePill: {
-    borderWidth: 1, borderRadius: 3, paddingHorizontal: 10, paddingVertical: 6,
+    borderWidth: 1, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 6,
     alignSelf: 'flex-start',
   },
-  volumePillText: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1 },
+  volumePillText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
 
   noCheckinCard: {
     backgroundColor: 'rgba(255,177,58,0.08)', borderWidth: 1,
-    borderColor: 'rgba(255,177,58,0.3)', borderRadius: 6,
+    borderColor: 'rgba(255,177,58,0.3)', borderRadius: 10,
     padding: 16, marginBottom: 20,
   },
-  noCheckinTitle: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.warning, letterSpacing: 1.2, marginBottom: 6 },
+  noCheckinTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+  noCheckinTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.warning, letterSpacing: 0.1 },
   noCheckinSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.warning, lineHeight: 18 },
 
-  sectionLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 2, marginBottom: 10 },
+  sectionLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, letterSpacing: 0.2, marginBottom: 10 },
 
   exerciseList: {
     backgroundColor: Colors.surface, borderWidth: 1,
-    borderColor: Colors.border, borderRadius: 6, overflow: 'hidden', marginBottom: 20,
+    borderColor: Colors.border, borderRadius: 10, overflow: 'hidden', marginBottom: 20,
   },
   exerciseRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -252,28 +267,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   exerciseName: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, marginBottom: 3 },
-  exerciseMeta: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary },
+  exerciseMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.1 },
   exerciseSetsBase: { color: Colors.textTertiary },
-  exerciseRepsRight: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textTertiary, marginLeft: 10 },
-  weightSuggestion: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, marginTop: 3, letterSpacing: 0.3 },
+  exerciseRepsRight: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, marginLeft: 10 },
+  weightSuggestion: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, marginTop: 3 },
   demoLink: {
     marginTop: 6, alignSelf: 'flex-start',
-    paddingHorizontal: 8, paddingVertical: 4,
-    backgroundColor: '#ff0000', borderRadius: 3,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 10, paddingVertical: 5,
+    backgroundColor: '#cc1f1f', borderRadius: 100,
   },
-  demoLinkText: { fontFamily: Fonts.display, fontSize: 9, color: '#fff', letterSpacing: 0.6 },
+  demoLinkText: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: '#fff', letterSpacing: 0.1 },
 
   beginBtn: {
-    backgroundColor: Colors.primary, borderRadius: 4,
-    paddingVertical: 16, alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    borderRadius: 100, paddingVertical: 16,
   },
-  beginBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1 },
+  beginBtnText: { fontFamily: Fonts.displayMedium, fontSize: 15, letterSpacing: 0.2 },
 
   healthModifierCard: {
     backgroundColor: Colors.surface, borderWidth: 1,
-    borderRadius: 6, padding: 14, marginBottom: 16,
+    borderRadius: 10, padding: 14, marginBottom: 16,
   },
-  healthModifierLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginBottom: 4 },
+  healthModifierLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  healthModifierLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2 },
   healthModifierValue: { fontFamily: Fonts.display, fontSize: 16, marginBottom: 4 },
-  healthModifierSub: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.5 },
+  healthModifierSub: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary },
 });

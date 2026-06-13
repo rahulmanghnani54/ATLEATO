@@ -16,6 +16,8 @@ import { useExerciseHistory } from '@/hooks/useProgression';
 import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
 import { Colors, Fonts } from '@/constants/theme';
 import { detectAndSavePRs } from '@/lib/prDetector';
+import { personaFromProgramId } from '@/lib/personaTheme';
+import { X as XIcon, Camera, Play, Check } from 'lucide-react-native';
 
 interface SetEntry {
   weight: string;
@@ -44,6 +46,7 @@ export default function WorkoutSession() {
   const user = useAuthStore((s) => s.user);
 
   const program = EXPERT_PROGRAMS[programId ?? 'cbum_evolved'] ?? EXPERT_PROGRAMS.cbum_evolved;
+  const persona = personaFromProgramId(programId);
   const workout = program.schedule[parseInt(dayIndex ?? '0') % program.schedule.length];
 
   // Voice cues — coach speaks set-complete, rest-over, last-set, workout-done
@@ -269,13 +272,13 @@ export default function WorkoutSession() {
     <SafeAreaView style={styles.safe}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-          <Text style={styles.closeBtnText}>✕</Text>
+        <TouchableOpacity onPress={handleClose} style={styles.closeBtn} hitSlop={10}>
+          <XIcon size={20} color={Colors.textSecondary} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.workoutName}>{workout.name.toUpperCase()}</Text>
+          <Text style={styles.workoutName}>{workout.name}</Text>
           <View style={styles.timerRow}>
-            <Text style={styles.timer}>{formatTime(elapsed)}</Text>
+            <Text style={[styles.timer, { color: persona.accent }]}>{formatTime(elapsed)}</Text>
             {(() => {
               const volPct = Math.round((volumeModifier - 1) * 100);
               return volPct !== 0 ? (
@@ -290,7 +293,7 @@ export default function WorkoutSession() {
                     styles.recoveryPillText,
                     { color: volPct > 0 ? Colors.success : Colors.warning },
                   ]}>
-                    {`VOL ${volPct > 0 ? '+' : ''}${volPct}%`}
+                    {`Vol ${volPct > 0 ? '+' : ''}${volPct}%`}
                   </Text>
                 </View>
               ) : null;
@@ -298,22 +301,22 @@ export default function WorkoutSession() {
           </View>
         </View>
         <TouchableOpacity
-          style={[styles.finishBtn, isSaving && { opacity: 0.6 }]}
+          style={[styles.finishBtn, { backgroundColor: persona.accent }, isSaving && { opacity: 0.6 }]}
           onPress={handleFinish}
           disabled={isSaving}
         >
-          <Text style={styles.finishBtnText}>{isSaving ? '…' : 'FINISH'}</Text>
+          <Text style={[styles.finishBtnText, { color: persona.ink }]}>{isSaving ? '…' : 'Finish'}</Text>
         </TouchableOpacity>
       </View>
 
       {/* Rest timer banner */}
       {restTimer !== null && (
         <View style={styles.restBanner}>
-          <View style={[styles.restProgress, { width: `${(1 - restPct) * 100}%` as any }]} />
+          <View style={[styles.restProgress, { width: `${(1 - restPct) * 100}%` as any, backgroundColor: persona.accent + '22' }]} />
           <View style={styles.restContent}>
-            <Text style={styles.restLabel}>REST  {formatTime(restTimer)}</Text>
-            <TouchableOpacity onPress={() => setRestTimer(null)}>
-              <Text style={styles.skipRest}>SKIP</Text>
+            <Text style={[styles.restLabel, { color: persona.accent }]}>Rest  {formatTime(restTimer)}</Text>
+            <TouchableOpacity onPress={() => setRestTimer(null)} hitSlop={10}>
+              <Text style={styles.skipRest}>Skip</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -332,10 +335,11 @@ export default function WorkoutSession() {
                   )}
                 </View>
                 <TouchableOpacity
-                  style={styles.formBtn}
+                  style={[styles.formBtn, { backgroundColor: persona.accent + '22' }]}
                   onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved' } } as any)}
                 >
-                  <Text style={styles.formBtnText}>📷 FORM</Text>
+                  <Camera size={12} color={persona.accent} />
+                  <Text style={[styles.formBtnText, { color: persona.accent }]}>Form</Text>
                 </TouchableOpacity>
               </View>
 
@@ -343,13 +347,14 @@ export default function WorkoutSession() {
               <TouchableOpacity
                 style={styles.demoBtn}
                 onPress={() => {
-                  const persona = programIdToPersona(programId);
-                  Linking.openURL(getProDemoUrl(ex.name, persona));
+                  const personaSlug = programIdToPersona(programId);
+                  Linking.openURL(getProDemoUrl(ex.name, personaSlug));
                 }}
                 activeOpacity={0.75}
               >
+                <Play size={12} color="#fff" fill="#fff" />
                 <Text style={styles.demoBtnText}>
-                  ▶  {getProDemoLabel(programIdToPersona(programId))}
+                  {getProDemoLabel(programIdToPersona(programId))}
                 </Text>
               </TouchableOpacity>
 
@@ -357,9 +362,9 @@ export default function WorkoutSession() {
 
               {/* Set table header */}
               <View style={styles.setHeader}>
-                <Text style={[styles.setHeaderCol, { flex: 1 }]}>SET</Text>
-                <Text style={[styles.setHeaderCol, { flex: 2 }]}>KG</Text>
-                <Text style={[styles.setHeaderCol, { flex: 2 }]}>REPS</Text>
+                <Text style={[styles.setHeaderCol, { flex: 1 }]}>Set</Text>
+                <Text style={[styles.setHeaderCol, { flex: 2 }]}>Kg</Text>
+                <Text style={[styles.setHeaderCol, { flex: 2 }]}>Reps</Text>
                 <Text style={[styles.setHeaderCol, { flex: 1 }]}>RPE</Text>
                 <Text style={[styles.setHeaderCol, { width: 44, textAlign: 'center' }]}>✓</Text>
               </View>
@@ -395,13 +400,18 @@ export default function WorkoutSession() {
                     editable={!s.done}
                   />
                   <TouchableOpacity
-                    style={[styles.doneBtn, s.done && styles.doneBtnActive, { width: 44 }]}
+                    style={[
+                      styles.doneBtn,
+                      s.done && { backgroundColor: persona.accent, borderColor: persona.accent },
+                      { width: 44 },
+                    ]}
                     onPress={() => !s.done && completeSet(exIdx, setIdx, ex.restSeconds)}
                     disabled={s.done}
                   >
-                    <Text style={[styles.doneBtnText, s.done && { color: Colors.accentInk }]}>
-                      {s.done ? '✓' : '○'}
-                    </Text>
+                    {s.done
+                      ? <Check size={16} color={persona.ink} strokeWidth={3} />
+                      : <Text style={styles.doneBtnText}>○</Text>
+                    }
                   </TouchableOpacity>
                 </View>
               ))}
@@ -422,20 +432,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   closeBtn: { padding: 4 },
-  closeBtnText: { fontSize: 18, color: Colors.textSecondary },
   headerCenter: { flex: 1, alignItems: 'center' },
-  workoutName: { fontFamily: Fonts.display, fontSize: 13, color: Colors.text, letterSpacing: 0.5 },
-  timer: { fontFamily: Fonts.mono, fontSize: 18, color: Colors.primary, letterSpacing: 1 },
+  workoutName: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, letterSpacing: -0.2 },
+  timer: { fontFamily: Fonts.display, fontWeight: '700', fontSize: 18, letterSpacing: -0.3 },
   timerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
   recoveryPill: {
-    borderRadius: 3, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1,
+    borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1,
   },
-  recoveryPillText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1 },
+  recoveryPillText: { fontFamily: Fonts.bodyMedium, fontSize: 10, letterSpacing: 0.1 },
   finishBtn: {
-    backgroundColor: Colors.primary, borderRadius: 3,
-    paddingHorizontal: 14, paddingVertical: 7,
+    borderRadius: 100,
+    paddingHorizontal: 16, paddingVertical: 8,
   },
-  finishBtnText: { fontFamily: Fonts.display, fontSize: 11, color: Colors.accentInk, letterSpacing: 1 },
+  finishBtnText: { fontFamily: Fonts.displayMedium, fontSize: 12, letterSpacing: 0.2 },
 
   restBanner: {
     backgroundColor: Colors.raised, height: 44,
@@ -443,15 +452,14 @@ const styles = StyleSheet.create({
   },
   restProgress: {
     position: 'absolute', left: 0, top: 0, bottom: 0,
-    backgroundColor: Colors.primaryLight,
   },
   restContent: {
     flex: 1, height: 44, flexDirection: 'row',
     justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16,
   },
-  restLabel: { fontFamily: Fonts.mono, fontSize: 12, color: Colors.primary, letterSpacing: 1.4 },
-  skipRest: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1 },
+  restLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, letterSpacing: 0.2 },
+  skipRest: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.1 },
 
   content: { padding: 16, gap: 12 },
 
@@ -466,40 +474,40 @@ const styles = StyleSheet.create({
   exerciseName: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text, marginBottom: 4 },
   exerciseTip: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, lineHeight: 16, fontStyle: 'italic' },
   formBtn: {
-    backgroundColor: Colors.primaryLight, borderRadius: 3,
+    borderRadius: 100,
+    flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 10, paddingVertical: 6,
   },
-  formBtnText: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 0.8 },
+  formBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
 
   demoBtn: {
     marginHorizontal: 14, marginTop: 4, marginBottom: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
     paddingVertical: 9, paddingHorizontal: 12,
-    backgroundColor: '#ff0000',     // YouTube red — recognizable
-    borderRadius: 4,
-    alignItems: 'center',
+    backgroundColor: '#cc1f1f',
+    borderRadius: 100,
   },
-  demoBtnText: { fontFamily: Fonts.display, fontSize: 11, color: '#fff', letterSpacing: 0.8 },
+  demoBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#fff', letterSpacing: 0.1 },
 
   setHeader: {
     flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8,
     backgroundColor: Colors.background,
   },
-  setHeaderCol: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1, textAlign: 'center' },
+  setHeaderCol: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, textAlign: 'center' },
 
   setRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 6 },
   setRowDone: { opacity: 0.45 },
-  setNum: { fontFamily: Fonts.mono, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
+  setNum: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
   setInput: {
-    height: 40, backgroundColor: Colors.background, borderRadius: 3,
+    height: 40, backgroundColor: Colors.background, borderRadius: 8,
     borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 8, fontFamily: Fonts.mono, fontSize: 14,
+    paddingHorizontal: 8, fontFamily: Fonts.bodyMedium, fontSize: 14,
     color: Colors.text, textAlign: 'center',
   },
   doneBtn: {
-    height: 40, borderRadius: 3,
+    height: 40, borderRadius: 8,
     backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  doneBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   doneBtnText: { fontSize: 16, color: Colors.textSecondary },
 });
