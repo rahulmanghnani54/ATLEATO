@@ -36,6 +36,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, styleText } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
 import { canAccess } from '@/lib/featureGates';
+import { ArrowLeft, Globe2, Flame, MapPin, X as XIcon, Play } from 'lucide-react-native';
 
 const CELL_DEG = 0.0018;
 
@@ -112,22 +113,26 @@ export default function TerritoryMapScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.close}>← back</Text>
+        <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={styles.backBtn}>
+          <ArrowLeft size={18} color={Colors.textSecondary} />
+          <Text style={styles.close}>Back</Text>
         </TouchableOpacity>
-        <Text style={[styles.title, { color: persona.accent }]}>
-          🌍 {styleText(persona, 'CONQUEST MAP')}
-        </Text>
-        <TouchableOpacity onPress={() => router.push('/run' as any)}>
-          <Text style={[styles.runLink, { color: persona.accent }]}>RUN →</Text>
+        <View style={styles.titleWrap}>
+          <Globe2 size={16} color={persona.accent} />
+          <Text style={[styles.title, { color: persona.accent }]}>
+            {styleText(persona, 'Conquest map')}
+          </Text>
+        </View>
+        <TouchableOpacity onPress={() => router.push('/run' as any)} hitSlop={10}>
+          <Text style={[styles.runLink, { color: persona.accent }]}>Run →</Text>
         </TouchableOpacity>
       </View>
 
       {/* Stats strip */}
       <View style={[styles.statsStrip, { borderColor: persona.accent, backgroundColor: persona.accentSoft }]}>
-        <Stat label="YOUR CELLS" value={String(stats?.cells_owned ?? 0)} accent={persona.accent} />
-        <Stat label="RANK"       value={stats?.rank ? `#${stats.rank}` : '—'} accent={persona.accent} />
-        <Stat label="IN VIEW"    value={String(cells.length)} accent={persona.accent} />
+        <Stat label="Your cells" value={String(stats?.cells_owned ?? 0)} accent={persona.accent} />
+        <Stat label="Rank"       value={stats?.rank ? `#${stats.rank}` : '—'} accent={persona.accent} />
+        <Stat label="In view"    value={String(cells.length)} accent={persona.accent} />
       </View>
 
       <View style={styles.mapWrap}>
@@ -148,9 +153,12 @@ export default function TerritoryMapScreen() {
           // instead of a blank gray map. Add EXPO_PUBLIC_GOOGLE_MAPS_API_KEY
           // (and android.config.googleMaps.apiKey in app.json) to enable.
           <View style={[styles.mapPlaceholder, { padding: 28 }]}>
-            <Text style={[styles.muted, { fontSize: 14, marginBottom: 6, color: persona.accent }]}>
-              📍 TERRITORY
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <MapPin size={16} color={persona.accent} />
+              <Text style={[styles.muted, { fontSize: 14, color: persona.accent }]}>
+                Territory
+              </Text>
+            </View>
             <Text style={[styles.muted, { textAlign: 'center', lineHeight: 20 }]}>
               Map unavailable — Google Maps API key not configured.{'\n'}
               Your run data still tracks cells; the live map activates with a key.
@@ -204,8 +212,9 @@ export default function TerritoryMapScreen() {
             onPress={() => setHeatmap((h) => !h)}
             activeOpacity={0.85}
           >
+            <Flame size={14} color={heatmap ? persona.ink : '#fff'} fill={heatmap ? persona.ink : 'transparent'} />
             <Text style={[styles.heatBtnText, heatmap && { color: persona.ink }]}>
-              🔥 {heatmap ? 'HEAT ON' : 'HEATMAP'}
+              {heatmap ? 'Heat on' : 'Heatmap'}
             </Text>
           </TouchableOpacity>
         )}
@@ -215,53 +224,53 @@ export default function TerritoryMapScreen() {
       {selected && (
         <View style={[styles.selCard, selected.mine && { borderColor: persona.accent }]}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.selLabel}>CELL · {selected.cellId}</Text>
+            <Text style={styles.selLabel}>Cell · {selected.cellId}</Text>
             <Text style={[styles.selOwner, { color: selected.mine ? persona.accent : Colors.text }]}>
               Owned by {selected.handle}
             </Text>
             {!selected.mine && (
               <Text style={styles.selHint}>
-                Run through it to take it. {selected.changes > 1 ? `(flipped ${selected.changes}× 🔥)` : ''}
+                Run through it to take it.{selected.changes > 1 ? ` Flipped ${selected.changes}× already.` : ''}
               </Text>
             )}
             {selected.mine && selected.changes > 1 && (
               <Text style={styles.selHint}>
-                You wrestled this cell from {selected.changes - 1} other lifter{selected.changes - 1 === 1 ? '' : 's'}. 👑
+                You wrestled this cell from {selected.changes - 1} other lifter{selected.changes - 1 === 1 ? '' : 's'}.
               </Text>
             )}
           </View>
-          <TouchableOpacity onPress={() => setSelected(null)} style={styles.selClose}>
-            <Text style={styles.selCloseText}>✕</Text>
+          <TouchableOpacity onPress={() => setSelected(null)} style={styles.selClose} hitSlop={10}>
+            <XIcon size={16} color={Colors.textSecondary} />
           </TouchableOpacity>
         </View>
       )}
 
       {/* Legend */}
       <View style={styles.legend}>
-        <LegendDot color={persona.accent} label="YOU" />
-        <LegendDot color="#ef4444" label="OTHERS" />
+        <LegendDot color={persona.accent} label="You" />
+        <LegendDot color="#ef4444" label="Others" />
       </View>
 
       {/* Territory Analytics — LEGEND tier */}
       {canAccess('territory_heatmap') && (
         <View style={[styles.analyticsPanel, { borderColor: persona.accent }]}>
-          <Text style={[styles.analyticTitle, { color: persona.accent }]}>TERRITORY ANALYTICS</Text>
+          <Text style={[styles.analyticTitle, { color: persona.accent }]}>Territory analytics</Text>
           <View style={styles.analyticsGrid}>
             <View style={styles.analyticBox}>
               <Text style={[styles.analyticValue, { color: persona.accent }]}>{stats?.cells_owned ?? 0}</Text>
-              <Text style={styles.analyticLabel}>CELLS OWNED</Text>
+              <Text style={styles.analyticLabel}>Cells owned</Text>
             </View>
             <View style={styles.analyticDivider} />
             <View style={styles.analyticBox}>
               <Text style={[styles.analyticValue, { color: persona.accent }]}>
                 {stats?.total_distance_m != null ? (stats.total_distance_m / 1000).toFixed(1) : '0'}
               </Text>
-              <Text style={styles.analyticLabel}>KM CONQUERED</Text>
+              <Text style={styles.analyticLabel}>Km conquered</Text>
             </View>
             <View style={styles.analyticDivider} />
             <View style={styles.analyticBox}>
               <Text style={[styles.analyticValue, { color: persona.accent }]}>{stats?.total_runs ?? 0}</Text>
-              <Text style={styles.analyticLabel}>RUNS MADE</Text>
+              <Text style={styles.analyticLabel}>Runs made</Text>
             </View>
           </View>
         </View>
@@ -339,7 +348,7 @@ function NoMapPlaceholder({
 }) {
   return (
     <View style={[styles.noMapWrap, { borderColor: persona.accent }]}>
-      <Text style={styles.noMapEmoji}>🗺</Text>
+      <MapPin size={48} color={persona.accent} strokeWidth={1.5} />
       <Text style={[styles.noMapTitle, { color: persona.accent }]}>
         Map view needs setup
       </Text>
@@ -351,12 +360,12 @@ function NoMapPlaceholder({
       <View style={styles.noMapStats}>
         <View style={styles.noMapStat}>
           <Text style={[styles.noMapStatNum, { color: persona.accent }]}>{ownedInView}</Text>
-          <Text style={styles.noMapStatLabel}>YOURS HERE</Text>
+          <Text style={styles.noMapStatLabel}>Yours here</Text>
         </View>
         <View style={styles.noMapDivider} />
         <View style={styles.noMapStat}>
           <Text style={styles.noMapStatNum}>{cellsInView}</Text>
-          <Text style={styles.noMapStatLabel}>CELLS NEARBY</Text>
+          <Text style={styles.noMapStatLabel}>Cells nearby</Text>
         </View>
       </View>
 
@@ -365,7 +374,8 @@ function NoMapPlaceholder({
         onPress={onRun}
         activeOpacity={0.85}
       >
-        <Text style={[styles.noMapBtnText, { color: persona.ink }]}>▶  START RUN</Text>
+        <Play size={14} color={persona.ink} fill={persona.ink} />
+        <Text style={[styles.noMapBtnText, { color: persona.ink }]}>Start run</Text>
       </TouchableOpacity>
     </View>
   );
@@ -397,9 +407,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 16, paddingVertical: 12,
   },
-  close:    { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textSecondary },
-  runLink:  { fontFamily: Fonts.mono, fontSize: 12, letterSpacing: 1, fontWeight: '700' },
-  title:    { fontFamily: Fonts.display, fontSize: 16, letterSpacing: 1 },
+  backBtn:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  close:    { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  runLink:  { fontFamily: Fonts.bodyBold, fontSize: 13, letterSpacing: 0.2 },
+  titleWrap:{ flexDirection: 'row', alignItems: 'center', gap: 6 },
+  title:    { fontFamily: Fonts.display, fontSize: 16, letterSpacing: -0.2 },
 
   statsStrip: {
     flexDirection: 'row', marginHorizontal: 16, marginBottom: 10,
@@ -407,7 +419,7 @@ const styles = StyleSheet.create({
     borderRadius: 10, borderWidth: 1,
   },
   stat:      { flex: 1, alignItems: 'center' },
-  statLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1.4 },
+  statLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2 },
   statValue: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 22, letterSpacing: -0.4, marginTop: 4 },
 
   mapWrap:   { flex: 1, marginHorizontal: 16, marginBottom: 10, borderRadius: 12, overflow: 'hidden' },
@@ -416,7 +428,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     alignItems: 'center', justifyContent: 'center', gap: 12,
   },
-  muted: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textSecondary, letterSpacing: 1 },
+  muted: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.2 },
 
   fetchingPill: {
     position: 'absolute', top: 10, right: 10,
@@ -424,17 +436,18 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 100,
   },
-  fetchingText: { color: '#fff', fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1 },
+  fetchingText: { color: '#fff', fontFamily: Fonts.body, fontSize: 11, letterSpacing: 0.2 },
 
   heatBtn: {
     position: 'absolute', bottom: 12, right: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 14, paddingVertical: 10,
     borderRadius: 100,
     backgroundColor: 'rgba(20,20,22,0.92)',
     borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
   },
   heatBtnText: {
-    color: '#fff', fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4, fontWeight: '700',
+    color: '#fff', fontFamily: Fonts.bodyBold, fontSize: 12, letterSpacing: 0.2,
   },
 
   // NoMapPlaceholder
@@ -445,7 +458,6 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     padding: 24, gap: 14,
   },
-  noMapEmoji: { fontSize: 56 },
   noMapTitle: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 18, letterSpacing: -0.2 },
   noMapBody: {
     fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary,
@@ -456,12 +468,13 @@ const styles = StyleSheet.create({
   },
   noMapStat: { alignItems: 'center' },
   noMapStatNum: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 32, color: Colors.text, letterSpacing: -0.8 },
-  noMapStatLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 2 },
+  noMapStatLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 2 },
   noMapDivider: { width: 1, height: 40, backgroundColor: Colors.border },
   noMapBtn: {
-    marginTop: 8, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 100,
+    marginTop: 8, paddingHorizontal: 24, paddingVertical: 14, borderRadius: 100,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
   },
-  noMapBtnText: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 13, letterSpacing: 1 },
+  noMapBtnText: { fontFamily: Fonts.displayMedium, fontSize: 14, letterSpacing: 0.2 },
 
   selCard: {
     flexDirection: 'row', alignItems: 'center',
@@ -470,11 +483,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 12,
     backgroundColor: Colors.surface,
   },
-  selLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4 },
+  selLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2 },
   selOwner: { fontFamily: Fonts.display, fontWeight: '700', fontSize: 15, marginTop: 4, letterSpacing: -0.2 },
   selHint:  { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, marginTop: 4 },
   selClose: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  selCloseText: { color: Colors.textSecondary, fontSize: 16 },
 
   legend: {
     flexDirection: 'row', gap: 16, justifyContent: 'center',
@@ -482,7 +494,7 @@ const styles = StyleSheet.create({
   },
   legendItem:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendSwatch:  { width: 12, height: 12, borderRadius: 2 },
-  legendText:    { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1 },
+  legendText:    { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2 },
 
   // Analytics panel (LEGEND tier)
   analyticsPanel: {
@@ -492,8 +504,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14, paddingHorizontal: 16,
   },
   analyticTitle: {
-    fontFamily: Fonts.display, fontSize: 11, fontWeight: '800',
-    letterSpacing: 1.6, marginBottom: 12, textAlign: 'center',
+    fontFamily: Fonts.displayMedium, fontSize: 13,
+    letterSpacing: 0.2, marginBottom: 12, textAlign: 'center',
   },
   analyticsGrid: {
     flexDirection: 'row', alignItems: 'center',
@@ -506,8 +518,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
   analyticLabel: {
-    fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary,
-    letterSpacing: 1.4, marginTop: 4,
+    fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary,
+    letterSpacing: 0.2, marginTop: 4,
   },
   analyticDivider: {
     width: 1, height: 40, backgroundColor: Colors.border,
