@@ -19,7 +19,7 @@ import {
   KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { GlassScreen } from '@/components/ui';
+import { Check, X as XIcon, Play, ArrowUp } from 'lucide-react-native';
 import { aiCoachChat } from '@/lib/api/edgeFunctions';
 import type { ClaudeMessage } from '@/lib/api/types';
 import { useAuthStore } from '@/stores/authStore';
@@ -98,7 +98,7 @@ export default function CoachHub() {
   };
 
   return (
-    <GlassScreen persona={persona}>
+    <View style={styles.root}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -117,7 +117,7 @@ export default function CoachHub() {
               </View>
               {!isUsersCoach && (
                 <View style={[styles.previewChip, { borderColor: persona.ink }]}>
-                  <Text style={[styles.previewChipText, { color: persona.ink }]}>PREVIEWING</Text>
+                  <Text style={[styles.previewChipText, { color: persona.ink }]}>Previewing</Text>
                 </View>
               )}
             </View>
@@ -140,8 +140,8 @@ export default function CoachHub() {
               activeOpacity={todaySchedule?.isRest ? 1 : 0.85}
               disabled={todaySchedule?.isRest}
             >
-              <View>
-                <Text style={[styles.sectionLabel, { color: persona.accent }]}>TODAY</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sectionLabel, { color: persona.accent }]}>Today</Text>
                 <Text style={styles.todayWorkoutName}>{todayWorkoutName}</Text>
                 <Text style={styles.todayMeta}>
                   {todaySchedule?.isRest
@@ -151,7 +151,7 @@ export default function CoachHub() {
               </View>
               {!todaySchedule?.isRest && (
                 <View style={[styles.todayBtn, { backgroundColor: persona.accent }]}>
-                  <Text style={[styles.todayBtnText, { color: persona.ink }]}>▶</Text>
+                  <Play size={18} color={persona.ink} fill={persona.ink} />
                 </View>
               )}
             </TouchableOpacity>
@@ -159,21 +159,21 @@ export default function CoachHub() {
 
           {/* ── PHILOSOPHY ──────────────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>TRAINING PHILOSOPHY</Text>
+            <Text style={styles.sectionLabel}>Training philosophy</Text>
             <Text style={styles.philosophySig}>{persona.training.signature}</Text>
 
-            <Text style={[styles.miniLabel, { color: persona.accent }]}>FOCUS ON</Text>
+            <Text style={[styles.miniLabel, { color: persona.accent }]}>Focus on</Text>
             {persona.training.focusOn.map((f, i) => (
               <View key={i} style={styles.bulletRow}>
-                <Text style={[styles.bulletGood, { color: persona.accent }]}>✓</Text>
+                <Check size={16} color={persona.accent} strokeWidth={2.5} />
                 <Text style={styles.bulletText}>{f}</Text>
               </View>
             ))}
 
-            <Text style={[styles.miniLabel, { color: '#ef4444', marginTop: 10 }]}>NEVER</Text>
+            <Text style={[styles.miniLabel, { color: '#ef4444', marginTop: 10 }]}>Never</Text>
             {persona.training.avoid.map((a, i) => (
               <View key={i} style={styles.bulletRow}>
-                <Text style={styles.bulletBad}>✗</Text>
+                <XIcon size={16} color="#ef4444" strokeWidth={2.5} />
                 <Text style={styles.bulletText}>{a}</Text>
               </View>
             ))}
@@ -181,7 +181,7 @@ export default function CoachHub() {
 
           {/* ── SIGNATURE LIFTS ─────────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>SIGNATURE LIFTS</Text>
+            <Text style={styles.sectionLabel}>Signature lifts</Text>
             <Text style={styles.signatureSub}>The exercises that define {persona.shortName}'s training.</Text>
             <View style={styles.signatureGrid}>
               {persona.training.signatureLifts.map((lift, i) => (
@@ -194,18 +194,18 @@ export default function CoachHub() {
 
           {/* ── NUTRITION APPROACH ──────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>NUTRITION APPROACH</Text>
+            <Text style={styles.sectionLabel}>Nutrition approach</Text>
             <Text style={styles.nutritionHeadline}>{styleText(persona, persona.nutrition.headline)}</Text>
             <Text style={styles.nutritionStyle}>{persona.nutrition.style}</Text>
 
             <View style={styles.macroRow}>
               <View style={styles.macroBox}>
                 <Text style={styles.macroNum}>{persona.nutrition.mealsPerDay}</Text>
-                <Text style={styles.macroLabel}>MEALS/DAY</Text>
+                <Text style={styles.macroLabel}>Meals / day</Text>
               </View>
               <View style={styles.macroBox}>
                 <Text style={styles.macroNum}>{persona.nutrition.proteinPerKg}g</Text>
-                <Text style={styles.macroLabel}>PROTEIN/KG</Text>
+                <Text style={styles.macroLabel}>Protein / kg</Text>
               </View>
               <View style={styles.macroBox}>
                 <Text style={[styles.macroNum, { fontSize: 16 }]}>
@@ -215,7 +215,7 @@ export default function CoachHub() {
               </View>
             </View>
 
-            <Text style={[styles.miniLabel, { color: persona.accent, marginTop: 14 }]}>SIGNATURE FOODS</Text>
+            <Text style={[styles.miniLabel, { color: persona.accent, marginTop: 14 }]}>Signature foods</Text>
             <View style={styles.foodGrid}>
               {persona.nutrition.signatureFoods.map((food, i) => (
                 <View key={i} style={styles.foodChip}>
@@ -224,13 +224,13 @@ export default function CoachHub() {
               ))}
             </View>
 
-            <Text style={[styles.miniLabel, { color: persona.accent, marginTop: 14 }]}>CUTTING APPROACH</Text>
+            <Text style={[styles.miniLabel, { color: persona.accent, marginTop: 14 }]}>Cutting approach</Text>
             <Text style={styles.cuttingText}>{persona.nutrition.cuttingApproach}</Text>
           </View>
 
           {/* ── COACH SWITCHER ──────────────────────────────────────── */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>EXPLORE OTHER COACHES</Text>
+            <Text style={styles.sectionLabel}>Explore other coaches</Text>
             <Text style={styles.signatureSub}>
               {isUsersCoach
                 ? 'Tap to preview another coach\'s world. Your active coach stays as is.'
@@ -268,7 +268,7 @@ export default function CoachHub() {
           {/* ── CHAT ──────────────────────────────────────────────── */}
           <View style={[styles.section, { paddingBottom: 14 }]}>
             <Text style={styles.sectionLabel}>
-              CHAT WITH {styleText(persona, persona.shortName)}
+              Chat with {persona.shortName}
             </Text>
 
             {messages.length === 0 ? (
@@ -354,12 +354,12 @@ export default function CoachHub() {
           >
             {chatLoading
               ? <ActivityIndicator size="small" color={persona.ink} />
-              : <Text style={[styles.sendArrow, { color: persona.ink }]}>↑</Text>
+              : <ArrowUp size={20} color={persona.ink} strokeWidth={2.5} />
             }
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </GlassScreen>
+    </View>
   );
 }
 
@@ -368,6 +368,7 @@ export default function CoachHub() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: Colors.bg },
   safe: { flex: 1, backgroundColor: Colors.background },
 
   // ── HERO ──
@@ -386,10 +387,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 9, paddingVertical: 4, borderWidth: 1, borderRadius: 3,
     backgroundColor: 'rgba(255,255,255,0.15)',
   },
-  previewChipText: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1.4 },
-  heroVibe: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 2.4, marginTop: 16 },
+  previewChipText: { fontFamily: Fonts.bodyMedium, fontSize: 10, letterSpacing: 0.3 },
+  heroVibe: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.5, marginTop: 16 },
   heroName: { fontFamily: Fonts.display, fontSize: 28, letterSpacing: -0.6, marginTop: 4 },
-  heroEra: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.2, marginTop: 4 },
+  heroEra: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.3, marginTop: 4 },
   quoteDivider: { height: 1, marginVertical: 16 },
   heroQuote: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 21, fontStyle: 'italic' },
 
@@ -401,12 +402,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 3,
   },
   todayWorkoutName: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text, marginTop: 4, letterSpacing: -0.4 },
-  todayMeta: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, marginTop: 6, letterSpacing: 0.8 },
+  todayMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 6, letterSpacing: 0.1 },
   todayBtn: {
     width: 44, height: 44, borderRadius: 22,
     alignItems: 'center', justifyContent: 'center',
   },
-  todayBtnText: { fontFamily: Fonts.display, fontSize: 18 },
 
   // ── SECTIONS ──
   section: {
@@ -414,13 +414,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, borderRadius: 6,
     borderWidth: 1, borderColor: Colors.border,
   },
-  sectionLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.8 },
-  miniLabel: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 6, marginTop: 4 },
+  sectionLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, letterSpacing: 0.2 },
+  miniLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2, marginBottom: 6, marginTop: 4 },
 
   philosophySig: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, marginTop: 8, marginBottom: 14, lineHeight: 20, fontStyle: 'italic' },
-  bulletRow: { flexDirection: 'row', gap: 9, paddingVertical: 4, alignItems: 'flex-start' },
-  bulletGood: { fontFamily: Fonts.mono, fontSize: 14, marginTop: -1 },
-  bulletBad: { fontFamily: Fonts.mono, fontSize: 14, color: '#ef4444', marginTop: -1 },
+  bulletRow: { flexDirection: 'row', gap: 9, paddingVertical: 4, alignItems: 'center' },
   bulletText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 19 },
 
   signatureSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 6, marginBottom: 10, lineHeight: 17 },
@@ -441,7 +439,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   macroNum: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text },
-  macroLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 3 },
+  macroLabel: { fontFamily: Fonts.bodyMedium, fontSize: 10, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 3 },
 
   foodGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   foodChip: {
@@ -477,7 +475,7 @@ const styles = StyleSheet.create({
   bubble: { gap: 3, marginTop: 10 },
   bubbleUser: { alignItems: 'flex-end' },
   bubbleCoach: { alignItems: 'flex-start' },
-  bubbleSender: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4 },
+  bubbleSender: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2 },
   bubbleContent: { maxWidth: '85%', paddingHorizontal: 13, paddingVertical: 10, borderRadius: 4 },
   bubbleContentCoach: { backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border },
   bubbleText: { fontFamily: Fonts.body, fontSize: 13, lineHeight: 19 },
@@ -500,5 +498,4 @@ const styles = StyleSheet.create({
   },
   sendBtn: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' },
   sendDisabled: { opacity: 0.35 },
-  sendArrow: { fontSize: 18, fontFamily: Fonts.bodyBold },
 });
