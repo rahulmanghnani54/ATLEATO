@@ -17,6 +17,13 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const SUPABASE_URL          = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const EXPO_PUSH_URL         = 'https://exp.host/--/api/v2/push/send';
+// Shared secret — function is deployed with --no-verify-jwt so cron can call it,
+// which means it's publicly invokable. Require this header so only the cron
+// (configured with the same secret) can drain the queue.
+// Set via: supabase secrets set NOTIFY_STEAL_CRON_SECRET=<random-32-bytes-hex>
+// Then update the pg_cron job SQL to pass it:
+//   headers := jsonb_build_object('x-cron-secret', '<same-secret>')
+const CRON_SECRET = Deno.env.get('NOTIFY_STEAL_CRON_SECRET') || '';
 
 interface PendingRow {
   id:          number;
@@ -25,7 +32,29 @@ interface PendingRow {
   cells_lost:  number;
 }
 
-serve(async (_req) => {
+// Constant-time compare so reject paths don't leak timing info.
+function timingSafeEq(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+
+serve(async (req) => {
+  // ── Gate: require cron secret in production ──
+  // Without this, anyone discovering the function URL can POST it repeatedly,
+  // burning Expo push quota and prematurely draining the queue.
+  if (CRON_SECRET) {
+    const provided = req.headers.get('x-cron-secret') || '';
+    if (!timingSafeEq(provided, CRON_SECRET)) {
+      return new Response(JSON.stringify({ error: 'forbidden' }), {
+        status: 403, headers: { 'content-type': 'application/json' },
+      });
+    }
+  } else {
+    console.warn('NOTIFY_STEAL_CRON_SECRET unset — accepting unauthenticated invocation (DEV ONLY)');
+  }
+
   try {
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE);
 

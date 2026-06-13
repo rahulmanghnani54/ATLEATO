@@ -29,6 +29,12 @@ const ALLOW_UNSIGNED = Deno.env.get('LEMONSQUEEZY_ALLOW_UNSIGNED') === '1';
 // Replay window: drop webhooks whose payload created_at is older than this.
 // LS retries failed webhooks for ~3 days; 7 days gives generous headroom.
 const REPLAY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+// Product whitelist — comma-separated LS product_ids that should mint a
+// Vanguard pass. If unset, falls back to "accept any paid product" (legacy
+// behavior, OK only when the LS store has a single product).
+// Set via: supabase secrets set LEMONSQUEEZY_VANGUARD_PRODUCT_IDS=12345,67890
+const ALLOWED_PRODUCT_IDS = (Deno.env.get('LEMONSQUEEZY_VANGUARD_PRODUCT_IDS') || '')
+  .split(',').map((s) => s.trim()).filter(Boolean);
 const FROM_EMAIL = 'Rahul from Atleato <hello@atleato.com>';
 const REPLY_TO = 'hello@atleato.com';
 // Set via: supabase secrets set DISCORD_INVITE_URL=https://discord.gg/yourcode
@@ -286,6 +292,37 @@ serve(async (req) => {
 
   // ── 3. Branch by event ──
   if (eventName === 'order_created' && status === 'paid') {
+    // Product gate — only paid orders of the Vanguard product mint a pass.
+    // Without this, any future LS product on this store (a t-shirt, an
+    // add-on, etc.) would silently grant pass numbers and confirmation emails.
+    if (ALLOWED_PRODUCT_IDS.length > 0 && !ALLOWED_PRODUCT_IDS.includes(productId)) {
+      console.log(`[ls-webhook] non-vanguard product ${productId} ignored (order=${orderId})`);
+      // Still record the order for audit, but mark as 'ignored' and skip pass logic
+      await supabase.from('vanguard_orders').insert({
+        ls_order_id: orderId,
+        ls_order_number: orderNumber,
+        ls_event: eventName,
+        ls_customer_id: customerId,
+        email,
+        customer_name: customerName,
+        product_id: productId,
+        variant_id: variantId,
+        total_cents: totalCents,
+        currency,
+        status: 'ignored_other_product',
+        test_mode: testMode,
+        pass_no: null,
+        raw_payload: payload,
+      }).then(({ error }) => {
+        if (error && !String(error.message).includes('duplicate')) {
+          console.error('ignored-order insert error:', error);
+        }
+      });
+      return new Response(JSON.stringify({ ok: true, ignored: true, reason: 'non-vanguard product' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Assign pass # atomically via RPC
     const { data: passData, error: passErr } = await supabase
       .rpc('assign_next_vanguard_pass_no');
