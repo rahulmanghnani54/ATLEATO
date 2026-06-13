@@ -116,8 +116,8 @@ const CBUM: PersonaTheme = {
   era: 'Classic Aesthetics · Modern Physique Specialist',
   initials: 'TS',
 
-  accent: '#dfff1f',
-  accentSoft: 'rgba(223,255,31,0.12)',
+  accent: '#aedb45',
+  accentSoft: 'rgba(174,219,69,0.14)',
   ink: '#0a0b0d',
   textCase: 'normal',
   vibe: 'PRECISION',
@@ -164,8 +164,8 @@ const NIPPARD: PersonaTheme = {
   era: 'Evidence-Based · Hypertrophy Research',
   initials: 'SC',
 
-  accent: '#5b8cff',
-  accentSoft: 'rgba(91,140,255,0.14)',
+  accent: '#6f93e6',
+  accentSoft: 'rgba(111,147,230,0.14)',
   ink: '#fafafa',
   textCase: 'normal',
   vibe: 'EVIDENCE',
@@ -212,8 +212,8 @@ const CT_FLETCHER: PersonaTheme = {
   era: 'Iron Commander · "I COMMAND YOU TO GROW"',
   initials: 'TC',
 
-  accent: '#ff4d2e',
-  accentSoft: 'rgba(255,77,46,0.14)',
+  accent: '#e85a3c',
+  accentSoft: 'rgba(232,90,60,0.14)',
   ink: '#fafafa',
   textCase: 'upper',
   vibe: 'INTENSE',
@@ -260,8 +260,8 @@ const DR_MIKE: PersonaTheme = {
   era: 'Hypertrophy & Periodization · Periodization Specialist',
   initials: 'DG',
 
-  accent: '#00e0a4',
-  accentSoft: 'rgba(0,224,164,0.12)',
+  accent: '#3dbf8d',
+  accentSoft: 'rgba(61,191,141,0.14)',
   ink: '#0a0b0d',
   textCase: 'normal',
   vibe: 'CLINICAL',

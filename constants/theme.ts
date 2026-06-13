@@ -41,9 +41,9 @@ export const Colors = {
   // ── PRIMARY — Atleato brand orange (replaces volt-green default) ───────────
   // This is the new default accent. Used for non-persona buttons, brand
   // moments, and the logo.
-  primary: '#ff6b35',
-  primaryDeep: '#e84d20',
-  primaryLight: 'rgba(255,107,53,0.14)',
+  primary: '#e05a26',
+  primaryDeep: '#c4471a',
+  primaryLight: 'rgba(224,90,38,0.14)',
   accentInk: '#ffffff',                              // text on primary buttons
 
   // ── SYSTEM accent — RESERVED for OS-level controls ONLY ───────────────────
