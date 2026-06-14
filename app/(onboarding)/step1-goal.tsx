@@ -83,7 +83,10 @@ export default function Step1Goal() {
         .eq('id', user.id);
       if (error) throw error;
       if (profile) setProfile({ ...profile, goal: selected } as any);
-      router.back();
+      // router.back() can land on /(tabs) instead of /profile when crossing
+      // layout groups — force the destination so user always returns to
+      // the settings hub where they came from.
+      router.replace('/profile' as any);
     } catch (e: any) {
       Alert.alert('Could not save', e?.message ?? 'Try again.');
     } finally {

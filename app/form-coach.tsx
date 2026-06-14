@@ -793,12 +793,18 @@ export default function FormCoach() {
               })}
               {displayKpts.map(([cx, cy, conf], i) => {
                 if (conf < CONFIDENCE_THRESHOLD) return null;
-                if (i <= 4) return null;
+                // Render all 17 MoveNet keypoints (0=nose, 1-2=eyes,
+                // 3-4=ears, 5-6=shoulders, 7-8=elbows, 9-10=wrists,
+                // 11-12=hips, 13-14=knees, 15-16=ankles). Face joints
+                // (0-4) get a smaller radius so they don't crowd the
+                // body joints visually but the user still sees the
+                // full skeleton.
+                const isFace = i <= 4;
                 return (
                   <Circle
                     key={`k-${i}`}
-                    cx={cx} cy={cy} r={6}
-                    fill={jointColor(i)} fillOpacity={0.95}
+                    cx={cx} cy={cy} r={isFace ? 4 : 6}
+                    fill={jointColor(i)} fillOpacity={isFace ? 0.85 : 0.95}
                     stroke="#000" strokeWidth={1.5}
                   />
                 );

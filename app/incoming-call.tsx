@@ -27,7 +27,7 @@ import {
   type CallKind,
 } from '@/lib/coachCallScheduler';
 import { stopPersistentRing, scheduleSnoozeCall, cancelSnoozeCall } from '@/lib/wakeupCalls';
-import { speakAs } from '@/lib/voiceCues';
+import { speakAs, silence } from '@/lib/voiceCues';
 import { getPersona, styleText, type PersonaId } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
 import { Phone, PhoneOff, Sun, Dumbbell } from 'lucide-react-native';
@@ -64,6 +64,7 @@ export default function IncomingCallScreen() {
     // BUT — on UNMOUNT (user navigates away after answer/decline), make
     // absolutely sure no stale notification is left in the tray.
     return () => {
+      silence(); // stop any in-flight TTS so the coach doesn't keep talking
       stopPersistentRing().catch(() => {});
       cancelSnoozeCall().catch(() => {});
     };
@@ -71,6 +72,7 @@ export default function IncomingCallScreen() {
   }, []);
 
   const handleAnswer = async () => {
+    silence(); // cut the incoming-greeting TTS before the answer greeting plays
     cancelRingingChain(kind);
     await stopPersistentRing();   // ensure notif + audio are GONE before routing
     await cancelSnoozeCall();     // user engaged — cancel any pending snooze
@@ -82,6 +84,7 @@ export default function IncomingCallScreen() {
   };
 
   const handleDecline = async () => {
+    silence(); // STOP the coach mid-sentence — declining means silence
     await stopPersistentRing();   // tear down BEFORE the snooze is queued
     await declineCoachCall({ kind, personaId });
     // Schedule a follow-up call in 5 minutes — coach doesn't take 'no' for
