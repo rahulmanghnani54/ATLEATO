@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { X as XIcon, Check } from 'lucide-react-native';
 import { getFeatureLabel, type FeatureKey, getUserTier } from '@/lib/featureGates';
 import {
   purchaseSubscription, restorePurchases, getProductPrices,
@@ -97,8 +98,8 @@ export default function PaywallScreen() {
 
   return (
     <SafeAreaView style={s.safe}>
-      <TouchableOpacity style={s.closeBtn} onPress={() => router.back()}>
-        <Text style={s.closeText}>✕</Text>
+      <TouchableOpacity style={s.closeBtn} onPress={() => router.back()} hitSlop={10}>
+        <XIcon size={20} color={Colors.textSecondary} />
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
@@ -123,30 +124,37 @@ export default function PaywallScreen() {
               Yearly
             </Text>
             <View style={s.saveBadge}>
-              <Text style={s.saveBadgeText}>SAVE 20%</Text>
+              <Text style={s.saveBadgeText}>Save 20%</Text>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* PRO Card */}
         <View style={s.card}>
-          <Text style={s.tierName}>PRO</Text>
+          <Text style={s.tierName}>Pro</Text>
           <Text style={s.price}>{prices[proId]}</Text>
           <Text style={s.pricePeriod}>
             {period === 'yearly' ? '/year ($8.49/mo)' : '/month'}
           </Text>
           {period === 'yearly' && (
-            <View style={[s.saveBadgeInline, { backgroundColor: 'rgba(255,107,53,0.15)' }]}>
-              <Text style={[s.saveBadgeText, { color: '#ff6b35' }]}>SAVE 15%</Text>
+            <View style={[s.saveBadgeInline, { backgroundColor: 'rgba(224,90,38,0.15)' }]}>
+              <Text style={[s.saveBadgeText, { color: '#e05a26' }]}>Save 15%</Text>
             </View>
           )}
           <View style={s.featureList}>
-            <Text style={s.featureItem}>✓  3 Legend Coaches</Text>
-            <Text style={s.featureItem}>✓  AI Form Correction (Live)</Text>
-            <Text style={s.featureItem}>✓  Reward Chests + Leaderboards</Text>
-            <Text style={s.featureItem}>✓  Physique Progress Photos</Text>
-            <Text style={s.featureItem}>✓  Custom Ringtone Picker</Text>
-            <Text style={s.featureItem}>✓  Unlimited Streak Freezes</Text>
+            {[
+              '3 Legend Coaches',
+              'AI Form Correction (Live)',
+              'Reward Chests + Leaderboards',
+              'Physique Progress Photos',
+              'Custom Ringtone Picker',
+              'Unlimited Streak Freezes',
+            ].map((f) => (
+              <View key={f} style={s.featureRow}>
+                <Check size={14} color={Colors.primary} strokeWidth={2.5} />
+                <Text style={s.featureItem}>{f}</Text>
+              </View>
+            ))}
           </View>
           <TouchableOpacity
             style={s.subscribeBtn}
@@ -156,7 +164,7 @@ export default function PaywallScreen() {
             {loading === proId ? (
               <ActivityIndicator color={Colors.bg} />
             ) : (
-              <Text style={s.subscribeBtnText}>SUBSCRIBE TO PRO</Text>
+              <Text style={s.subscribeBtnText}>Subscribe to Pro</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -164,25 +172,32 @@ export default function PaywallScreen() {
         {/* LEGEND Card */}
         <View style={[s.card, s.cardLegend]}>
           <View style={s.recommendedBadge}>
-            <Text style={s.recommendedText}>RECOMMENDED</Text>
+            <Text style={s.recommendedText}>Recommended</Text>
           </View>
-          <Text style={s.tierName}>LEGEND</Text>
+          <Text style={s.tierName}>Legend</Text>
           <Text style={s.price}>{prices[legendId]}</Text>
           <Text style={s.pricePeriod}>
             {period === 'yearly' ? '/year ($15.99/mo)' : '/month'}
           </Text>
           {period === 'yearly' && (
-            <View style={[s.saveBadgeInline, { backgroundColor: 'rgba(223,255,31,0.15)' }]}>
-              <Text style={[s.saveBadgeText, { color: '#dfff1f' }]}>SAVE 20%</Text>
+            <View style={[s.saveBadgeInline, { backgroundColor: 'rgba(174,219,69,0.15)' }]}>
+              <Text style={[s.saveBadgeText, { color: '#aedb45' }]}>Save 20%</Text>
             </View>
           )}
           <View style={s.featureList}>
-            <Text style={s.featureItem}>✓  All 5 Legend Coaches</Text>
-            <Text style={s.featureItem}>✓  Everything in PRO</Text>
-            <Text style={s.featureItem}>✓  5-Min Snooze Re-Calls</Text>
-            <Text style={s.featureItem}>✓  Territory Heatmap + Analytics</Text>
-            <Text style={s.featureItem}>✓  Advanced Form AI + Video Review</Text>
-            <Text style={s.featureItem}>✓  Coach Voice Customization</Text>
+            {[
+              'All 5 Legend Coaches',
+              'Everything in Pro',
+              '5-Min Snooze Re-Calls',
+              'Territory Heatmap + Analytics',
+              'Advanced Form AI + Video Review',
+              'Coach Voice Customization',
+            ].map((f) => (
+              <View key={f} style={s.featureRow}>
+                <Check size={14} color={Colors.primary} strokeWidth={2.5} />
+                <Text style={s.featureItem}>{f}</Text>
+              </View>
+            ))}
           </View>
           <TouchableOpacity
             style={[s.subscribeBtn, s.subscribeBtnLegend]}
@@ -192,7 +207,7 @@ export default function PaywallScreen() {
             {loading === legendId ? (
               <ActivityIndicator color={Colors.bg} />
             ) : (
-              <Text style={s.subscribeBtnText}>SUBSCRIBE TO LEGEND</Text>
+              <Text style={s.subscribeBtnText}>Subscribe to Legend</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -220,7 +235,6 @@ const s = StyleSheet.create({
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: Colors.raised, alignItems: 'center', justifyContent: 'center',
   },
-  closeText: { color: Colors.textSecondary, fontSize: 18 },
   header: {
     fontFamily: Fonts.display, fontSize: 28, color: Colors.text,
     marginTop: 20, marginBottom: 6,
@@ -237,7 +251,7 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   toggleActive: {
-    borderColor: Colors.primary, backgroundColor: 'rgba(223,255,31,0.08)',
+    borderColor: Colors.primary, backgroundColor: 'rgba(224,90,38,0.08)',
   },
   toggleText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.textSecondary },
   toggleTextActive: { color: Colors.primary },
@@ -247,8 +261,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 6, paddingVertical: 2,
   },
   saveBadgeText: {
-    fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 0.5,
-    color: Colors.bg, fontWeight: '700',
+    fontFamily: Fonts.bodyBold, fontSize: 10, letterSpacing: 0.2,
+    color: Colors.bg,
   },
   saveBadgeInline: {
     alignSelf: 'flex-start', borderRadius: 8,
@@ -260,8 +274,8 @@ const s = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   cardLegend: {
-    borderColor: 'rgba(223,255,31,0.35)',
-    backgroundColor: 'rgba(223,255,31,0.03)',
+    borderColor: 'rgba(174,219,69,0.35)',
+    backgroundColor: 'rgba(174,219,69,0.03)',
   },
   recommendedBadge: {
     position: 'absolute', top: -11, alignSelf: 'center',
@@ -269,24 +283,25 @@ const s = StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 4, left: '30%',
   },
   recommendedText: {
-    fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.5,
-    color: Colors.bg, fontWeight: '700',
+    fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 0.2,
+    color: Colors.bg,
   },
   tierName: {
-    fontFamily: Fonts.display, fontSize: 18, color: Colors.text,
-    letterSpacing: 2, marginBottom: 8,
+    fontFamily: Fonts.display, fontSize: 22, color: Colors.text,
+    letterSpacing: -0.4, marginBottom: 8,
   },
   price: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text },
   pricePeriod: { fontSize: 13, color: Colors.textTertiary, marginBottom: 4 },
   featureList: { marginTop: 18, gap: 10 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   featureItem: { fontSize: 14, color: Colors.textSecondary },
   subscribeBtn: {
-    marginTop: 20, backgroundColor: '#ff6b35', borderRadius: 10,
+    marginTop: 20, backgroundColor: Colors.primary, borderRadius: 100,
     paddingVertical: 16, alignItems: 'center',
   },
   subscribeBtnLegend: { backgroundColor: Colors.primary },
   subscribeBtnText: {
-    fontFamily: Fonts.display, fontSize: 13, letterSpacing: 1.2,
+    fontFamily: Fonts.displayMedium, fontSize: 14, letterSpacing: 0.2,
     color: Colors.bg,
   },
   restoreBtn: { alignItems: 'center', paddingVertical: 16 },
