@@ -135,7 +135,10 @@ export default function WorkoutPicker() {
         <Text style={styles.sectionLabel}>Or build your own</Text>
         <TouchableOpacity
           style={styles.customCard}
-          onPress={() => router.replace('/(tabs)/workouts' as any)}
+          onPress={() => router.replace({
+            pathname: '/(tabs)/workouts',
+            params: { section: 'library' },
+          } as any)}
           activeOpacity={0.85}
         >
           <Wrench size={26} color={persona.accent} />

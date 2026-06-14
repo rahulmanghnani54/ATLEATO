@@ -11,10 +11,10 @@
  *
  * v0 backup at workouts-v0.tsx.bak.
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronDown, ChevronRight, Dumbbell, Library } from 'lucide-react-native';
 
 import { EXPERT_PROGRAMS } from '@/constants/experts';
@@ -80,7 +80,16 @@ export default function Workouts() {
   const router = useRouter();
   const { profile, fetchProfile } = useAuthStore();
   const [switching, setSwitching] = useState(false);
-  const [section, setSection] = useState<'today' | 'library'>('today');
+  // Section can be deep-linked: /(tabs)/workouts?section=library lands directly
+  // on the exercise library (workout-picker's "Pick exercises yourself" uses
+  // this so the user doesn't have to tap the Exercises tab themselves).
+  const { section: sectionParam } = useLocalSearchParams<{ section?: string }>();
+  const [section, setSection] = useState<'today' | 'library'>(
+    sectionParam === 'library' ? 'library' : 'today',
+  );
+  useEffect(() => {
+    if (sectionParam === 'library' || sectionParam === 'today') setSection(sectionParam);
+  }, [sectionParam]);
 
   const programId = profile?.selected_program ?? 'cbum_evolved';
   const program = EXPERT_PROGRAMS[programId] ?? EXPERT_PROGRAMS.cbum_evolved;
