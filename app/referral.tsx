@@ -4,15 +4,15 @@
  * Shows user's unique referral code, share button, referral count,
  * and reward progress.
  */
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Share, Alert,
+  Share, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
+import { supabase } from '@/lib/supabase';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
 
 const PROGRAM_COLORS: Record<string, string> = {
@@ -23,7 +23,6 @@ const PROGRAM_COLORS: Record<string, string> = {
   dr_mike_mav:          '#00e0a4',
 };
 
-const STORAGE_KEY = 'atleato_referral_count';
 const REWARD_TARGET = 3;
 
 function generateCode(userId: string): string {
@@ -34,16 +33,40 @@ export default function ReferralScreen() {
   const router = useRouter();
   const { user, profile } = useAuthStore();
   const [referralCount, setReferralCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
 
   const accentColor = PROGRAM_COLORS[profile?.selected_program ?? ''] ?? Colors.primary;
   const code = user ? generateCode(user.id) : 'XXXXXXXX';
-  const shareMessage = `Join me on Atleato — train under a legend. Use code ${code} for 7 days Pro free: https://atleato.com`;
+  // CRITICAL: the link MUST carry ?ref=CODE — the landing page only attributes
+  // a signup to a referrer when this param is present (writes it into
+  // waitlist.source as '<base>_ref_<CODE>'). Without it every share is orphaned.
+  const shareUrl = `https://atleato.com?ref=${code}`;
+  const shareMessage = `Join me on Atleato — train under a legend. Sign up with my link for 7 days Pro free: ${shareUrl}`;
 
-  useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((val) => {
-      if (val) setReferralCount(parseInt(val, 10) || 0);
-    });
-  }, []);
+  // Real attribution: count how many waitlist signups carry this code, server-side.
+  // Replaces the old fake local counter that bumped on every Share tap.
+  const fetchCount = useCallback(async () => {
+    if (!user) return;
+    try {
+      // Cast: referral_count isn't in the generated Supabase types yet.
+      const { data, error } = await (supabase.rpc as any)('referral_count', { p_code: code });
+      if (!error && typeof data === 'number') setReferralCount(data);
+    } catch {
+      // network/RPC failure — keep last known count
+    }
+  }, [user, code]);
+
+  // Refetch whenever the screen regains focus (e.g. after sharing + a friend
+  // signs up, the count updates next time they open this screen).
+  useFocusEffect(
+    useCallback(() => { fetchCount(); }, [fetchCount]),
+  );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchCount();
+    setRefreshing(false);
+  }, [fetchCount]);
 
   const handleShare = async () => {
     try {
@@ -51,10 +74,8 @@ export default function ReferralScreen() {
         message: shareMessage,
         title: 'Atleato — Train Under a Legend',
       });
-      // Simulate a referral being recorded after sharing (MVP)
-      const next = referralCount + 1;
-      setReferralCount(next);
-      await AsyncStorage.setItem(STORAGE_KEY, String(next));
+      // No optimistic increment — the count reflects REAL signups, refreshed
+      // on focus / pull-to-refresh. Sharing alone isn't a referral; a signup is.
     } catch {
       // User cancelled share sheet — no-op
     }
@@ -74,7 +95,13 @@ export default function ReferralScreen() {
         <View style={{ width: 32 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accentColor} colors={[accentColor]} />
+        }
+      >
 
         {/* Hero referral card */}
         <View style={[styles.heroCard, { borderColor: accentColor }]}>
