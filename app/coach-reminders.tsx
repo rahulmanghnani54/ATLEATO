@@ -11,8 +11,9 @@
  */
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Alert,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Alert, Linking,
 } from 'react-native';
+import { Bell } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -121,6 +122,40 @@ export default function CoachRemindersScreen() {
     } as any);
   };
 
+  /**
+   * Open Android's per-app notification settings so the user can toggle
+   * "Allow full screen notifications" — Android 14+ silently downgrades
+   * full-screen intent to a banner unless this is on. Deep-links to the
+   * exact page (not the generic app info screen).
+   */
+  const openFullScreenSettings = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android only', 'Full-screen calls are an Android feature.');
+      return;
+    }
+    Alert.alert(
+      'Enable full-screen calls',
+      "Opening Android Settings. Look for:\n\n• Allow full screen notifications → ON\n• Notification category 'Coach Incoming Calls' → set to Urgent\n\nThen come back and tap 'Test Call' to verify.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Open Settings',
+          onPress: async () => {
+            try {
+              // Try the exact notification-settings intent first
+              await Linking.sendIntent('android.settings.APP_NOTIFICATION_SETTINGS', [
+                { key: 'android.provider.extra.APP_PACKAGE', value: 'com.madsales.atleato' },
+              ]);
+            } catch {
+              // Fallback: generic app info page
+              await Linking.openSettings();
+            }
+          },
+        },
+      ],
+    );
+  };
+
   /** Format next-fire datetime in user-friendly form. */
   const formatNextFire = (hour: number, minute: number) => {
     const next = getNextFiringDate(hour, minute);
@@ -148,15 +183,35 @@ export default function CoachRemindersScreen() {
           onPress={() => router.push('/ringtone-picker' as any)}
           activeOpacity={0.85}
         >
-          <Text style={styles.ringtoneEmoji}>🔔</Text>
+          <Bell size={22} color={persona.accent} />
           <View style={{ flex: 1 }}>
-            <Text style={[styles.ringtoneLabel, { color: persona.accent }]}>RINGTONE</Text>
+            <Text style={[styles.ringtoneLabel, { color: persona.accent }]}>Ringtone</Text>
             <Text style={styles.ringtoneHint}>
               Choose what plays when the coach calls — or import your own.
             </Text>
           </View>
           <Text style={[styles.ringtoneArrow, { color: persona.accent }]}>→</Text>
         </TouchableOpacity>
+
+        {/* Full-screen permission shortcut — needed for true incoming-call UI
+            on Android 14+. Without this toggle, the call shows as a banner
+            even though everything else is wired correctly. */}
+        {Platform.OS === 'android' && (
+          <TouchableOpacity
+            style={[styles.ringtoneRow, { borderColor: Colors.warning + '88', marginTop: 10 }]}
+            onPress={openFullScreenSettings}
+            activeOpacity={0.85}
+          >
+            <Bell size={22} color={Colors.warning} fill={Colors.warning + '40'} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.ringtoneLabel, { color: Colors.warning }]}>Enable full-screen calls</Text>
+              <Text style={styles.ringtoneHint}>
+                Required on Android 14+. Without this, calls only show as banners.
+              </Text>
+            </View>
+            <Text style={[styles.ringtoneArrow, { color: Colors.warning }]}>→</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Persona-aware hero */}
         <View style={[styles.hero, { backgroundColor: persona.accent }]}>
