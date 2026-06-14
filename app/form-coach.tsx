@@ -731,6 +731,11 @@ export default function FormCoach() {
   const isTracking   = displayKpts !== null;
   const modelLoading = tfliteModel.state === 'loading';
   const modelError   = tfliteModel.state === 'error';
+  // Surface the real error so we can debug what's actually failing
+  // (was previously just 'MODEL ERROR' with no detail).
+  const modelErrorMsg = modelError
+    ? (tfliteModel as any).error?.message || String((tfliteModel as any).error ?? 'unknown')
+    : null;
   const statusLabel  =
     modelError                            ? '⬤ MODEL ERROR' :
     modelLoading                          ? '⬤ LOADING AI…' :
@@ -845,6 +850,14 @@ export default function FormCoach() {
           <View style={[styles.formBanner, styles.formBannerNeutral]}>
             <Loader size={14} color="#fff" />
             <Text style={styles.formBannerText}>Loading pose model…</Text>
+          </View>
+        )}
+        {modelError && (
+          <View style={[styles.formBanner, styles.formBannerBad, { maxWidth: '85%' }]}>
+            <AlertTriangle size={14} color="#fff" />
+            <Text style={styles.formBannerText} numberOfLines={3}>
+              {modelErrorMsg ?? 'Pose model failed to load.'}
+            </Text>
           </View>
         )}
       </View>
