@@ -37,8 +37,15 @@ function TabIcon({
           { backgroundColor: focused ? accent : 'transparent' },
         ]}
       />
-      <Icon size={22} color={color} strokeWidth={focused ? 2.4 : 1.9} />
+      {/* Fixed icon slot so every tab's label sits at exactly the same
+          baseline. Without this, Lucide's per-icon visual centers vary
+          slightly and the Coach label looked taller than its neighbours. */}
+      <View style={styles.iconSlot}>
+        <Icon size={22} color={color} strokeWidth={focused ? 2.4 : 1.9} />
+      </View>
       <Text
+        numberOfLines={1}
+        allowFontScaling={false}
         style={[
           styles.tabLabel,
           { color },
@@ -124,6 +131,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     position: 'relative',
+    minWidth: 56,
+  },
+  iconSlot: {
+    width: 24, height: 24,
+    alignItems: 'center', justifyContent: 'center',
   },
   // Tiny persona-colored pill that appears above the active tab icon —
   // the Telegram/Notion convention. Replaces the v0 "all labels are tiny
