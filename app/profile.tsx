@@ -13,6 +13,11 @@ import { usePersonalRecords } from '@/hooks/useProgressStats';
 import { calculateBMR, calculateTDEE, calculateMacros, getAgeFromDOB } from '@/lib/tdee';
 import type { ActivityLevel, Goal } from '@/lib/tdee';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
+import {
+  ArrowLeft, ChevronRight, ArrowUpRight, ArrowDownRight, ExternalLink,
+  Zap, Dna, HeartPulse, Trophy, Gift, Handshake, DollarSign, Camera, Users,
+  Phone, Volume2, Mic, Film, Tv, Globe, Share2, Unlock, Ticket, Award, RotateCcw,
+} from 'lucide-react-native';
 import { getUserTier, canAccess } from '@/lib/featureGates';
 import { personaFromProgramId } from '@/lib/personaTheme';
 
@@ -49,17 +54,33 @@ function SettingsGroup({ title, children }: { title: string; children: React.Rea
 }
 
 function SettingsRow({
-  label, sub, trail, trailColor, onPress, danger,
+  Icon, iconColor, label, sub, trail, trailColor, trailIcon: TrailIcon, onPress, danger,
 }: {
-  label: string; sub?: string; trail?: string; trailColor?: string; onPress?: () => void; danger?: boolean;
+  Icon?: React.ComponentType<{ size?: number; color?: string }>;
+  iconColor?: string;
+  label: string;
+  sub?: string;
+  trail?: string;
+  trailColor?: string;
+  trailIcon?: React.ComponentType<{ size?: number; color?: string }>;
+  onPress?: () => void;
+  danger?: boolean;
 }) {
+  const labelColor = danger ? '#ef4444' : Colors.text;
   return (
     <TouchableOpacity style={styles.settingsRow} onPress={onPress} disabled={!onPress} activeOpacity={0.7}>
+      {Icon && (
+        <View style={styles.iconSlot}>
+          <Icon size={18} color={iconColor ?? Colors.textSecondary} />
+        </View>
+      )}
       <View style={{ flex: 1 }}>
-        <Text style={[styles.settingsLabel, danger && { color: '#ef4444' }]}>{label}</Text>
+        <Text style={[styles.settingsLabel, { color: labelColor }]}>{label}</Text>
         {sub ? <Text style={styles.settingsSub}>{sub}</Text> : null}
       </View>
-      {trail ? (
+      {TrailIcon ? (
+        <TrailIcon size={16} color={trailColor ?? Colors.textSecondary} />
+      ) : trail ? (
         <Text style={[styles.settingsTrail, trailColor ? { color: trailColor } : {}]}>{trail}</Text>
       ) : null}
     </TouchableOpacity>
@@ -142,10 +163,10 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
+          <ArrowLeft size={20} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>PROFILE & SETTINGS</Text>
+        <Text style={styles.headerTitle}>Profile & settings</Text>
         {saving
           ? <ActivityIndicator size="small" color={Colors.primary} style={{ width: 32 }} />
           : <View style={{ width: 32 }} />}
@@ -158,7 +179,8 @@ export default function ProfileScreen() {
           <View style={styles.heroTop}>
             <View>
               <View style={[styles.proBadge, { borderColor: programColor }]}>
-                <Text style={[styles.proBadgeText, { color: programColor }]}>● FOUNDING MEMBER</Text>
+                <View style={[styles.proBadgeDot, { backgroundColor: programColor }]} />
+                <Text style={[styles.proBadgeText, { color: programColor }]}>Founding member</Text>
               </View>
               {editingName ? (
                 <View style={styles.nameEditRow}>
@@ -180,7 +202,7 @@ export default function ProfileScreen() {
                       setEditingName(false);
                     }}
                   >
-                    <Text style={styles.saveBtnText}>OK</Text>
+                    <Text style={styles.saveBtnText}>Save</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -204,9 +226,9 @@ export default function ProfileScreen() {
           {/* Stat strip */}
           <View style={styles.statStrip}>
             {[
-              { l: 'STREAK', v: String(streak || 0), u: 'd' },
+              { l: 'Streak', v: String(streak || 0), u: 'd' },
               { l: 'PRs', v: String(prs.length), u: '' },
-              { l: 'WEEKS', v: String(weeksOnApp), u: '' },
+              { l: 'Weeks', v: String(weeksOnApp), u: '' },
             ].map((s) => (
               <View key={s.l} style={styles.statCard}>
                 <Text style={styles.statLabel}>{s.l}</Text>
@@ -229,65 +251,72 @@ export default function ProfileScreen() {
           onPress={() => router.push('/paywall' as any)}
         >
           <View>
-            <Text style={{ fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.5 }}>
-              CURRENT PLAN
+            <Text style={{ fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, letterSpacing: 0.2 }}>
+              Current plan
             </Text>
-            <Text style={{ fontFamily: Fonts.display, fontSize: 18, color: Colors.primary, marginTop: 4 }}>
-              {getUserTier().toUpperCase()}
+            <Text style={{ fontFamily: Fonts.display, fontSize: 20, color: Colors.primary, marginTop: 4, textTransform: 'capitalize' }}>
+              {getUserTier()}
             </Text>
           </View>
           {getUserTier() !== 'legend' && (
-            <View style={{ backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }}>
-              <Text style={{ fontFamily: Fonts.display, fontSize: 11, color: Colors.bg, letterSpacing: 1 }}>
-                UPGRADE
+            <View style={{ backgroundColor: Colors.primary, borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8 }}>
+              <Text style={{ fontFamily: Fonts.displayMedium, fontSize: 13, color: Colors.bg, letterSpacing: 0.2 }}>
+                Upgrade
               </Text>
             </View>
           )}
         </TouchableOpacity>
 
         {/* ── Progression & Avatar ── */}
-        <SettingsGroup title="PROGRESSION">
+        <SettingsGroup title="Progression">
           <SettingsRow
-            label="⚡  Legend Progress"
+            Icon={Zap}
+            iconColor={programColor}
+            label="Legend Progress"
             sub="RPG levels, XP, and persona-flavoured rank"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/legend-progress' as any)}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="🧬  My Avatar"
+            Icon={Dna}
+            iconColor={programColor}
+            label="My Avatar"
             sub="Visual avatar that evolves with your progress"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/my-avatar' as any)}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="💓  Health Dashboard"
+            Icon={HeartPulse}
+            iconColor={programColor}
+            label="Health Dashboard"
             sub="Steps, HRV, sleep quality & recovery modifier"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/health-dashboard' as any)}
           />
         </SettingsGroup>
 
         {/* ── Active Coach ── */}
-        <SettingsGroup title="ACTIVE COACH">
+        <SettingsGroup title="Active coach">
           <SettingsRow
             label={programName}
             sub={`${GOAL_LABELS[profile?.goal ?? ''] ?? ''} · ${ACTIVITY_LABELS[profile?.activity_level ?? ''] ?? ''}`}
-            trail="CHANGE"
+            trail="Change"
             trailColor={programColor}
             onPress={() => router.push('/(onboarding)/step5-program' as any)}
           />
         </SettingsGroup>
 
         {/* ── Training ── */}
-        <SettingsGroup title="TRAINING">
+        <SettingsGroup title="Training">
           <SettingsRow
             label="Body stats"
             sub={editingWeight || editingHeight
               ? 'Editing below…'
               : `${profile?.weight_kg ?? '—'} kg · ${profile?.height_cm ?? '—'} cm`}
-            trail="EDIT"
+            trail="Edit"
+            trailColor={programColor}
             onPress={() => setEditingWeight(true)}
           />
           {editingWeight && (
@@ -308,10 +337,10 @@ export default function ProfileScreen() {
                   onPress={async () => {
                     const val = parseFloat(weightInput);
                     if (!isNaN(val) && val > 20 && val < 500) await saveField({ weight_kg: val });
-                    setEditingHeight(true); // move on to height
+                    setEditingHeight(true);
                   }}
                 >
-                  <Text style={styles.saveBtnText}>NEXT</Text>
+                  <Text style={styles.saveBtnText}>Next</Text>
                 </TouchableOpacity>
               </View>
 
@@ -337,7 +366,7 @@ export default function ProfileScreen() {
                     setEditingHeight(false);
                   }}
                 >
-                  <Text style={styles.saveBtnText}>SAVE</Text>
+                  <Text style={styles.saveBtnText}>Save</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -346,84 +375,101 @@ export default function ProfileScreen() {
           <SettingsRow
             label="Goals"
             sub={`${GOAL_LABELS[profile?.goal ?? ''] ?? '—'} · ${ACTIVITY_LABELS[profile?.activity_level ?? ''] ?? '—'}`}
-            trail="▸"
+            trailIcon={ChevronRight}
             onPress={() => router.push({ pathname: '/(onboarding)/step1-goal', params: { fromProfile: '1' } } as any)}
           />
         </SettingsGroup>
 
         {/* ── Nutrition ── */}
-        <SettingsGroup title="NUTRITION">
+        <SettingsGroup title="Nutrition">
           <SettingsRow
             label="Daily macros"
             sub={profile?.tdee
               ? `${profile.tdee} kcal · ${profile.protein_g ?? '—'} / ${profile.carbs_g ?? '—'} / ${profile.fat_g ?? '—'} g`
               : 'Not set'}
-            trail="▸"
+            trailIcon={ChevronRight}
             onPress={() => router.push({ pathname: '/(onboarding)/step4-diet', params: { fromProfile: '1' } } as any)}
           />
         </SettingsGroup>
 
         {/* ── Community ── */}
-        <SettingsGroup title="COMMUNITY">
+        <SettingsGroup title="Community">
           <SettingsRow
-            label="🏆  Community Squads"
+            Icon={Trophy}
+            iconColor={programColor}
+            label="Community Squads"
             sub="Train with your squad — weekly challenges & leaderboards"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/squads' as any)}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="🎁  Refer friends, earn Pro"
+            Icon={Gift}
+            iconColor={programColor}
+            label="Refer friends, earn Pro"
             sub="Share your code — 3 referrals = 1 month Pro free"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/referral' as any)}
           />
         </SettingsGroup>
 
         {/* ── Accountability ── */}
-        <SettingsGroup title="ACCOUNTABILITY">
+        <SettingsGroup title="Accountability">
           <SettingsRow
-            label="🤝  Accountability witness"
+            Icon={Handshake}
+            iconColor={programColor}
+            label="Accountability witness"
             sub="One person who gets notified if you skip a week"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/social-stake' as any)}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="💸  Anti-charity stake"
-            sub="Stake $5* against a cause you hate — virtual, opt-in"
-            trail="→"
+            Icon={DollarSign}
+            iconColor={programColor}
+            label="Anti-charity stake"
+            sub="Stake $2 USD against a cause you hate — real money"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/charity-stake' as any)}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="📸  Daily selfie accountability"
+            Icon={Camera}
+            iconColor={programColor}
+            label="Daily selfie accountability"
             sub="Private 7-day photo streak — never uploaded"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/daily-selfie' as any)}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="👥  Friend scoreboard"
+            Icon={Users}
+            iconColor={programColor}
+            label="Friend scoreboard"
             sub="Weekly leaderboard with friends — loss-framing"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/friend-scoreboard' as any)}
           />
         </SettingsGroup>
 
         {/* ── Coach Calls & Voice ── */}
-        <SettingsGroup title="COACH CALLS">
+        <SettingsGroup title="Coach calls">
           <SettingsRow
-            label="📞  Daily reminders from your coach"
+            Icon={Phone}
+            iconColor={programColor}
+            label="Daily reminders from your coach"
             sub="Wake-up + workout reminders, in their voice"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() => router.push('/coach-reminders' as any)}
           />
           <View style={styles.rowDivider} />
           {/* Voice cues toggle — custom row with a Switch */}
           <View style={styles.voiceToggleRow}>
+            <View style={styles.iconSlot}>
+              <Volume2 size={18} color={programColor} />
+            </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.settingsLabel}>🔊  Voice cues during workouts</Text>
+              <Text style={styles.settingsLabel}>Voice cues during workouts</Text>
               <Text style={styles.settingsSub}>
                 Coach speaks set-complete, rest-over, form issues, PR alerts
               </Text>
@@ -439,9 +485,11 @@ export default function ProfileScreen() {
             <>
               <View style={styles.rowDivider} />
               <SettingsRow
-                label="🎙  Coach Voice"
+                Icon={Mic}
+                iconColor={programColor}
+                label="Coach Voice"
                 sub="Adjust pitch & speed"
-                trail="→"
+                trailIcon={ChevronRight}
                 onPress={() => router.push('/voice-settings' as any)}
               />
             </>
@@ -449,32 +497,40 @@ export default function ProfileScreen() {
         </SettingsGroup>
 
         {/* ── About Atleato — marketing links + share ── */}
-        <SettingsGroup title="ABOUT ATLEATO">
+        <SettingsGroup title="About Atleato">
           <SettingsRow
-            label="🎬  Watch the Showreel"
+            Icon={Film}
+            iconColor={programColor}
+            label="Watch the Showreel"
             sub="60-second cinematic — share with friends"
-            trail="↗"
+            trailIcon={ExternalLink}
             onPress={() => Linking.openURL('https://atleato.com/showreel.html').catch(() => {})}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="📺  Full Demo Video"
+            Icon={Tv}
+            iconColor={programColor}
+            label="Full Demo Video"
             sub="16:9 timeline walkthrough of every feature"
-            trail="↗"
+            trailIcon={ExternalLink}
             onPress={() => Linking.openURL('https://atleato.com/demo-video.html').catch(() => {})}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="🌐  Visit atleato.com"
+            Icon={Globe}
+            iconColor={programColor}
+            label="Visit atleato.com"
             sub="Marketing site · waitlist · pricing"
-            trail="↗"
+            trailIcon={ExternalLink}
             onPress={() => Linking.openURL('https://atleato.com').catch(() => {})}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="📤  Share Atleato"
+            Icon={Share2}
+            iconColor={programColor}
+            label="Share Atleato"
             sub="Send the showreel to a friend"
-            trail="→"
+            trailIcon={ChevronRight}
             onPress={() =>
               Share.share({
                 message:
@@ -487,49 +543,54 @@ export default function ProfileScreen() {
         </SettingsGroup>
 
         {/* ── Founder admin (debug tier switcher) ── */}
-        {/* Tap-and-hold "Atleato" 5x on the brand footer to reveal in production */}
-        <SettingsGroup title="🔓  FOUNDER ADMIN">
+        <SettingsGroup title="Founder admin">
           <SettingsRow
-            label="🎟  Unlock Legend tier"
+            Icon={Unlock}
+            iconColor={programColor}
+            label="Unlock Legend tier"
             sub="All 5 coaches, AI form, video review, voice tuning — instant"
-            trail="↑"
+            trailIcon={ArrowUpRight}
             onPress={async () => {
               const { applyTier } = await import('@/lib/subscriptionManager');
               applyTier('legend');
-              Alert.alert('Legend unlocked ✓', 'Restart the app to see all premium features.');
+              Alert.alert('Legend unlocked', 'Restart the app to see all premium features.');
             }}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="🥇  Set tier: PRO"
+            Icon={Ticket}
+            iconColor={programColor}
+            label="Set tier: Pro"
             sub="3 coaches, AI form, physique progress"
-            trail="↑"
+            trailIcon={ArrowUpRight}
             onPress={async () => {
               const { applyTier } = await import('@/lib/subscriptionManager');
               applyTier('pro');
-              Alert.alert('PRO tier set ✓');
+              Alert.alert('Pro tier set');
             }}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="🆓  Reset to FREE"
+            Icon={RotateCcw}
+            iconColor={Colors.textSecondary}
+            label="Reset to Free"
             sub="See what a free user experiences"
-            trail="↓"
+            trailIcon={ArrowDownRight}
             onPress={async () => {
               const { applyTier } = await import('@/lib/subscriptionManager');
               applyTier('free');
-              Alert.alert('Reset to FREE');
+              Alert.alert('Reset to Free');
             }}
           />
         </SettingsGroup>
 
         {/* ── Account ── */}
-        <SettingsGroup title="ACCOUNT">
+        <SettingsGroup title="Account">
           <SettingsRow label="Email" sub={user?.email ?? ''} />
           <View style={styles.rowDivider} />
           <SettingsRow
-            label="Sign Out"
-            trail="→"
+            label="Sign out"
+            trailIcon={ChevronRight}
             onPress={handleSignOut}
             danger
           />
@@ -564,9 +625,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md, paddingVertical: 12,
     borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
-  backBtn: { width: 32 },
-  backText: { fontSize: 22, color: Colors.text },
-  headerTitle: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6 },
+  backBtn: { width: 32, alignItems: 'flex-start' },
+  headerTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.textTertiary, letterSpacing: 0.2 },
 
   // Hero
   hero: {
@@ -577,12 +637,14 @@ const styles = StyleSheet.create({
   },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
   proBadge: {
-    alignSelf: 'flex-start', borderWidth: 1, borderRadius: 3,
-    paddingHorizontal: 8, paddingVertical: 4, marginBottom: 8,
+    alignSelf: 'flex-start', borderWidth: 1, borderRadius: 100,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 10, paddingVertical: 4, marginBottom: 8,
   },
-  proBadgeText: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1 },
+  proBadgeDot: { width: 6, height: 6, borderRadius: 3 },
+  proBadgeText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2 },
   heroName: { fontFamily: Fonts.display, fontSize: 30, color: Colors.text, letterSpacing: -0.5, lineHeight: 34 },
-  heroSub: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, marginTop: 4, letterSpacing: 0.5 },
+  heroSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 4, letterSpacing: 0.1 },
   nameEditRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   nameInput: {
     fontFamily: Fonts.display, fontSize: 22, color: Colors.text,
@@ -598,50 +660,51 @@ const styles = StyleSheet.create({
   statStrip: { flexDirection: 'row', gap: 8, paddingBottom: Spacing.md },
   statCard: {
     flex: 1, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 4, padding: 10,
+    borderRadius: 10, padding: 10,
   },
-  statLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2 },
+  statLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2 },
   statValue: { fontFamily: Fonts.display, fontSize: 22, marginTop: 4 },
-  statUnit: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary },
+  statUnit: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textSecondary },
 
   // Settings groups
   group: { paddingHorizontal: Spacing.md, paddingTop: 20 },
-  groupTitle: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8, marginBottom: 8 },
-  groupCard: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 8, overflow: 'hidden' },
+  groupTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.textTertiary, letterSpacing: 0.2, marginBottom: 8 },
+  groupCard: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 12, overflow: 'hidden' },
 
-  settingsRow: { padding: 14, flexDirection: 'row', alignItems: 'center', minHeight: 52 },
-  settingsLabel: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, fontWeight: '600' },
-  settingsSub: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.4 },
-  settingsTrail: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 0.5 },
+  settingsRow: { padding: 14, flexDirection: 'row', alignItems: 'center', minHeight: 52, gap: 12 },
+  iconSlot: { width: 24, alignItems: 'center', justifyContent: 'center' },
+  settingsLabel: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text },
+  settingsSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.1, lineHeight: 16 },
+  settingsTrail: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.1 },
   rowDivider: { height: 1, backgroundColor: Colors.border, marginHorizontal: 14 },
   voiceToggleRow: {
-    padding: 14, flexDirection: 'row', alignItems: 'center', minHeight: 52, gap: 10,
+    padding: 14, flexDirection: 'row', alignItems: 'center', minHeight: 52, gap: 12,
   },
 
   // Inline edit
   inlineEditWrap: { paddingHorizontal: 14, paddingBottom: 12 },
-  inlineEditLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1, marginBottom: 6 },
+  inlineEditLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, marginBottom: 6 },
   inlineEditRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   statInput: {
     flex: 1, fontFamily: Fonts.display, fontSize: 18, color: Colors.text,
     borderBottomWidth: 1, borderBottomColor: Colors.primary, paddingVertical: 4,
   },
   saveBtn: {
-    borderRadius: 4, paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 100, paddingHorizontal: 16, paddingVertical: 8,
   },
-  saveBtnText: { fontFamily: Fonts.display, fontSize: 11, color: '#000', letterSpacing: 0.5 },
+  saveBtnText: { fontFamily: Fonts.displayMedium, fontSize: 13, color: '#000', letterSpacing: 0.2 },
 
-  version: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, textAlign: 'center', marginTop: 28, letterSpacing: 0.5 },
+  version: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, textAlign: 'center', marginTop: 28 },
 
   // Branded footer
   brandFooter: { alignItems: 'center', marginTop: 32, paddingHorizontal: 24 },
   brandMark: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, letterSpacing: -0.5 },
-  brandTag:  { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 2.4, marginTop: 4 },
-  brandUrl:  { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1.2, marginTop: 14 },
-  brandCopyright: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.8, marginTop: 6 },
+  brandTag:  { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.primary, letterSpacing: 0.4, marginTop: 4 },
+  brandUrl:  { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.1, marginTop: 14 },
+  brandCopyright: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.1, marginTop: 6 },
   brandLegal: {
-    fontFamily: Fonts.body, fontSize: 9, color: Colors.textTertiary,
-    textAlign: 'center', lineHeight: 13, marginTop: 14, fontStyle: 'italic',
-    letterSpacing: 0.2,
+    fontFamily: Fonts.body, fontSize: 10, color: Colors.textTertiary,
+    textAlign: 'center', lineHeight: 14, marginTop: 14, fontStyle: 'italic',
+    letterSpacing: 0.1,
   },
 });
