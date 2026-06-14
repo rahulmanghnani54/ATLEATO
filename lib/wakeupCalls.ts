@@ -175,6 +175,11 @@ async function startPersistentRing(
 
   const persona = getPersona(personaId);
   const callerName = `${persona.shortName} · ${reason}`;
+  // Canonical call kind so the cold-launch router (_layout.tsx
+  // getInitialNotification) and the Notifee event handlers can route this
+  // ring to /incoming-call with the right persona. Must match the
+  // { kind, personaId } shape every other call notification uses.
+  const callKind = /workout/i.test(reason) ? 'workout' : 'wakeup';
 
   // 1. Configure the audio session so the ring is audible in every state.
   try {
@@ -212,7 +217,11 @@ async function startPersistentRing(
       id: FOREGROUND_NOTIF_ID,
       title: callerName,
       body: 'Incoming call · tap to answer',
-      data: { kind: 'wakeup-call', persona: personaId },
+      // Canonical { kind, personaId } drives routing to /incoming-call.
+      // `wakeupRing` is a stable marker the orphan-sweep uses so it can still
+      // find/cancel this notification now that `kind` carries routing meaning
+      // ('wakeup'|'workout') instead of the old 'wakeup-call' tag.
+      data: { kind: callKind, personaId, wakeupRing: '1' },
       android: {
         channelId: RING_CHANNEL,
         importance: AndroidImportance.HIGH,
@@ -277,7 +286,9 @@ async function sweepWakeupNotifications(): Promise<void> {
     for (const n of displayed) {
       const data = (n.notification as any)?.data ?? {};
       const id   = n.notification.id;
-      if (data.kind === 'wakeup-call' && id) toCancel.push(id);
+      // Catch both the active ring (wakeupRing marker) and legacy
+      // scheduled/snooze triggers still tagged kind:'wakeup-call'.
+      if ((data.wakeupRing === '1' || data.kind === 'wakeup-call') && id) toCancel.push(id);
     }
     for (const id of toCancel) {
       try { await notifee.cancelNotification(id); } catch { /* ignore */ }

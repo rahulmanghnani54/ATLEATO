@@ -11,6 +11,7 @@
     ],
     "plugins": [
       "./plugins/withReanimatedWorkletsPath",
+      "./plugins/withFullScreenCall",
       "expo-router",
       "react-native-vision-camera",
       "expo-file-system",

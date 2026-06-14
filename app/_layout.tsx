@@ -116,6 +116,32 @@ function RootNavigator() {
     return () => { try { unsub?.(); } catch { /* ignore */ } };
   }, [router]);
 
+  // Cold-launch routing: when the phone is locked and a coach call fires, the
+  // full-screen intent launches the app from a killed state. Expo Router boots
+  // to the default route — NOT the call screen. notifee.getInitialNotification()
+  // returns the notification that launched us (press OR full-screen action), so
+  // we read its data and route straight to /incoming-call. Runs once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const initial = await notifee.getInitialNotification();
+        const data = initial?.notification?.data as
+          | { kind?: CallKind; personaId?: PersonaId }
+          | undefined;
+        if (!cancelled && data?.kind && data?.personaId) {
+          router.push({
+            pathname: '/incoming-call',
+            params: { kind: data.kind, personaId: data.personaId },
+          } as any);
+        }
+      } catch {
+        // getInitialNotification unavailable (Expo Go) — degrade gracefully
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [router]);
+
   // Handle taps on Coach Call notifications.
   // - ANSWER (or notification body)  → silence ring, open the right screen
   // - DECLINE                          → silence ring, coach speaks "no excuses"
