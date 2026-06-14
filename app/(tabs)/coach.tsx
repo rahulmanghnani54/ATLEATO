@@ -106,18 +106,46 @@ export default function CoachHub() {
   // (dashboard hero, tab bar pill, nutrition macros, etc.) re-themes.
   const switchTo = async (id: PersonaId) => {
     if (id === selectedId || switching) return;
+    if (!profile?.id) {
+      Alert.alert('Not signed in', 'Log out and back in, then try switching again.');
+      return;
+    }
     setSwitching(id);
     const programId = PROGRAM_FOR_PERSONA[id];
-    const { error } = await (supabase.from('profiles') as any)
+
+    // Try UPDATE first. If no row exists (e.g. account created via Supabase
+    // dashboard with no profile trigger), fall back to UPSERT so the user
+    // isn't stuck — the row gets created with sensible defaults.
+    const { data: updated, error: updErr } = await (supabase.from('profiles') as any)
       .update({ selected_program: programId })
-      .eq('id', profile?.id ?? '');
-    if (error) {
-      Alert.alert('Error', "Couldn't switch coach. Try again.");
+      .eq('id', profile.id)
+      .select('id');
+
+    if (updErr) {
+      Alert.alert("Couldn't switch coach", `${updErr.message ?? updErr}`);
       setSwitching(null);
       return;
     }
+
+    // No row matched → INSERT a fresh profile so subsequent updates work
+    if (!updated || updated.length === 0) {
+      const { error: insErr } = await (supabase.from('profiles') as any)
+        .upsert({
+          id: profile.id,
+          selected_program: programId,
+          goal: 'build_muscle',
+          activity_level: 'moderately_active',
+          onboarding_complete: false,
+        }, { onConflict: 'id' });
+      if (insErr) {
+        Alert.alert("Couldn't create profile", `${insErr.message ?? insErr}`);
+        setSwitching(null);
+        return;
+      }
+    }
+
     setMessages([]); // fresh conversation with new coach
-    await fetchProfile(profile?.id ?? '');
+    await fetchProfile(profile.id);
     setSwitching(null);
   };
 
