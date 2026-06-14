@@ -296,7 +296,7 @@ export default function CoachHub() {
               {PERSONA_ORDER.map((id) => {
                 const p = getPersona(id);
                 const active = id === selectedId;
-                const isUserId = id === userCoach.id;
+                const isUserId = id === persona.id;
                 return (
                   <TouchableOpacity
                     key={id}
