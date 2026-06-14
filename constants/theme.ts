@@ -134,7 +134,12 @@ export const Fonts = {
   // v0 — legacy (kept so non-migrated screens compile)
   legacyDisplay:   'ArchivoBlack_400Regular',
   legacyMono:      'JetBrainsMono_400Regular',
-  mono:            'JetBrainsMono_400Regular',         // legacy alias
+  // mono is now aliased to Inter Medium — this single change re-themes every
+  // not-yet-migrated screen away from the JetBrains 'tech magazine' feel.
+  // The letterSpacing in legacy stylesheets stays high (was tuned for mono),
+  // which reads as 'sparse caps' but no longer 'code'. Per-screen migrations
+  // can drop letterSpacing closer to 0 for proper Inter aesthetics.
+  mono:            'Inter_500Medium',
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

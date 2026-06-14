@@ -30,6 +30,7 @@ import { stopPersistentRing, scheduleSnoozeCall, cancelSnoozeCall } from '@/lib/
 import { speakAs } from '@/lib/voiceCues';
 import { getPersona, styleText, type PersonaId } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
+import { Phone, PhoneOff, Sun, Dumbbell } from 'lucide-react-native';
 
 export default function IncomingCallScreen() {
   const router = useRouter();
@@ -100,12 +101,18 @@ export default function IncomingCallScreen() {
       <SafeAreaView style={styles.safe}>
         {/* Top label */}
         <View style={styles.topBlock}>
-          <Text style={[styles.label, { color: persona.ink, opacity: 0.6 }]}>
-            {styleText(persona, 'INCOMING CALL')}
+          <Text style={[styles.label, { color: persona.ink, opacity: 0.65 }]}>
+            {styleText(persona, 'Incoming call')}
           </Text>
-          <Text style={[styles.kindLabel, { color: persona.ink, opacity: 0.5 }]}>
-            {kind === 'wakeup' ? '🌅  WAKE-UP' : '💪  WORKOUT TIME'}
-          </Text>
+          <View style={styles.kindRow}>
+            {kind === 'wakeup'
+              ? <Sun size={13} color={persona.ink} style={{ opacity: 0.55 }} />
+              : <Dumbbell size={13} color={persona.ink} style={{ opacity: 0.55 }} />
+            }
+            <Text style={[styles.kindLabel, { color: persona.ink, opacity: 0.55 }]}>
+              {kind === 'wakeup' ? 'Wake-up' : 'Workout time'}
+            </Text>
+          </View>
         </View>
 
         {/* Center: avatar with pulse rings + coach name */}
@@ -139,18 +146,18 @@ export default function IncomingCallScreen() {
         <View style={styles.actions}>
           <View style={styles.actionCol}>
             <TouchableOpacity style={styles.declineBtn} onPress={handleDecline} activeOpacity={0.85}>
-              <Text style={styles.declineIcon}>✕</Text>
+              <PhoneOff size={30} color="#fff" />
             </TouchableOpacity>
             <Text style={[styles.actionLabel, { color: persona.ink, opacity: 0.7 }]}>
-              {styleText(persona, 'DECLINE')}
+              {styleText(persona, 'Decline')}
             </Text>
           </View>
           <View style={styles.actionCol}>
             <TouchableOpacity style={styles.answerBtn} onPress={handleAnswer} activeOpacity={0.85}>
-              <Text style={styles.answerIcon}>✓</Text>
+              <Phone size={30} color="#fff" fill="#fff" />
             </TouchableOpacity>
             <Text style={[styles.actionLabel, { color: persona.ink, opacity: 0.7 }]}>
-              {styleText(persona, 'ANSWER')}
+              {styleText(persona, 'Answer')}
             </Text>
           </View>
         </View>
@@ -172,8 +179,9 @@ const styles = StyleSheet.create({
 
   // ── Top label ──
   topBlock: { alignItems: 'center', marginTop: 12 },
-  label:     { fontFamily: Fonts.mono, fontSize: 11, letterSpacing: 2.4, marginBottom: 6 },
-  kindLabel: { fontFamily: Fonts.mono, fontSize: 9,  letterSpacing: 1.4 },
+  label:     { fontFamily: Fonts.bodyMedium, fontSize: 13, letterSpacing: 0.3, marginBottom: 6 },
+  kindRow:   { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  kindLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2 },
 
   // ── Center block ──
   center: { alignItems: 'center', justifyContent: 'center' },
@@ -190,7 +198,7 @@ const styles = StyleSheet.create({
   },
   avatarInitials: { fontFamily: Fonts.display, fontSize: 56, letterSpacing: -2 },
   coachName: { fontFamily: Fonts.display, fontSize: 30, letterSpacing: -0.8, textAlign: 'center' },
-  coachEra:  { fontFamily: Fonts.mono, fontSize: 11, letterSpacing: 1.4, marginTop: 6, textAlign: 'center' },
+  coachEra:  { fontFamily: Fonts.bodyMedium, fontSize: 12, letterSpacing: 0.2, marginTop: 6, textAlign: 'center' },
   bodyLine:  { fontFamily: Fonts.body, fontSize: 15, lineHeight: 22, marginTop: 18, fontStyle: 'italic', textAlign: 'center', paddingHorizontal: 12 },
 
   // ── Bottom actions ──
@@ -200,13 +208,8 @@ const styles = StyleSheet.create({
   declineBtn: {
     width: 76, height: 76, borderRadius: 38,
     backgroundColor: RING_RED, alignItems: 'center', justifyContent: 'center',
-    transform: [{ rotate: '135deg' }],   // makes the "phone hung up" angle
     shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
     elevation: 8,
-  },
-  declineIcon: {
-    color: '#fff', fontSize: 36, fontFamily: Fonts.bodyBold,
-    transform: [{ rotate: '-135deg' }],
   },
 
   answerBtn: {
@@ -215,7 +218,6 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
-  answerIcon: { color: '#fff', fontSize: 38, fontFamily: Fonts.bodyBold },
 
-  actionLabel: { fontFamily: Fonts.mono, fontSize: 11, letterSpacing: 1.6 },
+  actionLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, letterSpacing: 0.2 },
 });
