@@ -11,43 +11,44 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
 import { Colors, Fonts } from '@/constants/theme';
+import { Flame, Dumbbell, Scale, Zap, Check, ArrowRight } from 'lucide-react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
 import type { Goal } from '@/types/index';
 
 interface GoalOption {
   key: Goal;
-  icon: string;
+  Icon: any;
   title: string;
-  tagline: string;     // short evocative line
-  description: string; // what we'll do for them
+  tagline: string;
+  description: string;
 }
 
 const GOALS: GoalOption[] = [
   {
     key: 'lose_fat',
-    icon: '🔥',
+    Icon: Flame,
     title: 'Lose Fat',
     tagline: 'Drop body fat. Keep the muscle.',
     description: 'Calorie deficit + protein-first training to preserve lean mass.',
   },
   {
     key: 'build_muscle',
-    icon: '💪',
+    Icon: Dumbbell,
     title: 'Build Muscle',
     tagline: 'Add lean size, the right way.',
     description: 'Surplus calories, progressive overload, hypertrophy-optimized splits.',
   },
   {
     key: 'maintain',
-    icon: '⚖️',
+    Icon: Scale,
     title: 'Maintain',
     tagline: 'Hold your shape. Recompose slowly.',
     description: 'Stay at your current weight while improving body composition.',
   },
   {
     key: 'athletic_performance',
-    icon: '⚡',
+    Icon: Zap,
     title: 'Athletic Performance',
     tagline: 'Train for speed, power, endurance.',
     description: 'Performance-focused programming with carb timing for output.',
@@ -96,8 +97,8 @@ export default function Step1Goal() {
         <OnboardingProgress current={1} total={5} />
 
         <View style={styles.header}>
-          <Text style={styles.eyebrow}>STEP 1 OF 5</Text>
-          <Text style={styles.headline}>WHAT DRIVES{'\n'}YOU?</Text>
+          <Text style={styles.eyebrow}>Step 1 of 5</Text>
+          <Text style={styles.headline}>What drives{'\n'}you?</Text>
           <Text style={styles.sub}>The whole plan revolves around this one answer.</Text>
         </View>
 
@@ -113,7 +114,7 @@ export default function Step1Goal() {
               >
                 {active && <View style={styles.accentStripe} />}
                 <View style={[styles.iconWrap, active && styles.iconWrapActive]}>
-                  <Text style={styles.icon}>{g.icon}</Text>
+                  <g.Icon size={22} color={active ? Colors.primary : Colors.textSecondary} />
                 </View>
                 <View style={styles.cardBody}>
                   <Text style={[styles.cardTitle, active && styles.cardTitleActive]}>{g.title}</Text>
@@ -122,7 +123,7 @@ export default function Step1Goal() {
                 </View>
                 {active && (
                   <View style={styles.check}>
-                    <Text style={styles.checkText}>✓</Text>
+                    <Check size={14} color={Colors.accentInk} strokeWidth={3} />
                   </View>
                 )}
               </TouchableOpacity>
@@ -139,8 +140,9 @@ export default function Step1Goal() {
           activeOpacity={0.85}
         >
           <Text style={styles.continueBtnText}>
-            {saving ? 'SAVING…' : fromProfile ? 'SAVE  →' : 'CONTINUE  →'}
+            {saving ? 'Saving…' : fromProfile ? 'Save' : 'Continue'}
           </Text>
+          {!saving && <ArrowRight size={16} color={Colors.accentInk} />}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -152,8 +154,8 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, padding: 20, paddingTop: 14, paddingBottom: 24 },
 
   header: { marginBottom: 22, marginTop: 4 },
-  eyebrow:  { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6 },
-  headline: { fontFamily: Fonts.display, fontSize: 42, color: Colors.text, lineHeight: 42, letterSpacing: -1.4, marginTop: 8, marginBottom: 10 },
+  eyebrow:  { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, letterSpacing: 0.2 },
+  headline: { fontFamily: Fonts.display, fontSize: 42, color: Colors.text, lineHeight: 44, letterSpacing: -1.4, marginTop: 8, marginBottom: 10 },
   sub:      { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, lineHeight: 20 },
 
   cards: { gap: 10 },
@@ -164,7 +166,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
     position: 'relative', overflow: 'hidden',
   },
-  cardActive: { backgroundColor: 'rgba(223,255,31,0.06)', borderColor: Colors.primary },
+  cardActive: { backgroundColor: 'rgba(224,90,38,0.06)', borderColor: Colors.primary },
   accentStripe: {
     position: 'absolute', left: 0, top: 0, bottom: 0,
     width: 3, backgroundColor: Colors.primary,
@@ -176,8 +178,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border,
   },
-  iconWrapActive: { backgroundColor: 'rgba(223,255,31,0.12)', borderColor: Colors.primary },
-  icon: { fontSize: 26 },
+  iconWrapActive: { backgroundColor: 'rgba(224,90,38,0.12)', borderColor: Colors.primary },
 
   cardBody: { flex: 1 },
   cardTitle:        { fontFamily: Fonts.display, fontSize: 16, color: Colors.text, marginBottom: 2, letterSpacing: -0.2 },
@@ -189,13 +190,13 @@ const styles = StyleSheet.create({
     width: 26, height: 26, borderRadius: 13,
     backgroundColor: Colors.primary, alignItems: 'center', justifyContent: 'center',
   },
-  checkText: { fontFamily: Fonts.bodyBold, fontSize: 14, color: Colors.accentInk },
 
   footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 },
   continueBtn: {
-    backgroundColor: Colors.primary, borderRadius: 6,
-    paddingVertical: 16, alignItems: 'center',
+    backgroundColor: Colors.primary, borderRadius: 100,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 16,
   },
   continueBtnDisabled: { opacity: 0.3 },
-  continueBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1.2 },
+  continueBtnText: { fontFamily: Fonts.displayMedium, fontSize: 15, color: Colors.accentInk, letterSpacing: 0.2 },
 });
