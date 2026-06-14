@@ -337,10 +337,27 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
       btn.textContent = 'JOINING…';
       setMsg('');
 
-      // ── Capture ?ref= URL parameter for referral tracking ──
+      // ── Build `source`: UTM campaign attribution + referral code ──
+      // Priority for the channel portion:
+      //   1. utm_source present → 'utm-<source>[-<medium>][-<campaign>]'
+      //      (so the admin source-breakdown groups campaigns automatically)
+      //   2. else → form position ('hero' / 'landing-page')
+      // A '?ref=CODE' is always appended as '_ref_<CODE>' so referral_count
+      // (migration 015) still attributes the signup regardless of UTM.
       var urlParams = new URLSearchParams(window.location.search);
       var refValue = urlParams.get('ref');
-      var baseSource = formId === 'hero-waitlist-form' ? 'hero' : 'landing-page';
+      function utmSanitize(s) {
+        return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+      }
+      var utmSource = utmSanitize(urlParams.get('utm_source'));
+      var utmMedium = utmSanitize(urlParams.get('utm_medium'));
+      var utmCampaign = utmSanitize(urlParams.get('utm_campaign'));
+      var baseSource;
+      if (utmSource) {
+        baseSource = 'utm-' + [utmSource, utmMedium, utmCampaign].filter(Boolean).join('-');
+      } else {
+        baseSource = formId === 'hero-waitlist-form' ? 'hero' : 'landing-page';
+      }
       var sourceValue = refValue
         ? baseSource + '_ref_' + decodeURIComponent(refValue)
         : baseSource;
@@ -399,6 +416,40 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
   // Bind both hero and bottom waitlist forms
   bindWaitlistForm('hero-waitlist-form', 'hero-waitlist-msg');
   bindWaitlistForm('waitlist-form', 'waitlist-msg');
+})();
+
+// ── Live Vanguard scarcity counter ───────────────────────────────
+// Replaces the static "ONLY 500 VIP VANGUARD PASSES AVAILABLE" banner
+// with the real remaining count via the vanguard_claimed_count RPC
+// (migration 012 — returns just the paid-order integer, no PII).
+// Falls back silently to the static text on any error.
+(function initVanguardCounter() {
+  var el = document.getElementById('vanguard-counter');
+  if (!el) return;
+  var SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njg3NDcsImV4cCI6MjA5NDE0NDc0N30.rIT9u4d5dht_UWJ9er7ic1-TBa4C5ISRMdDwOolgIUA';
+  var TOTAL = 500;
+  fetch(SUPABASE_URL + '/rest/v1/rpc/vanguard_claimed_count', {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: '{}',
+  })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (claimed) {
+      if (typeof claimed !== 'number') return;
+      var left = Math.max(0, TOTAL - claimed);
+      if (left <= 0) {
+        el.textContent = 'ALL 500 VANGUARD PASSES CLAIMED — JOIN THE WAITLIST';
+      } else if (claimed > 0) {
+        el.textContent = claimed + ' OF 500 CLAIMED · ONLY ' + left + ' VANGUARD PASSES LEFT';
+      }
+      // claimed === 0 → keep the static "ONLY 500 …" copy (already in the DOM)
+    })
+    .catch(function () { /* network error — keep static fallback */ });
 })();
 
 
