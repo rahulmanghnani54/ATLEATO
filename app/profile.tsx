@@ -17,6 +17,7 @@ import {
   ArrowLeft, ChevronRight, ArrowUpRight, ArrowDownRight, ExternalLink,
   Zap, Dna, HeartPulse, Trophy, Gift, Handshake, DollarSign, Camera, Users,
   Phone, Volume2, Mic, Film, Tv, Globe, Share2, Unlock, Ticket, Award, RotateCcw,
+  Flame, Calendar,
 } from 'lucide-react-native';
 import { getUserTier, canAccess } from '@/lib/featureGates';
 import { personaFromProgramId } from '@/lib/personaTheme';
@@ -223,20 +224,32 @@ export default function ProfileScreen() {
             </View>
           </View>
 
-          {/* Stat strip */}
+          {/* Stat strip — prominent: big numbers, icon-led, persona-accent
+              on the headline card (streak), softer surface on the other two */}
           <View style={styles.statStrip}>
-            {[
-              { l: 'Streak', v: String(streak || 0), u: 'd' },
-              { l: 'PRs', v: String(prs.length), u: '' },
-              { l: 'Weeks', v: String(weeksOnApp), u: '' },
-            ].map((s) => (
-              <View key={s.l} style={styles.statCard}>
-                <Text style={styles.statLabel}>{s.l}</Text>
-                <Text style={[styles.statValue, { color: programColor }]}>
-                  {s.v}<Text style={styles.statUnit}>{s.u}</Text>
-                </Text>
+            <View style={[styles.statCardHero, { borderColor: programColor + '44', backgroundColor: programColor + '12' }]}>
+              <View style={styles.statHead}>
+                <Flame size={14} color={programColor} fill={programColor} />
+                <Text style={[styles.statLabel, { color: programColor }]}>Streak</Text>
               </View>
-            ))}
+              <Text style={[styles.statValueBig, { color: programColor }]}>
+                {streak || 0}<Text style={styles.statUnit}>d</Text>
+              </Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statHead}>
+                <Trophy size={14} color={Colors.textTertiary} />
+                <Text style={styles.statLabel}>PRs</Text>
+              </View>
+              <Text style={styles.statValueBig}>{prs.length}</Text>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statHead}>
+                <Calendar size={14} color={Colors.textTertiary} />
+                <Text style={styles.statLabel}>Weeks</Text>
+              </View>
+              <Text style={styles.statValueBig}>{weeksOnApp}</Text>
+            </View>
           </View>
         </View>
 
@@ -657,14 +670,23 @@ const styles = StyleSheet.create({
   },
   avatarInitials: { fontFamily: Fonts.display, fontSize: 24 },
 
-  statStrip: { flexDirection: 'row', gap: 8, paddingBottom: Spacing.md },
+  statStrip: { flexDirection: 'row', gap: 10, paddingBottom: Spacing.md },
   statCard: {
     flex: 1, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 10, padding: 10,
+    borderRadius: 14, paddingVertical: 16, paddingHorizontal: 12,
   },
+  // Hero stat — persona-tinted background, persona-coloured number,
+  // makes the streak visibly the headline metric.
+  statCardHero: {
+    flex: 1, borderWidth: 1, borderRadius: 14,
+    paddingVertical: 16, paddingHorizontal: 12,
+  },
+  statHead: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8 },
   statLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2 },
-  statValue: { fontFamily: Fonts.display, fontSize: 22, marginTop: 4 },
-  statUnit: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textSecondary },
+  // 36 vs the old 22 — closer to the hero name's weight, reads as the
+  // anchor of the screen instead of a footnote under the avatar.
+  statValueBig: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 36, lineHeight: 38, color: Colors.text, letterSpacing: -1 },
+  statUnit: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.textSecondary, letterSpacing: 0.1 },
 
   // Settings groups
   group: { paddingHorizontal: Spacing.md, paddingTop: 20 },
