@@ -38,7 +38,7 @@ import {
   setupCallKeep, wireCallKeepEvents, handleWakeupBackground,
   ringForegroundServiceRunner,
 } from '@/lib/wakeupCalls';
-import { initBilling } from '@/lib/subscriptionManager';
+import { initBilling, refreshReferralReward } from '@/lib/subscriptionManager';
 import notifee from '@notifee/react-native';
 import type { PersonaId } from '@/lib/personaTheme';
 
@@ -72,6 +72,10 @@ function RootNavigator() {
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchProfile(session.user.id);
+        // Grant the referral reward (free Pro month) if the user has crossed
+        // 3 referrals — runs on every sign-in so it lands even if they never
+        // open the referral screen. Best-effort, never blocks auth.
+        refreshReferralReward();
       }
       setLoading(false);
     });

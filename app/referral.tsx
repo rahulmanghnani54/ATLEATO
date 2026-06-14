@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
+import { refreshReferralReward, getReferralProUntil } from '@/lib/subscriptionManager';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
 
 const PROGRAM_COLORS: Record<string, string> = {
@@ -34,6 +35,7 @@ export default function ReferralScreen() {
   const { user, profile } = useAuthStore();
   const [referralCount, setReferralCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [rewardUntil, setRewardUntil] = useState<number | null>(null);
 
   const accentColor = PROGRAM_COLORS[profile?.selected_program ?? ''] ?? Colors.primary;
   const code = user ? generateCode(user.id) : 'XXXXXXXX';
@@ -53,6 +55,14 @@ export default function ReferralScreen() {
       if (!error && typeof data === 'number') setReferralCount(data);
     } catch {
       // network/RPC failure — keep last known count
+    }
+    // Grant + read the reward (claim_referral_reward grants Pro once the user
+    // crosses 3 referrals, then returns pro_until). Reflect it in the UI.
+    try {
+      await refreshReferralReward();
+      setRewardUntil(getReferralProUntil());
+    } catch {
+      // keep last known reward state
     }
   }, [user, code]);
 
@@ -155,6 +165,16 @@ export default function ReferralScreen() {
               />
             ))}
           </View>
+
+          {/* Reward GRANTED banner — server confirmed the free Pro month */}
+          {rewardUntil && (
+            <View style={[styles.grantedBanner, { borderColor: accentColor, backgroundColor: accentColor + '14' }]}>
+              <Text style={[styles.grantedTitle, { color: accentColor }]}>Pro unlocked — free month active</Text>
+              <Text style={styles.grantedSub}>
+                Active until {new Date(rewardUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* How it works */}
@@ -207,6 +227,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary,
     textAlign: 'center', lineHeight: 16, fontStyle: 'italic', marginTop: 4, paddingHorizontal: 8,
   },
+
+  grantedBanner: {
+    marginTop: 14, borderWidth: 1, borderRadius: Radius.md,
+    paddingVertical: 12, paddingHorizontal: 14, gap: 3,
+  },
+  grantedTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, letterSpacing: 0.2 },
+  grantedSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
 
   rewardCard: {
     backgroundColor: Colors.surface, borderRadius: Radius.lg,

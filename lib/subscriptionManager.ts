@@ -28,6 +28,7 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { _setTierProvider } from '@/lib/featureGates';
+import { supabase } from '@/lib/supabase';
 
 export const PRODUCT_IDS = {
   PRO_MONTHLY:    'atleato_pro_monthly',
@@ -42,19 +43,66 @@ type Tier = 'free' | 'pro' | 'legend';
 type TierListener = (tier: Tier) => void;
 
 const CACHE_KEY = 'subscription_tier:v1';
+const REFERRAL_UNTIL_KEY = 'referral_pro_until:v1';
 
+const RANK: Record<Tier, number> = { free: 0, pro: 1, legend: 2 };
+
+// `currentTier` is the BASE tier (paid / cached). The referral reward layers
+// ON TOP: while referralProUntil is in the future, the effective tier is at
+// least 'pro' — but never downgrades a paid Legend.
 let currentTier: Tier = 'free';
+let referralProUntil: number | null = null; // epoch ms, or null
 const listeners: Set<TierListener> = new Set();
 
 const DEV_TIER_OVERRIDE = __DEV__
   ? (process.env.EXPO_PUBLIC_DEV_TIER as Tier | undefined)
   : undefined;
 
+function referralActive(): boolean {
+  return referralProUntil != null && Date.now() < referralProUntil;
+}
+
+/** The tier the user effectively has: base, elevated to ≥pro by an active
+ *  referral reward. Dev override always wins. */
+function effectiveTier(): Tier {
+  const base = DEV_TIER_OVERRIDE ?? currentTier;
+  if (referralActive() && RANK[base] < RANK.pro) return 'pro';
+  return base;
+}
+
+function notify() {
+  const t = effectiveTier();
+  listeners.forEach((cb) => { try { cb(t); } catch {} });
+}
+
 function setTier(tier: Tier) {
   if (tier === currentTier) return;
   currentTier = tier;
   AsyncStorage.setItem(CACHE_KEY, tier).catch(() => {});
-  listeners.forEach((cb) => { try { cb(tier); } catch {} });
+  notify();
+}
+
+/**
+ * Pull the server's referral reward state and apply it. The RPC both GRANTS
+ * the reward (if the user just crossed 3 referrals) and returns pro_until, so
+ * one call covers "grant + read". Cached locally for offline/instant boot.
+ * Safe to call repeatedly + when logged out (returns no grant).
+ */
+export async function refreshReferralReward(): Promise<void> {
+  try {
+    const { data, error } = await (supabase.rpc as any)('claim_referral_reward');
+    if (error || !data) return;
+    const until = data.pro_until ? Date.parse(data.pro_until) : NaN;
+    referralProUntil = Number.isFinite(until) ? until : null;
+    if (referralProUntil) {
+      AsyncStorage.setItem(REFERRAL_UNTIL_KEY, String(referralProUntil)).catch(() => {});
+    } else {
+      AsyncStorage.removeItem(REFERRAL_UNTIL_KEY).catch(() => {});
+    }
+    notify();
+  } catch {
+    // network/RPC failure — keep whatever (cached) state we have
+  }
 }
 
 /**
@@ -69,7 +117,8 @@ export function resolveTier(ownedProductIds: string[]): Tier {
 }
 
 export async function initBilling(): Promise<void> {
-  _setTierProvider(() => currentTier);
+  // Feature gates resolve through the EFFECTIVE tier (base + referral reward).
+  _setTierProvider(() => effectiveTier());
 
   if (DEV_TIER_OVERRIDE) {
     console.log(`[subscription] DEV override → ${DEV_TIER_OVERRIDE}`);
@@ -83,13 +132,37 @@ export async function initBilling(): Promise<void> {
     if (cached === 'pro' || cached === 'legend') currentTier = cached;
   } catch {}
 
+  // Load cached referral-reward expiry so the free month is honored instantly
+  // on boot (even offline). refreshReferralReward() re-syncs from the server.
+  try {
+    const cachedUntil = await AsyncStorage.getItem(REFERRAL_UNTIL_KEY);
+    if (cachedUntil) {
+      const n = parseInt(cachedUntil, 10);
+      if (Number.isFinite(n)) referralProUntil = n;
+    }
+  } catch {}
+
+  // Best-effort server sync (grants if just earned; no-op when logged out).
+  refreshReferralReward();
+
   // ── REAL BILLING GOES HERE (when an SDK-54-compatible lib is added) ──
   // e.g. connect to store, query active purchases, call setTier(resolveTier(ids)),
   //      register a purchase listener + AppState foreground re-validation.
 }
 
 export function getUserTier(): Tier {
-  return DEV_TIER_OVERRIDE ?? currentTier;
+  return effectiveTier();
+}
+
+/** True when the current Pro access comes from the referral reward (not a
+ *  paid plan) — lets the UI label it "Pro · earned via referrals". */
+export function isReferralRewardActive(): boolean {
+  return referralActive() && RANK[DEV_TIER_OVERRIDE ?? currentTier] < RANK.pro;
+}
+
+/** When the referral-reward Pro month expires (epoch ms), or null. */
+export function getReferralProUntil(): number | null {
+  return referralActive() ? referralProUntil : null;
 }
 
 /**
