@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atleato — Deploy Everything (one sitting)</title>
+<style>
+  body{margin:0;background:#0a0b0d;color:#e7e9ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;}
+  .wrap{max-width:840px;margin:0 auto;padding:48px 24px 90px;}
+  h1{font-size:30px;letter-spacing:-.5px;margin:0 0 4px;}
+  h2{font-size:21px;margin:40px 0 10px;padding:10px 14px;border-radius:10px;}
+  .req{background:rgba(174,219,69,.1);color:#aedb45;border:1px solid rgba(174,219,69,.3);}
+  .opt{background:rgba(111,147,230,.1);color:#8fb0f0;border:1px solid rgba(111,147,230,.3);}
+  h3{font-size:16px;margin:22px 0 8px;color:#ff8050;}
+  code{background:#16181d;padding:2px 6px;border-radius:5px;font-size:12.5px;color:#aedb45;word-break:break-all;}
+  pre{background:#16181d;padding:14px 16px;border-radius:10px;overflow:auto;font-size:13px;border:1px solid rgba(255,255,255,.08);}
+  ol{padding-left:22px;} li{margin:8px 0;}
+  .muted{color:#8b909a;font-size:13px;}
+  .warn{background:rgba(255,177,58,.08);border:1px solid rgba(255,177,58,.3);border-radius:10px;padding:12px 16px;margin:14px 0;font-size:14px;}
+  .warn b{color:#ffb13a;}
+  .step{background:#101216;border:1px solid rgba(255,255,255,.09);border-radius:12px;padding:16px 20px;margin:14px 0;}
+  table{border-collapse:collapse;width:100%;margin:10px 0;font-size:13.5px;}
+  th,td{border:1px solid rgba(255,255,255,.1);padding:8px 11px;text-align:left;}
+  th{background:#16181d;color:#9aa0a8;}
+</style></head><body><div class="wrap">
+
+<h1>Deploy Everything — One Sitting</h1>
+<p class="muted">All code is committed + pushed. This brings it live. Run from <code>C:\Dev\fitai-pro-app</code>. Phases A–B are required to launch the waitlist properly. C is optional native features (each needs an external account). D rebuilds the app.</p>
+
+<div class="warn"><b>Generate your secrets first</b> — you'll paste them in several places below. On Windows, run this 3× and keep the outputs:<br>
+<pre>powershell -Command "[guid]::NewGuid().ToString('N')"</pre>
+Label them: <code>NOTIFY_STEAL_CRON_SECRET</code>, <code>DRIP_CRON_SECRET</code>, and (if you don't already have it) confirm <code>LEMONSQUEEZY_WEBHOOK_SECRET</code> from the Lemon Squeezy dashboard.</div>
+
+<h2 class="req">Phase A — Database (2 min, no external accounts)</h2>
+<div class="step">
+<p>Applies every pending migration (014 squads fix, 015 referral count, 016/018 referral reward, 017 drip tracking). <code>db push</code> only runs un-applied ones — safe to re-run.</p>
+<pre>supabase db push</pre>
+<p class="muted">If it asks to link first: <code>supabase link --project-ref kbldncrurztfwlqzajen</code></p>
+</div>
+
+<h2 class="req">Phase B — Edge functions + secrets + cron (required for drip emails & security fixes)</h2>
+
+<h3>B1. Set the secrets</h3>
+<div class="step">
+<pre>supabase secrets set NOTIFY_STEAL_CRON_SECRET=&lt;secret-1&gt;
+supabase secrets set DRIP_CRON_SECRET=&lt;secret-2&gt;
+supabase secrets set LEMONSQUEEZY_VANGUARD_PRODUCT_IDS=&lt;your-vanguard-LS-product-id&gt;</pre>
+<p class="muted">Vanguard product id: Lemon Squeezy dashboard → Products → your Vanguard Pass → the numeric id in the URL. <code>RESEND_API_KEY</code> + <code>LEMONSQUEEZY_WEBHOOK_SECRET</code> should already be set from earlier; verify with <code>supabase secrets list</code>.</p>
+</div>
+
+<h3>B2. Deploy the functions</h3>
+<div class="step">
+<pre>supabase functions deploy send-drip-emails --no-verify-jwt
+supabase functions deploy notify-steal --no-verify-jwt
+supabase functions deploy lemonsqueezy-webhook</pre>
+<p class="muted">First two are cron-called (no JWT); the webhook is called by Lemon Squeezy with its signature.</p>
+</div>
+
+<h3>B3. Schedule the cron jobs</h3>
+<p>Dashboard → Database → Cron Jobs → + Create. Two jobs:</p>
+<div class="step">
+<b>Drip emails — daily</b> · schedule <code>0 16 * * *</code> (16:00 UTC) · SQL Snippet:
+<pre>SELECT net.http_post(
+  url := 'https://kbldncrurztfwlqzajen.functions.supabase.co/send-drip-emails',
+  headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','&lt;secret-2&gt;')
+);</pre>
+</div>
+<div class="step">
+<b>Steal notifications — every minute</b> · schedule <code>* * * * *</code> · SQL Snippet:
+<pre>SELECT net.http_post(
+  url := 'https://kbldncrurztfwlqzajen.functions.supabase.co/notify-steal',
+  headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','&lt;secret-1&gt;')
+);</pre>
+<p class="muted">If you already have a notify-steal cron from before, EDIT it to add the <code>x-cron-secret</code> header — otherwise it'll start returning 403.</p>
+</div>
+
+<h2 class="opt">Phase C — Optional native features (each needs an external account + the rebuild in Phase D)</h2>
+<table>
+<tr><th>Feature</th><th>External step</th><th>Env var</th></tr>
+<tr><td>Territory map</td><td>Google Cloud → Maps SDK for Android key + billing + restrict to <code>com.madsales.atleato</code></td><td><code>EXPO_PUBLIC_GOOGLE_MAPS_API_KEY</code></td></tr>
+<tr><td>Install referrals</td><td>Branch account → key + Android package/SHA-256 (see BRANCH_SETUP.html)</td><td><code>EXPO_PUBLIC_BRANCH_KEY</code></td></tr>
+<tr><td>Smartwatch</td><td>none — just enable (see HEALTH_SETUP.html)</td><td><code>EXPO_PUBLIC_ENABLE_HEALTH=1</code></td></tr>
+</table>
+<div class="step">
+Set whichever you're ready for (skip the rest — the app fails safe without them):
+<pre>eas env:create --environment preview --name EXPO_PUBLIC_GOOGLE_MAPS_API_KEY --value &lt;key&gt; --visibility plaintext
+eas env:create --environment preview --name EXPO_PUBLIC_BRANCH_KEY --value key_live_xxx --visibility plaintext
+eas env:create --environment preview --name EXPO_PUBLIC_ENABLE_HEALTH --value 1 --visibility plaintext</pre>
+<p class="muted">Repeat with <code>--environment production</code> before a Play Store build. Branch + smartwatch only fully work on Play Store installs / real devices, not sideloaded APKs.</p>
+</div>
+
+<h2 class="req">Phase D — Rebuild the app</h2>
+<div class="step">
+<pre>eas build -p android --profile preview</pre>
+<p class="muted">Picks up: every JS fix from this session (referral loop, coach crash, tab bar, stat strip, pick-exercise routing, full-screen calls) + whichever native features you enabled in Phase C. Uninstall the old app before installing the new APK.</p>
+</div>
+
+<h2 class="opt">Phase E — Verify</h2>
+<ol>
+<li><b>Drip:</b> <code>curl -X POST https://kbldncrurztfwlqzajen.functions.supabase.co/send-drip-emails -H "x-cron-secret: &lt;secret-2&gt;"</code> → returns <code>{ok:true,sent:{...}}</code></li>
+<li><b>Counter:</b> open atleato.com → scarcity banner shows a real "X of 500" (or static text if no paid orders yet).</li>
+<li><b>Referral reward:</b> in-app referral screen loads its count without error.</li>
+<li><b>Admin:</b> dashboard source breakdown shows UTM rows once traffic arrives.</li>
+</ol>
+
+<div class="warn" style="margin-top:30px;"><b>Minimum to launch the waitlist:</b> Phase A + B + D. Phase C is whenever you've set up those accounts. Don't block promotion on C.</div>
+
+</div></body></html>
