@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atleato — Branch Setup</title>
+<style>
+  body{margin:0;background:#0a0b0d;color:#e7e9ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.65;}
+  .wrap{max-width:760px;margin:0 auto;padding:48px 24px 80px;}
+  h1{font-size:28px;letter-spacing:-.5px;margin:0 0 4px;}
+  h2{font-size:20px;margin:36px 0 10px;color:#ff8050;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:8px;}
+  code{background:#16181d;padding:2px 6px;border-radius:5px;font-size:13px;color:#aedb45;}
+  pre{background:#16181d;padding:14px 16px;border-radius:10px;overflow:auto;font-size:13px;border:1px solid rgba(255,255,255,.08);}
+  ol{padding-left:22px;} li{margin:7px 0;}
+  .warn{background:rgba(255,177,58,.08);border:1px solid rgba(255,177,58,.3);border-radius:10px;padding:14px 18px;margin:16px 0;}
+  .warn b{color:#ffb13a;}
+  .muted{color:#8b909a;font-size:13px;}
+</style></head><body><div class="wrap">
+
+<h1>Branch Setup — Install-Referral Attribution</h1>
+<p class="muted">The referral reward counts real app installs (10 → 1 month Pro free), attributed via Branch deferred deep links. Code is built and fails safe (no key = feature dormant, app unaffected). To turn it on:</p>
+
+<h2>1. Create a Branch account</h2>
+<ol>
+<li>Sign up at <code>dashboard.branch.io</code> (free tier covers up to 10k MAU).</li>
+<li>Create an app, grab the <b>Branch Key</b> (<code>key_live_xxxxxxxx</code>).</li>
+</ol>
+
+<h2>2. Configure the Branch dashboard</h2>
+<ol>
+<li><b>Android:</b> add package <code>com.madsales.atleato</code> + your SHA-256 fingerprint (from <code>eas credentials -p android</code>).</li>
+<li><b>Link domain:</b> default <code>atleato.app.link</code> or a custom domain.</li>
+<li><b>Default redirect:</b> your Play Store listing (so taps without the app go install it — the deferred deep link).</li>
+</ol>
+
+<h2>3. Set the key for builds</h2>
+<pre>cd C:\Dev\fitai-pro-app
+eas env:create --environment preview --name EXPO_PUBLIC_BRANCH_KEY --value key_live_xxxxxxxx --visibility plaintext
+eas env:create --environment production --name EXPO_PUBLIC_BRANCH_KEY --value key_live_xxxxxxxx --visibility plaintext</pre>
+<p class="muted"><code>app.config.js</code> only adds the Branch native plugin when this key is present.</p>
+
+<h2>4. Apply migration + rebuild</h2>
+<pre>supabase db push        # migration 018
+eas build -p android --profile preview</pre>
+<p class="muted">Branch is a native module → activates only in a fresh build, not OTA.</p>
+
+<h2>How it works once live</h2>
+<ol>
+<li>User taps <b>Share link</b> → Branch link carrying their code.</li>
+<li>Friend taps → installs from Play Store → first open, Branch returns the code → <code>set_referrer(code)</code> stamps their profile.</li>
+<li><code>install_referral_count()</code> counts installs per user.</li>
+<li>At <b>10</b>, <code>claim_referral_reward()</code> grants 1 month Pro (server-side, once).</li>
+</ol>
+
+<div class="warn">
+<p><b>Sideloaded APKs do NOT get deferred deep links.</b> Install attribution works for <b>Play Store installs</b> — test the full loop in Play closed-testing, not via direct APK install.</p>
+<p><b>New Architecture:</b> react-native-branch 6.10 supports it, but verify the first dev build boots cleanly. If it conflicts, the lazy-load catch keeps the app running — referrals just won't attribute until resolved.</p>
+<p><b>Fraud:</b> 10 installs is harder to fake than 3 emails, but still gameable on emulators. Acceptable for launch; tighten later if abused.</p>
+</div>
+
+</div></body></html>
