@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atleato — Smartwatch / Health Setup</title>
+<style>
+  body{margin:0;background:#0a0b0d;color:#e7e9ec;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.65;}
+  .wrap{max-width:760px;margin:0 auto;padding:48px 24px 80px;}
+  h1{font-size:28px;letter-spacing:-.5px;margin:0 0 4px;}
+  h2{font-size:20px;margin:34px 0 10px;color:#ff8050;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:8px;}
+  code{background:#16181d;padding:2px 6px;border-radius:5px;font-size:13px;color:#aedb45;}
+  pre{background:#16181d;padding:14px 16px;border-radius:10px;overflow:auto;font-size:13px;border:1px solid rgba(255,255,255,.08);}
+  ol{padding-left:22px;} li{margin:7px 0;}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:14px;}
+  th,td{border:1px solid rgba(255,255,255,.1);padding:9px 12px;text-align:left;vertical-align:top;}
+  th{background:#16181d;color:#9aa0a8;font-weight:600;}
+  .warn{background:rgba(255,177,58,.08);border:1px solid rgba(255,177,58,.3);border-radius:10px;padding:14px 18px;margin:16px 0;}
+  .warn b{color:#ffb13a;}
+  .muted{color:#8b909a;font-size:13px;}
+</style></head><body><div class="wrap">
+
+<h1>Smartwatch / Health Integration</h1>
+<p class="muted">Real watch data (steps, heart rate, HRV, sleep) now feeds the recovery score → workout volume modifier. Built fail-safe: until you enable + rebuild, the app keeps using the phone pedometer + manual entry exactly as before.</p>
+
+<h2>What was integrated</h2>
+<table>
+<tr><th>Platform</th><th>Source</th><th>Library</th></tr>
+<tr><td>Android</td><td>Health Connect → Wear OS, Fitbit, Samsung Health, Garmin (any app that writes to Health Connect)</td><td>react-native-health-connect</td></tr>
+<tr><td>iOS</td><td>Apple HealthKit → Apple Watch</td><td>@kingstinct/react-native-healthkit</td></tr>
+</table>
+<p>A "Connect your watch" card on the Health Dashboard requests permission; once granted, <code>getRecoveryScore()</code> prefers real watch data per-field and falls back to manual where a value is missing.</p>
+
+<h2>Turn it on</h2>
+<ol>
+<li>Enable the native plugins for builds:
+<pre>cd C:\Dev\fitai-pro-app
+eas env:create --environment preview --name EXPO_PUBLIC_ENABLE_HEALTH --value 1 --visibility plaintext
+eas env:create --environment production --name EXPO_PUBLIC_ENABLE_HEALTH --value 1 --visibility plaintext</pre></li>
+<li>Native rebuild (these are native modules — not OTA):
+<pre>eas build -p android --profile preview</pre></li>
+<li>On the phone: install <b>Health Connect</b> (Android 14+ has it built in; older needs the Play Store app), make sure your watch app (Fitbit / Samsung / Wear OS / Garmin Connect) syncs into Health Connect, then tap <b>Connect your watch</b> in Atleato → Health Dashboard.</li>
+</ol>
+
+<div class="warn">
+<p><b>Android-first.</b> Your pipeline ships Android APKs, so Health Connect is the live path. iOS HealthKit is wired but needs a Mac + iOS build + a real device to test — it can't be verified from here.</p>
+<p><b>Data source required.</b> Health Connect only has data if a watch/app writes to it. A phone with no connected wearable returns nothing → recovery falls back to pedometer + manual. Test with a real watch syncing to Health Connect.</p>
+<p><b>New Architecture.</b> Both libs target current RN; verify the first dev build boots cleanly. If a native conflict appears, the lazy-load catch keeps the app running — health just stays on manual until resolved.</p>
+</div>
+
+<h2>How it flows</h2>
+<ol>
+<li>User taps <b>Connect your watch</b> → <code>connectHealth()</code> requests HealthKit / Health Connect read permission.</li>
+<li><code>readTodayHealth()</code> pulls today's steps, resting HR, HRV, sleep.</li>
+<li><code>getRecoveryScore()</code> uses those (per-field) → recovery score → volume modifier on the workout lobby, exactly as before.</li>
+</ol>
+
+</div></body></html>

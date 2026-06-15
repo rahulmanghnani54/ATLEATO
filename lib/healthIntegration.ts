@@ -8,6 +8,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pedometer } from 'expo-sensors';
+import { readTodayHealth, sleepHoursToScore } from '@/lib/wearableHealth';
 
 // ─── Storage keys ─────────────────────────────────────────────────────────────
 
@@ -135,11 +136,23 @@ export async function getTodaySleepQuality(): Promise<number> {
  *   below 0.35   → 0.8 (significant reduction)
  */
 export async function getRecoveryScore(): Promise<RecoveryResult> {
-  const [hrv, sleep, steps] = await Promise.all([
+  // Prefer REAL smartwatch data (Apple Watch / Wear OS / Fitbit via HealthKit
+  // or Health Connect) when a watch is connected; otherwise fall back to the
+  // phone pedometer + manually-entered HRV/sleep. Wins per-field so a partial
+  // connection (e.g. steps only) still helps.
+  const wearable = await readTodayHealth().catch(() => null);
+
+  const [hrvManual, sleepManual, pedSteps] = await Promise.all([
     getTodayHRV(),
     getTodaySleepQuality(),
     getStepsToday(),
   ]);
+
+  const hrv = wearable?.hrv ?? hrvManual;
+  const steps = (wearable?.steps && wearable.steps > 0) ? wearable.steps : pedSteps;
+  const sleep = wearable?.sleepHours != null
+    ? sleepHoursToScore(wearable.sleepHours)
+    : sleepManual;
 
   const hrvNorm  = hrv !== null ? Math.min(1, hrv / 100) : 0.5; // assume mid if no reading
   const sleepNorm = Math.min(1, sleep / 5);

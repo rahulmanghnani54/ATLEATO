@@ -9,6 +9,7 @@ const base = require('./app.json');
 module.exports = ({ config }) => {
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
   const branchKey = process.env.EXPO_PUBLIC_BRANCH_KEY || '';
+  const healthEnabled = process.env.EXPO_PUBLIC_ENABLE_HEALTH === '1';
 
   const expo = { ...base.expo };
 
@@ -34,6 +35,24 @@ module.exports = ({ config }) => {
     expo.plugins = [
       ...(expo.plugins ?? []),
       ['@config-plugins/react-native-branch', { apiKey: branchKey }],
+    ];
+  }
+
+  // Smartwatch health: Apple HealthKit (iOS) + Health Connect (Android).
+  // Opt-in via EXPO_PUBLIC_ENABLE_HEALTH=1 so current builds stay untouched
+  // until you're ready to test on a device with a connected watch. The JS
+  // (lib/wearableHealth) lazy-loads + no-ops when the native modules absent.
+  //   eas env:create --environment preview --name EXPO_PUBLIC_ENABLE_HEALTH --value 1
+  if (healthEnabled) {
+    const HEALTH_USAGE = 'Atleato reads your steps, heart rate, HRV and sleep to calculate daily recovery and adjust your training.';
+    expo.plugins = [
+      ...(expo.plugins ?? []),
+      'react-native-health-connect',
+      ['@kingstinct/react-native-healthkit', {
+        NSHealthShareUsageDescription: HEALTH_USAGE,
+        NSHealthUpdateUsageDescription: HEALTH_USAGE,
+        background: false,
+      }],
     ];
   }
 

@@ -12,6 +12,8 @@ import {
   saveWorkoutModifier, getTodayHRV, getTodaySleepQuality,
   type RecoveryResult,
 } from '@/lib/healthIntegration';
+import { getHealthStatus, connectHealth, type HealthStatus } from '@/lib/wearableHealth';
+import { Watch } from 'lucide-react-native';
 
 // ─── Recovery gauge (SVG ring) ────────────────────────────────────────────────
 
@@ -78,6 +80,30 @@ export default function HealthDashboard() {
   const [savingHRV,   setSavingHRV]   = useState(false);
   const [savingSleep, setSavingSleep] = useState(false);
   const [applied,     setApplied]     = useState(false);
+  const [healthStatus, setHealthStatus] = useState<HealthStatus>('unavailable');
+  const [connecting,   setConnecting]   = useState(false);
+
+  useEffect(() => { getHealthStatus().then(setHealthStatus).catch(() => {}); }, []);
+
+  const handleConnectWatch = async () => {
+    setConnecting(true);
+    try {
+      const ok = await connectHealth();
+      if (ok) {
+        await refresh(); // pulls real watch data into the recovery score
+        Alert.alert('Watch connected', 'Your steps, heart rate, HRV and sleep now feed your recovery score.');
+      } else {
+        Alert.alert(
+          'Not connected',
+          'Couldn’t get health permission. On Android, make sure Health Connect is installed and your watch app syncs to it.',
+        );
+      }
+    } catch {
+      Alert.alert('Not available', 'Health data isn’t available on this device/build yet.');
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -189,6 +215,27 @@ export default function HealthDashboard() {
                 )}
               </View>
             </View>
+
+            {/* Connect smartwatch — real HealthKit / Health Connect data */}
+            <TouchableOpacity
+              style={[styles.connectCard, { borderColor: Colors.primary }]}
+              onPress={handleConnectWatch}
+              disabled={connecting}
+              activeOpacity={0.85}
+            >
+              <Watch size={22} color={Colors.primary} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.connectTitle}>
+                  {healthStatus === 'available' ? 'Connect your watch' : 'Connect a smartwatch'}
+                </Text>
+                <Text style={styles.connectSub}>
+                  Apple Watch, Wear OS, Fitbit & more — auto-fills steps, HRV & sleep.
+                </Text>
+              </View>
+              {connecting
+                ? <ActivityIndicator size="small" color={Colors.primary} />
+                : <Text style={[styles.connectArrow, { color: Colors.primary }]}>→</Text>}
+            </TouchableOpacity>
 
             {/* Steps */}
             <View style={styles.card}>
@@ -321,6 +368,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
     borderRadius: 8, padding: 16, marginBottom: 16,
   },
+  connectCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.surface, borderWidth: 1,
+    borderRadius: 12, padding: 16, marginBottom: 16,
+  },
+  connectTitle: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text },
+  connectSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 2, lineHeight: 16 },
+  connectArrow: { fontFamily: Fonts.body, fontSize: 18 },
   sectionLabel: {
     fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8, marginBottom: 8,
   },
