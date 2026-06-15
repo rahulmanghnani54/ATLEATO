@@ -8,6 +8,7 @@ const base = require('./app.json');
 
 module.exports = ({ config }) => {
   const mapsKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+  const branchKey = process.env.EXPO_PUBLIC_BRANCH_KEY || '';
 
   const expo = { ...base.expo };
 
@@ -22,6 +23,18 @@ module.exports = ({ config }) => {
         googleMaps: { apiKey: mapsKey },
       },
     };
+  }
+
+  // Branch deep-link SDK for install attribution (referral reward). Only added
+  // when EXPO_PUBLIC_BRANCH_KEY is set — so builds work before the Branch
+  // account exists, and the native module simply isn't present (lib/branchReferral
+  // lazy-loads it and no-ops). Set the key:
+  //   eas env:create --environment preview --name EXPO_PUBLIC_BRANCH_KEY --value key_live_xxx
+  if (branchKey) {
+    expo.plugins = [
+      ...(expo.plugins ?? []),
+      ['@config-plugins/react-native-branch', { apiKey: branchKey }],
+    ];
   }
 
   return { ...config, ...expo };

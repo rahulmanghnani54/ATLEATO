@@ -39,6 +39,7 @@ import {
   ringForegroundServiceRunner,
 } from '@/lib/wakeupCalls';
 import { initBilling, refreshReferralReward } from '@/lib/subscriptionManager';
+import { initBranchReferral } from '@/lib/branchReferral';
 import notifee from '@notifee/react-native';
 import type { PersonaId } from '@/lib/personaTheme';
 
@@ -117,7 +118,15 @@ function RootNavigator() {
       // Billing — resolve subscription tier from Google Play
       try { await initBilling(); } catch { /* ignore */ }
     })();
-    return () => { try { unsub?.(); } catch { /* ignore */ } };
+    // Branch deep-link install attribution (referral reward). No-ops when the
+    // native module isn't present (before Branch key + rebuild). Returns an
+    // unsubscribe we tear down on unmount.
+    let branchUnsub: (() => void) | undefined;
+    try { branchUnsub = initBranchReferral(); } catch { /* ignore */ }
+    return () => {
+      try { unsub?.(); } catch { /* ignore */ }
+      try { branchUnsub?.(); } catch { /* ignore */ }
+    };
   }, [router]);
 
   // Cold-launch routing: when the phone is locked and a coach call fires, the

@@ -14,6 +14,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
 import { refreshReferralReward, getReferralProUntil } from '@/lib/subscriptionManager';
+import { createReferralLink } from '@/lib/branchReferral';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
 
 const PROGRAM_COLORS: Record<string, string> = {
@@ -24,7 +25,7 @@ const PROGRAM_COLORS: Record<string, string> = {
   dr_mike_mav:          '#00e0a4',
 };
 
-const REWARD_TARGET = 3;
+const REWARD_TARGET = 10;
 
 function generateCode(userId: string): string {
   return userId.replace(/-/g, '').slice(0, 8).toUpperCase();
@@ -39,32 +40,25 @@ export default function ReferralScreen() {
 
   const accentColor = PROGRAM_COLORS[profile?.selected_program ?? ''] ?? Colors.primary;
   const code = user ? generateCode(user.id) : 'XXXXXXXX';
-  // CRITICAL: the link MUST carry ?ref=CODE — the landing page only attributes
-  // a signup to a referrer when this param is present (writes it into
-  // waitlist.source as '<base>_ref_<CODE>'). Without it every share is orphaned.
-  const shareUrl = `https://atleato.com?ref=${code}`;
-  const shareMessage = `Join me on Atleato — train under a legend. Sign up with my link for 7 days Pro free: ${shareUrl}`;
 
-  // Real attribution: count how many waitlist signups carry this code, server-side.
-  // Replaces the old fake local counter that bumped on every Share tap.
+  // Count = REAL APP INSTALLS referred by this user (profiles.referred_by),
+  // attributed via Branch deferred deep links. Replaces the waitlist-email
+  // count. Reward is 10 installs → 1 month Pro (claim_referral_reward, mig 018).
   const fetchCount = useCallback(async () => {
     if (!user) return;
     try {
-      // Cast: referral_count isn't in the generated Supabase types yet.
-      const { data, error } = await (supabase.rpc as any)('referral_count', { p_code: code });
+      const { data, error } = await (supabase.rpc as any)('install_referral_count');
       if (!error && typeof data === 'number') setReferralCount(data);
     } catch {
       // network/RPC failure — keep last known count
     }
-    // Grant + read the reward (claim_referral_reward grants Pro once the user
-    // crosses 3 referrals, then returns pro_until). Reflect it in the UI.
     try {
       await refreshReferralReward();
       setRewardUntil(getReferralProUntil());
     } catch {
       // keep last known reward state
     }
-  }, [user, code]);
+  }, [user]);
 
   // Refetch whenever the screen regains focus (e.g. after sharing + a friend
   // signs up, the count updates next time they open this screen).
@@ -80,12 +74,16 @@ export default function ReferralScreen() {
 
   const handleShare = async () => {
     try {
+      // Build a Branch deep link (falls back to a plain ?ref= URL if Branch
+      // isn't available). The link carries the code so a friend's INSTALL is
+      // attributed to this user — that's what counts toward the reward.
+      const link = await createReferralLink(code);
       await Share.share({
-        message: shareMessage,
+        message: `Join me on Atleato — an AI coach that actually calls your phone. Install with my link: ${link}`,
         title: 'Atleato — Train Under a Legend',
       });
-      // No optimistic increment — the count reflects REAL signups, refreshed
-      // on focus / pull-to-refresh. Sharing alone isn't a referral; a signup is.
+      // No optimistic increment — the count reflects REAL installs, refreshed
+      // on focus / pull-to-refresh. Sharing isn't a referral; an install is.
     } catch {
       // User cancelled share sheet — no-op
     }
@@ -117,23 +115,25 @@ export default function ReferralScreen() {
         <View style={[styles.heroCard, { borderColor: accentColor }]}>
           <Text style={styles.heroLabel}>YOUR REFERRAL CODE</Text>
           <Text style={[styles.heroCode, { color: accentColor }]}>{code}</Text>
-          <Text style={styles.heroSub}>Share to give friends 7 days Pro — free</Text>
+          <Text style={styles.heroSub}>Share your link · 10 installs = 1 month Pro, free</Text>
           <TouchableOpacity
             style={[styles.shareBtn, { backgroundColor: accentColor }]}
             onPress={handleShare}
             activeOpacity={0.85}
           >
             <Text style={[styles.shareBtnText, { color: Colors.accentInk }]}>
-              SHARE CODE
+              SHARE LINK
             </Text>
           </TouchableOpacity>
-          <Text style={styles.sharePreview} numberOfLines={2}>{shareMessage}</Text>
+          <Text style={styles.sharePreview} numberOfLines={2}>
+            Your link installs the app for friends and credits the install to you.
+          </Text>
         </View>
 
         {/* Progress toward reward */}
         <View style={styles.rewardCard}>
           <Text style={styles.rewardLabel}>REWARD PROGRESS</Text>
-          <Text style={styles.rewardTitle}>Refer 3 friends → 1 month Pro free</Text>
+          <Text style={styles.rewardTitle}>10 friends install → 1 month Pro, free</Text>
 
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progressPct * 100}%` as any, backgroundColor: accentColor }]} />
@@ -142,7 +142,7 @@ export default function ReferralScreen() {
           <View style={styles.progressRow}>
             <Text style={styles.progressCount}>
               <Text style={[styles.progressNum, { color: accentColor }]}>{referralCount}</Text>
-              <Text style={styles.progressDenom}> / {REWARD_TARGET} referrals</Text>
+              <Text style={styles.progressDenom}> / {REWARD_TARGET} installs</Text>
             </Text>
             {needed > 0 ? (
               <Text style={styles.progressNeeded}>{needed} more to unlock</Text>
@@ -181,9 +181,9 @@ export default function ReferralScreen() {
         <View style={styles.howCard}>
           <Text style={styles.howLabel}>HOW IT WORKS</Text>
           {[
-            { n: '1', text: 'Share your code with a friend' },
-            { n: '2', text: 'They sign up and enter your code at checkout' },
-            { n: '3', text: 'They get 7 days Pro free — you earn progress toward 1 month Pro' },
+            { n: '1', text: 'Share your link with friends' },
+            { n: '2', text: 'They tap it and install Atleato — the install is credited to you automatically' },
+            { n: '3', text: 'Hit 10 installs and you unlock 1 month of Pro, free' },
           ].map((step) => (
             <View key={step.n} style={styles.howRow}>
               <View style={[styles.howNum, { borderColor: accentColor }]}>
@@ -251,8 +251,9 @@ const styles = StyleSheet.create({
   progressDenom: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textSecondary },
   progressNeeded: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 0.5 },
   progressUnlocked: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 0.8 },
-  milestoneRow: { flexDirection: 'row', gap: 8 },
-  milestoneDot: { width: 32, height: 32, borderRadius: Radius.full },
+  // Segmented bar — scales to any target (10 segments fit where 10 circles wouldn't)
+  milestoneRow: { flexDirection: 'row', gap: 4 },
+  milestoneDot: { flex: 1, height: 8, borderRadius: 4 },
 
   howCard: {
     backgroundColor: Colors.surface, borderRadius: Radius.lg,
