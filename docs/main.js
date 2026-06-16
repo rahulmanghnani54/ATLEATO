@@ -685,39 +685,39 @@ window.addEventListener('scroll', () => {
 
 // ── Interactive Coach Persona Switcher ──────────────────────────
 const coachConfigs = {
-  cbum: {  // THE SCULPTOR
+  sculptor: {  // THE SCULPTOR
     lime: '#c8ff3d', limeRgb: '200, 255, 61', limeDim: '#b4e632', color2: '#d4af37',
     headline: 'TRAIN UNDER<br/><span class="lime-text">THE SCULPTOR.</span>',
-    quote: 'Master the vacuum pose. Build timeless aesthetic lines. <span class="lime-text">Build the statue.</span>',
-    speech: "Wake up, champion. It's time to build that classic physique. Build the statue and let's get it today.",
+    quote: 'Symmetry, proportion, lines that look carved. <span class="lime-text">Quality over ego — build the statue.</span>',
+    speech: "Good morning, champion. Time to build those classic lines — control every rep. Let's get it today.",
     pitch: 0.85, rate: 0.95
   },
-  arnold: {  // THE MONUMENT
+  monument: {  // THE MONUMENT
     lime: '#f5b942', limeRgb: '245, 185, 66', limeDim: '#dd9b25', color2: '#ff6b35',
     headline: 'PUMP UNDER<br/><span class="lime-text">THE MONUMENT.</span>',
-    quote: 'The Monument era legend. High volume, mind-muscle connection, <span class="lime-text">pumping iron till you can\'t.</span>',
-    speech: "Come on! Get up! Stop being a in motion. You have to lift, there is no time to sleep!",
+    quote: 'Golden-era volume and the mind-muscle connection. <span class="lime-text">Chase the pump till you can\'t lift your arms.</span>',
+    speech: "Come on, get up! The iron is waiting and there is no time to sleep. Let's move!",
     pitch: 0.75, rate: 0.9
   },
-  nippard: {  // THE ANALYST
+  analyst: {  // THE ANALYST
     lime: '#5dd3fa', limeRgb: '93, 211, 250', limeDim: '#3cbbe5', color2: '#ff6b35',
     headline: 'OPTIMIZE UNDER<br/><span class="lime-text">THE ANALYST.</span>',
     quote: 'Every rep based on the latest peer-reviewed research. <span class="lime-text">Science-based hypertrophy.</span>',
-    speech: "Good morning. Scientifically speaking, skipping this workout will lead to zero muscle protein synthesis. Let's start.",
+    speech: "Good morning. Skipping this session means zero muscle protein synthesis today. Let's start.",
     pitch: 1.02, rate: 1.05
   },
-  ct: {  // THE COMMANDER
+  commander: {  // THE COMMANDER
     lime: '#ef4444', limeRgb: '239, 68, 68', limeDim: '#d32f2f', color2: '#ff6b35',
     headline: 'CONQUER UNDER<br/><span class="lime-text">THE COMMANDER.</span>',
-    quote: 'IT\'S STILL YOUR SET! <span class="lime-text">A TOWERING IRON ADDICT WHO COMMANDS YOU TO GROW!</span>',
-    speech: "WAKE YOUR ASS UP! IT'S CHERRY PICKIN' TIME! NO EXCUSES IN THE IRON ASYLUM!",
+    quote: 'Comfort is the enemy. <span class="lime-text">The last rep is where it\'s won — push past where your body wants to quit.</span>',
+    speech: "Wake up! No excuses today. Get to that gym and earn it!",
     pitch: 0.7, rate: 1.15
   },
-  mike: {  // THE ARCHITECT
+  architect: {  // THE ARCHITECT
     lime: '#7be38c', limeRgb: '123, 227, 140', limeDim: '#5fc670', color2: '#a855f7',
     headline: 'GROW UNDER<br/><span class="lime-text">THE ARCHITECT.</span>',
-    quote: 'A PhD in Sports Physiology prescribing the exact MRV. <span class="lime-text">Build serious tissue.</span>',
-    speech: "Hey guys, The Architect here. Time to get some hypertrophy going. If you stay in bed, your gains start to stall.",
+    quote: 'Periodized volume, dialed to your exact recoverable dose. <span class="lime-text">Build serious tissue, methodically.</span>',
+    speech: "Time to get some hypertrophy going. Stay in bed and your gains stall — let's work.",
     pitch: 1.15, rate: 1.1
   }
 };
