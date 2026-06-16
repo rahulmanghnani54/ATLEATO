@@ -25,7 +25,7 @@ const PROGRAM_COLORS: Record<string, string> = {
   dr_mike_mav:          '#00e0a4',
 };
 
-const REWARD_TARGET = 3;
+const REWARD_TARGET = 10;
 
 function generateCode(userId: string): string {
   return userId.replace(/-/g, '').slice(0, 8).toUpperCase();
@@ -43,7 +43,9 @@ export default function ReferralScreen() {
 
   // Count = REAL APP INSTALLS referred by this user (profiles.referred_by),
   // attributed via Branch deferred deep links. Replaces the waitlist-email
-  // count. Reward is 3 referrals → Vanguard pass = 1 month Legend (mig 020).
+  // count. Post-launch in-app reward: 10 ACTIVE referrals → 1 month Legend,
+  // repeatable (mig 021). NOTE: "active" + repeatable enforcement is a pre-ship
+  // guardrail (SOT §5) — current count is referred installs.
   const fetchCount = useCallback(async () => {
     if (!user) return;
     try {
@@ -115,7 +117,7 @@ export default function ReferralScreen() {
         <View style={[styles.heroCard, { borderColor: accentColor }]}>
           <Text style={styles.heroLabel}>YOUR REFERRAL CODE</Text>
           <Text style={[styles.heroCode, { color: accentColor }]}>{code}</Text>
-          <Text style={styles.heroSub}>Share your link · 3 referrals = Vanguard pass (1 month Legend), free</Text>
+          <Text style={styles.heroSub}>Share your link · refer 10 active friends → 1 month Legend, free</Text>
           <TouchableOpacity
             style={[styles.shareBtn, { backgroundColor: accentColor }]}
             onPress={handleShare}
@@ -133,7 +135,7 @@ export default function ReferralScreen() {
         {/* Progress toward reward */}
         <View style={styles.rewardCard}>
           <Text style={styles.rewardLabel}>REWARD PROGRESS</Text>
-          <Text style={styles.rewardTitle}>Refer 3 friends → Vanguard pass · 1 month Legend, free</Text>
+          <Text style={styles.rewardTitle}>Refer 10 active friends → 1 month Legend, free (repeatable)</Text>
 
           <View style={styles.progressTrack}>
             <View style={[styles.progressFill, { width: `${progressPct * 100}%` as any, backgroundColor: accentColor }]} />
@@ -142,7 +144,7 @@ export default function ReferralScreen() {
           <View style={styles.progressRow}>
             <Text style={styles.progressCount}>
               <Text style={[styles.progressNum, { color: accentColor }]}>{referralCount}</Text>
-              <Text style={styles.progressDenom}> / {REWARD_TARGET} installs</Text>
+              <Text style={styles.progressDenom}> / {REWARD_TARGET} active</Text>
             </Text>
             {needed > 0 ? (
               <Text style={styles.progressNeeded}>{needed} more to unlock</Text>
@@ -183,7 +185,7 @@ export default function ReferralScreen() {
           {[
             { n: '1', text: 'Share your link with friends' },
             { n: '2', text: 'They tap it and install Atleato — the install is credited to you automatically' },
-            { n: '3', text: 'Hit 3 referrals and you unlock the Vanguard pass — 1 month of Legend, free' },
+            { n: '3', text: 'Hit 10 active referrals → 1 month of Legend, free. Repeatable — refer more, earn more' },
           ].map((step) => (
             <View key={step.n} style={styles.howRow}>
               <View style={[styles.howNum, { borderColor: accentColor }]}>

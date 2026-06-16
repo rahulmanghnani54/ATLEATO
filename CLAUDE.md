@@ -84,13 +84,13 @@ AI fitness coaching app. Pre-launch: collecting a waitlist while finishing the a
 - Secrets: `supabase secrets set NAME=value` · EAS env: `eas env:create --environment preview --name NAME --value V --visibility plaintext`
 
 ## Non-negotiable product constraints
-1. **Honesty in copy.** Joining the waitlist grants NOTHING — it only sends an email. Never imply a plain signup is a confirmed Vanguard/founder/active pass. No fabricated counters/feeds ("X viewing", fake claimers) — show real data or nothing.
+1. **Honesty in copy.** Joining the waitlist grants NOTHING — it only sends an email. Never imply a signup is a confirmed Vanguard/founder/active pass. No fabricated counters/feeds ("X viewing", fake claimers) — show real data or nothing. Referral rewards require REAL users (see #3), never just raw signups.
 2. **No real celebrity names/catchphrases.** The 5 personas are original: The Sculptor, The Monument, The Analyst, The Commander, The Architect.
-3. **Pricing — 3 tiers, cumulative:**
-   - **Free** ($0): free features only
-   - **Pro** ($9.99/mo): free + Pro features
-   - **Legend** ($19.99/mo): free + Pro + Legend features
-   The **Vanguard founding pass** (first 500 only) unlocks the **Legend tier**, earned EITHER by paying a one-time **$1.99** OR by **referring 3 friends** — with 1 month free Legend at launch. NEVER "lifetime".
+3. **Pricing & referral model (single source of truth):**
+   - **3 cumulative subscription tiers:** Free → **Pro $9.99/mo** (incl. Free) → **Legend $19.99/mo** (incl. Free + Pro).
+   - **Vanguard Pass (PRE-LAUNCH only, cap 500, dies at launch):** pay **$1.99** once OR **refer 3 friends who sign up** → 1 month Legend free at launch, then Free, NO auto-charge.
+   - **In-app referral (POST-LAUNCH, repeatable):** refer **10 ACTIVE users** (downloaded + signed up + opened the app on 3+ days in their first week) → 1 month Legend free; refer more, earn more.
+   - NEVER use "lifetime". Referral terms may change; say so in ToS.
 4. **The anon Supabase key in client/site is safe ONLY because of RLS.** Waitlist/orders are locked to count-only RPCs (`waitlist_count`, `vanguard_claimed_count`, `referral_count`). Never add a permissive anon SELECT. Secrets (service role, Anthropic, Resend, LS, cron secrets) live only in Deno env.
 
 ## Architecture conventions
