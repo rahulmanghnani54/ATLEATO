@@ -84,9 +84,13 @@ AI fitness coaching app. Pre-launch: collecting a waitlist while finishing the a
 - Secrets: `supabase secrets set NAME=value` · EAS env: `eas env:create --environment preview --name NAME --value V --visibility plaintext`
 
 ## Non-negotiable product constraints
-1. **Honesty in copy.** Joining the waitlist grants NOTHING — it only sends an email. Never imply a signup is a confirmed Vanguard/founder/active pass. Vanguard = paid $1.99 only. Pro = referral threshold only. No fabricated counters/feeds ("X viewing", fake claimers) — show real data or nothing.
+1. **Honesty in copy.** Joining the waitlist grants NOTHING — it only sends an email. Never imply a plain signup is a confirmed Vanguard/founder/active pass. No fabricated counters/feeds ("X viewing", fake claimers) — show real data or nothing.
 2. **No real celebrity names/catchphrases.** The 5 personas are original: The Sculptor, The Monument, The Analyst, The Commander, The Architect.
-3. **Pricing language:** one-time $1.99 + 1 month free Legend at launch, then Free or $19.99/mo. NEVER "lifetime".
+3. **Pricing — 3 tiers, cumulative:**
+   - **Free** ($0): free features only
+   - **Pro** ($9.99/mo): free + Pro features
+   - **Legend** ($19.99/mo): free + Pro + Legend features
+   The **Vanguard founding pass** (first 500 only) unlocks the **Legend tier**, earned EITHER by paying a one-time **$1.99** OR by **referring 3 friends** — with 1 month free Legend at launch. NEVER "lifetime".
 4. **The anon Supabase key in client/site is safe ONLY because of RLS.** Waitlist/orders are locked to count-only RPCs (`waitlist_count`, `vanguard_claimed_count`, `referral_count`). Never add a permissive anon SELECT. Secrets (service role, Anthropic, Resend, LS, cron secrets) live only in Deno env.
 
 ## Architecture conventions

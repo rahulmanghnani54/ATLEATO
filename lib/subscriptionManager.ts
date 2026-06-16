@@ -62,11 +62,12 @@ function referralActive(): boolean {
   return referralProUntil != null && Date.now() < referralProUntil;
 }
 
-/** The tier the user effectively has: base, elevated to ≥pro by an active
- *  referral reward. Dev override always wins. */
+/** The tier the user effectively has: base, elevated to LEGEND by an active
+ *  referral reward (the Vanguard pass = Legend, earned at 3 referrals).
+ *  Dev override always wins. */
 function effectiveTier(): Tier {
   const base = DEV_TIER_OVERRIDE ?? currentTier;
-  if (referralActive() && RANK[base] < RANK.pro) return 'pro';
+  if (referralActive() && RANK[base] < RANK.legend) return 'legend';
   return base;
 }
 
@@ -154,10 +155,10 @@ export function getUserTier(): Tier {
   return effectiveTier();
 }
 
-/** True when the current Pro access comes from the referral reward (not a
- *  paid plan) — lets the UI label it "Pro · earned via referrals". */
+/** True when the current Legend access comes from the referral reward (the
+ *  Vanguard pass), not a paid plan — lets the UI label it accordingly. */
 export function isReferralRewardActive(): boolean {
-  return referralActive() && RANK[DEV_TIER_OVERRIDE ?? currentTier] < RANK.pro;
+  return referralActive() && RANK[DEV_TIER_OVERRIDE ?? currentTier] < RANK.legend;
 }
 
 /** When the referral-reward Pro month expires (epoch ms), or null. */
