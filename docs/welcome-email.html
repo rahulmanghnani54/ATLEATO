@@ -282,7 +282,7 @@
 </style>
 </head>
 <body>
-  <div class="preheader">You're in. Your VIP Vanguard pass is reserved — train under a legend. No excuses.</div>
+  <div class="preheader">You're on the Atleato waitlist — claim your founding Vanguard pass before the first 500 sell out.</div>
 
   <div class="browserbar">Hosted preview · <a href="https://atleato.com">atleato.com</a></div>
 
@@ -297,9 +297,9 @@
 
       <!-- hero -->
       <div class="hero">
-        <div class="kicker reveal"><span class="live"></span> VIP VANGUARD · ACCESS CONFIRMED</div>
+        <div class="kicker reveal"><span class="live"></span> WAITLIST · YOU'RE ON THE LIST</div>
         <h1 class="big reveal">YOU'RE<br /><span class="stroke">IN.</span></h1>
-        <p class="lead reveal" id="leadText"><span id="greetName">Hey,</span> your spot to <b>train under a legend</b> is locked. You're <span id="spotText">one of the first <b>500</b></span> — before the world even gets a download link.</p>
+        <p class="lead reveal" id="leadText"><span id="greetName">Hey,</span> you're <span id="spotText">on the waitlist</span> to <b>train under a legend</b> — before the world even gets a download link. Your founding <b>Vanguard pass</b> isn't claimed yet: only the first <b>500</b> who claim it get one.</p>
 
         <div class="marquee reveal">
           <div class="track">
@@ -453,7 +453,7 @@
       }
       if (pos) {
         var p = parseInt(pos,10);
-        if (!isNaN(p)) document.getElementById('spotText').innerHTML = 'spot <b>#' + p.toLocaleString() + '</b> of the first 500';
+        if (!isNaN(p)) document.getElementById('spotText').innerHTML = '<b>#' + p.toLocaleString() + '</b> on the waitlist';
       }
       if (pass) {
         var pn = parseInt(pass,10);

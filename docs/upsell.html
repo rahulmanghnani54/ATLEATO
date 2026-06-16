@@ -36,10 +36,6 @@
       </svg>
       Atleato<span class="tm">™</span>
     </a>
-    <div class="upsell-live-indicator">
-      <span class="live-dot"></span>
-      <span class="live-text">LIVE · <strong id="online-count">247</strong> viewing</span>
-    </div>
   </nav>
 
   <main class="upsell-main">
@@ -222,20 +218,9 @@
 
     </section>
 
-    <!-- ═══ SECTION 4: SOCIAL PROOF / RECENT CLAIMERS ═══ -->
-    <section class="claimers-section upsell-glass">
-      <div class="claimers-header">
-        <h2 class="claimers-title">
-          <span class="claimers-pulse"></span>
-          Recent Vanguards
-        </h2>
-        <span class="claimers-meta">Live · Last 60 minutes</span>
-      </div>
-      <div class="claimers-list" id="claimers-list">
-        <!-- Populated by JS -->
-      </div>
-      <p class="claimers-footer">Real Vanguards from the last hour · Names anonymized for privacy</p>
-    </section>
+    <!-- SECTION 4 removed: the "Recent Vanguards" feed showed fabricated
+         claimers, which contradicted the real VIP-claimed counter (0/500).
+         Removed for honesty — the real counter above is the source of truth. -->
 
     <!-- ═══ SECTION 5: TRUST / FAQ ═══ -->
     <section class="upsell-trust-grid">
@@ -454,13 +439,7 @@
             }
           }
 
-          // Online count — varies by minute, gentle synthetic (low risk)
-          var onlineEl = document.getElementById('online-count');
-          if (onlineEl) {
-            var minute = Math.floor(Date.now() / 60000);
-            var base = 120 + (minute % 80) + Math.floor(Math.sin(minute / 30) * 15);
-            onlineEl.textContent = Math.max(80, base);
-          }
+          // Fake "online viewing" count removed — was synthetic, not real.
         });
     }
     refreshStats();
@@ -561,8 +540,8 @@
         '</div>';
       }).join('');
     }
-    renderClaimers();
-    setInterval(renderClaimers, 60000); // refresh every minute
+    // Fake claimers feed disabled — contradicted the real VIP-claimed counter.
+    // (renderClaimers / generateClaimer left unused above; harmless.)
 
   })();
 

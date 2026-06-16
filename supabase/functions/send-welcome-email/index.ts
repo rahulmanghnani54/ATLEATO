@@ -52,12 +52,12 @@ function escapeHtml(s: string): string {
 function generatePlainText(name: string, email: string, position: number, badge: string, passNo: number, upsellUrl: string, hostedUrl: string): string {
   return `Hey ${name},
 
-YOU'RE IN.
+YOU'RE ON THE WAITLIST.
 
-Your spot to train under a legend is locked. You're spot #${position.toLocaleString()} on the waitlist — and pass #${String(passNo).padStart(4,'0')} of the first 500 ever issued.
+You're #${position.toLocaleString()} on the waitlist to train under a legend. Your founding pass #${String(passNo).padStart(4,'0')} is reserved — but only the first 500 who CLAIM it actually get one.
 
-Your identity: ${badge}
-Permanently yours · 1 of 500 ever created
+Your reserved identity: ${badge}
+Claim your pass to make it yours.
 
 — This is how training starts —
 
@@ -127,13 +127,13 @@ function generateHTML(name: string, email: string, position: number, badge: stri
     <tr><td style="padding:26px 30px 0;">
       <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#ff8050;text-transform:uppercase;">&#9679; You're in</p>
       <h1 style="margin:0 0 14px;font-family:Arial,Helvetica,sans-serif;font-size:34px;line-height:1.1;font-weight:800;color:#f5f6f3;">Hey ${safeName}, you're on the list.</h1>
-      <p style="margin:0 0 18px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#c4c8cd;">You're <b style="color:#f5f6f3;">#${safePos}</b> on the waitlist — and pass <b style="color:#f5f6f3;">#${safePass}</b> of the first 500 ever issued.</p>
+      <p style="margin:0 0 18px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#c4c8cd;">You're <b style="color:#f5f6f3;">#${safePos}</b> on the waitlist. Your founding pass <b style="color:#f5f6f3;">#${safePass}</b> is reserved — but only the first 500 who claim it actually get one.</p>
     </td></tr>
     <tr><td style="padding:6px 30px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#121418;border:1px solid #262a31;border-radius:12px;"><tr><td style="padding:20px 22px;">
-        <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1.5px;color:#ff8050;text-transform:uppercase;">Your founding identity</p>
+        <p style="margin:0 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:11px;letter-spacing:1.5px;color:#ff8050;text-transform:uppercase;">Your reserved identity</p>
         <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:22px;font-weight:800;color:#f5f6f3;">${escapeHtml(badge)}</p>
-        <p style="margin:6px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8b909a;">Permanently yours · 1 of 500</p>
+        <p style="margin:6px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8b909a;">Reserved — claim your pass to make it yours</p>
       </td></tr></table>
     </td></tr>
     <tr><td style="padding:28px 30px 0;">
@@ -180,7 +180,8 @@ serve(async (req) => {
     }
 
     const name = guessName(email);
-    const position = 2400 + (record.id || 1);
+    // Real signup order (the BIGSERIAL row id) — not a fabricated number.
+    const position = record.id || 1;
     const { passNo, full: badge } = deriveBadge(email);
 
     const upsellUrl = `https://atleato.com/upsell.html?email=${encodeURIComponent(email)}`;
