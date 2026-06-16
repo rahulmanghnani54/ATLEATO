@@ -281,6 +281,21 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
   }
 
+  // Instant UX mirror of the server-side disposable block (migration 019).
+  // The DB trigger is the real enforcement; this just gives a clear message
+  // before the request instead of a generic save error.
+  var DISPOSABLE_DOMAINS = [
+    'mailinator.com','10minutemail.com','10minemail.com','guerrillamail.com',
+    'guerrillamail.info','grr.la','sharklasers.com','yopmail.com','temp-mail.org',
+    'tempmail.com','throwawaymail.com','getnada.com','trashmail.com','maildrop.cc',
+    'dispostable.com','fakeinbox.com','mailnesia.com','mohmal.com','synsky.com',
+    'tmpeml.com','emailondeck.com','spamgourmet.com','mintemail.com','tempmailo.com'
+  ];
+  function isDisposable(s) {
+    var domain = (s.split('@')[1] || '').toLowerCase().trim();
+    return DISPOSABLE_DOMAINS.indexOf(domain) !== -1;
+  }
+
   // ── Client-side rate limit: max 3 attempts per minute per browser ──
   var RATE_LIMIT_KEY = 'waitlist_attempts:v1';
   var RATE_LIMIT_MAX = 3;
@@ -324,6 +339,11 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
 
       if (!isValidEmail(email)) {
         setMsg('Please enter a valid email.', false);
+        return;
+      }
+
+      if (isDisposable(email)) {
+        setMsg('Please use a real email address — temporary inboxes aren’t allowed.', false);
         return;
       }
 
