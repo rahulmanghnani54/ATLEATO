@@ -97,7 +97,7 @@ AI fitness coaching app. Pre-launch: collecting a waitlist while finishing the a
 - **UI = "Direction C"** (Nike/Telegram): Plus Jakarta Sans (display) + Inter (body), Lucide icons (no emoji-as-icon, no JetBrains-mono labels), persona-accent theming via `lib/personaTheme.ts` (single source of truth — don't hardcode persona colors). Primitives in `components/ui/c/` (HeroBlock, Stat, RowCard, AnchorCTA).
 - **Tier system:** `lib/subscriptionManager.ts` (effective tier = paid/cached, elevated by referral reward) + `lib/featureGates.ts`. Real IAP is stubbed (SDK-54 incompatible).
 - **Native modules are lazy-loaded + fail-safe** (try/catch `require`): `react-native-callkeep`, `react-native-branch` (`lib/branchReferral.ts`), health (`lib/wearableHealth.ts`). Each is gated in `app.config.js` behind an env var (`EXPO_PUBLIC_BRANCH_KEY`, `EXPO_PUBLIC_ENABLE_HEALTH`, `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`) so builds stay green until configured. They only fully work on Play Store installs / real devices, not sideloaded APKs.
-- **Migrations** `supabase/migrations/001…018`. Add the next number; never edit applied ones.
+- **Migrations** `supabase/migrations/001…021`. Add the next number; never edit applied ones.
 
 ## Known gotchas
 - **`tsc --noEmit` shows many errors that DON'T break the build:** `supabase/functions/**` (Deno globals + `https://` imports) are never bundled; custom-RPC calls need `(supabase.rpc as any)` casts. Metro/Babel strips types — there's no tsc gate in the build. Only act on errors in bundled app code.
