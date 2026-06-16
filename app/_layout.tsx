@@ -73,9 +73,10 @@ function RootNavigator() {
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchProfile(session.user.id);
-        // Grant the referral reward (free Pro month) if the user has crossed
-        // 3 referrals — runs on every sign-in so it lands even if they never
-        // open the referral screen. Best-effort, never blocks auth.
+        // Record today's app-open (powers the "active referral" definition —
+        // 3+ open-days in first 7) + grant any earned referral reward. Both
+        // best-effort, never block auth.
+        try { (supabase.rpc as any)('record_app_open'); } catch { /* ignore */ }
         refreshReferralReward();
       }
       setLoading(false);

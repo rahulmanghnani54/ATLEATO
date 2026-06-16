@@ -41,15 +41,14 @@ export default function ReferralScreen() {
   const accentColor = PROGRAM_COLORS[profile?.selected_program ?? ''] ?? Colors.primary;
   const code = user ? generateCode(user.id) : 'XXXXXXXX';
 
-  // Count = REAL APP INSTALLS referred by this user (profiles.referred_by),
-  // attributed via Branch deferred deep links. Replaces the waitlist-email
-  // count. Post-launch in-app reward: 10 ACTIVE referrals → 1 month Legend,
-  // repeatable (mig 021). NOTE: "active" + repeatable enforcement is a pre-ship
-  // guardrail (SOT §5) — current count is referred installs.
+  // Count = ACTIVE referrals (referred users who opened the app on 3+ distinct
+  // days in their first 7 — active_referral_count, mig 022), attributed via
+  // Branch deferred deep links. Reward: every 10 active → 1 month Legend,
+  // repeatable (claim_referral_reward tops up newly-earned months).
   const fetchCount = useCallback(async () => {
     if (!user) return;
     try {
-      const { data, error } = await (supabase.rpc as any)('install_referral_count');
+      const { data, error } = await (supabase.rpc as any)('active_referral_count');
       if (!error && typeof data === 'number') setReferralCount(data);
     } catch {
       // network/RPC failure — keep last known count
