@@ -49,14 +49,14 @@ function MuscleGroupRow({ group, accent }: { group: MuscleGroup; accent: string 
         onPress={() => setOpen((v) => !v)}
         activeOpacity={0.8}
       >
-        <Text style={styles.groupName}>{group.name}</Text>
+        <Text style={styles.groupName}>{group.label}</Text>
         {open ? <ChevronDown size={18} color={Colors.textSecondary} /> : <ChevronRight size={18} color={Colors.textSecondary} />}
       </TouchableOpacity>
       {open && (
         <View style={styles.groupBody}>
           {group.exercises.map((ex) => (
             <TouchableOpacity
-              key={ex.id}
+              key={ex.name}
               style={styles.groupExRow}
               onPress={() =>
                 router.push({
