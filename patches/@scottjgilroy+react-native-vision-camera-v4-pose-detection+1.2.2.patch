@@ -1,0 +1,23 @@
+diff --git a/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt b/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt
+index 89f218d..a32ac5b 100644
+--- a/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt
++++ b/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt
+@@ -18,13 +18,13 @@ import java.util.HashMap
+ 
+ class VisionCameraV3PoseDetectionModule(proxy : VisionCameraProxy, options: Map<String, Any>?): FrameProcessorPlugin() {
+ 
+-  override fun callback(frame: Frame, arguments: Map<String, Any>?): HashMap<String, Any> {
++  override fun callback(frame: Frame, arguments: Map<String, Any>?): HashMap<String, Any?> {
+     try {
+       val options = PoseDetectorOptions.Builder()
+-      if (arguments?.get("mode") === "stream") options.setDetectorMode(PoseDetectorOptions.STREAM_MODE)
+-      else if (arguments?.get("mode") === "single") options.setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
+-      if (arguments?.get("performanceMode") === "min") options.setPreferredHardwareConfigs(PoseDetectorOptions.CPU)
+-      else if (arguments?.get("performanceMode") === "max") options.setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
++      if (arguments?.get("mode") == "stream") options.setDetectorMode(PoseDetectorOptions.STREAM_MODE)
++      else if (arguments?.get("mode") == "single") options.setDetectorMode(PoseDetectorOptions.SINGLE_IMAGE_MODE)
++      if (arguments?.get("performanceMode") == "min") options.setPreferredHardwareConfigs(PoseDetectorOptions.CPU)
++      else if (arguments?.get("performanceMode") == "max") options.setPreferredHardwareConfigs(PoseDetectorOptions.CPU_GPU)
+       val poseDetector = PoseDetection.getClient(options.build())
+       val mediaImage: Image = frame.image
+       val orientation: Orientation = frame.orientation
