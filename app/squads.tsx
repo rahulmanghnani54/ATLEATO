@@ -95,7 +95,7 @@ export default function SquadsScreen() {
       // an infinite loader.
       const rpcs = Promise.all([
         supabase.rpc('my_squad'),
-        supabase.rpc('squad_leaderboard', { p_limit: 20 }),
+        (supabase.rpc as any)('squad_leaderboard', { p_limit: 20 }),
       ]);
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Request timed out — check your connection.')), 10_000),
@@ -131,7 +131,7 @@ export default function SquadsScreen() {
   const handleJoin = async (personaKey: string) => {
     setJoining(true);
     try {
-      const { error } = await supabase.rpc('join_squad', { p_persona_key: personaKey });
+      const { error } = await (supabase.rpc as any)('join_squad', { p_persona_key: personaKey });
       if (error) throw error;
       await refresh();
     } catch (e: any) {

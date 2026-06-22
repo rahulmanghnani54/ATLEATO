@@ -82,8 +82,8 @@ export default function PostWorkout() {
     try {
       const vKg = Math.round(parseFloat(volume) * 1000);
       if (vKg > 0 && vKg < 50000) {
-        supabase.rpc('submit_squad_volume', { p_volume_kg: vKg })
-          .then(({ error }) => { if (error) console.warn('submit_squad_volume:', error.message); });
+        (supabase.rpc as any)('submit_squad_volume', { p_volume_kg: vKg })
+          .then(({ error }: any) => { if (error) console.warn('submit_squad_volume:', error.message); });
       }
     } catch (e) { /* never block post-workout UX */ }
 

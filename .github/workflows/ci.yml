@@ -1,0 +1,52 @@
+name: CI
+
+# Runs on every push and pull request.
+on:
+  push:
+  pull_request:
+
+jobs:
+  # Type-check + lint: catches real bugs before they ship.
+  checks:
+    name: Type-check & Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Catches type errors, null-safety issues, and wrong API usage at compile time.
+      - name: TypeScript (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      # Catches likely bugs: bad React hook deps, unused code, unsafe patterns.
+      - name: ESLint
+        run: npm run lint
+
+  # Security/static-analysis scan. REPORT-ONLY for now (does not fail the build).
+  semgrep:
+    name: Semgrep security scan (report-only)
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # p/react = React anti-patterns & security; p/typescript = TS bug/security
+      # patterns; p/secrets = hardcoded credentials committed to the repo.
+      #
+      # 👉 TO MAKE SEMGREP BLOCK THE BUILD LATER: delete the line
+      #    `continue-on-error: true` below. (--error already makes findings exit
+      #    non-zero; continue-on-error is what currently keeps the build green.)
+      - name: Semgrep (React + TypeScript + secrets)
+        continue-on-error: true
+        run: semgrep scan --config p/react --config p/typescript --config p/secrets --error
