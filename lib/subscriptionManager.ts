@@ -29,6 +29,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { _setTierProvider } from '@/lib/featureGates';
 import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/stores/authStore';
 
 export const PRODUCT_IDS = {
   PRO_MONTHLY:    'atleato_pro_monthly',
@@ -58,6 +59,24 @@ const DEV_TIER_OVERRIDE = __DEV__
   ? (process.env.EXPO_PUBLIC_DEV_TIER as Tier | undefined)
   : undefined;
 
+// Founder comp accounts — these emails always resolve to LEGEND, in BOTH dev
+// and release builds. This is the safe "unlock for me, not everyone" lever:
+// it's keyed to specific accounts, so shipping it publicly grants nothing to
+// regular users. Add/remove emails here. (Lowercase.)
+const FOUNDER_EMAILS = new Set<string>([
+  '9alley27@gmail.com',
+  'madasales15@gmail.com',
+]);
+
+function isFounder(): boolean {
+  try {
+    const email = useAuthStore.getState().user?.email?.toLowerCase();
+    return !!email && FOUNDER_EMAILS.has(email);
+  } catch {
+    return false;
+  }
+}
+
 function referralActive(): boolean {
   return referralProUntil != null && Date.now() < referralProUntil;
 }
@@ -66,6 +85,8 @@ function referralActive(): boolean {
  *  referral reward (the Vanguard pass = Legend, earned at 3 referrals).
  *  Dev override always wins. */
 function effectiveTier(): Tier {
+  // Founder comp accounts → always LEGEND (works in release too).
+  if (isFounder()) return 'legend';
   const base = DEV_TIER_OVERRIDE ?? currentTier;
   if (referralActive() && RANK[base] < RANK.legend) return 'legend';
   return base;

@@ -94,7 +94,6 @@ export default function LegendProgressScreen() {
     { label: 'WORKOUTS COMPLETED', icon: '🏋️', xpEach: XP_AWARDS.workout,          sub: `+${XP_AWARDS.workout} XP each` },
     { label: 'STREAK MILESTONES',  icon: '🔥', xpEach: XP_AWARDS.streak_milestone,  sub: `+${XP_AWARDS.streak_milestone} XP per 7 days` },
     { label: 'PERSONAL RECORDS',   icon: '🏆', xpEach: XP_AWARDS.pr,                sub: `+${XP_AWARDS.pr} XP per PR` },
-    { label: 'TERRITORY CAPTURES', icon: '🗺️', xpEach: XP_AWARDS.territory,         sub: `+${XP_AWARDS.territory} XP per cell` },
   ];
 
   return (

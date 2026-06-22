@@ -5,7 +5,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { RecoverySlider } from '@/components/recovery/RecoverySlider';
 import { useSubmitRecovery, useTodayRecovery } from '@/hooks/useRecoveryCheckin';
 import { calculateRecovery } from '@/lib/recoveryEngine';
-import { Colors, Fonts } from '@/constants/theme';
+import { Colors, Fonts, Radius, Spacing } from '@/constants/theme';
+import { personaFromProgramId } from '@/lib/personaTheme';
+import { useAuthStore } from '@/stores/authStore';
 
 function scoreColor(score: number) {
   if (score >= 85) return Colors.success;
@@ -20,6 +22,8 @@ export default function RecoveryCheckin() {
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { mutateAsync, isPending } = useSubmitRecovery();
   const { data: existingCheckin } = useTodayRecovery();
+  const profile = useAuthStore((s) => s.profile);
+  const accent = personaFromProgramId(profile?.selected_program).accent;
 
   const [sleepHours, setSleepHours] = useState(7.5);
   const [sleepQuality, setSleepQuality] = useState(3);
@@ -54,7 +58,10 @@ export default function RecoveryCheckin() {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.monoLabel}>MORNING CHECK-IN</Text>
+          <TouchableOpacity onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
+            <Text style={styles.backArrow}>←</Text>
+          </TouchableOpacity>
+          <Text style={[styles.monoLabel, { color: accent }]}>MORNING CHECK-IN</Text>
           <Text style={styles.headline}>HOW DID{'\n'}YOU SLEEP?</Text>
         </View>
 
@@ -147,7 +154,7 @@ export default function RecoveryCheckin() {
         </View>
 
         <TouchableOpacity
-          style={[styles.submitBtn, isPending && { opacity: 0.6 }]}
+          style={[styles.submitBtn, { backgroundColor: accent }, isPending && { opacity: 0.6 }]}
           onPress={handleSubmit}
           disabled={isPending}
           activeOpacity={0.85}
@@ -166,6 +173,8 @@ const styles = StyleSheet.create({
   scroll: { padding: 20, paddingTop: 14 },
 
   header: { marginBottom: 20 },
+  backBtn: { marginBottom: 10 },
+  backArrow: { fontSize: 24, color: Colors.text },
   monoLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
   headline: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text, lineHeight: 34, letterSpacing: -1, marginTop: 6 },
 
@@ -177,7 +186,7 @@ const styles = StyleSheet.create({
 
   scoreCard: {
     backgroundColor: Colors.surface, borderWidth: 1,
-    borderRadius: 6, padding: 16, marginBottom: 12,
+    borderRadius: Radius.lg, padding: Spacing.md, marginBottom: 12,
   },
   scoreRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 },
   scoreMono: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4, marginBottom: 4 },
@@ -191,12 +200,12 @@ const styles = StyleSheet.create({
 
   section: {
     backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, padding: 16, marginBottom: 10,
+    borderRadius: Radius.lg, padding: Spacing.md, marginBottom: 10,
   },
   sectionLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8, marginBottom: 14 },
 
   submitBtn: {
-    backgroundColor: Colors.primary, borderRadius: 4,
+    borderRadius: Radius.md,
     paddingVertical: 16, alignItems: 'center', marginTop: 8,
   },
   submitBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1 },

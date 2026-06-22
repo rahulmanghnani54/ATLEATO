@@ -90,10 +90,13 @@ export default function CoachHub() {
       const history: ClaudeMessage[] = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
       const { reply } = await aiCoachChat(persona.id, trimmed, history);
       setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: reply }]);
-    } catch {
+    } catch (e: any) {
+      // Show the real reason so the failure is diagnosable: "HTTP 401" = Anthropic
+      // key bad/missing, "HTTP 429" = credits/rate limit, "HTTP 404" = model.
+      const why = e?.message ? ` (${String(e.message).slice(0, 90)})` : '';
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(), role: 'assistant',
-        content: "Connection issue — try again in a moment.",
+        content: `Connection issue — try again in a moment.${why}`,
       }]);
     } finally {
       setChatLoading(false);

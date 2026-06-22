@@ -20,7 +20,8 @@
  */
 import notifee, {
   AndroidImportance, AndroidVisibility, AndroidCategory,
-  AuthorizationStatus, EventType, TriggerType,
+  AuthorizationStatus, EventType, TriggerType, RepeatFrequency,
+  AndroidNotificationSetting,
   type TimestampTrigger,
 } from '@notifee/react-native';
 import * as Speech from 'expo-speech';
@@ -29,7 +30,11 @@ import { getPersona, type PersonaId } from './personaTheme';
 
 export type CallKind = 'wakeup' | 'workout';
 
-const CHANNEL_ID = 'coach-incoming-calls';
+// v2: Android caches channel settings at first creation — the original
+// 'coach-incoming-calls' channel got stuck with bypassDnd=false / non-public
+// visibility, so scheduled calls didn't ring properly. Bumping the ID forces a
+// fresh channel with the correct alarm-grade settings (bypass DnD, public, sound).
+const CHANNEL_ID = 'coach-incoming-calls-v2';
 const ID_PREFIX  = 'coach-call:';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -242,6 +247,95 @@ export async function cancelAllCalls(): Promise<void> {
   } catch {
     // noop
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCHEDULED calls (daily) — the real fix for "scheduled wake-up never fires"
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// The old path scheduled via expo-notifications, which on Android 12+ silently
+// fails to fire without the exact-alarm permission. We schedule through Notifee
+// with an AlarmManager-backed TimestampTrigger (allowWhileIdle) + DAILY repeat +
+// the SAME full-screen call config as fireIncomingCall — so the scheduled call
+// fires reliably AND rings as an actual incoming call (not just a banner).
+
+const SCHED_PREFIX = `${ID_PREFIX}sched-`;
+
+/**
+ * On Android 12+ exact alarms need the "Alarms & reminders" special permission.
+ * Returns true if already granted; otherwise opens the system settings page so
+ * the user can enable it (scheduled calls won't fire reliably until they do).
+ */
+export async function ensureExactAlarmPermission(): Promise<boolean> {
+  if (Platform.OS !== 'android') return true;
+  try {
+    const settings = await notifee.getNotificationSettings();
+    if (settings.android.alarm === AndroidNotificationSetting.ENABLED) return true;
+    try { await notifee.openAlarmPermissionSettings(); } catch { /* ignore */ }
+    return false;
+  } catch {
+    return true; // older Android / API unavailable — exact alarms allowed
+  }
+}
+
+/** Schedule a daily full-screen coach call at hour:minute (local). */
+export async function scheduleIncomingCall(args: {
+  kind: CallKind; personaId: PersonaId; hour: number; minute: number;
+}): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const { kind, personaId, hour, minute } = args;
+  const persona = getPersona(personaId);
+  const copy = getCallCopy(personaId, kind);
+
+  await setupCallChannel();
+
+  const id = `${SCHED_PREFIX}${kind}`;
+  // Replace any existing schedule for this kind
+  try { await notifee.cancelTriggerNotification(id); } catch { /* none */ }
+
+  // Next occurrence of hour:minute — tomorrow if it already passed today.
+  const fire = new Date();
+  fire.setHours(hour, minute, 0, 0);
+  if (fire.getTime() <= Date.now()) fire.setDate(fire.getDate() + 1);
+
+  const trigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: fire.getTime(),
+    repeatFrequency: RepeatFrequency.DAILY,
+    alarmManager: { allowWhileIdle: true }, // exact, fires in Doze
+  };
+
+  await notifee.createTriggerNotification(
+    {
+      id,
+      title: '📞  ' + copy.title + '  ·  INCOMING CALL',
+      body: copy.body,
+      data: { kind, personaId, callId: id, voice: persona.id },
+      android: {
+        channelId: CHANNEL_ID,
+        category: AndroidCategory.CALL,
+        importance: AndroidImportance.HIGH,
+        pressAction:      { id: 'open-call-screen', launchActivity: 'default' },
+        fullScreenAction: { id: 'full-screen',      launchActivity: 'default' },
+        actions: [
+          { title: '✓  ANSWER',  pressAction: { id: 'ANSWER', launchActivity: 'default' } },
+          { title: '✕  DECLINE', pressAction: { id: 'DECLINE' } },
+        ],
+        sound: 'default',
+        ongoing: true,
+        autoCancel: false,
+        visibility: AndroidVisibility.PUBLIC,
+        color: persona.accent,
+      },
+      ios: { sound: 'default', categoryId: 'coach-call-actions', critical: true, criticalVolume: 1.0 },
+    },
+    trigger,
+  );
+}
+
+/** Cancel the daily scheduled call for one kind. */
+export async function cancelScheduledCall(kind: CallKind): Promise<void> {
+  try { await notifee.cancelTriggerNotification(`${SCHED_PREFIX}${kind}`); } catch { /* noop */ }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

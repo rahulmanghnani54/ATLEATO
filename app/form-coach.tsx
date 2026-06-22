@@ -1,22 +1,22 @@
 /**
- * Live Form Coach (V1.5 — snapshot + 60fps interpolation)
+ * Live Form Coach (V3 — MLKit Pose · real-time frame processor)
  *
- * Detection: MoveNet Lightning runs every 150ms via the snapshot pipeline (~6 fps).
- * Rendering: An animation loop runs at ~60fps and linearly interpolates the
- *   on-screen skeleton from its previous position to the latest detection.
+ * Detection: Google MLKit Pose Detection runs as a native Vision Camera FRAME
+ *   PROCESSOR (on the worklet/JSI thread, every frame at ~20-30fps). MLKit has
+ *   a built-in person DETECTOR stage, so it only returns landmarks when a real
+ *   body is in frame — no hallucinated poses, no shouting at an empty room.
+ *   It returns the same 33 landmarks as BlazePose (same indices), so the
+ *   skeleton, analysis and gating below are unchanged from the snapshot version.
+ * Rendering: A ~60fps loop interpolates the on-screen skeleton toward the latest
+ *   MLKit result, so it glides smoothly even between detections.
  *
- * Why this design:
- *   - True 15-30fps worklet inference would need a Vision Camera + fast-tflite
- *     + nitro-modules version triplet that's currently fragile ("cannot get
- *     hybrid property" cross-thread errors).
- *   - Inference at 6fps + interpolation at 60fps LOOKS just as smooth as
- *     true 30fps to the eye, because pose changes between frames are
- *     near-linear at human speeds.
- *   - 100% on JS thread — no worklet stability risk, no native module
- *     juggling, no rebuild needed.
+ * Pipeline:
+ *   Camera frame → useFrameProcessor (worklet) → detectPose(frame) [MLKit native]
+ *     → useRunOnJS → handlePose() maps MLKit image-pixel coords to screen coords
+ *     (cover-fit + front-camera mirror) → targetKpts → analysis + SVG draw.
  *
- * The form analysis (knees caving, depth, elbow flare etc.) still fires every
- * detection (6×/sec). Visual smoothing only affects how the skeleton GLIDES.
+ * MLKit returns positions in the UPRIGHT image pixel space; we pass frame
+ * width/height from the worklet and cover-fit them onto the camera view.
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
@@ -25,11 +25,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission, useFrameProcessor, VisionCameraProxy } from 'react-native-vision-camera';
 import Svg, { Circle, Line } from 'react-native-svg';
-import { useTensorflowModel } from 'react-native-fast-tflite';
-import * as ImageManipulator from 'expo-image-manipulator';
-import { decode as decodeJpeg } from 'jpeg-js';
+import { useRunOnJS } from 'react-native-worklets-core';
 import { Colors, Spacing, Fonts } from '@/constants/theme';
 import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
 import { getExerciseForm, getCoachCue, type ExerciseForm } from '@/constants/exerciseFormLibrary';
@@ -40,16 +38,28 @@ import {
   Camera as CameraIcon,
 } from 'lucide-react-native';
 
+// The MLKit plugin registers a native frame processor named "detectPose", but
+// its JS entry only exports <Camera> (not the worklet). So we initialize the
+// native plugin ourselves — the standard Vision Camera v4 pattern — and call it
+// from the frame-processor worklet below.
+const posePlugin = VisionCameraProxy.initFrameProcessorPlugin('detectPose', {});
+function detectPose(frame: any, options: Record<string, string>): any {
+  'worklet';
+  if (posePlugin == null) throw new Error('detectPose plugin not linked');
+  return posePlugin.call(frame, options);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DETECTION_INTERVAL_MS = 150;   // ~6.5 fps inference
+const DETECTION_INTERVAL_MS = 150;   // ~6.5 fps inference target
 const RENDER_INTERVAL_MS    = 16;    // ~60 fps render/interpolation
 const INTERP_SPEED          = 0.30;  // 0..1 — lower = smoother (and filters jitter)
-const MODEL_INPUT_SIZE      = 192;
+const MODEL_INPUT_SIZE      = 256;   // BlazePose expects 256×256
+const NUM_LANDMARKS         = 33;    // BlazePose body landmarks
 const CONFIDENCE_THRESHOLD  = 0.30;
-const MIN_VISIBLE_JOINTS    = 8;
+const MIN_VISIBLE_JOINTS    = 10;    // of 33 — need a credible body in frame
 const CUE_COOLDOWN_MS       = 5_000;
 
 // ── Stability tuning ─────────────────────────────────────────────────────────
@@ -70,21 +80,75 @@ const PERSONA_LABELS: Record<string, string> = {
   dr_mike:     'DR. GROWTH SAYS',
 };
 
+// BlazePose 33-landmark index map. The analysis code references these by name,
+// so swapping the indices here automatically re-points angle checks, motion
+// detection, visibility, etc. to the BlazePose layout.
 const KP = {
-  nose: 0, l_eye: 1, r_eye: 2, l_ear: 3, r_ear: 4,
-  l_shoulder: 5, r_shoulder: 6,
-  l_elbow: 7,    r_elbow: 8,
-  l_wrist: 9,    r_wrist: 10,
-  l_hip: 11,     r_hip: 12,
-  l_knee: 13,    r_knee: 14,
-  l_ankle: 15,   r_ankle: 16,
+  nose: 0,
+  l_eye: 2, r_eye: 5,        // (BlazePose has inner/center/outer; use center)
+  l_ear: 7, r_ear: 8,
+  mouth_l: 9, mouth_r: 10,
+  l_shoulder: 11, r_shoulder: 12,
+  l_elbow: 13,    r_elbow: 14,
+  l_wrist: 15,    r_wrist: 16,
+  l_pinky: 17,    r_pinky: 18,
+  l_index: 19,    r_index: 20,
+  l_thumb: 21,    r_thumb: 22,
+  l_hip: 23,      r_hip: 24,
+  l_knee: 25,     r_knee: 26,
+  l_ankle: 27,    r_ankle: 28,
+  l_heel: 29,     r_heel: 30,
+  l_foot: 31,     r_foot: 32,
 };
 
+// Full BlazePose skeleton (body + limbs + hands + feet). Face is drawn as
+// points only (no lines) to stay readable.
 const SKELETON: [number, number][] = [
-  [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
-  [5, 11], [6, 12], [11, 12],
-  [11, 13], [13, 15], [12, 14], [14, 16],
+  // torso
+  [11, 12], [11, 23], [12, 24], [23, 24],
+  // left arm + hand
+  [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
+  // right arm + hand
+  [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20],
+  // left leg + foot
+  [23, 25], [25, 27], [27, 29], [29, 31], [27, 31],
+  // right leg + foot
+  [24, 26], [26, 28], [28, 30], [30, 32], [28, 32],
 ];
+
+// Landmarks we render as joints. We drop the redundant inner/outer eye points
+// and keep a clean ~27-point body skeleton (the user asked for "25-30 joints").
+const DRAW_POINTS: number[] = [
+  0, 7, 8,                                  // nose, ears
+  11, 12, 13, 14, 15, 16,                   // shoulders, elbows, wrists
+  17, 18, 19, 20, 21, 22,                   // hands (pinky, index, thumb)
+  23, 24, 25, 26, 27, 28,                   // hips, knees, ankles
+  29, 30, 31, 32,                           // heels, feet
+];
+// Face points (rendered smaller).
+const FACE_POINTS = new Set<number>([0, 7, 8]);
+
+// MLKit returns named landmark positions; map each to its BlazePose index so the
+// rest of the file (KP map, SKELETON, analysis) works unchanged. MLKit pose IS
+// BlazePose, so the 33 indices line up exactly.
+const MLKIT_TO_INDEX: Record<string, number> = {
+  nosePosition: 0,
+  leftEyeInnerPosition: 1, leftEyePosition: 2, leftEyeOuterPosition: 3,
+  rightEyeInnerPosition: 4, rightEyePosition: 5, rightEyeOuterPosition: 6,
+  leftEarPosition: 7, rightEarPosition: 8,
+  leftMouthPosition: 9, rightMouthPosition: 10,
+  leftShoulderPosition: 11, rightShoulderPosition: 12,
+  leftElbowPosition: 13, rightElbowPosition: 14,
+  leftWristPosition: 15, rightWristPosition: 16,
+  leftPinkyPosition: 17, rightPinkyPosition: 18,
+  leftIndexPosition: 19, rightIndexPosition: 20,
+  leftThumbPosition: 21, rightThumbPosition: 22,
+  leftHipPosition: 23, rightHipPosition: 24,
+  leftKneePosition: 25, rightKneePosition: 26,
+  leftAnklePosition: 27, rightAnklePosition: 28,
+  leftHeelPosition: 29, rightHeelPosition: 30,
+  leftFootIndexPosition: 31, rightFootIndexPosition: 32,
+};
 
 type Kpt = [number, number, number]; // [x_px, y_px, confidence]
 
@@ -284,9 +348,9 @@ class OneEuro {
   }
 }
 
-/** Per-axis filter for each of 17 MoveNet keypoints. */
+/** Per-axis filter for each of the 33 BlazePose landmarks. */
 class KeypointSmoother {
-  private filters: OneEuro[][] = Array.from({ length: 17 }, () => [
+  private filters: OneEuro[][] = Array.from({ length: NUM_LANDMARKS }, () => [
     new OneEuro(0.25, 0.012),  // x — heavy smoothing at rest
     new OneEuro(0.25, 0.012),  // y
   ]);
@@ -385,12 +449,11 @@ function analyzeForm(form: ExerciseForm | null, kpts: Kpt[], history?: Kpt[][]):
   return { issues, badJoints, status };
 }
 
-function base64ToUint8(b64: string): Uint8Array {
-  const clean = b64.replace(/^data:[^;]+;base64,/, '');
-  const bin = atob(clean);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  return arr;
+// Throttled debug logger (visible via `adb logcat | grep pose`).
+// Logs ~1 in 4 calls so it doesn't spam. Safe to leave — cheap, dev-only signal.
+let _poseLogN = 0;
+function poseLog(msg: string) {
+  if (_poseLogN++ % 4 === 0) console.log('[pose]', msg);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -425,11 +488,13 @@ export default function FormCoach() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const tfliteModel = useTensorflowModel(
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require('../assets/models/movenet.tflite') as number,
-    [],
-  );
+  // MLKit pose runs natively in the frame processor — there's no model file to
+  // load, so we're "ready" as soon as the screen mounts. modelState/modelErrorMsg
+  // are kept for the status UI; modelState flips to 'error' only if the native
+  // frame-processor plugin isn't linked (detectPose throws in the worklet).
+  const [modelState, setModelState] = useState<'loading' | 'loaded' | 'error'>('loaded');
+  const [modelErrorMsg, setModelErrorMsg] = useState<string | null>(null);
+  const pluginErrorReportedRef = useRef(false);
 
   // ── Two-buffer state: targetKpts (latest detection) + displayKpts (rendered, interpolated)
   const targetKptsRef  = useRef<Kpt[] | null>(null);
@@ -568,73 +633,74 @@ export default function FormCoach() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Detection loop (snapshot @ ~6 fps) ─────────────────────────────────────
-  useEffect(() => {
-    if (tfliteModel.state !== 'loaded') return;
-    const model = tfliteModel.model;
+  // ── MLKit pose result handler (runs on the JS thread via useRunOnJS) ────────
+  // MLKit returns named landmark positions in UPRIGHT image-pixel space, and
+  // ONLY when its detector sees a real body (empty object otherwise → no
+  // hallucination). We map coords to the camera view (cover-fit + front mirror),
+  // build the 33-index Kpt array, then feed the SAME analysis + smoothing.
+  const mirrorFront = facing === 'front';
+  const handlePose = useCallback((data: any, frameW: number, frameH: number, mirror: boolean) => {
+    const nose = data?.nosePosition;
+    // No person detected → blank the skeleton and stay silent.
+    if (!data || !nose || (nose.x === 0 && nose.y === 0)) {
+      targetKptsRef.current = null;
+      kptsHistoryRef.current = [];
+      setAnalysisTick((t) => t + 1);
+      return;
+    }
+    // MLKit coords are upright; portrait view → image width=min, height=max.
+    const imgW = Math.min(frameW, frameH);
+    const imgH = Math.max(frameW, frameH);
+    const viewW = screenWidth, viewH = cameraHeight;
+    // Cover-fit (matches the camera preview's resizeMode="cover").
+    const scale = Math.max(viewW / imgW, viewH / imgH);
+    const offX = (viewW - imgW * scale) / 2;
+    const offY = (viewH - imgH * scale) / 2;
 
-    const runOnce = async () => {
-      if (detectingRef.current || !cameraRef.current) return;
-      detectingRef.current = true;
-      try {
-        const snap = await cameraRef.current.takeSnapshot({ quality: 60 });
-        const uri  = snap.path.startsWith('file://') ? snap.path : `file://${snap.path}`;
-        const resized = await ImageManipulator.manipulateAsync(
-          uri,
-          [{ resize: { width: MODEL_INPUT_SIZE, height: MODEL_INPUT_SIZE } }],
-          { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG, base64: true },
-        );
-        if (!resized.base64) return;
+    const raw: Kpt[] = [];
+    for (let i = 0; i < NUM_LANDMARKS; i++) raw.push([0, 0, 0]);
+    for (const name in MLKIT_TO_INDEX) {
+      const p = data[name];
+      if (!p) continue;
+      const present = !(p.x === 0 && p.y === 0);
+      let sx = p.x * scale + offX;
+      const sy = p.y * scale + offY;
+      if (mirror) sx = viewW - sx;
+      raw[MLKIT_TO_INDEX[name]] = [sx, sy, present ? 1 : 0];
+    }
 
-        const jpegBytes = base64ToUint8(resized.base64);
-        const { data: rgba } = decodeJpeg(jpegBytes, { useTArray: true, formatAsRGBA: true });
+    const visible = raw.filter(([, , c]) => c > 0).length;
+    poseLog('mlkit landmarks=' + visible + '/33');
 
-        const px = MODEL_INPUT_SIZE * MODEL_INPUT_SIZE;
-        const rgb = new Uint8Array(px * 3);
-        for (let i = 0; i < px; i++) {
-          rgb[i * 3]     = rgba[i * 4];
-          rgb[i * 3 + 1] = rgba[i * 4 + 1];
-          rgb[i * 3 + 2] = rgba[i * 4 + 2];
-        }
+    const smoothed = smootherRef.current.smooth(raw);
+    targetKptsRef.current = smoothed;
+    kptsHistoryRef.current.push(smoothed);
+    if (kptsHistoryRef.current.length > MOTION_HISTORY_LEN) kptsHistoryRef.current.shift();
+    setAnalysisTick((t) => t + 1);
+  }, [screenWidth, cameraHeight]);
 
-        const out = await model.run([rgb.buffer as ArrayBuffer]);
-        const flat = new Float32Array(out[0]);
+  // One-time error surface if the native frame-processor plugin isn't linked.
+  const reportPluginError = useCallback((msg: string) => {
+    if (pluginErrorReportedRef.current) return;
+    pluginErrorReportedRef.current = true;
+    poseLog('plugin error: ' + msg);
+    setModelErrorMsg('Pose engine unavailable. Please reinstall the app.');
+    setModelState('error');
+  }, []);
 
-        const raw: Kpt[] = [];
-        for (let i = 0; i < 17; i++) {
-          const yNorm = flat[i * 3];
-          const xNorm = flat[i * 3 + 1];
-          const conf  = flat[i * 3 + 2];
-          raw.push([xNorm * screenWidth, yNorm * cameraHeight, conf]);
-        }
-        // ── Apply One-Euro smoothing BEFORE storing as target ──
-        // This is the key fix for "skeleton wobbles when you hold still".
-        const smoothed = smootherRef.current.smooth(raw);
-        const visible = smoothed.filter(([, , c]) => c >= CONFIDENCE_THRESHOLD).length;
-        const usable = visible >= MIN_VISIBLE_JOINTS ? smoothed : null;
-        targetKptsRef.current = usable;
+  const onPoseJS = useRunOnJS(handlePose, [handlePose]);
+  const onPluginErrorJS = useRunOnJS(reportPluginError, [reportPluginError]);
 
-        // Push to motion-history buffer (used to detect "actually exercising")
-        if (usable) {
-          kptsHistoryRef.current.push(usable);
-          if (kptsHistoryRef.current.length > MOTION_HISTORY_LEN) {
-            kptsHistoryRef.current.shift();
-          }
-        } else {
-          kptsHistoryRef.current = []; // reset when subject leaves frame
-        }
-
-        setAnalysisTick((t) => t + 1); // trigger form-analysis recompute
-      } catch {
-        // single-frame error — try next tick
-      } finally {
-        detectingRef.current = false;
-      }
-    };
-
-    const id = setInterval(runOnce, DETECTION_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [tfliteModel.state, screenWidth, cameraHeight]);
+  // ── Frame processor: MLKit pose on every camera frame (worklet thread) ──────
+  const frameProcessor = useFrameProcessor((frame) => {
+    'worklet';
+    try {
+      const data = detectPose(frame, { mode: 'stream', performanceMode: 'max' });
+      onPoseJS(data, frame.width, frame.height, mirrorFront);
+    } catch (e: any) {
+      onPluginErrorJS(String(e?.message ?? e));
+    }
+  }, [onPoseJS, onPluginErrorJS, mirrorFront]);
 
   // ── Render loop (60fps interpolation) ──────────────────────────────────────
   // Smoothly glides displayKpts toward targetKptsRef.current. Even though
@@ -729,13 +795,8 @@ export default function FormCoach() {
   }
 
   const isTracking   = displayKpts !== null;
-  const modelLoading = tfliteModel.state === 'loading';
-  const modelError   = tfliteModel.state === 'error';
-  // Surface the real error so we can debug what's actually failing
-  // (was previously just 'MODEL ERROR' with no detail).
-  const modelErrorMsg = modelError
-    ? (tfliteModel as any).error?.message || String((tfliteModel as any).error ?? 'unknown')
-    : null;
+  const modelLoading = modelState === 'loading';
+  const modelError   = modelState === 'error';
   const statusLabel  =
     modelError                            ? '⬤ MODEL ERROR' :
     modelLoading                          ? '⬤ LOADING AI…' :
@@ -770,7 +831,8 @@ export default function FormCoach() {
           style={StyleSheet.absoluteFill}
           device={device}
           isActive={true}
-          photo={true}
+          frameProcessor={frameProcessor}
+          pixelFormat="yuv"
         />
 
         <Svg
@@ -796,15 +858,13 @@ export default function FormCoach() {
                   />
                 );
               })}
-              {displayKpts.map(([cx, cy, conf], i) => {
+              {DRAW_POINTS.map((i) => {
+                const [cx, cy, conf] = displayKpts[i];
                 if (conf < CONFIDENCE_THRESHOLD) return null;
-                // Render all 17 MoveNet keypoints (0=nose, 1-2=eyes,
-                // 3-4=ears, 5-6=shoulders, 7-8=elbows, 9-10=wrists,
-                // 11-12=hips, 13-14=knees, 15-16=ankles). Face joints
-                // (0-4) get a smaller radius so they don't crowd the
-                // body joints visually but the user still sees the
-                // full skeleton.
-                const isFace = i <= 4;
+                // Curated ~27 BlazePose joints (nose, ears, shoulders, elbows,
+                // wrists, hands, hips, knees, ankles, heels, feet). Face points
+                // get a smaller radius so they don't crowd the body joints.
+                const isFace = FACE_POINTS.has(i);
                 return (
                   <Circle
                     key={`k-${i}`}

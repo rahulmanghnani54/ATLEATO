@@ -317,7 +317,7 @@ export default function ProfileScreen() {
             sub={`${GOAL_LABELS[profile?.goal ?? ''] ?? ''} · ${ACTIVITY_LABELS[profile?.activity_level ?? ''] ?? ''}`}
             trail="Change"
             trailColor={programColor}
-            onPress={() => router.push('/(onboarding)/step5-program' as any)}
+            onPress={() => router.push({ pathname: '/(onboarding)/step5-program', params: { fromProfile: '1' } } as any)}
           />
         </SettingsGroup>
 

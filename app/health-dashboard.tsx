@@ -86,23 +86,16 @@ export default function HealthDashboard() {
   useEffect(() => { getHealthStatus().then(setHealthStatus).catch(() => {}); }, []);
 
   const handleConnectWatch = async () => {
-    setConnecting(true);
-    try {
-      const ok = await connectHealth();
-      if (ok) {
-        await refresh(); // pulls real watch data into the recovery score
-        Alert.alert('Watch connected', 'Your steps, heart rate, HRV and sleep now feed your recovery score.');
-      } else {
-        Alert.alert(
-          'Not connected',
-          'Couldn’t get health permission. On Android, make sure Health Connect is installed and your watch app syncs to it.',
-        );
-      }
-    } catch {
-      Alert.alert('Not available', 'Health data isn’t available on this device/build yet.');
-    } finally {
-      setConnecting(false);
-    }
+    // Smartwatch sync via Health Connect needs manifest health.READ_* permissions
+    // + a privacy-policy rationale activity that aren't wired yet — and invoking
+    // the native HC permission flow without them HARD-CRASHES on some devices
+    // (uncatchable from JS). So until that's properly set up, we DON'T call the
+    // native module at all — we just tell the user it's coming. (Tracked: full
+    // Health Connect setup is a pre-launch task.)
+    Alert.alert(
+      'Smartwatch sync — coming soon',
+      'Apple Watch / Wear OS / Fitbit sync is on the way. For now, log your recovery (sleep, HRV, energy) manually in the Recovery check-in and it feeds your score.',
+    );
   };
 
   const refresh = useCallback(async () => {

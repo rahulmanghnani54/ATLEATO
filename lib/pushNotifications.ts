@@ -12,9 +12,15 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
-import { upsertPushToken } from '@/hooks/useTerritory';
+import { supabase } from '@/lib/supabase';
 
 let registeredThisSession = false;
+
+/** Register/refresh this device's push token (idempotent Supabase RPC). */
+async function upsertPushToken(token: string, platform: 'ios' | 'android' | 'web'): Promise<void> {
+  const { error } = await (supabase.rpc as any)('upsert_push_token', { p_token: token, p_platform: platform });
+  if (error) throw error;
+}
 
 export async function registerPushTokenIfNeeded(): Promise<void> {
   if (registeredThisSession) return;

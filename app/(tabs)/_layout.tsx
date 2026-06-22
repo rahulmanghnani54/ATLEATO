@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import {
-  House, Dumbbell, UtensilsCrossed, MessageCircle, MapPin, UserRound,
+  House, Dumbbell, UtensilsCrossed, MessageCircle, UserRound,
 } from 'lucide-react-native';
 import { Colors, Fonts } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
@@ -16,7 +16,6 @@ const ICONS = {
   train:     Dumbbell,
   eat:       UtensilsCrossed,
   coach:     MessageCircle,
-  territory: MapPin,
   me:        UserRound,
 } as const;
 type IconKey = keyof typeof ICONS;
@@ -96,12 +95,6 @@ export default function TabsLayout() {
         name="coach"
         options={{
           tabBarIcon: ({ focused }) => <TabIcon icon="coach" focused={focused} label="Coach" accent={accent} />,
-        }}
-      />
-      <Tabs.Screen
-        name="territory"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon icon="territory" focused={focused} label="Run" accent={accent} />,
         }}
       />
       <Tabs.Screen

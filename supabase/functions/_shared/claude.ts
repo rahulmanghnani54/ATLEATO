@@ -37,8 +37,16 @@ export async function callClaude(
   });
 
   if (!response.ok) {
-    // Do not forward Anthropic's error body to the client — it may contain key details.
-    throw new Error(`Claude API error ${response.status}`);
+    // Capture Anthropic's error body for SERVER-SIDE logging only (it names the
+    // real cause: invalid key, model not found, credit balance too low, etc.).
+    // The Error MESSAGE carries only the status (safe to surface to the client);
+    // the body is stashed on a property the client response never includes.
+    let bodyText = '';
+    try { bodyText = await response.text(); } catch { /* ignore */ }
+    const err = new Error(`Claude API error ${response.status}`);
+    (err as any).status = response.status;
+    (err as any).anthropicBody = bodyText;
+    throw err;
   }
 
   const data: ClaudeResponse = await response.json();

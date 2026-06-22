@@ -7,8 +7,24 @@ async function invokeFunction<T>(name: string, body: Record<string, unknown>): P
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error('Request timed out. Please try again.')), TIMEOUT_MS)
   );
-  const invokePromise = supabase.functions.invoke(name, { body }).then(({ data, error }) => {
-    if (error) throw error;
+  const invokePromise = supabase.functions.invoke(name, { body }).then(async ({ data, error }) => {
+    if (error) {
+      // Surface the REAL cause (HTTP status + edge-function error body) instead of
+      // a generic message, so failures are diagnosable: 401 = bad/missing key,
+      // 429 = rate limit / no credits, 404 = wrong model, 500 = function error.
+      let detail = error.message || 'request failed';
+      try {
+        const ctx: any = (error as any).context;
+        if (ctx && typeof ctx.status === 'number') {
+          detail = `HTTP ${ctx.status}`;
+          try {
+            const body = await ctx.clone().json();
+            if (body?.error) detail += ` — ${body.error}`;
+          } catch { /* body not JSON */ }
+        }
+      } catch { /* no context */ }
+      throw new Error(detail);
+    }
     return data as T;
   });
   return Promise.race([invokePromise, timeoutPromise]);

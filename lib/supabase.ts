@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, processLock } from '@supabase/supabase-js';
+import { AppState } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import type { Database } from '@/types/database';
 
@@ -71,6 +72,22 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // CRITICAL on React Native: supabase-js defaults to a navigator.locks-based
+      // lock for token refresh, which doesn't exist in RN. Without processLock,
+      // an expired access token (1h) makes the *next* request trigger a refresh
+      // that deadlocks → the request hangs → "Request timed out" on any WRITE
+      // (food logging, workouts, etc.) after the app has been open a while.
+      lock: processLock,
     },
   }
 );
+
+// Drive token auto-refresh by app foreground/background. supabase-js only runs
+// its refresh timer while told the app is active; without this the access token
+// silently expires in the background and the first write afterwards hangs.
+AppState.addEventListener('change', (state) => {
+  if (state === 'active') supabase.auth.startAutoRefresh();
+  else supabase.auth.stopAutoRefresh();
+});
+// Kick it off now (module loads while the app is in the foreground).
+supabase.auth.startAutoRefresh();

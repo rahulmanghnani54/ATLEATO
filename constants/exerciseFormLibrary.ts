@@ -441,11 +441,41 @@ const tricep_pushdown: ExerciseForm = {
   breathingCue: 'Exhale pushing down → inhale returning up',
 };
 
+const leg_curl: ExerciseForm = {
+  exerciseName: 'Leg Curl',
+  // Specific 'leg curl' / 'hamstring curl' keywords so this wins over the
+  // bicep_curl bare 'curl' keyword (the matcher prefers the longest match).
+  keywords: ['leg curl', 'lying leg curl', 'seated leg curl', 'standing leg curl', 'hamstring curl'],
+  category: 'isolation',
+  targetMuscles: ['Hamstrings', 'Calves (gastrocnemius)'],
+  angleChecks: [
+    { joint: 'left_knee', label: 'L. Curl', minDeg: 30, maxDeg: 95, tooLowMsg: 'Curl deeper — bring your heel toward your glute', tooHighMsg: 'Full knee flexion — squeeze the hamstring', goodMsg: 'Full hamstring contraction' },
+    { joint: 'right_knee', label: 'R. Curl', minDeg: 30, maxDeg: 95, tooLowMsg: 'Curl deeper — heel to glute', tooHighMsg: 'Full flexion — squeeze', goodMsg: 'Full contraction' },
+  ],
+  checkpoints: [
+    { phase: 'setup',   description: 'Pad on lower calf, hips pressed into the bench, toes neutral' },
+    { phase: 'ascent',  description: 'Curl heels toward your glutes — no hip lift' },
+    { phase: 'top',     description: 'Squeeze the hamstrings hard at full flexion' },
+    { phase: 'descent', description: '3 seconds lowering — control the negative' },
+    { phase: 'bottom',  description: 'Stop just short of lockout — keep tension on the muscle' },
+  ],
+  coachCues: [
+    { coachId: 'cbum',   cue: 'Keep your hips glued to the pad — if they lift, you are cheating the hamstring out of the work.' },
+    { coachId: 'arnold', cue: 'Point your toes to bias the hamstring belly, full squeeze at the top every rep.' },
+    { coachId: 'nippard', cue: 'Seated leg curls train the hamstrings at longer muscle lengths — slightly better for growth than lying.' },
+    { coachId: 'ct',     cue: 'HIPS DOWN. CURL HARD. SQUEEZE THE HAM. NO BOUNCING THE STACK.' },
+    { coachId: 'drmike', cue: 'Control the eccentric — hamstrings respond to lengthened tension. Do not let the stack slam.' },
+  ],
+  commonMistakes: ['Hips lifting off the pad', 'Bouncing / using momentum', 'Partial range of motion', 'Slamming the weight down'],
+  breathingCue: 'Exhale curling up → inhale lowering',
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MASTER LIBRARY + LOOKUP
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const EXERCISE_FORM_LIBRARY: ExerciseForm[] = [
+  leg_curl,
   barbell_squat,
   goblet_squat,
   lunge,
@@ -463,11 +493,20 @@ export const EXERCISE_FORM_LIBRARY: ExerciseForm[] = [
 
 export function getExerciseForm(exerciseName: string): ExerciseForm | null {
   const name = (exerciseName ?? '').toLowerCase();
-  return (
-    EXERCISE_FORM_LIBRARY.find((ef) =>
-      ef.keywords.some((kw) => name.includes(kw))
-    ) ?? null
-  );
+  // Most-specific match wins: pick the form whose LONGEST matching keyword is
+  // longest overall. This stops generic keywords (e.g. bicep_curl's bare
+  // 'curl') from hijacking specific exercises like "seated leg curl".
+  let best: ExerciseForm | null = null;
+  let bestLen = 0;
+  for (const ef of EXERCISE_FORM_LIBRARY) {
+    for (const kw of ef.keywords) {
+      if (name.includes(kw) && kw.length > bestLen) {
+        best = ef;
+        bestLen = kw.length;
+      }
+    }
+  }
+  return best;
 }
 
 export function getCoachCue(form: ExerciseForm, coachId: string): string {

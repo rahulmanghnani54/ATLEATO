@@ -60,6 +60,7 @@ export default function Step5Program() {
   const params = useLocalSearchParams<{
     goal: string; gender: string; dob: string;
     heightCm: string; weightKg: string; activityLevel: string; diet: string;
+    fromProfile: string;
   }>();
   const { user, fetchProfile } = useAuthStore();
   const router = useRouter();
@@ -86,34 +87,49 @@ export default function Step5Program() {
     }
     setLoading(true);
     try {
-      const weightKg = parseFloat(params.weightKg);
-      const heightCm = parseFloat(params.heightCm);
-      const age      = getAgeFromDOB(params.dob);
-      const gender   = (params.gender === 'male' || params.gender === 'female') ? params.gender : 'male';
-      const bmr      = calculateBMR(weightKg, heightCm, age, gender);
-      const tdee     = calculateTDEE(bmr, params.activityLevel as ActivityLevel);
-      const macros   = calculateMacros(tdee, params.goal as Goal, weightKg);
+      // Two entry paths:
+      //  1) Normal onboarding — full demographic params are present, so we
+      //     compute BMR/TDEE/macros and write the whole profile.
+      //  2) "Change program" from Profile (?fromProfile=1, no demographic
+      //     params) — ONLY switch the program. Building the full payload here
+      //     would write NaN/undefined macros and corrupt the existing profile.
+      const changeProgramOnly = params.fromProfile === '1' && !params.weightKg;
 
-      const updatePayload: ProfileUpdate = {
-        goal: params.goal as Goal,
-        gender: gender,
-        date_of_birth: params.dob,
-        height_cm: heightCm,
-        weight_kg: weightKg,
-        activity_level: params.activityLevel as ActivityLevel,
-        selected_program: currentCard.programId,
-        tdee: macros.calories,
-        protein_g: macros.proteinG,
-        carbs_g: macros.carbsG,
-        fat_g: macros.fatG,
-        onboarding_complete: true,
-      };
+      let updatePayload: ProfileUpdate;
+      if (changeProgramOnly) {
+        updatePayload = { selected_program: currentCard.programId };
+      } else {
+        const weightKg = parseFloat(params.weightKg);
+        const heightCm = parseFloat(params.heightCm);
+        const age      = getAgeFromDOB(params.dob);
+        const gender   = (params.gender === 'male' || params.gender === 'female') ? params.gender : 'male';
+        const bmr      = calculateBMR(weightKg, heightCm, age, gender);
+        const tdee     = calculateTDEE(bmr, params.activityLevel as ActivityLevel);
+        const macros   = calculateMacros(tdee, params.goal as Goal, weightKg);
+
+        updatePayload = {
+          goal: params.goal as Goal,
+          gender: gender,
+          date_of_birth: params.dob,
+          height_cm: heightCm,
+          weight_kg: weightKg,
+          activity_level: params.activityLevel as ActivityLevel,
+          selected_program: currentCard.programId,
+          tdee: macros.calories,
+          protein_g: macros.proteinG,
+          carbs_g: macros.carbsG,
+          fat_g: macros.fatG,
+          onboarding_complete: true,
+        };
+      }
 
       const { error } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
         .update(updatePayload).eq('id', user.id);
       if (error) throw error;
       await fetchProfile(user.id);
-      router.replace('/(tabs)');
+      // Change-program returns to Profile; full onboarding lands in the app.
+      if (changeProgramOnly) router.back();
+      else router.replace('/(tabs)');
     } catch (e: unknown) {
       Alert.alert('Error', e instanceof Error ? e.message : 'Setup failed. Please try again.');
     } finally {

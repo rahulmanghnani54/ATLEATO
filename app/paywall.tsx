@@ -189,7 +189,6 @@ export default function PaywallScreen() {
               'All 5 Legend Coaches',
               'Everything in Pro',
               '5-Min Snooze Re-Calls',
-              'Territory Heatmap + Analytics',
               'Advanced Form AI + Video Review',
               'Coach Voice Customization',
             ].map((f) => (

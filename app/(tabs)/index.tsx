@@ -11,16 +11,17 @@
  * v0 of this file backed up to index-v0.tsx.bak in case we want the
  * Apple-Glass version back.
  */
-import { useCallback } from 'react';
-import { ScrollView, StyleSheet, View, RefreshControl } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, View, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Dumbbell, Lightbulb, MapPin, Flame, Trophy, Activity } from 'lucide-react-native';
+import { Dumbbell, Lightbulb, Flame, Trophy, Activity } from 'lucide-react-native';
 
 import { HeroBlock, Stat, RowCard, AnchorCTA } from '@/components/ui/c';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Spacing, Fonts, Radius } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useWorkoutStreak, useThisWeekVolume, useProgramSchedule } from '@/hooks/useDashboardStats';
+import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { personaFromProgramId } from '@/lib/personaTheme';
 
 export default function Dashboard() {
@@ -33,12 +34,25 @@ export default function Dashboard() {
   const { data: schedule } = useProgramSchedule();
   const today = schedule?.find((d) => d.isToday);
 
-  // Re-fetch streak + volume when the user returns to this tab
+  // Today's nutrition (eaten) vs the profile's goals — surfaced on Home so the
+  // user sees their daily macros + targets at a glance, tap to log.
+  const [todayDate] = useState(() => new Date());
+  const { data: nutrition, refetch: refetchNutrition } = useDailyNutrition(todayDate);
+  const calEaten = Math.round(nutrition?.calories ?? 0);
+  const calGoal = profile?.tdee ?? 2000;
+  const macros = [
+    { label: 'PROTEIN', eaten: Math.round(nutrition?.proteinG ?? 0), goal: profile?.protein_g ?? 150, color: '#3b82f6' },
+    { label: 'CARBS',   eaten: Math.round(nutrition?.carbsG ?? 0),   goal: profile?.carbs_g ?? 200,   color: '#f59e0b' },
+    { label: 'FAT',     eaten: Math.round(nutrition?.fatG ?? 0),     goal: profile?.fat_g ?? 65,      color: '#ef4444' },
+  ];
+
+  // Re-fetch streak + volume + nutrition when the user returns to this tab
   useFocusEffect(
     useCallback(() => {
       refetchStreak();
       refetchWeek();
-    }, [refetchStreak, refetchWeek]),
+      refetchNutrition();
+    }, [refetchStreak, refetchWeek, refetchNutrition]),
   );
 
   const firstName = (profile?.full_name ?? '').split(' ')[0] || 'Athlete';
@@ -57,7 +71,7 @@ export default function Dashboard() {
             tintColor={persona.accent}
             colors={[persona.accent]}
             refreshing={false}
-            onRefresh={() => { refetchStreak(); refetchWeek(); }}
+            onRefresh={() => { refetchStreak(); refetchWeek(); refetchNutrition(); }}
           />
         }
       >
@@ -86,6 +100,39 @@ export default function Dashboard() {
           />
         </View>
 
+        {/* ── 2b. DAILY MACROS + GOALS ─────────────────────────────── */}
+        <TouchableOpacity
+          style={styles.macrosCard}
+          activeOpacity={0.85}
+          onPress={() => router.push('/(tabs)/nutrition' as any)}
+        >
+          <View style={styles.macrosHead}>
+            <Text style={styles.macrosTitle}>Today's macros</Text>
+            <Text style={[styles.macrosKcal, { color: persona.accent }]}>
+              {calEaten} / {calGoal} kcal
+            </Text>
+          </View>
+          <View style={styles.macrosRow}>
+            {macros.map((m) => (
+              <View key={m.label} style={styles.macroCol}>
+                <Text style={styles.macroVal}>
+                  {m.eaten}
+                  <Text style={styles.macroGoal}>/{m.goal}g</Text>
+                </Text>
+                <View style={styles.macroTrack}>
+                  <View
+                    style={[
+                      styles.macroFill,
+                      { width: `${Math.min(100, (m.eaten / Math.max(m.goal, 1)) * 100)}%` as any, backgroundColor: m.color },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.macroLabel}>{m.label}</Text>
+              </View>
+            ))}
+          </View>
+        </TouchableOpacity>
+
         {/* ── 3. ROW CARDS ─────────────────────────────────────────── */}
         <SafeAreaView edges={['left', 'right']} style={styles.rows}>
           {!today?.isRest && (
@@ -104,14 +151,6 @@ export default function Dashboard() {
             title="Today's Tip"
             meta={`From ${persona.shortName} — expires at midnight`}
             onPress={() => router.push('/daily-tip' as any)}
-          />
-
-          <RowCard
-            icon={<MapPin size={22} color={persona.accent} />}
-            iconTintColor={persona.accent}
-            title="Defend Your Territory"
-            meta="See your cells · run to claim more"
-            onPress={() => router.push('/(tabs)/territory' as any)}
           />
 
           <RowCard
@@ -171,4 +210,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md + 2,      // off-ladder 18
     paddingTop: Spacing.xs,
   },
+  macrosCard: {
+    marginHorizontal: Spacing.md + 2,
+    marginBottom: Spacing.sm + 2,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    gap: 12,
+  },
+  macrosHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  macrosTitle: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text },
+  macrosKcal: { fontFamily: Fonts.display, fontSize: 15 },
+  macrosRow: { flexDirection: 'row', gap: 14 },
+  macroCol: { flex: 1, gap: 6 },
+  macroVal: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text },
+  macroGoal: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary },
+  macroTrack: { height: 5, backgroundColor: Colors.raised, borderRadius: 3, overflow: 'hidden' },
+  macroFill: { height: '100%', borderRadius: 3 },
+  macroLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1 },
 });

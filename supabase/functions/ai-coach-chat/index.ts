@@ -97,7 +97,17 @@ serve(async (req) => {
     ]);
 
     return jsonResponse({ reply, persona });
-  } catch {
+  } catch (e) {
+    // Log the FULL cause server-side (visible in Supabase → Edge Functions →
+    // Logs) — includes Anthropic's error body so we can see exactly why it failed.
+    const anyErr = e as any;
+    console.error('[ai-coach-chat] failed:', anyErr?.message, anyErr?.anthropicBody ?? '');
+    // Surface ONLY the safe status string (e.g. "Claude API error 401") to the
+    // client for diagnosis — never the key or the raw Anthropic body.
+    const msg = anyErr?.message;
+    if (typeof msg === 'string' && msg.startsWith('Claude API error')) {
+      return errorResponse(msg, 502);
+    }
     return internalError();
   }
 });

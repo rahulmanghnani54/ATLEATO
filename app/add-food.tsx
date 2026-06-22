@@ -54,6 +54,10 @@ export default function AddFoodScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* While the serving popup is open, fully unmount the search UI so there's
+          nothing rendered behind it — guarantees the popup never looks like it's
+          "floating" over the food list, independent of the sheet's backdrop. */}
+      {!selectedFood && (
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -165,6 +169,7 @@ export default function AddFoodScreen() {
           }
         />
       </KeyboardAvoidingView>
+      )}
 
       {/* Serving picker (small bottom sheet — keeps this) */}
       {selectedFood && (

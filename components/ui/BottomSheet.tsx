@@ -75,7 +75,11 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
+  // Fully OPAQUE backdrop (solid app bg) — not a dim overlay. Sheets in this app
+  // can stack (e.g. food-search sheet → add-serving sheet), and a translucent
+  // backdrop let the list behind bleed through, which read as a "floating" popup.
+  // Solid bg makes every sheet a clean, focused surface with nothing showing through.
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: Colors.bg },
   sheetContainer: {
     flex: 1,
     justifyContent: 'flex-end',

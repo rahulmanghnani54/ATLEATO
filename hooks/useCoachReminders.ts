@@ -16,11 +16,12 @@ import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, type PersonaId } from '@/lib/personaTheme';
+import { setupAndroidChannels, type CallKind } from '@/lib/coachCallScheduler';
 import {
-  scheduleCoachCall, cancelCoachCall,
-  ensureNotificationPermission, setupAndroidChannels,
-  type CallKind,
-} from '@/lib/coachCallScheduler';
+  scheduleIncomingCall, cancelScheduledCall, ensureExactAlarmPermission,
+  ensureNotifeePermission, setupCallChannel,
+} from '@/lib/notifeeCallScheduler';
+import { AuthorizationStatus } from '@notifee/react-native';
 
 const STORAGE_KEY = 'coachReminders:v1';
 
@@ -57,6 +58,7 @@ export function useCoachReminders() {
     (async () => {
       try {
         await setupAndroidChannels();
+        await setupCallChannel();   // notifee channel used by scheduled full-screen calls
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (alive && raw) {
           const parsed = { ...DEFAULTS, ...(JSON.parse(raw) as Partial<ReminderPrefs>) };
@@ -80,26 +82,30 @@ export function useCoachReminders() {
     if (loading) return;
 
     (async () => {
+      // Scheduled via Notifee (exact AlarmManager + full-screen call), NOT
+      // expo-notifications — the latter silently fails to fire on Android 12+
+      // without the exact-alarm permission. This is the fix for "scheduled
+      // wake-up / workout call never rings, only Test Now works".
       if (prefs.wakeupEnabled) {
-        await scheduleCoachCall({
+        await scheduleIncomingCall({
           kind: 'wakeup',
           hour: prefs.wakeupHour,
           minute: prefs.wakeupMinute,
           personaId,
         });
       } else {
-        await cancelCoachCall('wakeup');
+        await cancelScheduledCall('wakeup');
       }
 
       if (prefs.workoutEnabled) {
-        await scheduleCoachCall({
+        await scheduleIncomingCall({
           kind: 'workout',
           hour: prefs.workoutHour,
           minute: prefs.workoutMinute,
           personaId,
         });
       } else {
-        await cancelCoachCall('workout');
+        await cancelScheduledCall('workout');
       }
     })();
   }, [prefs, personaId, loading]);
@@ -113,12 +119,20 @@ export function useCoachReminders() {
       (!prefs.wakeupEnabled && patch.wakeupEnabled) ||
       (!prefs.workoutEnabled && patch.workoutEnabled);
     if (enablingAnything) {
-      const status = await ensureNotificationPermission();
-      setPermission(status);
-      if (status !== 'granted') {
+      const status = await ensureNotifeePermission();
+      const granted =
+        status === AuthorizationStatus.AUTHORIZED ||
+        status === AuthorizationStatus.PROVISIONAL;
+      setPermission(granted ? 'granted' : 'denied');
+      if (!granted) {
         // Don't enable a reminder we can't actually deliver
         if (patch.wakeupEnabled)  merged.wakeupEnabled = false;
         if (patch.workoutEnabled) merged.workoutEnabled = false;
+      } else {
+        // Notifications allowed — also make sure exact alarms are permitted, or
+        // the scheduled call won't fire on time (Android 12+). Opens the
+        // "Alarms & reminders" settings page if it's currently disabled.
+        await ensureExactAlarmPermission();
       }
     }
 

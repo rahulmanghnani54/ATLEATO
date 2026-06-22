@@ -143,6 +143,13 @@ export default function Nutrition() {
             meta="Snap a plate · AI estimates macros"
             onPress={() => router.push('/food-photo-scan' as any)}
           />
+          <RowCard
+            icon={<UtensilsCrossed size={22} color={persona.accent} />}
+            iconTintColor={persona.accent}
+            title="Build a meal"
+            meta="Add several ingredients · log as one meal"
+            onPress={() => router.push({ pathname: '/build-meal', params: { mealType: 'lunch', date: dateStr } } as any)}
+          />
 
           {/* ── 5. WATER ─────────────────────────────────────── */}
           <RowCard
@@ -199,11 +206,11 @@ export default function Nutrition() {
 
       {/* ── 8. ANCHOR CTA ───────────────────────────────────── */}
       <AnchorCTA
-        label="LOG A MEAL →"
+        label="BUILD A MEAL →"
         accent={persona.accent}
         accentInk={persona.ink}
         onPress={() => router.push({
-          pathname: '/add-food',
+          pathname: '/build-meal',
           params: { mealType: 'lunch', date: dateStr },
         } as any)}
       />

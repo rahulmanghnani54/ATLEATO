@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, useGlobalSearchParams } from 'expo-router';
 import { SplashScreen } from 'expo-router';
 import {
   useFonts,
@@ -65,6 +65,7 @@ const queryClient = new QueryClient({
 function RootNavigator() {
   const router = useRouter();
   const segments = useSegments();
+  const glob = useGlobalSearchParams<{ fromProfile?: string }>();
   const { user, profile, loading, setUser, setSession, setLoading, fetchProfile } = useAuthStore();
 
   useEffect(() => {
@@ -190,17 +191,22 @@ function RootNavigator() {
 
     const inAuth = segments[0] === '(auth)';
     const inOnboarding = segments[0] === '(onboarding)';
+    // Onboarding-complete users can intentionally re-enter onboarding screens to
+    // EDIT settings (e.g. "Change program" / "Edit goals" from Profile). Those
+    // links pass ?fromProfile=1 so the guard below doesn't bounce them to home.
+    const editingFromProfile = glob.fromProfile === '1';
 
     if (!user) {
       if (!inAuth) router.replace('/(auth)/login');
     } else if (profile && !profile.onboarding_complete) {
       if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
     } else if (profile?.onboarding_complete) {
-      if (inAuth || inOnboarding) router.replace('/(tabs)');
+      if (inAuth) router.replace('/(tabs)');
+      else if (inOnboarding && !editingFromProfile) router.replace('/(tabs)');
     } else if (user && !profile) {
       if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
     }
-  }, [user, profile, loading, segments]);
+  }, [user, profile, loading, segments, glob.fromProfile]);
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
@@ -222,9 +228,18 @@ export default function RootLayout() {
   });
   const loading = useAuthStore((s) => s.loading);
 
+  // Hold the logo splash for a deliberate minimum (~1.6s) so it reads as a
+  // branded intro like other apps — instead of flashing away the instant fonts
+  // + auth resolve. We hide once BOTH the app is ready AND the min time passed.
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
   useEffect(() => {
-    if (fontsLoaded && !loading) SplashScreen.hideAsync();
-  }, [fontsLoaded, loading]);
+    const t = setTimeout(() => setMinSplashElapsed(true), 1600);
+    return () => clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoaded && !loading && minSplashElapsed) SplashScreen.hideAsync();
+  }, [fontsLoaded, loading, minSplashElapsed]);
 
   if (!fontsLoaded) return null;
 

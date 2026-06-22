@@ -58,6 +58,7 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.USE_FULL_SCREEN_INTENT",
         "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK",
         "android.permission.ACCESS_COARSE_LOCATION",
