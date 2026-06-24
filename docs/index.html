@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0a0b0d" />
   <!-- Security headers -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
   <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
@@ -162,29 +162,7 @@
         </div>
       </div>
       <!-- Real-time stat fetcher — pulls counts from Supabase every 20s -->
-      <script>
-      (function(){
-        var SUPA = 'https://kbldncrurztfwlqzajen.supabase.co';
-        var KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtibGRuY3J1cnp0ZndscXphamVuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1Njg3NDcsImV4cCI6MjA5NDE0NDc0N30.rIT9u4d5dht_UWJ9er7ic1-TBa4C5ISRMdDwOolgIUA';
-        function rpc(name){
-          return fetch(SUPA + '/rest/v1/rpc/' + name, {
-            method: 'POST',
-            headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' },
-            body: '{}'
-          }).then(function(r){return r.ok?r.json():0;}).then(function(n){return typeof n==='number'?n:0;}).catch(function(){return 0;});
-        }
-        function refresh() {
-          Promise.all([ rpc('waitlist_count'), rpc('vanguard_claimed_count') ]).then(function(r){
-            var w = document.getElementById('live-waitlist-count');
-            var v = document.getElementById('live-vanguard-count');
-            if (w) w.textContent = (r[0]||0).toLocaleString();
-            if (v) v.textContent = Math.min(r[1]||0, 500);
-          });
-        }
-        refresh();
-        setInterval(refresh, 20000);
-      })();
-      </script>
+      <script defer src="live-counts.js"></script>
     </div>
     <div class="scroll-indicator">
       <div class="scroll-line"></div>
@@ -904,8 +882,8 @@
   </footer>
 
   <!-- CDN Libraries (loaded after HTML to prevent render-blocking) -->
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" crossorigin="anonymous"></script>
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
 
   <script defer src="main.js"></script>
   <script defer src="exercise-demo.js"></script>
@@ -922,27 +900,6 @@
       </div>
     </div>
   </div>
-  <script>
-  (function(){
-    var KEY = 'atleato_cookie_consent';
-    var banner = document.getElementById('cookie-banner');
-    if (!banner) return;
-    var stored = null;
-    try { stored = localStorage.getItem(KEY); } catch (e) {}
-    if (!stored) {
-      banner.style.display = 'flex';
-      setTimeout(function(){ banner.classList.add('show'); }, 600);
-    }
-    function close(value) {
-      try { localStorage.setItem(KEY, value); } catch (e) {}
-      banner.classList.remove('show');
-      setTimeout(function(){ banner.style.display = 'none'; }, 400);
-    }
-    var accept = document.getElementById('cookie-accept');
-    var reject = document.getElementById('cookie-reject');
-    if (accept) accept.addEventListener('click', function(){ close('all'); });
-    if (reject) reject.addEventListener('click', function(){ close('essential'); });
-  })();
-  </script>
+  <script defer src="cookie-consent.js"></script>
 </body>
 </html>
