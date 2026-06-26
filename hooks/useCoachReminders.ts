@@ -12,14 +12,15 @@
  * Whenever a pref changes (or the user switches coach), we cancel the old
  * notification and reschedule with the new time + new persona voice.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '@/stores/authStore';
 import { personaFromProgramId, type PersonaId } from '@/lib/personaTheme';
+import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { setupAndroidChannels, type CallKind } from '@/lib/coachCallScheduler';
 import {
   scheduleIncomingCall, cancelScheduledCall, ensureExactAlarmPermission,
-  ensureNotifeePermission, setupCallChannel,
+  ensureNotifeePermission, setupCallChannel, ensureBackgroundCallDelivery,
 } from '@/lib/notifeeCallScheduler';
 import { AuthorizationStatus } from '@notifee/react-native';
 
@@ -47,6 +48,19 @@ export function useCoachReminders() {
   const profile = useAuthStore((s) => s.profile);
   const persona = personaFromProgramId(profile?.selected_program);
   const personaId: PersonaId = persona.id;
+
+  // Training weekdays (0=Sun..6=Sat) from the active program, so the coach only
+  // rings on training days and NEVER disturbs the user on a rest day. undefined
+  // = unknown program → ring every day (safe fallback so calls still fire).
+  const trainingDays = useMemo<number[] | undefined>(() => {
+    const program = EXPERT_PROGRAMS[profile?.selected_program ?? ''];
+    if (!program) return undefined;
+    const set = new Set<number>();
+    for (const w of program.schedule) {
+      if (w.day < program.daysPerWeek) set.add((w.day + 1) % 7); // program 0=Mon → JS 0=Sun
+    }
+    return set.size > 0 && set.size < 7 ? [...set] : undefined;
+  }, [profile?.selected_program]);
 
   const [prefs, setPrefs] = useState<ReminderPrefs>(DEFAULTS);
   const [loading, setLoading] = useState(true);
@@ -92,6 +106,7 @@ export function useCoachReminders() {
           hour: prefs.wakeupHour,
           minute: prefs.wakeupMinute,
           personaId,
+          days: trainingDays,   // only on training days — never disturb on rest days
         });
       } else {
         await cancelScheduledCall('wakeup');
@@ -103,12 +118,13 @@ export function useCoachReminders() {
           hour: prefs.workoutHour,
           minute: prefs.workoutMinute,
           personaId,
+          days: trainingDays,   // only on training days — never disturb on rest days
         });
       } else {
         await cancelScheduledCall('workout');
       }
     })();
-  }, [prefs, personaId, loading]);
+  }, [prefs, personaId, loading, trainingDays]);
 
   /** Update one or more preferences and persist to storage. */
   const update = useCallback(async (patch: Partial<ReminderPrefs>) => {
@@ -133,6 +149,9 @@ export function useCoachReminders() {
         // the scheduled call won't fire on time (Android 12+). Opens the
         // "Alarms & reminders" settings page if it's currently disabled.
         await ensureExactAlarmPermission();
+        // AND exempt the app from battery optimization — Samsung/OEMs kill
+        // background alarms otherwise, so scheduled calls silently never fire.
+        await ensureBackgroundCallDelivery();
       }
     }
 

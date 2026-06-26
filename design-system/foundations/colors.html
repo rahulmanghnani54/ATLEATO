@@ -1,0 +1,93 @@
+<!-- @dsCard group="Foundations" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atleato · Colors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0a0b0d; --surface:#181a1f; --raised:#22242a;
+    --border:rgba(255,255,255,0.07); --border-strong:rgba(255,255,255,0.14);
+    --text:#f5f5f4; --text-2:rgba(245,245,244,0.62); --text-3:rgba(245,245,244,0.38);
+    --display:'Plus Jakarta Sans',sans-serif; --body:'Inter',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);
+    padding:40px;-webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1200px 500px at 80% -10%,rgba(224,90,38,0.08),transparent 60%);}
+  .eyebrow{font-family:var(--body);font-weight:600;font-size:11px;letter-spacing:2.5px;
+    text-transform:uppercase;color:var(--text-3);margin-bottom:6px;}
+  h1{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-1px;margin-bottom:4px;}
+  .sub{color:var(--text-2);font-size:14px;margin-bottom:34px;max-width:560px;line-height:1.5;}
+  .section{margin-bottom:32px;}
+  .section h2{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:1.2px;
+    text-transform:uppercase;color:var(--text-2);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+  .section h2::after{content:"";flex:1;height:1px;background:var(--border);}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;}
+  .sw{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface);}
+  .chip{height:74px;position:relative;}
+  .chip .ring{position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,0.06);border-radius:0;}
+  .meta{padding:10px 12px 12px;}
+  .name{font-weight:600;font-size:12.5px;letter-spacing:-0.1px;}
+  .hex{font-family:var(--body);font-size:11px;color:var(--text-3);margin-top:2px;font-variant-numeric:tabular-nums;}
+  .tok{font-size:10px;color:var(--text-3);margin-top:5px;font-weight:500;letter-spacing:0.3px;}
+</style>
+</head>
+<body>
+  <div class="eyebrow">Atleato Design System</div>
+  <h1>Color</h1>
+  <p class="sub">A cinematic dark base with a single brand orange. Volt-green is reserved for system controls only; each coach persona carries its own accent.</p>
+
+  <div class="section">
+    <h2>Surfaces</h2>
+    <div class="grid">
+      <div class="sw"><div class="chip" style="background:#0a0b0d"><div class="ring"></div></div><div class="meta"><div class="name">Background</div><div class="hex">#0A0B0D</div><div class="tok">Colors.bg</div></div></div>
+      <div class="sw"><div class="chip" style="background:#181a1f"><div class="ring"></div></div><div class="meta"><div class="name">Surface</div><div class="hex">#181A1F</div><div class="tok">Colors.surfaceWarm</div></div></div>
+      <div class="sw"><div class="chip" style="background:#22242a"><div class="ring"></div></div><div class="meta"><div class="name">Raised</div><div class="hex">#22242A</div><div class="tok">Colors.raisedWarm</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Brand</h2>
+    <div class="grid">
+      <div class="sw"><div class="chip" style="background:#e05a26"></div><div class="meta"><div class="name">Primary</div><div class="hex">#E05A26</div><div class="tok">Colors.primary</div></div></div>
+      <div class="sw"><div class="chip" style="background:#c4471a"></div><div class="meta"><div class="name">Primary Deep</div><div class="hex">#C4471A</div><div class="tok">Colors.primaryDeep</div></div></div>
+      <div class="sw"><div class="chip" style="background:#dfff1f"></div><div class="meta"><div class="name">System Accent</div><div class="hex">#DFFF1F</div><div class="tok">Colors.systemAccent</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Text</h2>
+    <div class="grid">
+      <div class="sw"><div class="chip" style="background:#f5f5f4"></div><div class="meta"><div class="name">Primary</div><div class="hex">#F5F5F4</div><div class="tok">Colors.text</div></div></div>
+      <div class="sw"><div class="chip" style="background:#9a9a98"></div><div class="meta"><div class="name">Secondary</div><div class="hex">62% white</div><div class="tok">Colors.textSecondary</div></div></div>
+      <div class="sw"><div class="chip" style="background:#5e5e5d"></div><div class="meta"><div class="name">Tertiary</div><div class="hex">38% white</div><div class="tok">Colors.textTertiary</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Status</h2>
+    <div class="grid">
+      <div class="sw"><div class="chip" style="background:#39e08a"></div><div class="meta"><div class="name">Success</div><div class="hex">#39E08A</div><div class="tok">Colors.success</div></div></div>
+      <div class="sw"><div class="chip" style="background:#ffb13a"></div><div class="meta"><div class="name">Warning</div><div class="hex">#FFB13A</div><div class="tok">Colors.warning</div></div></div>
+      <div class="sw"><div class="chip" style="background:#ff5b3a"></div><div class="meta"><div class="name">Error</div><div class="hex">#FF5B3A</div><div class="tok">Colors.error</div></div></div>
+      <div class="sw"><div class="chip" style="background:#5b8cff"></div><div class="meta"><div class="name">Info</div><div class="hex">#5B8CFF</div><div class="tok">Colors.info</div></div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Coach Personas</h2>
+    <div class="grid">
+      <div class="sw"><div class="chip" style="background:#c8ff3d"></div><div class="meta"><div class="name">The Sculptor</div><div class="hex">#C8FF3D</div><div class="tok">personaSculptor</div></div></div>
+      <div class="sw"><div class="chip" style="background:#f5b942"></div><div class="meta"><div class="name">The Monument</div><div class="hex">#F5B942</div><div class="tok">personaMonument</div></div></div>
+      <div class="sw"><div class="chip" style="background:#5DD3FA"></div><div class="meta"><div class="name">The Analyst</div><div class="hex">#5DD3FA</div><div class="tok">personaAnalyst</div></div></div>
+      <div class="sw"><div class="chip" style="background:#ef4444"></div><div class="meta"><div class="name">The Commander</div><div class="hex">#EF4444</div><div class="tok">personaCommander</div></div></div>
+      <div class="sw"><div class="chip" style="background:#7be38c"></div><div class="meta"><div class="name">The Architect</div><div class="hex">#7BE38C</div><div class="tok">personaArchitect</div></div></div>
+    </div>
+  </div>
+</body>
+</html>

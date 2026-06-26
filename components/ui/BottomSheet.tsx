@@ -2,11 +2,10 @@ import { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Modal, Pressable,
   KeyboardAvoidingView, Platform,
-} from 'react-native';
+ useWindowDimensions } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS,
 } from 'react-native-reanimated';
-import { useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 

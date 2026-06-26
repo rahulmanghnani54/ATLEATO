@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Linking } from 'react-native';
-import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
-import { useVoiceCues } from '@/hooks/useVoiceCues';
-import {
+import { Linking ,
   View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
   Alert, Vibration, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
+import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { supabase } from '@/lib/supabase';

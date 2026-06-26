@@ -69,7 +69,12 @@ const ISSUE_REQUIRED_HITS   = 2;     // issue must appear in N of last frames to
 
 // ── Motion detection ─────────────────────────────────────────────────────────
 const MOTION_HISTORY_LEN     = 12;    // ~1.8s at 6.5fps — longer averaging = less flapping
-const MOTION_PX_THRESHOLD    = 32;    // px — clearly above MoveNet noise floor (~10-18px)
+// px the SINGLE most-moving load-bearing joint must travel across the window for
+// us to call it "exercising". Measured on the One-Euro-SMOOTHED history (jitter
+// floor ~10px), so a real rep's moving joint (40-200px) clears it easily while
+// standing still does not. (Was an AVERAGE of 6 joints @32px, which diluted any
+// exercise that moves only a subset of joints — curls/presses — below threshold.)
+const MOTION_PX_THRESHOLD    = 28;
 const MOTION_HYSTERESIS_HITS = 2;     // need N consecutive frames of new state to flip
 
 const PERSONA_LABELS: Record<string, string> = {
@@ -106,24 +111,20 @@ const KP = {
 const SKELETON: [number, number][] = [
   // torso
   [11, 12], [11, 23], [12, 24], [23, 24],
-  // left arm + hand
-  [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
-  // right arm + hand
-  [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20],
-  // left leg + foot
-  [23, 25], [25, 27], [27, 29], [29, 31], [27, 31],
-  // right leg + foot
-  [24, 26], [26, 28], [28, 30], [30, 32], [28, 32],
+  // arms (to wrists — finger sub-points dropped to avoid the wrist blob)
+  [11, 13], [13, 15], [12, 14], [14, 16],
+  // legs (to ankles) + toe direction (heels dropped to avoid the foot knot)
+  [23, 25], [25, 27], [27, 31],
+  [24, 26], [26, 28], [28, 32],
 ];
 
 // Landmarks we render as joints. We drop the redundant inner/outer eye points
 // and keep a clean ~27-point body skeleton (the user asked for "25-30 joints").
 const DRAW_POINTS: number[] = [
-  0, 7, 8,                                  // nose, ears
-  11, 12, 13, 14, 15, 16,                   // shoulders, elbows, wrists
-  17, 18, 19, 20, 21, 22,                   // hands (pinky, index, thumb)
-  23, 24, 25, 26, 27, 28,                   // hips, knees, ankles
-  29, 30, 31, 32,                           // heels, feet
+  0, 7, 8,                  // nose, ears
+  11, 12, 13, 14, 15, 16,   // shoulders, elbows, wrists
+  23, 24, 25, 26, 27, 28,   // hips, knees, ankles
+  31, 32,                   // toes (foot direction)
 ];
 // Face points (rendered smaller).
 const FACE_POINTS = new Set<number>([0, 7, 8]);
@@ -248,19 +249,25 @@ function looksLikeMaxAttempt(history: Kpt[][], category: string | undefined): bo
 
 /**
  * Detect whether the person is actually moving across the last N detections.
- * Tracks key load-bearing joints (shoulders, hips, wrists) — these always move
- * during a real exercise, even slow eccentrics. If the average displacement is
- * under a few pixels, the person is static (sitting, standing still, etc.).
+ *
+ * We look at the SINGLE most-moving load-bearing joint, not the average. Every
+ * exercise moves a different subset of joints — a curl moves the wrists/elbows
+ * while the torso stays put; a squat moves hips/knees. Averaging across all
+ * joints diluted the one that's actually moving below the threshold (especially
+ * on slow reps), so the coach sat in STANDBY mid-set. Taking the MAX means "is
+ * ANY key joint travelling like a rep?" — which is what we actually care about.
  */
 function detectMotion(history: Kpt[][]): boolean {
   if (history.length < 2) return false;
-  const KEY = [KP.l_shoulder, KP.r_shoulder, KP.l_hip, KP.r_hip, KP.l_wrist, KP.r_wrist];
-  let totalDisplacement = 0;
-  let measured = 0;
+  // Broad set: whichever limb the exercise drives, its joint will spike.
+  const KEY = [
+    KP.l_shoulder, KP.r_shoulder, KP.l_elbow, KP.r_elbow, KP.l_wrist, KP.r_wrist,
+    KP.l_hip, KP.r_hip, KP.l_knee, KP.r_knee, KP.l_ankle, KP.r_ankle,
+  ];
+  let maxRange = 0;
   for (const idx of KEY) {
-    // Compute max-vs-min spread across the window for this joint —
-    // captures peak motion, not just first-vs-last (which a full rep ending
-    // at the same position would miss).
+    // Max-vs-min spread across the window for this joint — captures peak motion,
+    // not just first-vs-last (which a full rep ending where it started would miss).
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     let validFrames = 0;
     for (const frame of history) {
@@ -274,11 +281,11 @@ function detectMotion(history: Kpt[][]): boolean {
     }
     if (validFrames < 3) continue;
     const range = Math.sqrt((maxX - minX) ** 2 + (maxY - minY) ** 2);
-    totalDisplacement += range;
-    measured++;
+    if (range > maxRange) maxRange = range;
   }
-  if (measured === 0) return false;
-  return (totalDisplacement / measured) > MOTION_PX_THRESHOLD;
+  // Evidence: actual motion px vs threshold (visible via `adb logcat | grep pose`).
+  poseLog('motionMax=' + Math.round(maxRange) + 'px need>' + MOTION_PX_THRESHOLD);
+  return maxRange > MOTION_PX_THRESHOLD;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -551,6 +558,17 @@ export default function FormCoach() {
     if (kptHistoryRef.current.length > KPT_HISTORY_MAX) kptHistoryRef.current.shift();
     const instant = analyzeForm(formLibraryData, t, kptHistoryRef.current);
 
+    // Safety first: if we can't actually SEE the user well enough (or it looks
+    // like a max attempt), surface THAT and never fall through to "form looks
+    // solid". This is what stops the coach approving form it can't even see.
+    if (instant.status === 'NO_VIEW' || instant.status === 'UNSAFE') {
+      issueHistoryRef.current = [];
+      return {
+        issues: instant.issues, badJoints: new Set(),
+        status: instant.status, safetyMessage: instant.safetyMessage,
+      };
+    }
+
     // Push the latest issue-set into the rolling window
     const issueSet = new Set(instant.issues);
     issueHistoryRef.current.push(issueSet);
@@ -599,12 +617,18 @@ export default function FormCoach() {
     }
     const moving = motionStateRef.current === 'moving';
 
-    let status: FormAnalysis['status'];
-    if (stableIssues.length === 0) {
-      status = moving ? 'GOOD' : 'STANDBY';
-    } else {
-      status = stableIssues.length === 1 ? 'WARNING' : 'BAD';
+    // ── Only COACH during an actual rep ──────────────────────────────────────
+    // If the user is just standing / holding the phone (not moving), do NOT emit
+    // form cues — otherwise the coach "shouts" things like "elbows too narrow"
+    // when they aren't even doing the exercise. Show STANDBY and stay quiet.
+    if (!moving) {
+      return { issues: [], badJoints: new Set(), status: 'STANDBY' };
     }
+
+    const status: FormAnalysis['status'] =
+      stableIssues.length === 0 ? 'GOOD'
+      : stableIssues.length === 1 ? 'WARNING'
+      : 'BAD';
 
     return { issues: stableIssues, badJoints: stableBadJoints, status };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -615,7 +639,11 @@ export default function FormCoach() {
   useEffect(() => {
     const topIssue = formAnalysis.issues[0] ?? '';
     if (!topIssue) {
-      lastSpokenIssueRef.current = '';
+      // Not actively coaching (STANDBY / no person / between reps) → SILENCE any
+      // ongoing or queued speech immediately. We deliberately KEEP
+      // lastSpokenIssueRef so a brief motion flicker back to the same cue doesn't
+      // re-trigger it (that was the "voice won't stop repeating" bug).
+      voice.stop();
       return;
     }
     // Use the part BEFORE the "—" as the spoken phrase (short + clear)
@@ -641,6 +669,14 @@ export default function FormCoach() {
   const mirrorFront = facing === 'front';
   const handlePose = useCallback((data: any, frameW: number, frameH: number, mirror: boolean) => {
     const nose = data?.nosePosition;
+    // DIAGNOSTIC: frame dims + raw MLKit coords (nose + ankle) so we can see the
+    // exact coordinate space MLKit returns and compute the correct mapping.
+    const la = data?.leftAnklePosition;
+    poseLog(
+      'f=' + frameW + 'x' + frameH +
+      ' noseRaw=' + (nose ? Math.round(nose.x) + ',' + Math.round(nose.y) : '-') +
+      ' ankleRaw=' + (la ? Math.round(la.x) + ',' + Math.round(la.y) : '-'),
+    );
     // No person detected → blank the skeleton and stay silent.
     if (!data || !nose || (nose.x === 0 && nose.y === 0)) {
       targetKptsRef.current = null;
@@ -662,15 +698,39 @@ export default function FormCoach() {
     for (const name in MLKIT_TO_INDEX) {
       const p = data[name];
       if (!p) continue;
-      const present = !(p.x === 0 && p.y === 0);
+      // Only count joints actually WITHIN the camera frame. MLKit ESTIMATES
+      // off-screen joints (e.g. your legs when the phone is at face height) with
+      // coordinates outside the image — counting those as "visible" made the coach
+      // say "form looks solid" when it couldn't even see your lower body. Reject
+      // anything outside the frame so the visibility gate is honest.
+      const inFrame = p.x > 0 && p.y > 0 && p.x <= imgW && p.y <= imgH;
       let sx = p.x * scale + offX;
       const sy = p.y * scale + offY;
       if (mirror) sx = viewW - sx;
-      raw[MLKIT_TO_INDEX[name]] = [sx, sy, present ? 1 : 0];
+      raw[MLKIT_TO_INDEX[name]] = [sx, sy, inFrame ? 1 : 0];
     }
 
+    // ── REJECT non-real "humans" ───────────────────────────────────────────
+    // MLKit also detects human shapes in PHOTOS / SCREENS / POSTERS in view —
+    // those appear small & clustered. A real person doing an exercise fills a
+    // large vertical span of the frame. So require the pose's bounding box to be
+    // tall enough; otherwise it's a picture-of-a-person, not a person.
+    let minY = Infinity, maxY = -Infinity;
+    for (const k of raw) {
+      if (k[2] > 0) { if (k[1] < minY) minY = k[1]; if (k[1] > maxY) maxY = k[1]; }
+    }
+    const bboxH = maxY - minY;
+    const minBodyH = viewH * 0.45;   // body must span ≥45% of the camera view
     const visible = raw.filter(([, , c]) => c > 0).length;
-    poseLog('mlkit landmarks=' + visible + '/33');
+    poseLog('lm=' + visible + '/33 bboxH=' + Math.round(bboxH) + ' need>' + Math.round(minBodyH));
+
+    if (visible < 12 || bboxH < minBodyH) {
+      // Too few joints or too small → not a real person in frame. Blank + quiet.
+      targetKptsRef.current = null;
+      kptsHistoryRef.current = [];
+      setAnalysisTick((t) => t + 1);
+      return;
+    }
 
     const smoothed = smootherRef.current.smooth(raw);
     targetKptsRef.current = smoothed;
@@ -800,11 +860,14 @@ export default function FormCoach() {
   const statusLabel  =
     modelError                            ? '⬤ MODEL ERROR' :
     modelLoading                          ? '⬤ LOADING AI…' :
+    isTracking && formAnalysis.status === 'NO_VIEW' ? '⬤ CAN\'T SEE YOU' :
+    isTracking && formAnalysis.status === 'UNSAFE'  ? '⬤ SPOTTER NEEDED' :
     isTracking && formAnalysis.status === 'STANDBY' ? '⬤ STANDBY · WAITING' :
     isTracking                            ? '⬤ LIVE · 60FPS SMOOTH' :
                                             '⬤ STEP INTO FRAME';
   const statusColor =
     modelError                            ? '#ef4444' :
+    isTracking && (formAnalysis.status === 'NO_VIEW' || formAnalysis.status === 'UNSAFE') ? '#facc15' :
     isTracking && formAnalysis.status === 'STANDBY' ? '#facc15' :
     isTracking                            ? Colors.primary :
                                             '#9ca3af';

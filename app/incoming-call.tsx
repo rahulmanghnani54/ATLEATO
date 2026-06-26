@@ -16,18 +16,18 @@
  *   the moment the user engages with the call, they get the real experience.
  */
 import { useEffect, useRef } from 'react';
-import { canAccess } from '@/lib/featureGates';
 import {
   View, Text, StyleSheet, TouchableOpacity, Animated, Easing, StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
-  cancelRingingChain, declineCoachCall, getCallCopy,
+  cancelRingingChain, getCallCopy,
   type CallKind,
 } from '@/lib/coachCallScheduler';
-import { stopPersistentRing, scheduleSnoozeCall, cancelSnoozeCall } from '@/lib/wakeupCalls';
-import { speakAs, silence } from '@/lib/voiceCues';
+import { startPersistentRing, stopPersistentRing, cancelSnoozeCall } from '@/lib/wakeupCalls';
+import { cancelAllCalls, scheduleCallIn } from '@/lib/notifeeCallScheduler';
+import { silence } from '@/lib/voiceCues';
 import { getPersona, styleText, type PersonaId } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
 import { Phone, PhoneOff, Sun, Dumbbell } from 'lucide-react-native';
@@ -53,46 +53,50 @@ export default function IncomingCallScreen() {
     return () => loop.stop();
   }, [pulse]);
 
-  // Speak the call greeting the moment screen opens
+  // RING continuously with the user's SELECTED ringtone the moment the call
+  // screen opens. We cancel the OS notification first so its (fixed) channel
+  // tone stops — otherwise you'd hear two rings, and the channel sound only
+  // loops ~once. A real call rings until answered; the coach only speaks once
+  // you pick up (that's the live coach-call screen).
   useEffect(() => {
-    speakAs(personaId, copy.body);
-    // Stop any pending ring follow-ups — user has engaged
+    // Cancel the OS notification (it carries a callId — would re-trigger the
+    // foreground router) and start the PERSISTENT ring: it loops the user's
+    // SELECTED ringtone via expo-av with staysActiveInBackground:true, so it
+    // keeps ringing while the screen is OFF. (The plain notification sound only
+    // looped ~twice, and a bare expo-av sound paused the moment the screen slept.)
+    cancelAllCalls().catch(() => {});
     cancelRingingChain(kind);
-    // DO NOT stop the persistent ring on mount — let the user actively
-    // answer or decline. The ring keeps going so they hear it under the
-    // call screen.
-    // BUT — on UNMOUNT (user navigates away after answer/decline), make
-    // absolutely sure no stale notification is left in the tray.
+    startPersistentRing(personaId, kind === 'workout' ? 'WORKOUT TIME' : 'WAKE UP').catch(() => {});
     return () => {
-      silence(); // stop any in-flight TTS so the coach doesn't keep talking
-      stopPersistentRing().catch(() => {});
+      silence();
+      stopPersistentRing().catch(() => {});   // stops the loop + clears its notification
       cancelSnoozeCall().catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAnswer = async () => {
-    silence(); // cut the incoming-greeting TTS before the answer greeting plays
+  const handleAnswer = () => {
+    silence();
     cancelRingingChain(kind);
-    await stopPersistentRing();   // ensure notif + audio are GONE before routing
-    await cancelSnoozeCall();     // user engaged — cancel any pending snooze
-    // Coach greets you on answer
-    speakAs(personaId, `Good to hear from you. Let's go.`);
-    // Deep-link to the right destination for this call kind
-    if (kind === 'workout') router.replace('/(tabs)/workouts' as any);
-    else router.replace('/(tabs)' as any);
+    // Open the live call screen IMMEDIATELY — don't await the ring teardown, or
+    // answering feels laggy. Tear the ring + snooze down in the background (and
+    // this screen's unmount cleanup also stops the ring). The call screen shows
+    // "Connecting…" right away while the token + WebRTC come up.
+    stopPersistentRing().catch(() => {});  // user engaged — kill ring/audio now
+    cancelSnoozeCall().catch(() => {});    // cancel any pending snooze
+    router.replace({ pathname: '/coach-call', params: { personaId, kind } } as any);
   };
 
-  const handleDecline = async () => {
-    silence(); // STOP the coach mid-sentence — declining means silence
-    await stopPersistentRing();   // tear down BEFORE the snooze is queued
-    await declineCoachCall({ kind, personaId });
-    // Schedule a follow-up call in 5 minutes — coach doesn't take 'no' for
-    // an answer. Only for wake-up calls (workout calls don't auto-snooze).
-    if (kind === 'wakeup' && canAccess('snooze_recalls')) {
-      await scheduleSnoozeCall({ persona: personaId, minutes: 5 });
-    }
-    router.back();
+  const handleDecline = () => {
+    silence();
+    cancelAllCalls().catch(() => {});       // clear the ringing notification
+    stopPersistentRing().catch(() => {});
+    // Coach doesn't take "no" — call back in 5 min (wake-up only), on the SAME
+    // v3 ring channel + full-screen as the main call so the callback actually
+    // RINGS and shows the call screen. No slow TTS line — the ring is the point.
+    if (kind === 'wakeup') scheduleCallIn(5, kind, personaId).catch(() => {});
+    if (router.canGoBack()) router.back();
+    else router.replace('/(tabs)');
   };
 
   const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });

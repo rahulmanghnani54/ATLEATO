@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { Video, ResizeMode } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,6 +26,7 @@ type Mode = 'record' | 'review';
 export default function VideoReview() {
   const router = useRouter();
   const [permission, requestPermission] = useCameraPermissions();
+  const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
   const [mode, setMode] = useState<Mode>('record');
   const [recording, setRecording] = useState(false);
@@ -45,12 +46,12 @@ export default function VideoReview() {
     }
   }, []);
 
-  // Permission request
+  // Permission request — camera AND microphone (recordAsync needs both; without
+  // mic permission, recording fails silently on Android).
   useEffect(() => {
-    if (permission && !permission.granted) {
-      requestPermission();
-    }
-  }, [permission]);
+    if (permission && !permission.granted) requestPermission();
+    if (micPermission && !micPermission.granted) requestMicPermission();
+  }, [permission, micPermission]);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -170,13 +171,13 @@ export default function VideoReview() {
     );
   }
 
-  if (!permission.granted) {
+  if (!permission.granted || !micPermission?.granted) {
     return (
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
-          <Text style={styles.permText}>Camera access is required to record workout clips.</Text>
-          <TouchableOpacity style={styles.permBtn} onPress={requestPermission}>
-            <Text style={styles.permBtnText}>GRANT CAMERA ACCESS</Text>
+          <Text style={styles.permText}>Camera and microphone access are required to record workout clips.</Text>
+          <TouchableOpacity style={styles.permBtn} onPress={() => { requestPermission(); requestMicPermission(); }}>
+            <Text style={styles.permBtnText}>GRANT ACCESS</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

@@ -215,7 +215,14 @@ export default function Workouts() {
         label={isRest ? 'PICK A WORKOUT →' : `${persona.workoutCTA} →`}
         accent={persona.accent}
         accentInk={persona.ink}
-        onPress={() => router.push((isRest ? '/workout-picker' : '/workout-lobby') as any)}
+        onPress={() =>
+          isRest
+            ? router.push('/workout-picker' as any)
+            : router.push({
+                pathname: '/workout-lobby',
+                params: { programId, dayIndex: String(todayIdx ?? 0) },
+              } as any)
+        }
       />
     </View>
   );

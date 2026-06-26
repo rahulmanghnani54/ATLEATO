@@ -1,7 +1,7 @@
+import '@/lib/domExceptionPolyfill'; // must be first — livekit/ElevenLabs needs DOMException
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
-import { Stack, useRouter, useSegments, useGlobalSearchParams } from 'expo-router';
-import { SplashScreen } from 'expo-router';
+import { View, AppState } from 'react-native';
+import { Stack, useRouter, useSegments, useGlobalSearchParams , SplashScreen } from 'expo-router';
 import {
   useFonts,
   Inter_400Regular,
@@ -184,6 +184,39 @@ function RootNavigator() {
       } as any);
     });
     return () => sub.remove();
+  }, [router]);
+
+  // Route to the incoming-call screen whenever a coach call is RINGING. This
+  // covers every case: cold launch (handled above), resume from background
+  // (AppState 'active'), AND — the one that kept failing — the alarm firing
+  // while the app is ALREADY open (the 1s poll). Android only shows the
+  // full-screen call when the screen is OFF; when you're looking at the app it's
+  // just a heads-up + ring, so we have to navigate ourselves. The call screen
+  // cancels the notification on mount, so the poll won't re-route after that.
+  useEffect(() => {
+    let lastRoute = 0;
+    const checkAndRoute = async () => {
+      if (AppState.currentState !== 'active') return;
+      if (Date.now() - lastRoute < 6000) return; // debounce repeated routes
+      try {
+        const displayed = await notifee.getDisplayedNotifications();
+        const hit = displayed.find((n) => {
+          const d = (n.notification as any)?.data ?? {};
+          return d?.kind && d?.personaId && d?.callId; // a coach-call notification
+        });
+        if (hit) {
+          lastRoute = Date.now();
+          const d = (hit.notification as any).data;
+          router.push({
+            pathname: '/incoming-call',
+            params: { kind: d.kind, personaId: d.personaId },
+          } as any);
+        }
+      } catch { /* ignore */ }
+    };
+    const timer = setInterval(checkAndRoute, 1000);
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') checkAndRoute(); });
+    return () => { clearInterval(timer); sub.remove(); };
   }, [router]);
 
   useEffect(() => {

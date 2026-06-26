@@ -1,0 +1,52 @@
+<!-- @dsCard group="Components" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Atleato · Coach Personas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root{--bg:#0a0b0d;--surface:#181a1f;--border:rgba(255,255,255,0.07);
+    --text:#f5f5f4;--text-2:rgba(245,245,244,0.62);--text-3:rgba(245,245,244,0.38);
+    --display:'Plus Jakarta Sans',sans-serif;--body:'Inter',sans-serif;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--text);font-family:var(--body);padding:40px;
+    -webkit-font-smoothing:antialiased;background-image:radial-gradient(1000px 460px at 85% -12%,rgba(224,90,38,0.06),transparent 60%);}
+  .eyebrow{font-weight:600;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;}
+  h1{font-family:var(--display);font-weight:800;font-size:34px;letter-spacing:-1px;margin-bottom:4px;}
+  .sub{color:var(--text-2);font-size:14px;margin-bottom:30px;max-width:580px;line-height:1.5;}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;}
+  .coach{position:relative;border:1px solid var(--border);border-radius:18px;background:var(--surface);
+    padding:22px;overflow:hidden;transition:transform .18s ease,box-shadow .25s ease;}
+  .coach:hover{transform:translateY(-3px);}
+  .coach::before{content:"";position:absolute;inset:0;
+    background:radial-gradient(420px 130px at 12% -8%,var(--a,#fff),transparent 62%);opacity:.16;}
+  .coach .glow-edge{position:absolute;left:0;top:18px;bottom:18px;width:3px;border-radius:3px;background:var(--a);}
+  .av{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);font-weight:800;font-size:22px;color:#0a0b0d;background:var(--a);
+    box-shadow:0 6px 18px -6px var(--a);margin-bottom:16px;position:relative;}
+  .nm{position:relative;font-family:var(--display);font-weight:700;font-size:18px;letter-spacing:-0.3px;}
+  .role{position:relative;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--a);font-weight:600;margin-top:3px;}
+  .desc{position:relative;font-size:12.5px;color:var(--text-2);line-height:1.5;margin-top:12px;}
+  .tag{position:relative;display:inline-flex;align-items:center;gap:6px;margin-top:14px;
+    font-size:10.5px;color:var(--text-3);font-weight:500;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--a);}
+</style>
+</head>
+<body>
+  <div class="eyebrow">Atleato Design System</div>
+  <h1>Coach Personas</h1>
+  <p class="sub">Five coaches, five identities. Each persona owns an accent that re-themes the entire app — buttons, charts, the incoming-call screen, the voice.</p>
+
+  <div class="grid">
+    <div class="coach" style="--a:#c8ff3d"><div class="glow-edge"></div><div class="av">S</div><div class="nm">The Sculptor</div><div class="role">Aesthetics · Calm</div><div class="desc">Humble, world-class physique coach. Control every rep, value consistency over ego.</div><div class="tag"><span class="dot"></span>calm · grounded</div></div>
+    <div class="coach" style="--a:#f5b942"><div class="glow-edge"></div><div class="av">M</div><div class="nm">The Monument</div><div class="role">Champion · Bold</div><div class="desc">Larger-than-life champion energy. "You must believe. Today, we conquer."</div><div class="tag"><span class="dot"></span>commanding · warm</div></div>
+    <div class="coach" style="--a:#5DD3FA"><div class="glow-edge"></div><div class="av">A</div><div class="nm">The Analyst</div><div class="role">Evidence · Precise</div><div class="desc">Data over bro-science. Consistency compounds; progressive overload wins.</div><div class="tag"><span class="dot"></span>measured · logical</div></div>
+    <div class="coach" style="--a:#ef4444"><div class="glow-edge"></div><div class="av">C</div><div class="nm">The Commander</div><div class="role">Intensity · Loud</div><div class="desc">Relentless, no excuses. "Your body can do more than your mind believes. Let's GO."</div><div class="tag"><span class="dot"></span>fierce · high-energy</div></div>
+    <div class="coach" style="--a:#7be38c"><div class="glow-edge"></div><div class="av">A</div><div class="nm">The Architect</div><div class="role">Science · Witty</div><div class="desc">Academic training scientist with dry humor. Adaptation requires showing up.</div><div class="tag"><span class="dot"></span>rigorous · wry</div></div>
+  </div>
+</body>
+</html>

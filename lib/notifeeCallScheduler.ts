@@ -30,11 +30,14 @@ import { getPersona, type PersonaId } from './personaTheme';
 
 export type CallKind = 'wakeup' | 'workout';
 
-// v2: Android caches channel settings at first creation — the original
-// 'coach-incoming-calls' channel got stuck with bypassDnd=false / non-public
-// visibility, so scheduled calls didn't ring properly. Bumping the ID forces a
-// fresh channel with the correct alarm-grade settings (bypass DnD, public, sound).
-const CHANNEL_ID = 'coach-incoming-calls-v2';
+// v3: the channel SOUND is cached at creation, so changing it requires a new
+// channel id. v2 used the system 'default' sound = a single notification "ding".
+// v3 points at the bundled `coach_call` ringtone (res/raw/coach_call.wav) and the
+// notification loops it (loopSound) so a scheduled call RINGS continuously like a
+// real incoming call instead of dinging once. (Also keeps bypass-DnD/public/HIGH.)
+const CHANNEL_ID = 'coach-incoming-calls-v3';
+// Raw resource name for the ringtone (android/app/src/main/res/raw/coach_call.wav).
+const CALL_SOUND = 'coach_call';
 const ID_PREFIX  = 'coach-call:';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -140,11 +143,10 @@ export async function setupCallChannel(): Promise<void> {
     name: 'Coach Incoming Calls',
     description: 'Wake-up and workout calls — rings as an incoming call',
     importance: AndroidImportance.HIGH,
-    sound: 'default',
+    sound: CALL_SOUND,                 // bundled ringtone, not the system ding
     vibration: true,
-    // Notifee requires ALL values to be > 0 (Android's raw API allows 0 as
-    // initial wait, but Notifee validates strictly). Start with a tiny wait.
-    vibrationPattern: [300, 1000, 500, 1000, 500, 1000, 500, 1000],
+    // Call-style vibration: long buzz / short gap, repeated — reads as "ringing".
+    vibrationPattern: [400, 1000, 400, 1000, 400, 1000, 400, 1000, 400, 1000],
     bypassDnd: true,
     visibility: AndroidVisibility.PUBLIC,
     lights: true,
@@ -207,7 +209,8 @@ export async function fireIncomingCall(args: {
           pressAction: { id: 'DECLINE' },
         },
       ],
-      sound: 'default',
+      sound: CALL_SOUND,
+      loopSound: true,                            // ring continuously until answered/declined
       ongoing: true,                              // sticky — won't dismiss until interacted with
       autoCancel: false,
       visibility: AndroidVisibility.PUBLIC,
@@ -278,37 +281,145 @@ export async function ensureExactAlarmPermission(): Promise<boolean> {
   }
 }
 
-/** Schedule a daily full-screen coach call at hour:minute (local). */
+/**
+ * Samsung (and other OEMs) kill background alarms unless the app is exempt from
+ * battery optimization — that's why scheduled wake-up/workout calls don't fire
+ * even when the alarm is registered. If optimization is on, open the system
+ * dialog so the user can allow it. Best-effort; never throws.
+ */
+export async function ensureBackgroundCallDelivery(): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    const optimized = await notifee.isBatteryOptimizationEnabled();
+    if (optimized) {
+      await notifee.openBatteryOptimizationSettings();
+    }
+  } catch { /* ignore */ }
+}
+
+/** Next Date that lands on weekday `dow` (0=Sun..6=Sat) at hour:minute. */
+function nextWeekdayOccurrence(dow: number, hour: number, minute: number): Date {
+  const d = new Date();
+  d.setHours(hour, minute, 0, 0);
+  let add = (dow - d.getDay() + 7) % 7;
+  if (add === 0 && d.getTime() <= Date.now()) add = 7; // today's slot passed → next week
+  d.setDate(d.getDate() + add);
+  return d;
+}
+
+/**
+ * Schedule a full-screen coach call at hour:minute (local).
+ *
+ * `days` = the calendar weekdays (0=Sun..6=Sat) on which the coach may ring.
+ * Pass the user's TRAINING days here so the coach NEVER disturbs them on a rest
+ * day — rest days simply get no alarm registered. We do this by registering one
+ * WEEKLY-repeat trigger per training weekday (instead of a single DAILY repeat),
+ * so the OS fires each on its own day even when the app is killed. Omit `days`
+ * (or pass all 7) to ring every day.
+ */
 export async function scheduleIncomingCall(args: {
   kind: CallKind; personaId: PersonaId; hour: number; minute: number;
+  days?: number[];
 }): Promise<void> {
   if (Platform.OS !== 'android') return;
-  const { kind, personaId, hour, minute } = args;
+  const { kind, personaId, hour, minute, days } = args;
   const persona = getPersona(personaId);
   const copy = getCallCopy(personaId, kind);
 
   await setupCallChannel();
+  // Replace any existing schedule for this kind (daily OR per-weekday triggers).
+  await cancelScheduledCall(kind);
 
-  const id = `${SCHED_PREFIX}${kind}`;
-  // Replace any existing schedule for this kind
-  try { await notifee.cancelTriggerNotification(id); } catch { /* none */ }
+  // Same notification payload for every trigger — only the id varies.
+  const notif = (id: string) => ({
+    id,
+    title: '📞  ' + copy.title + '  ·  INCOMING CALL',
+    body: copy.body,
+    data: { kind, personaId, callId: id, voice: persona.id },
+    android: {
+      channelId: CHANNEL_ID,
+      category: AndroidCategory.CALL,
+      importance: AndroidImportance.HIGH,
+      pressAction:      { id: 'open-call-screen', launchActivity: 'default' },
+      fullScreenAction: { id: 'full-screen',      launchActivity: 'default' },
+      actions: [
+        { title: '✓  ANSWER',  pressAction: { id: 'ANSWER', launchActivity: 'default' } },
+        { title: '✕  DECLINE', pressAction: { id: 'DECLINE' } },
+      ],
+      sound: CALL_SOUND,
+      loopSound: true,                            // ring continuously like a real call
+      ongoing: true,
+      autoCancel: false,
+      visibility: AndroidVisibility.PUBLIC,
+      color: persona.accent,
+    },
+    ios: { sound: 'default', categoryId: 'coach-call-actions', critical: true, criticalVolume: 1.0 },
+  });
 
-  // Next occurrence of hour:minute — tomorrow if it already passed today.
+  const uniqueDays = days ? [...new Set(days)].filter((d) => d >= 0 && d <= 6) : [];
+
+  // Specific training days → one WEEKLY trigger each; rest days get nothing.
+  if (uniqueDays.length > 0 && uniqueDays.length < 7) {
+    for (const dow of uniqueDays) {
+      const trigger: TimestampTrigger = {
+        type: TriggerType.TIMESTAMP,
+        timestamp: nextWeekdayOccurrence(dow, hour, minute).getTime(),
+        repeatFrequency: RepeatFrequency.WEEKLY,
+        alarmManager: { allowWhileIdle: true }, // exact, fires in Doze
+      };
+      await notifee.createTriggerNotification(notif(`${SCHED_PREFIX}${kind}-${dow}`), trigger);
+    }
+    return;
+  }
+
+  // Every day (no rest-day restriction, or trains 7 days/week).
   const fire = new Date();
   fire.setHours(hour, minute, 0, 0);
   if (fire.getTime() <= Date.now()) fire.setDate(fire.getDate() + 1);
-
   const trigger: TimestampTrigger = {
     type: TriggerType.TIMESTAMP,
     timestamp: fire.getTime(),
     repeatFrequency: RepeatFrequency.DAILY,
-    alarmManager: { allowWhileIdle: true }, // exact, fires in Doze
+    alarmManager: { allowWhileIdle: true },
   };
+  await notifee.createTriggerNotification(notif(`${SCHED_PREFIX}${kind}`), trigger);
+}
 
+/** Cancel every scheduled call for one kind (the daily id AND per-weekday ids). */
+export async function cancelScheduledCall(kind: CallKind): Promise<void> {
+  try {
+    const prefix = `${SCHED_PREFIX}${kind}`;
+    const scheduled = await notifee.getTriggerNotifications();
+    await Promise.all(
+      scheduled
+        .filter((n) => n.notification.id?.startsWith(prefix))
+        .map((n) => notifee.cancelTriggerNotification(n.notification.id!)),
+    );
+  } catch { /* noop */ }
+}
+
+/**
+ * Schedule a ONE-SHOT "calling back" in `minutes` minutes — used for the decline
+ * snooze and the after-call check-in. Uses the SAME v3 ring channel + full-screen
+ * config as the main scheduled call, so the callback rings + shows the call
+ * screen identically (not a quiet ding on a different/old channel).
+ */
+export async function scheduleCallIn(minutes: number, kind: CallKind, personaId: PersonaId): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  const persona = getPersona(personaId);
+  const copy = getCallCopy(personaId, kind);
+  await setupCallChannel();
+  const id = `${ID_PREFIX}recall-${kind}`;
+  try { await notifee.cancelTriggerNotification(id); } catch { /* none */ }
+  const trigger: TimestampTrigger = {
+    type: TriggerType.TIMESTAMP,
+    timestamp: Date.now() + minutes * 60 * 1000,
+    alarmManager: { allowWhileIdle: true },
+  };
   await notifee.createTriggerNotification(
     {
       id,
-      title: '📞  ' + copy.title + '  ·  INCOMING CALL',
+      title: '📞  ' + copy.title + '  ·  CALLING BACK',
       body: copy.body,
       data: { kind, personaId, callId: id, voice: persona.id },
       android: {
@@ -321,7 +432,8 @@ export async function scheduleIncomingCall(args: {
           { title: '✓  ANSWER',  pressAction: { id: 'ANSWER', launchActivity: 'default' } },
           { title: '✕  DECLINE', pressAction: { id: 'DECLINE' } },
         ],
-        sound: 'default',
+        sound: CALL_SOUND,
+        loopSound: true,
         ongoing: true,
         autoCancel: false,
         visibility: AndroidVisibility.PUBLIC,
@@ -331,11 +443,6 @@ export async function scheduleIncomingCall(args: {
     },
     trigger,
   );
-}
-
-/** Cancel the daily scheduled call for one kind. */
-export async function cancelScheduledCall(kind: CallKind): Promise<void> {
-  try { await notifee.cancelTriggerNotification(`${SCHED_PREFIX}${kind}`); } catch { /* noop */ }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -371,7 +478,8 @@ export async function handleDecline(args: { kind: CallKind; personaId: PersonaId
         channelId: CHANNEL_ID,
         category: AndroidCategory.CALL,
         importance: AndroidImportance.HIGH,
-        sound: 'default',
+        sound: CALL_SOUND,
+        loopSound: true,
         pressAction:     { id: 'open-call-screen', launchActivity: 'default' },
         fullScreenAction:{ id: 'full-screen',      launchActivity: 'default' },
         actions: [

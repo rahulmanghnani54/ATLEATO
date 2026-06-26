@@ -20,7 +20,7 @@ import { supabase } from '@/lib/supabase';
 
 let branch: any = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   branch = require('react-native-branch').default;
 } catch {
   branch = null; // native module absent (no key / pre-rebuild / web) — degrade

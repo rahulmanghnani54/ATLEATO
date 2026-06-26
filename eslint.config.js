@@ -17,6 +17,7 @@ module.exports = [
       'supabase/functions/**', // Deno runtime — separate toolchain
       'scripts/**',            // build-time Node scripts (EAS), not app code
       'plugins/**',            // Expo config plugins (build-time Node), not app code
+      'docs/**',               // marketing/landing site (vendored JS), not app code
       'babel.config.js',
       'metro.config.js',
       'eslint.config.js',

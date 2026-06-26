@@ -118,6 +118,9 @@ export interface DaySchedule {
   name: string;       // e.g. "PULL · 1"
   isRest: boolean;
   isToday: boolean;
+  dayIndex: number;   // ARRAY index into program.schedule — the lobby/session
+                      // address workouts by array position, so callers must pass
+                      // this (not the weekday) or the lobby shows the wrong day.
   workout: WorkoutDay | null;
 }
 
@@ -142,7 +145,8 @@ export function useProgramSchedule() {
         const dow = d.getDay(); // 0=Sun
         // Program uses 0=Mon mapping, convert Sun→6, Mon→0, etc.
         const programDay = dow === 0 ? 6 : dow - 1;
-        const workout = program.schedule.find((w) => w.day === programDay) ?? null;
+        const wIdx = program.schedule.findIndex((w) => w.day === programDay);
+        const workout = wIdx >= 0 ? program.schedule[wIdx] : null;
         const isRest = !workout || programDay >= program.daysPerWeek;
 
         days.push({
@@ -150,6 +154,7 @@ export function useProgramSchedule() {
           name: isRest ? 'REST' : workout!.name.toUpperCase(),
           isRest,
           isToday: offset === 0,
+          dayIndex: wIdx,
           workout: isRest ? null : (workout ?? null),
         });
       }

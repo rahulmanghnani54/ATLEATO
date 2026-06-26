@@ -60,6 +60,19 @@ export default function Dashboard() {
     ? `Day ${streak || 1} · Rest`
     : `Day ${streak || 1} · ${today?.workout?.focus ?? 'Train'}`;
 
+  // Open the lobby for TODAY's workout. The lobby/session address workouts by
+  // ARRAY index, so we must pass programId + today's dayIndex — otherwise the
+  // lobby defaults to schedule[0] and shows a different day than Home displays.
+  const openTodayWorkout = () => {
+    router.push({
+      pathname: '/workout-lobby',
+      params: {
+        programId: profile?.selected_program ?? 'cbum_evolved',
+        dayIndex: String(today?.dayIndex ?? 0),
+      },
+    } as any);
+  };
+
   return (
     <View style={styles.root}>
       <ScrollView
@@ -141,7 +154,7 @@ export default function Dashboard() {
               iconTintColor={persona.accent}
               title={today?.workout?.name ?? "Today's Workout"}
               meta={`${today?.workout?.exercises?.length ?? 6} exercises · ${today?.workout?.estimatedMinutes ?? 55} min`}
-              onPress={() => router.push('/workout-lobby' as any)}
+              onPress={openTodayWorkout}
             />
           )}
 
@@ -188,7 +201,7 @@ export default function Dashboard() {
         accent={persona.accent}
         accentInk={persona.ink}
         onPress={() =>
-          router.push((today?.isRest ? '/workout-picker' : '/workout-lobby') as any)
+          today?.isRest ? router.push('/workout-picker' as any) : openTodayWorkout()
         }
       />
     </View>

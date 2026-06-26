@@ -55,3 +55,7 @@ supabase/.temp/
 # local web work
 web/
 build.log
+
+# debug screenshots + scratch files (root-level only — keeps docs/ images)
+/*.png
+*.bak

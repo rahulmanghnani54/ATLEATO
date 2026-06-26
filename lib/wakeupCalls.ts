@@ -35,7 +35,7 @@
 // when it doesn't (current setup) we fall through to a Notifee-based ring.
 let RNCallKeep: any = null;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+   
   RNCallKeep = require('react-native-callkeep').default;
 } catch {
   RNCallKeep = null;
@@ -160,7 +160,7 @@ let ringSound: Audio.Sound | null = null;
 let ringTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let ringActive = false;
 
-async function startPersistentRing(
+export async function startPersistentRing(
   personaId: PersonaId,
   reason: string,
   durationSec = 60,
