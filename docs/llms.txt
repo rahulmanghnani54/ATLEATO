@@ -1,0 +1,30 @@
+# Atleato
+
+> Atleato is an AI fitness coaching app for Android. Five coach personas phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days.
+
+Atleato turns "AI fitness app" into something that actually shows up: instead of a notification you swipe away, your coach rings your phone like a real incoming call — full-screen, with a ringtone, and a callback if you decline.
+
+## What Atleato does
+- **Real wake-up & workout calls**: Your coach rings your phone like an actual incoming call at the time you set. Decline and it calls back in 5 minutes. Rest days stay silent.
+- **Real-time AI form correction**: Uses your phone camera and on-device pose detection to flag form issues (knees caving in, a shallow squat) live, rep by rep — no human trainer needed.
+- **5 AI coach personas**: Switch coaches and the whole app transforms — colors, workout program, nutrition philosophy, voice, and motivational style all change.
+- **AI food scanner**: Point your camera at a meal to log calories and macros.
+- **Rest-day-aware scheduling**: Reads your workout plan and only calls on training days.
+
+## Pricing
+- **Free**: 1 coach, workouts, nutrition tracking, wake-up & workout calls, streaks. No credit card.
+- **Pro ($9.99/month)**: 3 coaches plus AI form correction and premium features.
+- **Legend ($19.99/month)**: All 5 coaches plus everything.
+
+## Platform
+Android (Google Play). Currently in closed beta — join the waitlist for early access.
+
+## Key pages
+- [Home](https://atleato.com/): Product overview
+- [Pricing](https://atleato.com/#pricing): Free, Pro, and Legend tiers
+- [FAQ](https://atleato.com/#faq): Common questions answered
+- [Privacy Policy](https://atleato.com/privacy)
+- [Terms of Service](https://atleato.com/terms)
+
+## Contact
+Email: hello@atleato.com

@@ -43,16 +43,124 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "WebApplication",
-  "name": "Atleato",
-  "url": "https://atleato.com",
-  "description": "AI-powered fitness coaching app with 5 persona coaches, live form correction, and real wake-up calls.",
-  "applicationCategory": "HealthApplication",
-  "operatingSystem": "Android",
-  "offers": [
-    {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free"},
-    {"@type": "Offer", "price": "9.99", "priceCurrency": "USD", "name": "Pro"},
-    {"@type": "Offer", "price": "19.99", "priceCurrency": "USD", "name": "Legend"}
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://atleato.com/#organization",
+      "name": "Atleato",
+      "url": "https://atleato.com/",
+      "logo": "https://atleato.com/og-image.png",
+      "image": "https://atleato.com/og-image.png",
+      "email": "hello@atleato.com",
+      "description": "Atleato is an AI fitness coaching app whose coaches phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days.",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "hello@atleato.com",
+        "contactType": "customer support"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://atleato.com/#website",
+      "url": "https://atleato.com/",
+      "name": "Atleato",
+      "description": "AI fitness coaching app with 5 persona coaches, real wake-up calls, real-time form correction, and rest-day-aware scheduling.",
+      "publisher": { "@id": "https://atleato.com/#organization" },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "MobileApplication",
+      "@id": "https://atleato.com/#app",
+      "name": "Atleato",
+      "url": "https://atleato.com/",
+      "description": "AI-powered fitness coaching app with 5 persona coaches, live form correction, an AI food scanner, and real wake-up & workout calls that ring your phone like an actual call.",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Android",
+      "publisher": { "@id": "https://atleato.com/#organization" },
+      "featureList": [
+        "AI wake-up and workout phone calls",
+        "Real-time AI exercise form correction via camera",
+        "5 switchable AI coach personas",
+        "AI food and macro scanner",
+        "Rest-day-aware scheduling tied to your workout plan"
+      ],
+      "offers": [
+        {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free"},
+        {"@type": "Offer", "price": "9.99", "priceCurrency": "USD", "name": "Pro"},
+        {"@type": "Offer", "price": "19.99", "priceCurrency": "USD", "name": "Legend"}
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://atleato.com/#faq",
+      "isPartOf": { "@id": "https://atleato.com/#website" },
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Atleato?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Atleato is an AI fitness coaching app for Android. Five world-class coach personas phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does Atleato's AI form correction work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Atleato uses your phone's camera and on-device pose detection to track your joints during a set. It analyzes your movement live and flags issues — like knees caving in or a shallow squat — so you fix your form rep by rep, without a human trainer in the room."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What makes Atleato different from other AI fitness apps?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Most fitness apps send notifications you swipe away. Atleato actually rings your phone like a real call — full-screen, ringtone, and a callback if you decline. It pairs that with five switchable coach personas, real-time form correction, and rest-day-aware scheduling in one app."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Atleato really free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The Free tier includes 1 coach, workouts, nutrition tracking, wake-up and workout calls, and streaks — forever. No credit card required. PRO and LEGEND unlock additional coaches, AI form correction, and premium features."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do Atleato's wake-up calls work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Set a time, pick a ringtone. Your phone rings like an actual incoming call — full screen, vibration, the works. If you decline, your coach calls back 5 minutes later. It's not a notification you can swipe away."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Will Atleato bug me on rest days?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Atleato reads your training plan and only calls on workout days — your rest days stay completely silent. It's a coach, not a nag: it pushes when it counts and lets you recover when it matters."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I switch coaches in Atleato?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Free users get 1 coach. PRO unlocks 3. LEGEND gets all 5. When you switch, the entire app transforms — colors, workout programs, nutrition philosophy, voice, and motivational style all change to match your new coach."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "When does Atleato launch?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Atleato is in closed beta. Join the waitlist to get early access. Waitlist members will be the first to download when it launches on Google Play."
+          }
+        }
+      ]
+    }
   ]
 }
 </script>
@@ -770,24 +878,36 @@
       </div>
       <div style="display:flex;flex-direction:column;gap:16px;">
         <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
-          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Is it really free? <span style="color:var(--lime);">+</span></summary>
-          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Yes. The Free tier includes 1 coach, workouts, nutrition tracking, wake-up + workout calls, and streaks — forever. No credit card required. PRO and LEGEND unlock additional coaches, AI form correction, and premium features.</p>
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">What is Atleato? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Atleato is an AI fitness coaching app for Android. Five world-class coach personas phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days.</p>
         </details>
         <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
-          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">How do wake-up calls work? <span style="color:var(--lime);">+</span></summary>
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">How does Atleato's AI form correction work? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Atleato uses your phone's camera and on-device pose detection to track your joints during a set. It analyzes your movement live and flags issues — like knees caving in or a shallow squat — so you fix your form rep by rep, without a human trainer in the room.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">What makes Atleato different from other AI fitness apps? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Most fitness apps send notifications you swipe away. Atleato actually rings your phone like a real call — full-screen, ringtone, and a callback if you decline. It pairs that with five switchable coach personas, real-time form correction, and rest-day-aware scheduling in one app.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Is Atleato really free? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Yes. The Free tier includes 1 coach, workouts, nutrition tracking, wake-up and workout calls, and streaks — forever. No credit card required. PRO and LEGEND unlock additional coaches, AI form correction, and premium features.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">How do Atleato's wake-up calls work? <span style="color:var(--lime);">+</span></summary>
           <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Set a time, pick a ringtone. Your phone rings like an actual incoming call — full screen, vibration, the works. If you decline, your coach calls back 5 minutes later. It's not a notification you can swipe away.</p>
         </details>
         <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
-          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Will it bug me on rest days? <span style="color:var(--lime);">+</span></summary>
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Will Atleato bug me on rest days? <span style="color:var(--lime);">+</span></summary>
           <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">No. Atleato reads your training plan and only calls on workout days — your rest days stay completely silent. It's a coach, not a nag: it pushes when it counts and lets you recover when it matters.</p>
         </details>
         <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
-          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Can I switch coaches? <span style="color:var(--lime);">+</span></summary>
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Can I switch coaches in Atleato? <span style="color:var(--lime);">+</span></summary>
           <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Free users get 1 coach. PRO unlocks 3. LEGEND gets all 5. When you switch, the entire app transforms — colors, workout programs, nutrition philosophy, voice, and motivational style all change to match your new coach.</p>
         </details>
         <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
-          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">When does the app launch? <span style="color:var(--lime);">+</span></summary>
-          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">We're in closed beta. Join the waitlist above to get early access. Waitlist members will be the first to download when we launch on Google Play.</p>
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">When does Atleato launch? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Atleato is in closed beta. Join the waitlist to get early access. Waitlist members will be the first to download when it launches on Google Play.</p>
         </details>
       </div>
     </div>
