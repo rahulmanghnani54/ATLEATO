@@ -161,6 +161,39 @@ export default function ProfileScreen() {
     ]);
   };
 
+  // Google Play requires an in-app way to delete the account + all data. Calls
+  // the delete-account Edge Function (service-role) which removes the auth user;
+  // all user-owned rows cascade via ON DELETE CASCADE.
+  const [deleting, setDeleting] = useState(false);
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete account',
+      'This permanently erases your account and ALL your data — workouts, nutrition, photos, streaks. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete forever', style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            try {
+              const { error } = await supabase.functions.invoke('delete-account', { body: {} });
+              if (error) throw error;
+              await signOut();
+              router.replace('/(auth)/login' as any);
+            } catch (e) {
+              setDeleting(false);
+              Alert.alert(
+                'Could not delete',
+                (e instanceof Error ? e.message : String(e)) +
+                  '\n\nYou can also email hello@atleato.com and we will delete it within 7 days.',
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.header}>
@@ -605,6 +638,14 @@ export default function ProfileScreen() {
             label="Sign out"
             trailIcon={ChevronRight}
             onPress={handleSignOut}
+            danger
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            label={deleting ? 'Deleting…' : 'Delete account'}
+            sub="Permanently erase your account & data"
+            trailIcon={ChevronRight}
+            onPress={deleting ? undefined : handleDeleteAccount}
             danger
           />
         </SettingsGroup>

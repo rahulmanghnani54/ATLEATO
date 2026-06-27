@@ -25,6 +25,7 @@ import notifee, {
   type TimestampTrigger,
 } from '@notifee/react-native';
 import * as Speech from 'expo-speech';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking, PermissionsAndroid } from 'react-native';
 import { getPersona, type PersonaId } from './personaTheme';
 
@@ -244,7 +245,14 @@ export async function cancelAllCalls(): Promise<void> {
     const scheduled = await notifee.getTriggerNotifications();
     await Promise.all(
       scheduled
-        .filter((n) => n.notification.id?.startsWith(ID_PREFIX))
+        .filter((n) => {
+          const id = n.notification.id ?? '';
+          // Cancel one-shot call triggers (recall/test) but NEVER the recurring
+          // wake-up/workout schedule (SCHED_PREFIX). Cancelling those silently
+          // killed the workout reminder: the morning wake-up's caller screen
+          // ran cancelAllCalls(), which wiped that day's scheduled workout call.
+          return id.startsWith(ID_PREFIX) && !id.startsWith(SCHED_PREFIX);
+        })
         .map((n) => notifee.cancelTriggerNotification(n.notification.id!)),
     );
   } catch {
@@ -396,6 +404,42 @@ export async function cancelScheduledCall(kind: CallKind): Promise<void> {
         .map((n) => notifee.cancelTriggerNotification(n.notification.id!)),
     );
   } catch { /* noop */ }
+}
+
+// ── Capped wake-up callback ("call me back") ────────────────────────────────
+const RECALL_FLAG_KEY  = 'coachCall:pendingRecall';
+const RECALL_COUNT_KEY = 'coachCall:recallCount';
+const RECALL_TS_KEY    = 'coachCall:recallTs';
+const MAX_RECALLS      = 2;   // at most 2 callbacks per wake-up session
+const RECALL_GAP_MIN   = 5;   // minutes between callbacks
+
+/**
+ * Schedule a wake-up CALLBACK, but CAPPED. Both the live-call screen (on hang-up)
+ * and the incoming-call screen (on decline) route through here, so the cap holds
+ * however the call ended. Self-resets after a 30-min gap (each morning is fresh).
+ * Returns true if a callback was scheduled, false if capped/skipped.
+ *
+ * Fixes the "rings every 5 min for an hour" bug: decline used to schedule an
+ * UNCAPPED chain (scheduleCallIn with no counter).
+ */
+export async function scheduleRecall(kind: CallKind, personaId: PersonaId): Promise<boolean> {
+  if (kind !== 'wakeup') return false;   // only wake-ups call back; workouts don't nag
+  try {
+    const now = Date.now();
+    const lastTs = parseInt((await AsyncStorage.getItem(RECALL_TS_KEY)) || '0', 10) || 0;
+    let count = parseInt((await AsyncStorage.getItem(RECALL_COUNT_KEY)) || '0', 10) || 0;
+    if (now - lastTs > 30 * 60 * 1000) count = 0;  // new session → reset the counter
+    if (count >= MAX_RECALLS) return false;         // capped — stop calling back
+    await AsyncStorage.multiSet([
+      [RECALL_COUNT_KEY, String(count + 1)],
+      [RECALL_TS_KEY, String(now)],
+      [RECALL_FLAG_KEY, personaId + ':' + now],     // greet the callback as a check-in
+    ]);
+    await scheduleCallIn(RECALL_GAP_MIN, kind, personaId);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**

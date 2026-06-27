@@ -16,7 +16,7 @@ import { ConversationProvider, useConversationControls, useConversationStatus } 
 import { getCoachCallToken } from '@/lib/elevenlabsCall';
 import { getPersona, type PersonaId } from '@/lib/personaTheme';
 import { COACH_CALL_PERSONAS, COACH_STYLE } from '@/lib/coachCallPersonas';
-import { scheduleCallIn } from '@/lib/notifeeCallScheduler';
+import { scheduleRecall } from '@/lib/notifeeCallScheduler';
 import { getCallCopy } from '@/lib/coachCallScheduler';
 import { speakAs, silence } from '@/lib/voiceCues';
 import { useAuthStore } from '@/stores/authStore';
@@ -28,10 +28,7 @@ import notifee, { AndroidImportance, AndroidCategory } from '@notifee/react-nati
 // Persistent wake-up: after a wake-up call ends (you hang up, say bye, or the
 // coach wraps), call back in 5 min to make sure you actually got up — like a
 // real person who won't take "I'm up" on faith. Capped so it can't nag forever.
-const RECALL_FLAG = 'coachCall:pendingRecall';   // personaId awaiting a callback
-const RECALL_COUNT = 'coachCall:recallCount';    // consecutive callbacks so far
-const MAX_RECALLS = 3;
-const RECALL_MINUTES = 5;
+const RECALL_FLAG = 'coachCall:pendingRecall';   // personaId awaiting a callback (drives the check-in greeting)
 
 // Human-readable goal for the coach to reference on the call.
 const GOAL_LABEL: Record<string, string> = {
@@ -97,7 +94,6 @@ function CoachCallInner() {
   const startedRef = useRef(false);
   const connectedRef = useRef(false);   // did the call actually connect?
   const endedRef = useRef(false);        // guard so finishCall runs exactly once
-  const recallCountRef = useRef(0);      // how many callbacks have chained so far
   const [ending, setEnding] = useState(false);  // user tapped End — waiting for real disconnect
   const [offline, setOffline] = useState(false);  // couldn't reach live AI — spoke offline line
   const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -121,13 +117,11 @@ function CoachCallInner() {
     hideOnCallNotification();
     silence();        // stop any offline TTS line still speaking
     safeEnd();
-    // Only chain a callback for a wake-up call that actually connected, and only
-    // up to the cap (don't nag a user who's clearly up forever).
-    if (kind === 'wakeup' && connectedRef.current && recallCountRef.current < MAX_RECALLS) {
-      // Tag with a timestamp so a stale flag can't misclassify a future fresh call.
-      AsyncStorage.setItem(RECALL_FLAG, personaId + ':' + Date.now()).catch(() => {});
-      AsyncStorage.setItem(RECALL_COUNT, String(recallCountRef.current + 1)).catch(() => {});
-      scheduleCallIn(RECALL_MINUTES, kind, personaId).catch(() => {});
+    // Call back if this wake-up actually connected. scheduleRecall CAPS it at 2
+    // callbacks/session (self-resetting after 30 min) — the same cap as the
+    // decline path — so it can never ring every 5 min for an hour.
+    if (connectedRef.current) {
+      scheduleRecall(kind, personaId).catch(() => {});
     }
     // The call is often launched fresh (from a notification / replace), so there
     // may be nothing to go back to — router.back() then lands on a blank white
@@ -168,13 +162,6 @@ function CoachCallInner() {
           const [flagPersona, flagTs] = (flag ?? '').split(':');
           const freshEnough = (Date.now() - parseInt(flagTs || '0', 10)) < 30 * 60 * 1000;
           isRecall = kind === 'wakeup' && flagPersona === personaId && freshEnough;
-          if (isRecall) {
-            const n = parseInt((await AsyncStorage.getItem(RECALL_COUNT)) || '0', 10);
-            recallCountRef.current = Number.isFinite(n) ? n : 0;
-          } else {
-            recallCountRef.current = 0;
-            await AsyncStorage.setItem(RECALL_COUNT, '0');
-          }
         } catch { /* ignore — treat as a normal call */ }
         const callPurpose =
           kind === 'workout' ? 'workout session'

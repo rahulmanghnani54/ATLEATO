@@ -59,3 +59,9 @@ build.log
 # debug screenshots + scratch files (root-level only — keeps docs/ images)
 /*.png
 *.bak
+
+# secrets — never commit API keys
+.env
+**/.env
+*.env
+**/*.env

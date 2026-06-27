@@ -17,7 +17,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Alert, Animated, Linking,
+  Alert, Animated,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -31,11 +31,8 @@ import { Colors, Fonts, Spacing } from '@/constants/theme';
 
 const STORAGE_KEY = 'charity_stake:v2';
 const STAKE_AMOUNT_USD = 2;
-// Lemon Squeezy checkout for the weekly $2 anti-stake.
-// TODO: replace with the actual LS product URL after creating it in the
-// LS dashboard. Until then, falls back to upsell.html with a query param
-// so the founder can see who's trying to stake.
-const STAKE_CHECKOUT_URL = 'https://atleato.com/upsell.html?stake=anti-charity-2usd';
+// Stakes are a paid feature — they'll use Google Play Billing at launch.
+// No external web checkout (Play Payments policy).
 
 const CHARITIES = [
   { id: 'rival_team', label: 'Rival sports team fund 🏟', emoji: '🏟' },
@@ -359,32 +356,30 @@ export default function CharityStakeScreen() {
 
             <TouchableOpacity
               style={[styles.primaryBtn, { backgroundColor: persona.accent }]}
-              onPress={async () => {
-                // V1 flow: open LS checkout, locally mark stake as
-                // 'pending payment' so the UI shows pending state. The
-                // webhook (TODO) confirms and flips to 'active'.
-                await handleActivate();
-                Linking.openURL(STAKE_CHECKOUT_URL).catch(() => {
-                  Alert.alert(
-                    "Couldn't open checkout",
-                    `Visit ${STAKE_CHECKOUT_URL} to complete your $${STAKE_AMOUNT_USD} stake.`,
-                  );
-                });
+              onPress={() => {
+                // Money-on-the-line stakes are a paid feature → they'll use Google
+                // Play Billing at launch. We do NOT open an external web checkout
+                // (that violates Google Play's Payments policy).
+                Alert.alert(
+                  'Stakes — coming soon',
+                  'Money-on-the-line accountability stakes unlock shortly after launch. For now, your streak and coach calls keep you honest — free.',
+                  [{ text: 'Got it', style: 'default' }],
+                );
               }}
               activeOpacity={0.85}
             >
               <Text style={[styles.primaryBtnText, { color: persona.ink }]}>
-                PAY ${STAKE_AMOUNT_USD} & LOCK IN STAKE →
+                ACCOUNTABILITY STAKES — COMING SOON
               </Text>
             </TouchableOpacity>
           </View>
         )}
 
         <Text style={styles.disclaimer}>
-          Real ${STAKE_AMOUNT_USD} USD is charged via Lemon Squeezy when you tap
-          "PAY & LOCK IN STAKE". 100% opt-in. Fully refundable any time before
-          launch by replying to the receipt. Forfeited stakes go to a pooled
-          "anti-charity" fund that founders disclose monthly to all stakers.
+          Money-on-the-line stakes are coming after launch — nothing is charged
+          today. When they go live they'll be 100% opt-in: hit your weekly goal
+          and your ${STAKE_AMOUNT_USD} refunds automatically; miss it and it goes
+          to a pooled "anti-charity" fund disclosed monthly to all stakers.
         </Text>
       </ScrollView>
     </SafeAreaView>

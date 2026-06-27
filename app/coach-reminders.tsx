@@ -20,7 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useCoachReminders } from '@/hooks/useCoachReminders';
 import { getCallCopy, getNextFiringDate, type CallKind } from '@/lib/coachCallScheduler';
 import { fireIncomingCall, ensureNotifeePermission } from '@/lib/notifeeCallScheduler';
-import { triggerIncomingCall, setupCallKeep } from '@/lib/wakeupCalls';
+import { triggerIncomingCall } from '@/lib/wakeupCalls';
 import { AuthorizationStatus } from '@notifee/react-native';
 import { styleText } from '@/lib/personaTheme';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
@@ -89,20 +89,18 @@ export default function CoachRemindersScreen() {
       return;
     }
 
-    // 2. Fire the REAL incoming call via CallKeep (Android ConnectionService
-    //    / iOS CallKit). This triggers the system-level call ring at full
-    //    volume — the actual phone ringtone, vibration, lock-screen takeover.
-    //    THIS is what wakes people up. Notifications get slept through.
+    // 2. Fire the incoming call: a full-screen Notifee ring + looping ringtone
+    //    (triggerIncomingCall → startPersistentRing). Full volume, vibration,
+    //    and a lock-screen takeover via the full-screen intent — what actually
+    //    wakes people up. Plain notifications get slept through.
     try {
-      await setupCallKeep();
       await triggerIncomingCall({
         persona: persona.id,
         reason: kind === 'wakeup' ? 'WAKE UP' : 'WORKOUT TIME',
       });
     } catch (e: any) {
-      // Fall back to the legacy notification path if CallKeep isn't ready
-      // (e.g. native module not linked yet on this build).
-      if (__DEV__) console.warn('[wakeup] CallKeep fire failed, falling back:', e?.message);
+      // Fall back to the scheduled-notification path if the ring fails to start.
+      if (__DEV__) console.warn('[wakeup] ring fire failed, falling back:', e?.message);
       try {
         await fireIncomingCall({ kind, personaId: persona.id, isTest: true });
       } catch (e2: any) {

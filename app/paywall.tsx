@@ -63,23 +63,15 @@ export default function PaywallScreen() {
       router.back();
       return;
     }
-    // Native billing isn't wired yet — give the user a real, actionable response
-    // instead of a silent no-op. Offer the web checkout path as the actual
-    // alternative until the in-app SDK ships.
+    // In-app billing (Google Play) isn't wired yet — Pro/Legend are "coming soon".
+    // We deliberately do NOT link out to a web checkout here: selling digital
+    // goods via an external payment flow violates Google Play's Payments policy.
+    // Real Play Billing will replace this stub.
     const tier = productId.toLowerCase().includes('legend') ? 'LEGEND' : 'PRO';
     Alert.alert(
-      `${tier} — coming with launch`,
-      `In-app purchases activate at our Q3 2026 launch. Until then, the Vanguard Pass on atleato.com locks in your founder pricing for the same plan.\n\nWant the web option now?`,
-      [
-        { text: 'Not now', style: 'cancel' },
-        {
-          text: 'Open Vanguard Pass',
-          onPress: () => {
-            const { Linking } = require('react-native');
-            Linking.openURL('https://atleato.com/upsell.html').catch(() => {});
-          },
-        },
-      ],
+      `${tier} — coming soon`,
+      'Paid plans unlock shortly after launch. You’re on the free plan with full access to your coach, workouts, nutrition, and calls in the meantime.',
+      [{ text: 'Got it', style: 'default' }],
     );
   };
 

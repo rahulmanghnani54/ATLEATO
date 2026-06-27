@@ -27,20 +27,11 @@
  *        - User answers   → opens /incoming-call screen, plays coach TTS
  *        - User declines  → CallKeep.endCall, log "missed wake-up" event
  */
-// react-native-callkeep doesn't support the New Architecture (it declares
-// duplicate `displayIncomingCall` methods that the TurboModule interop layer
-// rejects). We CAN'T disable New Arch because react-native-worklets — needed
-// by the Form Coach via vision-camera — REQUIRES it. So we lazy-load
-// CallKeep inside a try/catch. When it works (legacy arch builds) we use it;
-// when it doesn't (current setup) we fall through to a Notifee-based ring.
-let RNCallKeep: any = null;
-try {
-   
-  RNCallKeep = require('react-native-callkeep').default;
-} catch {
-  RNCallKeep = null;
-}
-
+// The incoming-call experience is delivered entirely by Notifee + a full-screen
+// intent + an expo-av looping ringtone (see startPersistentRing). We removed
+// react-native-callkeep: it never ran on the New Architecture build, and its
+// telephony permissions (CALL_PHONE / READ_PHONE_STATE / MANAGE_OWN_CALLS /
+// telecom binding) are a Google Play rejection risk for a non-dialer app.
 import notifee, {
   TriggerType, AndroidImportance, AndroidVisibility, AndroidCategory,
   type TimestampTrigger,
@@ -50,59 +41,8 @@ import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
 import { getPersona, type PersonaId } from './personaTheme';
 import { getActiveRingtoneSource } from './ringtonePreference';
 
-const APP_NAME    = 'Atleato';
-const HANDLE_TYPE = 'generic' as const;
 const RING_CHANNEL = 'atleato-wakeup-call';
 const WAKEUP_NOTIFEE_ID_PREFIX = 'atleato-wakeup:';
-
-let callKeepReady = false;
-
-// ─── Setup ──────────────────────────────────────────────────────────────────
-
-/**
- * Initialize CallKeep once at app boot. Idempotent — safe to call multiple
- * times. On Android we register a phone account; iOS sets up the CallKit
- * provider configuration.
- */
-export async function setupCallKeep(): Promise<void> {
-  if (callKeepReady) return;
-  if (!RNCallKeep) return; // native module not available — Notifee handles ringing
-  try {
-    await RNCallKeep.setup({
-      ios: {
-        appName: APP_NAME,
-        supportsVideo: false,
-        maximumCallGroups: '1',
-        maximumCallsPerCallGroup: '1',
-        includesCallsInRecents: false,
-      },
-      android: {
-        // CallKeep Android setup options
-        alertTitle: 'Permission required',
-        alertDescription:
-          'Atleato needs permission to act as a calling app so your coach can wake you up.',
-        cancelButton: 'Not now',
-        okButton: 'Allow',
-        additionalPermissions: [],
-        selfManaged: false,
-      },
-    } as any);
-    // Tell Android we're an "online" calling provider so it'll route to us
-    if (Platform.OS === 'android') {
-      RNCallKeep.setAvailable(true);
-      (RNCallKeep as any).registerPhoneAccount({
-        alertTitle: 'Allow wake-up calls',
-        alertDescription: 'So your coach can ring you, not just notify you.',
-        cancelButton: 'Not now',
-        okButton: 'Allow',
-        additionalPermissions: [],
-      });
-    }
-    callKeepReady = true;
-  } catch (err: any) {
-    if (__DEV__) console.warn('[wakeup] CallKeep setup failed:', err?.message ?? err);
-  }
-}
 
 // ─── Trigger an incoming call NOW ───────────────────────────────────────────
 
@@ -117,24 +57,9 @@ export async function triggerIncomingCall(opts: {
   persona: PersonaId;
   reason?: string;     // "WAKE UP" / "WORKOUT TIME"
 }): Promise<string> {
-  await setupCallKeep();
   const callUUID = generateUUID();
-
-  // Path A — CallKeep is available (legacy arch builds): real system ring.
-  if (RNCallKeep) {
-    const persona = getPersona(opts.persona);
-    const handle = persona.shortName.toLowerCase();
-    const localizedCallerName = `${persona.shortName} · ${opts.reason ?? 'WAKE UP'}`;
-    RNCallKeep.displayIncomingCall(
-      callUUID, handle, localizedCallerName, HANDLE_TYPE, false,
-    );
-    return callUUID;
-  }
-
-  // Path B — New Arch / no CallKeep: fire a persistent-ring loop of Notifee
-  // notifications every 3s for 60s so the system call sound + vibration
-  // keep triggering. The /incoming-call screen calls stopPersistentRing()
-  // on mount.
+  // Ring via Notifee + a looping ringtone (expo-av) with a full-screen intent.
+  // The /incoming-call screen calls stopPersistentRing() on mount.
   await startPersistentRing(opts.persona, opts.reason ?? 'WAKE UP');
   return callUUID;
 }
@@ -492,23 +417,5 @@ function generateUUID(): string {
   return `${r()}${r()}-${r()}-4${r().slice(1)}-8${r().slice(1)}-${r()}${r()}${r()}`;
 }
 
-// ─── CallKeep event wiring (call from app boot) ─────────────────────────────
-
-/**
- * Wire CallKeep events so when the user answers / declines the call we route
- * them appropriately. Call this ONCE at app boot, after setupCallKeep.
- */
-export function wireCallKeepEvents(opts: {
-  onAnswered: (uuid: string) => void;
-  onDeclined: (uuid: string) => void;
-}): void {
-  if (!RNCallKeep) return; // safe no-op when native module missing
-  RNCallKeep.addEventListener('answerCall', ({ callUUID }: { callUUID: string }) => {
-    try { opts.onAnswered(callUUID); } finally {
-      RNCallKeep.setCurrentCallActive(callUUID);
-    }
-  });
-  RNCallKeep.addEventListener('endCall', ({ callUUID }: { callUUID: string }) => {
-    opts.onDeclined(callUUID);
-  });
-}
+// CallKeep event wiring was removed along with react-native-callkeep — the
+// /incoming-call screen's own Answer/Decline buttons handle the call now.

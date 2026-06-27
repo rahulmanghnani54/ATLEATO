@@ -136,7 +136,7 @@
       No dark patterns. No selling your data. No tracking pixels. The shortest
       readable privacy policy we could write while still being legally accurate.
     </p>
-    <div class="updated">LAST UPDATED · 27 MAY 2026</div>
+    <div class="updated">LAST UPDATED · 26 JUNE 2026</div>
   </div>
 </section>
 
@@ -144,7 +144,7 @@
   <div class="container">
 
     <div class="callout">
-      <p><strong>TL;DR:</strong> We collect the data you give us (email, workouts, photos), use it to run the app, and never sell it. Physique photos stay encrypted on your device. You can delete everything any time.</p>
+      <p><strong>TL;DR:</strong> We collect the data you give us (email, workouts, photos) plus your voice during a coach call, use it to run the app, and never sell it. Form Coach video and offline calls stay on your device; physique photos are encrypted on your device. You can delete everything any time.</p>
     </div>
 
     <h2>1. Who runs Atleato</h2>
@@ -205,13 +205,42 @@
       for 30 days, then auto-deleted.
     </p>
 
+    <h3>2.7 Camera</h3>
+    <p>
+      The <strong>Form Coach</strong> uses your camera to analyse your exercise form. This runs
+      <strong>entirely on your device</strong> using on-device pose detection — video frames are
+      processed locally in real time and are <strong>never uploaded or stored</strong>. Progress
+      photos are covered separately in 2.4. The camera is used only while a Form Coach or
+      physique-photo session you started is open.
+    </p>
+
+    <h3>2.8 Microphone &amp; voice (coach calls)</h3>
+    <p>
+      When you <strong>answer a live coach call</strong>, your microphone audio is streamed in
+      real time to our voice provider, <strong>ElevenLabs</strong>, so the AI coach can hold a
+      two-way conversation. The audio is used only to power that conversation — never to
+      identify you, never sold. If you have no internet connection, the call falls back to your
+      phone's built-in offline voice and <strong>no audio leaves your device</strong>. The
+      microphone is used only during an active call or a Form Coach session you start.
+    </p>
+
+    <h3>2.9 Health &amp; wearable data (optional)</h3>
+    <p>
+      If you choose to connect a smartwatch or <strong>Health Connect</strong>, Atleato reads
+      your steps, heart rate, HRV and sleep <strong>only to calculate daily recovery</strong> and
+      adjust your training. This is strictly opt-in — we read it only after you grant permission,
+      we don't share it with advertisers, and you can revoke access any time in your device's
+      Health Connect / Apple Health settings.
+    </p>
+
     <h2>3. What we DON'T collect</h2>
     <ul>
       <li>No advertising IDs</li>
       <li>No analytics tracking pixels (Google Analytics, Facebook Pixel, etc.)</li>
-      <li>No contact list, photo library, or microphone access (except when you explicitly enable Form Coach)</li>
+      <li>No access to your contact list or full photo library</li>
+      <li>No background microphone or camera access — both are used only during an active coach call or Form Coach session that you start</li>
       <li>No data from third-party platforms (Instagram, Strava, etc.) unless you connect them</li>
-      <li>No payment data — we don't sell anything yet</li>
+      <li>No card or bank details — our payment processor handles those (see section 5); we never see or store them</li>
     </ul>
 
     <h2>4. How we use it</h2>
@@ -226,11 +255,26 @@
       We <strong>never</strong> use your data to train AI models without your explicit opt-in.
     </p>
 
-    <h2>5. Where it's stored</h2>
+    <h2>5. Where it's stored &amp; who processes it</h2>
     <p>
-      All data is stored on <strong>Supabase</strong> (postgres + storage) in the AWS US-East region.
-      AI coach replies are processed by <strong>Anthropic</strong> (Claude). Both
-      providers are SOC 2 certified.
+      Your account, fitness, and (encrypted) photo data is stored on <strong>Supabase</strong>
+      (Postgres + storage) in the AWS US-East region. We share specific data with the
+      processors below <strong>only</strong> to provide the features you use:
+    </p>
+    <ul>
+      <li><strong>Supabase</strong> — database, authentication, file storage (<a href="https://supabase.com/privacy">privacy</a>)</li>
+      <li><strong>ElevenLabs</strong> — processes your microphone audio during live coach calls to power the AI voice conversation (<a href="https://elevenlabs.io/privacy">privacy</a>)</li>
+      <li><strong>Anthropic (Claude)</strong> — generates written coaching text (<a href="https://www.anthropic.com/legal/privacy">privacy</a>)</li>
+      <li><strong>Resend</strong> — sends account &amp; transactional emails to your address (<a href="https://resend.com/legal/privacy-policy">privacy</a>)</li>
+      <li><strong>Lemon Squeezy</strong> &amp; <strong>Google Play Billing</strong> — process payments; they receive your payment details, which Atleato never sees or stores (<a href="https://www.lemonsqueezy.com/privacy">privacy</a>)</li>
+      <li><strong>Google Firebase</strong> — Cloud Messaging push tokens for notifications &amp; coach calls (<a href="https://firebase.google.com/support/privacy">privacy</a>)</li>
+    </ul>
+    <p>
+      These are data <strong>processors</strong> acting on our behalf — none of them are permitted
+      to sell your data or use it for their own advertising. <strong>Payments</strong>
+      (subscriptions or accountability stakes) are handled entirely by the payment processors
+      above; <strong>Atleato never sees or stores your card or bank information</strong> — we only
+      receive confirmation of what you bought and the email tied to the purchase.
     </p>
 
     <h2>6. Your rights</h2>

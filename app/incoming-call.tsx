@@ -26,7 +26,7 @@ import {
   type CallKind,
 } from '@/lib/coachCallScheduler';
 import { startPersistentRing, stopPersistentRing, cancelSnoozeCall } from '@/lib/wakeupCalls';
-import { cancelAllCalls, scheduleCallIn } from '@/lib/notifeeCallScheduler';
+import { cancelAllCalls, scheduleRecall } from '@/lib/notifeeCallScheduler';
 import { silence } from '@/lib/voiceCues';
 import { getPersona, styleText, type PersonaId } from '@/lib/personaTheme';
 import { Colors, Fonts } from '@/constants/theme';
@@ -91,10 +91,11 @@ export default function IncomingCallScreen() {
     silence();
     cancelAllCalls().catch(() => {});       // clear the ringing notification
     stopPersistentRing().catch(() => {});
-    // Coach doesn't take "no" — call back in 5 min (wake-up only), on the SAME
-    // v3 ring channel + full-screen as the main call so the callback actually
-    // RINGS and shows the call screen. No slow TTS line — the ring is the point.
-    if (kind === 'wakeup') scheduleCallIn(5, kind, personaId).catch(() => {});
+    // Coach doesn't take "no" — call back in 5 min (wake-up only). scheduleRecall
+    // CAPS this at 2 callbacks/session (self-resetting after 30 min) so it can't
+    // ring every 5 min for an hour. Same v3 ring channel + full-screen as the
+    // main call so the callback rings + shows the call screen.
+    scheduleRecall(kind, personaId).catch(() => {});
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)');
   };

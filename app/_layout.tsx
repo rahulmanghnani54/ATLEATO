@@ -35,7 +35,7 @@ import {
   setupCallChannel, registerCallEventHandler,
 } from '@/lib/notifeeCallScheduler';
 import {
-  setupCallKeep, wireCallKeepEvents, handleWakeupBackground,
+  handleWakeupBackground,
   ringForegroundServiceRunner,
 } from '@/lib/wakeupCalls';
 import { initBilling, refreshReferralReward } from '@/lib/subscriptionManager';
@@ -99,22 +99,6 @@ function RootNavigator() {
             pathname: '/incoming-call',
             params: { kind, personaId },
           } as any);
-        });
-      } catch { /* ignore */ }
-      // CallKeep — proper system-level incoming call escalation.
-      try {
-        await setupCallKeep();
-        wireCallKeepEvents({
-          onAnswered: () => {
-            // When the user taps "Answer" in the system call UI, open our
-            // in-app call screen. The persona comes from the active wake-up
-            // schedule (last-known persona).
-            router.push('/incoming-call' as any);
-          },
-          onDeclined: () => {
-            // The user declined the system call. Nothing routes — we already
-            // let the persona vent via TTS inside the existing handler.
-          },
         });
       } catch { /* ignore */ }
       // Billing — resolve subscription tier from Google Play
