@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self';" />
+  <title>How Accurate Is AI Form Correction? An Honest Look | Atleato</title>
+  <meta name="description" content="Can a phone camera really check your squat? How AI form correction works, what destroys its accuracy, what it gets right, and when you still need a human coach." />
+  <link rel="canonical" href="https://atleato.com/blog/ai-form-correction-accuracy.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="How Accurate Is AI Form Correction? An Honest Look" />
+  <meta property="og:description" content="Can a phone camera really check your squat? How AI form correction works, what destroys accuracy, and when a human coach still wins." />
+  <meta property="og:url" content="https://atleato.com/blog/ai-form-correction-accuracy.html" />
+  <meta property="og:image" content="https://atleato.com/assets/atleato-logo-square.svg" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/content.css" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"BlogPosting","headline":"How Accurate Is AI Form Correction? An Honest Look","description":"How AI form correction works, what destroys its accuracy, what it gets right, and when you still need a human coach.","datePublished":"2026-06-27","dateModified":"2026-06-27","author":{"@type":"Organization","name":"Atleato"},"publisher":{"@type":"Organization","name":"Atleato","url":"https://atleato.com/","logo":{"@type":"ImageObject","url":"https://atleato.com/assets/atleato-logo-square.svg"}},"mainEntityOfPage":{"@type":"WebPage","@id":"https://atleato.com/blog/ai-form-correction-accuracy.html"},"image":"https://atleato.com/assets/atleato-logo-square.svg"}
+  </script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container wide">
+      <a class="wordmark" href="/">
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="#dfff1f"/><rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/></svg>
+        Atleato
+      </a>
+      <a class="nav-cta" href="/#waitlist">Join Free</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <article class="post">
+      <div class="eyebrow"><a href="/blog/" style="color:var(--lime);">← The Atleato Blog</a></div>
+      <h1>How Accurate Is AI Form Correction? An Honest Look</h1>
+      <p class="meta">Published June 27, 2026 · 6 min read · Form &amp; Technique</p>
+
+      <p>"AI form correction" gets thrown around like the phone in your gym bag can see your spine in 3D. It can't — but that doesn't mean it's useless. The truth sits in the middle: today's pose-estimation AI is genuinely good at some things, blind to others, and the gap between marketing and reality is exactly what you should understand before you trust an app with your squat.</p>
+
+      <h2>How AI form correction actually works</h2>
+      <p>Almost every camera-based form checker — Atleato included — is built on <strong>pose estimation</strong>. A model like Google's MediaPipe scans each video frame and predicts the 2D position of your joints: ankles, knees, hips, shoulders, elbows, wrists, and more. Modern models track <strong>33 body landmarks</strong> per frame.</p>
+      <p>From those points the app computes <strong>joint angles</strong> — your knee angle at the bottom of a squat, your hip hinge on a deadlift, your elbow path on a press — and compares them to what good technique looks like. It counts reps, measures tempo, and flags patterns like "knees caving inward" or "not hitting depth."</p>
+
+      <h2>What AI is genuinely good at</h2>
+      <ul>
+        <li><strong>Rep and tempo counting.</strong> Repetitive, rhythmic motion is the easy case. Accuracy here is high.</li>
+        <li><strong>Gross joint angles.</strong> Squat depth, lockout, a clearly rounding back, knees collapsing inward — large, obvious deviations are exactly what angle math catches well.</li>
+        <li><strong>Consistency over time.</strong> Because it never gets bored, AI can flag the rep where your form broke down on set 4 — the one a tired human spotter misses.</li>
+        <li><strong>Always-on, judgment-free feedback.</strong> No scheduling, no ego. For most lifters training alone, that's the difference between fixing a cue today and grooving a bad habit for months.</li>
+      </ul>
+
+      <h2>What wrecks its accuracy</h2>
+      <p>This is the part most apps won't tell you. Pose estimation degrades fast under real-world conditions:</p>
+      <ul>
+        <li><strong>Camera angle.</strong> A single phone sees one 2D plane. Film a squat head-on and depth becomes a guess; film it from the side and you lose knee tracking. Angle matters more than almost anything.</li>
+        <li><strong>Occlusion.</strong> A barbell, a hoodie, a rack leg, or your own body blocking a joint and the model starts inventing positions.</li>
+        <li><strong>Lighting and clutter.</strong> Dim gyms, busy backgrounds, and baggy clothing all lower landmark confidence.</li>
+        <li><strong>Depth and rotation.</strong> One camera can't truly measure forward/back movement or spinal rotation. Fine lumbar detail — the stuff that actually causes injury — is the hardest thing to see and the easiest to overstate.</li>
+      </ul>
+
+      <div class="callout">
+        <p><strong>The honest rule of thumb:</strong> single-camera AI is reliable for <em>big, clear, repeatable</em> form errors and rep tracking. It is not a substitute for a physio diagnosing a subtle movement fault. Any app claiming millimeter spinal analysis from one phone camera is selling you the marketing, not the math.</p>
+      </div>
+
+      <h2>How we approach it at Atleato</h2>
+      <p>We'd rather under-promise. Atleato's form coach uses 33-joint pose tracking, but the design principle is simple: <strong>if the model can't see you clearly, it says so</strong> instead of inventing confident-sounding feedback. A "Can't see you" state beats a fake "Form looks solid." When your joints are in frame and tracking is confident, you get specific, actionable cues — "drive your knees out," "hit depth," "slow the eccentric" — not vague praise.</p>
+
+      <h2>When you still need a human</h2>
+      <p>AI form correction is a brilliant daily training partner and a terrible replacement for a professional when something hurts. See a qualified coach or physio if you have pain, you're loading heavy near your limits, or you're learning a technical lift (snatch, clean) for the first time. Use AI for volume, consistency, and catching the obvious stuff every single rep — that's where it quietly makes you better.</p>
+
+      <p style="margin-top:34px;"><a class="btn-primary" href="/#waitlist">Try Atleato's form coach free →</a></p>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="links">
+        <a href="/">Home</a>
+        <a href="/blog/">Blog</a>
+        <a href="/#waitlist">Join Waitlist</a>
+        <a href="/privacy">Privacy</a>
+      </div>
+      <p>© 2026 Atleato™. This article is general information, not medical advice.</p>
+    </div>
+  </footer>
+</body>
+</html>

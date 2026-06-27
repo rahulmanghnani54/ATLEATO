@@ -272,6 +272,16 @@
           iOS <strong style="color:var(--text-secondary);margin-left:2px;">coming later</strong>
         </span>
       </div>
+      <!-- Voice sample: a real Commander wake-up call. Hidden until assets/commander-sample.mp3 exists. -->
+      <div id="voice-sample" style="display:none;align-items:center;gap:13px;margin:0 0 22px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:14px;padding:12px 16px;max-width:520px;">
+        <button id="voice-sample-btn" type="button" aria-label="Play a wake-up call sample" style="flex:none;width:44px;height:44px;border-radius:50%;border:none;background:var(--lime);color:#0a0b0d;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(212,255,31,0.5);">▶</button>
+        <div style="flex:1;text-align:left;min-width:0;">
+          <div style="font-size:13px;font-weight:800;color:var(--text);letter-spacing:0.2px;">Hear a 6&nbsp;AM wake-up call</div>
+          <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px;">The Commander · real AI voice</div>
+          <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:3px;margin-top:8px;overflow:hidden;"><div id="voice-sample-bar" style="height:100%;width:0%;background:var(--lime);transition:width .1s linear;"></div></div>
+        </div>
+        <audio id="voice-sample-audio" preload="none" src="assets/commander-sample.mp3"></audio>
+      </div>
       <div class="hero-stats">
         <div class="stat">
           <span class="stat-number" id="live-waitlist-count" style="font-size:0.6em;letter-spacing:0.5px;">OPEN</span>
@@ -290,6 +300,8 @@
       </div>
       <!-- Real-time stat fetcher — pulls counts from Supabase every 20s -->
       <script defer src="live-counts.js"></script>
+      <!-- Hero voice-sample player (auto-hides until the mp3 exists) -->
+      <script defer src="voice-sample.js"></script>
     </div>
     <div class="scroll-indicator">
       <div class="scroll-line"></div>
@@ -1047,6 +1059,7 @@
             <a href="#features">Features</a>
             <a href="#pricing">Pricing</a>
             <a href="#coaches">Coaches</a>
+            <a href="/blog/">Blog</a>
           </div>
           <div class="footer-col">
             <h4>Legal</h4>
