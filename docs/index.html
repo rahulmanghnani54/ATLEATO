@@ -171,6 +171,12 @@
   .mobile-ui-card:hover[style*="rgba(255,107,53"]{border-color:rgba(255,107,53,0.5) !important;}
   .mobile-ui-card:hover[style*="rgba(255,255,255,0.08)"]{border-color:rgba(255,255,255,0.2) !important;}
   .mobile-ui-card:focus-visible{outline:2px solid var(--lime);outline-offset:3px;}
+  /* Sticky mobile "Join Waitlist" CTA (conversion) */
+  .sticky-cta{display:none;}
+  @media (max-width:768px){
+    .sticky-cta{display:flex;align-items:center;justify-content:center;gap:6px;position:fixed;left:12px;right:12px;bottom:12px;z-index:60;background:var(--lime);color:#0a0b0d;font-weight:800;font-size:15px;padding:15px;border-radius:14px;text-decoration:none;box-shadow:0 10px 30px -8px rgba(0,0,0,0.55);letter-spacing:0.3px;}
+    body{padding-bottom:80px;}
+  }
 </style>
 </head>
 <body>
@@ -248,10 +254,16 @@
         <div class="waitlist-msg" id="hero-waitlist-msg"></div>
         <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">Free forever. No credit card required. <a href="#features" style="color:var(--lime);text-decoration:none;border-bottom:1px solid rgba(255,107,53,0.3);">See how it works ↓</a></p>
       </form>
+      <div class="store-badges" style="display:flex;gap:10px;align-items:center;margin:0 0 22px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:12px;padding:10px 16px;font-size:12.5px;color:var(--text-secondary);letter-spacing:0.3px;">
+          <svg width="15" height="17" viewBox="0 0 24 27" aria-hidden="true"><path d="M1 1.5 13.5 13.5 1 25.5z" fill="#dfff1f"/><path d="M1 1.5 18 11 13.5 13.5z" fill="#34a853"/><path d="M1 25.5 18 16 13.5 13.5z" fill="#ea4335"/><path d="M18 11 23 13.5 18 16 13.5 13.5z" fill="#fbbc04"/></svg>
+          Coming soon to <strong style="color:var(--text);margin-left:2px;">Google Play</strong>
+        </span>
+      </div>
       <div class="hero-stats">
         <div class="stat">
-          <span class="stat-number" id="live-waitlist-count">5</span>
-          <span class="stat-label">On Waitlist</span>
+          <span class="stat-number" id="live-waitlist-count" style="font-size:0.6em;letter-spacing:0.5px;">OPEN</span>
+          <span class="stat-label" id="live-waitlist-label">Early Access</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat">
@@ -760,6 +772,20 @@
     </div>
   </section>
 
+  <!-- Founder Story (trust signal — swap the RM avatar for a real founder photo) -->
+  <section id="founder" class="section" style="padding:72px 0;background:linear-gradient(180deg,rgba(212,255,31,0.025),transparent);">
+    <div class="container" style="max-width:720px;">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;">
+        <div aria-hidden="true" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#dfff1f,#9ad400);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:28px;color:#0a0b0d;letter-spacing:-1px;box-shadow:0 8px 30px -8px rgba(212,255,31,0.4);">RM</div>
+        <span class="section-eyebrow">WHY ATLEATO</span>
+        <p style="font-size:19px;line-height:1.7;color:var(--text);max-width:640px;">
+          Every fitness app I tried just sent notifications I'd swipe away at 6 a.m. I didn't need another reminder — I needed a coach who'd <span class="lime-text">actually call me</span>, know my plan, and not take "tomorrow" for an answer. So I built one: five coaches that phone you awake, fix your form in real time, and respect your rest days. This is the accountability I wish I'd had.
+        </p>
+        <div style="font-family:var(--font-display);font-size:15px;color:var(--text-secondary);letter-spacing:0.3px;">— Rahul · <span style="color:var(--text);">Founder, Atleato</span></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Pricing Section -->
   <section id="pricing" class="section">
     <div class="container">
@@ -948,6 +974,9 @@
   </section>
 
   </main>
+
+  <!-- Sticky mobile CTA (hidden on desktop via CSS) -->
+  <a href="#waitlist" class="sticky-cta" aria-label="Join the Atleato waitlist">⚡ Join the Waitlist — Free</a>
 
   <!-- Footer -->
   <footer id="footer">

@@ -30,11 +30,17 @@
   }
   function refresh() {
     Promise.all([ rpc('waitlist_count'), rpc('vanguard_claimed_count') ]).then(function(r){
-      var w = document.getElementById('live-waitlist-count');
-      var v = document.getElementById('live-vanguard-count');
-      var show = (r[0]||0) >= LOW;          // only show real, credible numbers
-      setStat(w, show, (r[0]||0).toLocaleString());
-      setStat(v, show, String(Math.min(r[1]||0, 500)));
+      var wCount = r[0]||0, vCount = r[1]||0;
+      // Waitlist stat: keep the confident "Early Access / OPEN" default until the
+      // count is real & credible (>= LOW). Never flash a tiny "5 on waitlist".
+      if (wCount >= LOW) {
+        var w  = document.getElementById('live-waitlist-count');
+        var wl = document.getElementById('live-waitlist-label');
+        if (w)  { w.textContent = wCount.toLocaleString(); w.style.fontSize = ''; w.style.letterSpacing = ''; }
+        if (wl) { wl.textContent = 'On Waitlist'; }
+      }
+      // Vanguard "x/500": stays hidden until real (0/500 is negative social proof).
+      setStat(document.getElementById('live-vanguard-count'), vCount >= LOW, String(Math.min(vCount, 500)));
     });
   }
   refresh();
