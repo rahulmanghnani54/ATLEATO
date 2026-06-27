@@ -39,6 +39,7 @@ import {
   ringForegroundServiceRunner,
 } from '@/lib/wakeupCalls';
 import { initBilling, refreshReferralReward } from '@/lib/subscriptionManager';
+import { resyncCoachCalls } from '@/hooks/useCoachReminders';
 import { initBranchReferral } from '@/lib/branchReferral';
 import notifee from '@notifee/react-native';
 import type { PersonaId } from '@/lib/personaTheme';
@@ -224,6 +225,14 @@ function RootNavigator() {
       if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
     }
   }, [user, profile, loading, segments, glob.fromProfile]);
+
+  // Keep scheduled coach calls in sync with the ACTIVE coach. Fires on boot
+  // (when the profile loads) and whenever the user switches program/coach on ANY
+  // screen — so the scheduled call always rings with the current persona, never
+  // a stale one. (The schedule bakes the persona in at schedule time.)
+  useEffect(() => {
+    if (profile?.selected_program) resyncCoachCalls();
+  }, [profile?.selected_program]);
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

@@ -393,7 +393,9 @@ export async function scheduleIncomingCall(args: {
   await notifee.createTriggerNotification(notif(`${SCHED_PREFIX}${kind}`), trigger);
 }
 
-/** Cancel every scheduled call for one kind (the daily id AND per-weekday ids). */
+/** Cancel every scheduled call for one kind (the daily id AND per-weekday ids),
+ * PLUS any pending one-shot callback + the recall counter. Without the last two,
+ * toggling a reminder OFF still let a queued callback ring afterwards. */
 export async function cancelScheduledCall(kind: CallKind): Promise<void> {
   try {
     const prefix = `${SCHED_PREFIX}${kind}`;
@@ -403,6 +405,10 @@ export async function cancelScheduledCall(kind: CallKind): Promise<void> {
         .filter((n) => n.notification.id?.startsWith(prefix))
         .map((n) => notifee.cancelTriggerNotification(n.notification.id!)),
     );
+    // Kill any pending "call you back" one-shot for this kind…
+    try { await notifee.cancelTriggerNotification(`${ID_PREFIX}recall-${kind}`); } catch { /* none */ }
+    // …and clear the recall counter/flag so the chain truly stops.
+    try { await AsyncStorage.multiRemove([RECALL_COUNT_KEY, RECALL_TS_KEY, RECALL_FLAG_KEY]); } catch { /* ignore */ }
   } catch { /* noop */ }
 }
 
