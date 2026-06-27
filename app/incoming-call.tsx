@@ -28,7 +28,8 @@ import {
 import { startPersistentRing, stopPersistentRing, cancelSnoozeCall } from '@/lib/wakeupCalls';
 import { cancelAllCalls, scheduleRecall } from '@/lib/notifeeCallScheduler';
 import { silence } from '@/lib/voiceCues';
-import { getPersona, styleText, type PersonaId } from '@/lib/personaTheme';
+import { getPersona, personaFromProgramId, styleText, type PersonaId } from '@/lib/personaTheme';
+import { useAuthStore } from '@/stores/authStore';
 import { Colors, Fonts } from '@/constants/theme';
 import { Phone, PhoneOff, Sun, Dumbbell } from 'lucide-react-native';
 
@@ -36,7 +37,12 @@ export default function IncomingCallScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ kind?: string; personaId?: string }>();
   const kind     = (params.kind as CallKind) ?? 'wakeup';
-  const personaId = (params.personaId as PersonaId) ?? 'cbum';
+  const profile  = useAuthStore((s) => s.profile);
+  // Current coach at ring time, not the persona baked into the scheduled
+  // notification (the param is only a cold-launch fallback).
+  const personaId = ((profile?.selected_program
+    ? personaFromProgramId(profile.selected_program).id
+    : params.personaId) as PersonaId) ?? 'cbum';
   const persona  = getPersona(personaId);
   const copy     = getCallCopy(persona, kind);
 

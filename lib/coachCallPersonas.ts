@@ -59,7 +59,7 @@ export const COACH_CALL_PERSONAS: Record<PersonaId, CoachCallPersona> = {
       COMMON_RULES,
     firstMessage:
       "{{user_name}}! It's The Monument. Champions don't sleep on their {{goal}} — it's time for your {{call_purpose}}. Are you ready to conquer?",
-    voiceId: '',
+    voiceId: 'YKrm0N1EAM9Bw27j8kuD',
   },
   nippard: {
     prompt:
@@ -69,7 +69,7 @@ export const COACH_CALL_PERSONAS: Record<PersonaId, CoachCallPersona> = {
       COMMON_RULES,
     firstMessage:
       "{{user_name}}, The Analyst here. Your {{call_purpose}} is the highest-ROI move for {{goal}} right now. You up?",
-    voiceId: '',
+    voiceId: 'DvhK1yIWv9GpUpAD6dsU',
   },
   ct_fletcher: {
     prompt:
@@ -79,7 +79,7 @@ export const COACH_CALL_PERSONAS: Record<PersonaId, CoachCallPersona> = {
       COMMON_RULES,
     firstMessage:
       "{{user_name}}! THE COMMANDER here. No excuses — your {{call_purpose}} starts NOW and {{goal}} is waiting. You up?!",
-    voiceId: '',
+    voiceId: 'BDqe1qZiwPi7xspRxTgh',
   },
   dr_mike: {
     prompt:
@@ -89,6 +89,6 @@ export const COACH_CALL_PERSONAS: Record<PersonaId, CoachCallPersona> = {
       COMMON_RULES,
     firstMessage:
       "{{user_name}}, it's The Architect. Per the plan, it's {{call_purpose}} o'clock — {{goal}} won't build itself. You vertical yet?",
-    voiceId: '',
+    voiceId: 'dY9fWBb7TNkZB7UPeFK1',
   },
 };

@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ConversationProvider, useConversationControls, useConversationStatus } from '@elevenlabs/react-native';
 import { getCoachCallToken } from '@/lib/elevenlabsCall';
-import { getPersona, type PersonaId } from '@/lib/personaTheme';
+import { getPersona, personaFromProgramId, type PersonaId } from '@/lib/personaTheme';
 import { COACH_CALL_PERSONAS, COACH_STYLE } from '@/lib/coachCallPersonas';
 import { scheduleRecall } from '@/lib/notifeeCallScheduler';
 import { getCallCopy } from '@/lib/coachCallScheduler';
@@ -83,10 +83,16 @@ export default function CoachCall() {
 function CoachCallInner() {
   const router = useRouter();
   const params = useLocalSearchParams<{ personaId?: string; kind?: string }>();
-  const personaId = (params.personaId as PersonaId) ?? 'cbum';
+  const profile = useAuthStore((s) => s.profile);
+  // Use the CURRENT coach at ring time (not the persona baked into the scheduled
+  // notification) so switching coach is reflected even on scheduled wake-up /
+  // workout calls. The notification param is only a fallback (cold launch before
+  // the profile has loaded).
+  const personaId = ((profile?.selected_program
+    ? personaFromProgramId(profile.selected_program).id
+    : params.personaId) as PersonaId) ?? 'cbum';
   const persona = getPersona(personaId);
   const kind = params.kind === 'workout' ? 'workout' : 'wakeup';
-  const profile = useAuthStore((s) => s.profile);
 
   const { startSession, endSession } = useConversationControls();
   const { status } = useConversationStatus();
