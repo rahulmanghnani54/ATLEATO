@@ -381,6 +381,9 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
       var sourceValue = refValue
         ? baseSource + '_ref_' + decodeURIComponent(refValue)
         : baseSource;
+      // Capture chosen platform (android/ios) without a DB schema change — append to source.
+      var platform = (new FormData(form).get('platform') || '').toString().toLowerCase();
+      if (platform === 'ios' || platform === 'android') sourceValue += '_plat_' + platform;
 
       try {
         var res = await fetch(SUPABASE_URL + '/rest/v1/waitlist', {

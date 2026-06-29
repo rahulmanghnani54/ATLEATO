@@ -251,6 +251,15 @@
         <span class="scarcity-banner-dot"></span>
         <span id="vanguard-counter">ONLY 500 VIP VANGUARD PASSES AVAILABLE</span>
       </div>
+      <style>
+        .plat-toggle{display:flex;align-items:center;gap:8px;max-width:520px;margin:10px 0 0;flex-wrap:wrap;}
+        .plat-toggle .plat-label{font-size:12px;color:var(--text-tertiary);}
+        .plat-opt{position:relative;cursor:pointer;}
+        .plat-opt input{position:absolute;opacity:0;width:0;height:0;}
+        .plat-opt span{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--border);border-radius:100px;font-size:12.5px;color:var(--text-secondary);transition:all .15s;}
+        .plat-opt input:checked + span{border-color:var(--lime);color:var(--text);background:rgba(223,255,31,0.08);}
+        .plat-opt input:focus-visible + span{outline:2px solid var(--lime);outline-offset:2px;}
+      </style>
       <form id="hero-waitlist-form" class="waitlist-form" style="margin-bottom:20px;text-align:left;" novalidate>
         <div class="input-group" style="max-width:520px;margin:0;">
           <input type="email" name="email" placeholder="Enter your email" required autocomplete="email" />
@@ -258,6 +267,11 @@
             <span class="cta-glow"></span>
             JOIN WAITLIST
           </button>
+        </div>
+        <div class="plat-toggle" role="radiogroup" aria-label="Your platform">
+          <span class="plat-label">Notify me for:</span>
+          <label class="plat-opt"><input type="radio" name="platform" value="android" checked /><span>🤖 Android</span></label>
+          <label class="plat-opt"><input type="radio" name="platform" value="ios" /><span>🍎 iOS</span></label>
         </div>
         <div class="waitlist-msg" id="hero-waitlist-msg"></div>
         <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">Free forever. No credit card required. <a href="#features" style="color:var(--lime);text-decoration:none;border-bottom:1px solid rgba(255,107,53,0.3);">See how it works ↓</a></p>
@@ -842,8 +856,8 @@
         <h2 class="section-title">Train Free.<br/><span class="lime-text">Upgrade When Ready.</span></h2>
       </div>
 
-      <div class="pricing-grid">
-        <!-- Free Tier -->
+      <div class="pricing-grid pricing-grid-two" style="max-width:760px;margin:0 auto;">
+        <!-- Free -->
         <div class="price-card">
           <div class="price-tier">FREE</div>
           <div class="price-amount">
@@ -854,64 +868,48 @@
           <ul class="price-features">
             <li><span class="check">✓</span> 1 Legend Coach</li>
             <li><span class="check">✓</span> Persona-Themed Workouts</li>
-            <li><span class="check">✓</span> Streak Calendar + Freezes</li>
+            <li><span class="check">✓</span> Wake-Up + Workout Calls</li>
             <li><span class="check">✓</span> Global Nutrition (1.2M foods)</li>
             <li><span class="check">✓</span> Rest-Day-Aware Coaching</li>
-            <li><span class="check">✓</span> Wake-Up + Workout Calls</li>
-          </ul>
-          <a href="#waitlist" class="price-cta price-cta-secondary">GET STARTED</a>
-        </div>
-
-        <!-- Pro Tier -->
-        <div class="price-card price-card-featured">
-          <div class="price-popular">MOST POPULAR</div>
-          <div class="price-tier">PRO</div>
-          <div class="price-amount">
-            <span class="price-currency">$</span>
-            <span class="price-value">9</span>
-            <span class="price-decimal">.99</span>
-            <span class="price-period">/month</span>
-          </div>
-          <ul class="price-features">
-            <li><span class="check">✓</span> <strong>Everything in Free, plus:</strong></li>
-            <li><span class="check">✓</span> 3 Legend Coaches</li>
-            <li><span class="check">✓</span> AI Form Correction (Live)</li>
-            <li><span class="check">✓</span> Reward Chests + Leaderboards</li>
-            <li><span class="check">✓</span> Physique Progress Photos</li>
-            <li><span class="check">✓</span> Custom Ringtone Picker</li>
-            <li><span class="check">✓</span> Unlimited Streak Freezes</li>
-          </ul>
-          <a href="#waitlist" class="price-cta price-cta-primary">JOIN WAITLIST</a>
-        </div>
-
-        <!-- Legend Tier -->
-        <div class="price-card">
-          <div class="price-tier">LEGEND</div>
-          <div class="price-amount">
-            <span class="price-currency">$</span>
-            <span class="price-value">19</span>
-            <span class="price-decimal">.99</span>
-            <span class="price-period">/month</span>
-          </div>
-          <ul class="price-features">
-            <li><span class="check lime">✓</span> <strong>Everything in Pro, plus:</strong></li>
-            <li><span class="check lime">✓</span> All 5 Legend Coaches</li>
-            <li><span class="check lime">✓</span> Advanced Form AI + Video Review</li>
-            <li><span class="check lime">✓</span> 5-Min Snooze Re-Calls</li>
-            <li><span class="check lime">✓</span> Advanced Progress Analytics</li>
-            <li><span class="check lime">✓</span> Priority New Features</li>
-            <li><span class="check lime">✓</span> Coach Voice Customization</li>
+            <li><span class="check">✓</span> Streak Calendar + Freezes</li>
           </ul>
           <a href="#waitlist" class="price-cta price-cta-secondary">JOIN WAITLIST</a>
         </div>
+
+        <!-- Vanguard Pass -->
+        <div class="price-card price-card-featured">
+          <div class="price-popular">BEST VALUE · EARLY ACCESS</div>
+          <div class="price-tier">VANGUARD PASS</div>
+          <div class="price-amount">
+            <span class="price-currency">$</span>
+            <span class="price-value">1</span>
+            <span class="price-decimal">.99</span>
+            <span class="price-period">one-time</span>
+          </div>
+          <ul class="price-features">
+            <li><span class="check lime">✓</span> <strong>3 months of LEGEND free</strong> at launch</li>
+            <li><span class="check lime">✓</span> All 5 Legend Coaches</li>
+            <li><span class="check lime">✓</span> AI Form Correction (Live)</li>
+            <li><span class="check lime">✓</span> Reward Chests + Leaderboards</li>
+            <li><span class="check lime">✓</span> Private Founders' Discord</li>
+            <li><span class="check lime">✓</span> Never auto-charged</li>
+          </ul>
+          <a href="#waitlist" class="price-cta price-cta-primary">CLAIM VANGUARD SPOT</a>
+          <p style="margin:12px 0 0;font-family:var(--font-mono);font-size:11px;letter-spacing:1px;color:var(--lime);text-align:center;">⚡ LIMITED TO 500 PASSES</p>
+        </div>
       </div>
+      <p style="text-align:center;color:var(--text-tertiary);font-size:13px;margin:26px auto 0;max-width:560px;line-height:1.6;">
+        Full <strong style="color:var(--text-secondary);">PRO ($9.99/mo)</strong> and <strong style="color:var(--text-secondary);">LEGEND ($19.99/mo)</strong> plans arrive at launch — no auto-charge, cancel anytime. <a href="#compare" style="color:var(--lime);text-decoration:none;">Compare all plans ↓</a>
+      </p>
     </div>
   </section>
 
   <!-- Paywall Feature Comparison -->
   <section id="compare" class="section" style="padding:0 0 80px;">
     <div class="container" style="max-width:960px;margin:0 auto;">
-      <div style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--bg);">
+      <details style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--bg);">
+        <summary style="padding:16px 20px;cursor:pointer;font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--text-secondary);list-style:none;display:flex;justify-content:space-between;align-items:center;">COMPARE ALL PLANS · PRO &amp; LEGEND AT LAUNCH <span style="color:var(--lime);">+</span></summary>
+      <div style="border-top:1px solid var(--border);">
         <table style="width:100%;border-collapse:collapse;font-size:14px;">
           <thead>
             <tr style="border-bottom:1px solid var(--border);background:var(--surface);">
@@ -940,6 +938,7 @@
           </tbody>
         </table>
       </div>
+      </details>
     </div>
   </section>
 
@@ -1002,6 +1001,11 @@
                 <span class="cta-glow"></span>
                 JOIN NOW
               </button>
+            </div>
+            <div class="plat-toggle" role="radiogroup" aria-label="Your platform">
+              <span class="plat-label">Notify me for:</span>
+              <label class="plat-opt"><input type="radio" name="platform" value="android" checked /><span>🤖 Android</span></label>
+              <label class="plat-opt"><input type="radio" name="platform" value="ios" /><span>🍎 iOS</span></label>
             </div>
             <div class="waitlist-msg" id="waitlist-msg"></div>
             <p class="waitlist-note">🔒 We respect your privacy. Read our <a href="/privacy" style="color:var(--lime);text-decoration:underline;">Privacy Policy</a>.</p>
@@ -1072,6 +1076,7 @@
             <h4>Legal</h4>
             <a href="/privacy">Privacy Policy</a>
             <a href="/terms">Terms of Service</a>
+            <a href="/cookies">Cookie Policy</a>
             <a href="mailto:hello@atleato.com">Contact Us</a>
           </div>
           <div class="footer-col">

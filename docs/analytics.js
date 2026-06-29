@@ -90,7 +90,9 @@
     // Waitlist signups — never send the email itself, just the event + location.
     document.querySelectorAll('form.waitlist-form, #hero-waitlist-form').forEach(function (f) {
       f.addEventListener('submit', function () {
-        window.atleatoTrack('waitlist_signup', { location: f.id || 'waitlist' });
+        var plat = '';
+        try { plat = (new FormData(f).get('platform') || '').toString(); } catch (e) {}
+        window.atleatoTrack('waitlist_signup', { location: f.id || 'waitlist', platform: plat || 'unknown' });
         if (window.fbq) window.fbq('track', 'Lead');
       });
     });
