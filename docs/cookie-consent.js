@@ -12,6 +12,8 @@
   }
   function close(value) {
     try { localStorage.setItem(KEY, value); } catch (e) {}
+    // Let analytics (and anything else) react immediately, without a reload.
+    try { window.dispatchEvent(new CustomEvent('atleato:consent', { detail: value })); } catch (e) {}
     banner.classList.remove('show');
     setTimeout(function(){ banner.style.display = 'none'; }, 400);
   }
