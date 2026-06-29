@@ -377,11 +377,11 @@
           </div>
           <h3 class="feature-title">AI Form Coach</h3>
           <p class="feature-desc">
-            Point your phone, lift. On-device pose detection tracks 17 skeletal joints in real time and calls out exactly what to fix — knees caving, back rounding, depth short. Your coach's voice tells you the correction mid-rep.
+            Point your phone, lift. On-device pose detection tracks 33 skeletal joints in real time and calls out exactly what to fix — knees caving, back rounding, depth short. Your coach's voice tells you the correction mid-rep.
             <em>Try it below — orbit the 3D model and hit "Simulate Bad Form" to see AI corrections fire live.</em>
           </p>
           <div class="feature-tags">
-            <span class="tag">MoveNet</span>
+            <span class="tag">MediaPipe</span>
             <span class="tag">Real-Time</span>
             <span class="tag">On-Device</span>
             <span class="tag">Voice Feedback</span>
@@ -512,7 +512,7 @@
           <span class="section-eyebrow">LIVE VISION DEMO</span>
           <h2 class="section-title">AI-Powered<br/><span class="lime-text">Form Correction.</span></h2>
           <p class="demo-subtext">
-            Experience real-time on-device pose detection (MoveNet). Our AI tracks 17 key skeletal joints, computes angles instantly, and delivers voice corrections in your coach's signature style.
+            Experience real-time on-device pose detection (MediaPipe). Our AI tracks 33 key skeletal joints, computes angles instantly, and delivers voice corrections in your coach's signature style.
           </p>
           
           <!-- HUD / Stats Cards -->
@@ -522,7 +522,7 @@
               <span class="hud-status"><span class="pulse-dot"></span> CONNECTED</span>
             </div>
             
-            <div class="hud-stats-grid">
+            <div class="hud-stats-grid" role="group" aria-label="Live form telemetry">
               <div class="hud-stat-box">
                 <span class="hud-label">KNEE ANGLE</span>
                 <span id="knee-angle" class="angle-value good">0°</span>
@@ -539,7 +539,7 @@
 
             <div class="hud-correction-box">
               <span class="hud-label">COACH'S CORRECTION</span>
-              <div id="correction-text" class="correction-text good">✓ Form looks great! Keep it up.</div>
+              <div id="correction-text" class="correction-text good" role="status" aria-live="polite">✓ Form looks great! Keep it up.</div>
             </div>
           </div>
 
@@ -564,8 +564,8 @@
 
         <!-- 3D Visualization Column -->
         <div class="demo-visual">
-          <div id="demo-canvas-wrap" class="canvas-wrap">
-            <canvas id="person-canvas"></canvas>
+          <div id="demo-canvas-wrap" class="canvas-wrap" tabindex="0" role="group" aria-label="Interactive 3D form-analysis demo. Press Left or Right arrow to rotate, Space to simulate bad form, P to pause.">
+            <canvas id="person-canvas" aria-hidden="true"></canvas>
             <div class="canvas-overlay">
               <div class="overlay-corner top-left"></div>
               <div class="overlay-corner top-right"></div>
@@ -573,17 +573,20 @@
               <div class="overlay-corner bottom-right"></div>
               
               <div class="overlay-top-row">
-                <span class="overlay-tag"><span class="scanner-dot"></span> SKELETAL CAMERA ACTIVE</span>
-                <button id="bad-form-btn" class="hud-control-btn">SIMULATE BAD FORM</button>
+                <span class="overlay-tag" aria-hidden="true"><span class="scanner-dot"></span> SKELETAL CAMERA ACTIVE</span>
+                <div class="overlay-controls" style="display:flex;gap:8px;">
+                  <button id="demo-pause-btn" class="hud-control-btn" aria-pressed="false" aria-label="Pause form demo animation">❚❚ PAUSE</button>
+                  <button id="bad-form-btn" class="hud-control-btn" aria-pressed="false" aria-label="Simulate incorrect form to see the AI corrections">SIMULATE BAD FORM</button>
+                </div>
               </div>
 
-              <div class="exercise-selector-bar">
+              <div class="exercise-selector-bar" role="group" aria-label="Choose exercise to preview">
                 <button class="exercise-tab active" data-ex="squat">SQUAT</button>
                 <button class="exercise-tab" data-ex="deadlift">DEADLIFT</button>
                 <button class="exercise-tab" data-ex="curl">BICEP CURL</button>
               </div>
 
-              <span class="overlay-hint">← Drag to orbit 3D model →</span>
+              <span class="overlay-hint">← → Rotate · Space Simulate · P Pause · or drag to orbit</span>
             </div>
           </div>
         </div>

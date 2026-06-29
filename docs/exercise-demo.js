@@ -54,6 +54,9 @@
   // ── Interactive States ──
   let activeEx = 'squat';
   let badFormSimulated = false;
+  let paused = false;          // WCAG 2.2.2 — user can stop the auto-animation
+  let userOrbit = 0;           // keyboard rotation offset (radians)
+  let simTime = 0;             // animation time; frozen while paused (no jump on resume)
 
   // ── Joint Positions ──
   const STANDING = {
@@ -389,16 +392,43 @@
   const scoreCircleEl = document.getElementById('score-circle-progress');
 
   const badFormBtn = document.getElementById('bad-form-btn');
-  if (badFormBtn) {
-    badFormBtn.addEventListener('click', () => {
-      badFormSimulated = !badFormSimulated;
+  function toggleBadForm() {
+    badFormSimulated = !badFormSimulated;
+    if (badFormBtn) {
       badFormBtn.classList.toggle('active', badFormSimulated);
       badFormBtn.textContent = badFormSimulated ? 'RESET FORM' : 'SIMULATE BAD FORM';
-      if (window.audioSynth) {
-        window.audioSynth.playBlip(badFormSimulated ? 400 : 800, 0.08);
-      }
-    });
+      badFormBtn.setAttribute('aria-pressed', String(badFormSimulated));
+    }
+    if (window.audioSynth) {
+      window.audioSynth.playBlip(badFormSimulated ? 400 : 800, 0.08);
+    }
   }
+  if (badFormBtn) badFormBtn.addEventListener('click', toggleBadForm);
+
+  // ── Pause / play control (WCAG 2.2.2: auto-animation must be stoppable) ──
+  const pauseBtn = document.getElementById('demo-pause-btn');
+  function setPaused(p) {
+    paused = p;
+    if (pauseBtn) {
+      pauseBtn.textContent = paused ? '▶ PLAY' : '❚❚ PAUSE';
+      pauseBtn.setAttribute('aria-pressed', String(paused));
+      pauseBtn.setAttribute('aria-label', paused ? 'Play form demo animation' : 'Pause form demo animation');
+    }
+  }
+  if (pauseBtn) pauseBtn.addEventListener('click', () => setPaused(!paused));
+  // Honor the OS "reduce motion" setting: start paused so nothing auto-animates
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    setPaused(true);
+  }
+
+  // ── Keyboard controls on the focusable demo: ← → rotate, Space simulate, P pause ──
+  container.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (k === 'ArrowLeft')       { userOrbit -= 0.25; e.preventDefault(); }
+    else if (k === 'ArrowRight') { userOrbit += 0.25; e.preventDefault(); }
+    else if (k === ' ' || k === 'Spacebar') { toggleBadForm(); e.preventDefault(); }
+    else if (k === 'p' || k === 'P') { setPaused(!paused); e.preventDefault(); }
+  });
 
   const tabs = document.querySelectorAll('.exercise-tab');
   tabs.forEach(tab => {
@@ -450,7 +480,9 @@
 
   function animate() {
     requestAnimationFrame(animate);
-    const elapsed = clock.getElapsedTime();
+    const delta = clock.getDelta();
+    if (!paused) simTime += delta;     // freeze time while paused → no jump on resume
+    const elapsed = simTime;
 
     // Loop cycle speed
     const cycleSpeed = 0.45; 
@@ -601,8 +633,8 @@
     if (formScoreEl) {
       formScoreEl.textContent = formScore + '%';
     }
-    if (correctionEl) {
-      correctionEl.textContent = correction;
+    if (correctionEl && correctionEl.textContent !== correction) {
+      correctionEl.textContent = correction;          // guarded → aria-live announces only real changes
       correctionEl.className = 'correction-text ' + correctionClass;
     }
 
@@ -631,7 +663,7 @@
     scanLineMat.opacity = 0.12 + Math.sin(elapsed * 4) * 0.08;
 
     // Camera track
-    const orbitAngle = elapsed * 0.12 + demoMouseX * 0.8;
+    const orbitAngle = elapsed * 0.12 + demoMouseX * 0.8 + userOrbit;
     const camRadius = 16;
     camera.position.x = Math.sin(orbitAngle) * camRadius;
     camera.position.z = Math.cos(orbitAngle) * camRadius;
