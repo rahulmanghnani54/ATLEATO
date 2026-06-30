@@ -1,4 +1,4 @@
-/* Shared styles for Atleato content pages (blog + per-coach landing pages).
+/* Shared styles for Evulto content pages (blog + per-coach landing pages).
    Matches the dark brand theme of index.html but standalone + lightweight
    (no three.js / GSAP) so these pages load instantly and rank well. */
 :root{

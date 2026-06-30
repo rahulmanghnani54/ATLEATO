@@ -1,10 +1,10 @@
-# Atleato
+# Evulto
 
-> Atleato is an AI fitness coaching app for Android. Five coach personas phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days.
+> Evulto is an AI fitness coaching app for Android. Five coach personas phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days.
 
-Atleato turns "AI fitness app" into something that actually shows up: instead of a notification you swipe away, your coach rings your phone like a real incoming call — full-screen, with a ringtone, and a callback if you decline.
+Evulto turns "AI fitness app" into something that actually shows up: instead of a notification you swipe away, your coach rings your phone like a real incoming call — full-screen, with a ringtone, and a callback if you decline.
 
-## What Atleato does
+## What Evulto does
 - **Real wake-up & workout calls**: Your coach rings your phone like an actual incoming call at the time you set. Decline and it calls back in 5 minutes. Rest days stay silent.
 - **Real-time AI form correction**: Uses your phone camera and on-device pose detection to flag form issues (knees caving in, a shallow squat) live, rep by rep — no human trainer needed.
 - **5 AI coach personas**: Switch coaches and the whole app transforms — colors, workout program, nutrition philosophy, voice, and motivational style all change.

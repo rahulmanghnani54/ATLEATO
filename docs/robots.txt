@@ -1,8 +1,8 @@
-# Atleato — https://atleato.com
+# Evulto — https://atleato.com
 User-agent: *
 Allow: /
 
-# AI / answer-engine crawlers — explicitly welcomed so Atleato can be cited in
+# AI / answer-engine crawlers — explicitly welcomed so Evulto can be cited in
 # Google AI Overviews, ChatGPT, Perplexity, Claude and Bing Copilot answers.
 User-agent: Googlebot
 Allow: /

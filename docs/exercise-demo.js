@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   ATLEATO™ — 3D EXERCISE FORM CORRECTION DEMO
+   EVULTO™ — 3D EXERCISE FORM CORRECTION DEMO
    Animated 3D mannequin with multi-exercise simulator
    ═══════════════════════════════════════════════ */
 

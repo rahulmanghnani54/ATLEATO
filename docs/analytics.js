@@ -1,4 +1,4 @@
-/* Atleato web analytics — consent-gated, ID-gated, privacy-first.
+/* Evulto web analytics — consent-gated, ID-gated, privacy-first.
  *
  * NOTHING loads or sends until BOTH are true:
  *   1) the visitor accepted analytics cookies (cookie banner → "Accept All"), AND

@@ -66,7 +66,7 @@
       <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
     </svg>
     <div style="font-family:'Archivo Black',sans-serif;font-size:22px;color:#fff;letter-spacing:1px;margin-bottom:8px;">RESTRICTED</div>
-    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#888;letter-spacing:2px;margin-bottom:28px;">ATLEATO ADMIN · FOUNDER ONLY</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#888;letter-spacing:2px;margin-bottom:28px;">EVULTO ADMIN · FOUNDER ONLY</div>
     <input id="auth-pass" type="password" placeholder="passphrase"
            style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.12);color:#fff;padding:14px 18px;border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:0.5px;outline:none;text-align:center;" />
     <button id="auth-go" style="margin-top:14px;width:100%;background:#ff6b35;color:#fff;border:none;padding:14px;border-radius:10px;font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:1.5px;cursor:pointer;">UNLOCK →</button>
@@ -110,7 +110,7 @@
   <!-- LOGIN VIEW -->
   <div id="login-view" class="admin-login-wrap">
     <div class="admin-login-card">
-      <h1>ATLEATO ADMIN</h1>
+      <h1>EVULTO ADMIN</h1>
       <form id="login-form">
         <input type="password" id="password-input" placeholder="Password" autocomplete="off" />
         <button type="submit">Sign In</button>
@@ -122,7 +122,7 @@
   <!-- DASHBOARD VIEW -->
   <div id="dashboard-view" class="admin-dashboard" style="display:none;">
     <div class="admin-header">
-      <h1>ATLEATO ADMIN</h1>
+      <h1>EVULTO ADMIN</h1>
       <div style="display:flex; gap:10px; align-items:center;">
         <span class="updated" id="last-updated">Last updated: just now</span>
         <button id="auto-refresh-toggle" class="admin-btn">Auto: ON</button>
@@ -240,7 +240,7 @@
   <script>
   (function initAdmin() {
     // SHA-256 of the admin password — never store plaintext in source.
-    // Current pwd: 'AtleatoAdm!n2026-509eb77ff6'  (USER: change before deploy if leaked)
+    // Current pwd: 'EvultoAdm!n2026-509eb77ff6'  (USER: change before deploy if leaked)
     // To rotate: hash = sha256(new_password); replace below.
     var ADMIN_PASSWORD_SHA256 = 'b2c155d6c0f249fefb7b2cd6ce37db8037548346439fb5440743a2d052d91f86';
     var SUPABASE_URL = 'https://kbldncrurztfwlqzajen.supabase.co';

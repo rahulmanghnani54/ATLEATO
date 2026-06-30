@@ -1,12 +1,12 @@
 /* ═══════════════════════════════════════════════
-   ATLEATO™ — 3D SCENE + ANIMATIONS
+   EVULTO™ — 3D SCENE + ANIMATIONS
    Three.js particle system + GSAP scroll animations
    ═══════════════════════════════════════════════ */
 
 // ── Three.js 3D Scene ──────────────────────────
 (function initThreeScene() {
   if (typeof THREE === 'undefined') {
-    console.warn('ATLEATO: Three.js not loaded — skipping 3D background.');
+    console.warn('EVULTO: Three.js not loaded — skipping 3D background.');
     return;
   }
   const canvas = document.getElementById('three-canvas');
@@ -803,4 +803,4 @@ document.querySelectorAll('.coach-chip, .coach-card').forEach(item => {
 });
 
 
-console.log('%c🏋️ ATLEATO™ — Train. Fuel. Rise.', 'color: #ff6b35; font-size: 16px; font-weight: bold; background: #0a0b0d; padding: 8px 16px; border-radius: 4px;');
+console.log('%c🏋️ EVULTO™ — Train. Fuel. Rise.', 'color: #ff6b35; font-size: 16px; font-weight: bold; background: #0a0b0d; padding: 8px 16px; border-radius: 4px;');
