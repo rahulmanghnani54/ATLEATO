@@ -1,5 +1,5 @@
 /**
- * render-app-icon.js — Generates the Atleato app icon PNGs from SVG.
+ * render-app-icon.js — Generates the Evulto app icon PNGs from SVG.
  *
  * Run with:  node scripts/render-app-icon.js
  *

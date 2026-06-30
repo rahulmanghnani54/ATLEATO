@@ -36,10 +36,10 @@ const OG_SVG = `
     <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
   </g>
 
-  <!-- Wordmark "Atleato" + ™ -->
+  <!-- Wordmark "Evulto" + ™ -->
   <text x="430" y="240"
         font-family="Inter, sans-serif" font-weight="900"
-        font-size="118" letter-spacing="-3" fill="#fafafa">Atleato</text>
+        font-size="118" letter-spacing="-3" fill="#fafafa">Evulto</text>
   <text x="935" y="180"
         font-family="JetBrains Mono, monospace" font-weight="700"
         font-size="32" fill="#9ca3af">™</text>
@@ -61,7 +61,7 @@ const OG_SVG = `
   <rect x="0" y="610" width="1200" height="6" fill="url(#orange)"/>
   <text x="80" y="580"
         font-family="JetBrains Mono, monospace" font-weight="700"
-        font-size="18" letter-spacing="3" fill="#6b7280">ATLEATO.COM</text>
+        font-size="18" letter-spacing="3" fill="#6b7280">EVULTO.COM</text>
   <text x="1120" y="580" text-anchor="end"
         font-family="JetBrains Mono, monospace" font-weight="500"
         font-size="14" letter-spacing="2" fill="#6b7280">JOIN THE WAITLIST →</text>

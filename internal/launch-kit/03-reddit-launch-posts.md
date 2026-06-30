@@ -1,4 +1,4 @@
-# Reddit Launch Posts — Atleato
+# Reddit Launch Posts — Evulto
 
 ⚠️ **Critical Reddit rules:** No "Show HN" style hard pitches. No naked links. Lead with VALUE, mention product at the end. Each subreddit has rules — read them. Tag posts correctly. Don't repost across subreddits same day.
 
@@ -12,7 +12,7 @@
 ```
 Hey r/Fitness,
 
-After a year of building, I just launched Atleato — an AI coaching app that turned out way different from what I planned. Sharing what I learned because the lessons might be useful even if the app isn't for you.
+After a year of building, I just launched Evulto — an AI coaching app that turned out way different from what I planned. Sharing what I learned because the lessons might be useful even if the app isn't for you.
 
 The big insight: people don't quit fitness apps because the app is bad. They quit because every fitness app feels the same. So I built five completely different coaches, each modeled on a different training philosophy:
 
@@ -56,7 +56,7 @@ Happy to answer any questions about the build, the science behind the persona sw
 ```
 Long-time lurker, first-time poster.
 
-After getting frustrated with how generic every fitness app feels, I spent a year building Atleato. It's an AI coaching app where you literally pick which training philosophy you want to follow:
+After getting frustrated with how generic every fitness app feels, I spent a year building Evulto. It's an AI coaching app where you literally pick which training philosophy you want to follow:
 
 - Classic Physique style: PPL, controlled eccentrics, posing practice baked in
 - Golden Era: high volume double splits, lots of pump work, focus on mass
@@ -107,7 +107,7 @@ Logic is based on The Architect-style MRV principles + Apple Watch HRV correlati
 Looking for 50 serious lifters (3+ years training, currently on a structured program) to beta test the modifier accuracy over 4 weeks. You'll log standard sets/reps + the recovery score, and I'll send you weekly correlations.
 
 In exchange:
-- 6 months Atleato LEGEND tier free
+- 6 months Evulto LEGEND tier free
 - Direct line to me for feature requests
 - Your name in the launch credits
 
@@ -123,11 +123,11 @@ Project link if you want context: atleato.com
 
 ## POST 4 — r/SideProject
 
-**Title:** I shipped Atleato — an AI fitness coach app with 5 distinct coach personalities. Open to honest feedback.
+**Title:** I shipped Evulto — an AI fitness coach app with 5 distinct coach personalities. Open to honest feedback.
 
 **Body:**
 ```
-After 12 months solo (React Native + Expo + Supabase), I launched Atleato today on Google Play.
+After 12 months solo (React Native + Expo + Supabase), I launched Evulto today on Google Play.
 
 The pitch: 5 AI coaching personas, each with their own training philosophy, voice, color scheme, and motivational style. Switch coaches → the whole app transforms.
 
@@ -161,11 +161,11 @@ Roast me. I read every comment.
 
 ## POST 5 — r/Entrepreneur or r/Indiehackers
 
-**Title:** From idea to launched on Google Play in 12 months — solo, bootstrapped, $0 in funding. AMA about Atleato.
+**Title:** From idea to launched on Google Play in 12 months — solo, bootstrapped, $0 in funding. AMA about Evulto.
 
 **Body:**
 ```
-TL;DR: Bootstrapped solo founder, just shipped my first SaaS app. Atleato is an AI fitness coach with 5 personas. Live on Google Play today. Happy to answer anything.
+TL;DR: Bootstrapped solo founder, just shipped my first SaaS app. Evulto is an AI fitness coach with 5 personas. Live on Google Play today. Happy to answer anything.
 
 The numbers so far:
 - Days from idea to MVP: 47

@@ -1,4 +1,4 @@
-# Twitter / X Launch Thread — Atleato
+# Twitter / X Launch Thread — Evulto
 
 ## Format
 - 10 tweets, threaded
@@ -144,7 +144,7 @@ If you're building, copy the second mistake. Charge sooner.
 ## TWEET 9 — The pitch
 
 ```
-Atleato is live on Google Play TODAY.
+Evulto is live on Google Play TODAY.
 
 🆓 FREE forever: 1 coach, full training, nutrition, wake-up calls
 🥇 PRO ($9.99): 3 coaches, AI form, reward chests, physique photos
@@ -166,7 +166,7 @@ Train under a legend.
 
 If this thread resonated, a like/repost helps a solo founder more than you know 🙏
 
-I'm @rahulmanghnani — building Atleato in public. Follow for more.
+I'm @rahulmanghnani — building Evulto in public. Follow for more.
 ```
 
 **Attach:** App icon + Google Play badge
@@ -220,7 +220,7 @@ Update right before posting with actual numbers.
 4. Subscription billing (1 week)
 5. Convincing my mom it's not a pyramid scheme (12 months and counting)"
 
-5. "Day 312 of building Atleato.
+5. "Day 312 of building Evulto.
 Today: shipped Vanguard Pass scarcity counter.
 Yesterday: shipped referral progress bar.
 Tomorrow: launch on Google Play.

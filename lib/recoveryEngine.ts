@@ -97,7 +97,7 @@ export function scoreLabel(score: number): string {
 // The existing recovery engine handles "I'm tired today." But the V2 plan
 // correctly noted that fitness apps fail when life happens — illness,
 // travel, missed days. Most apps respond with guilt mechanics ("you broke
-// your streak!"). Atleato responds by adapting WITHOUT guilt.
+// your streak!"). Evulto responds by adapting WITHOUT guilt.
 //
 // Inputs: lifestyle disruption flags + day-gap since last workout.
 // Output: a context-aware program adjustment + a sane coach message.

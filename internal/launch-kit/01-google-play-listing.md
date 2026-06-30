@@ -1,8 +1,8 @@
-# Google Play Store Listing — Atleato
+# Google Play Store Listing — Evulto
 
 ## App Name (max 30 chars)
 ```
-Atleato — Your Coach Calls
+Evulto — Your Coach Calls
 ```
 
 ## Short Description (max 80 chars)
@@ -136,4 +136,4 @@ YouTube URL: [add your 30s hero video link here]
 Use: assets/logo/logo-icon-512.png
 
 ## Feature Graphic (1024x500)
-Create in Canva: dark background, big "TRAIN UNDER A LEGEND" headline + 5 small coach avatars + Atleato logo
+Create in Canva: dark background, big "TRAIN UNDER A LEGEND" headline + 5 small coach avatars + Evulto logo

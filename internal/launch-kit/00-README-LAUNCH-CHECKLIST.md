@@ -1,4 +1,4 @@
-# 🚀 Atleato Launch Checklist — 1-Hour Sprint
+# 🚀 Evulto Launch Checklist — 1-Hour Sprint
 
 You're about to launch. Here's what to do, in order, in ~60 minutes total.
 
@@ -26,7 +26,7 @@ adb shell am start -n com.madsales.atleato/.MainActivity
 
 ### ✅ STEP 3: Create Stripe Payment Link (5 min)
 1. Go to https://dashboard.stripe.com/payment-links → "+ New"
-2. Product: **Atleato VIP Vanguard Pass**
+2. Product: **Evulto VIP Vanguard Pass**
 3. Price: **$1.99 USD** (one-time)
 4. Description: *(see docs/launch-kit/01-google-play-listing.md)*
 5. Copy the `buy.stripe.com/...` link
@@ -43,7 +43,7 @@ Copy from `docs/launch-kit/01-google-play-listing.md`:
 - **Short description** (80 chars)
 - **Full description** (4000 chars)
 - **Title** (30 chars)
-- Upload screenshots from your phone (take with Atleato installed)
+- Upload screenshots from your phone (take with Evulto installed)
 - Upload `assets/logo/logo-icon-512.png` as app icon
 - Submit for review
 
@@ -135,7 +135,7 @@ Everything else is done. Push to launch.
 
 ### Admin panel won't load:
 - URL: `https://atleato.com/admin-509eb77ff6a02df244b3502d31027b08.html`
-- Password: `AtleatoAdm!n2026-509eb77ff6`
+- Password: `EvultoAdm!n2026-509eb77ff6`
 
 ---
 

@@ -130,7 +130,7 @@ export function buildWitnessMessage(args: {
   const missed = Math.max(0, thresholdSessions - sessionsThisWeek);
   return (
     `Hey ${witnessName}, it's ${userName}.\n\n` +
-    `Quick accountability check-in via Atleato — I committed to ${thresholdSessions} workouts this week ` +
+    `Quick accountability check-in via Evulto — I committed to ${thresholdSessions} workouts this week ` +
     `but only hit ${sessionsThisWeek}. I'm ${missed} short. ` +
     `Holding myself accountable by telling you. Next week I'm back on it.\n\n` +
     `(You don't have to reply — just wanted to keep it honest.)`

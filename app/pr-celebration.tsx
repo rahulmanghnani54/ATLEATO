@@ -195,7 +195,7 @@ export default function PRCelebration() {
               style={styles.ctaPrimary}
               activeOpacity={0.85}
               onPress={() => Share.share({
-                message: `🏆 New PR on ${exercise}: ${newRM} kg estimated 1RM (+${delta} kg). Built with Atleato.`,
+                message: `🏆 New PR on ${exercise}: ${newRM} kg estimated 1RM (+${delta} kg). Built with Evulto.`,
               })}
             >
               <Text style={styles.ctaPrimaryText}>SHARE WIN</Text>

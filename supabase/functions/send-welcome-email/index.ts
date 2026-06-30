@@ -11,7 +11,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const FROM_EMAIL = 'Rahul from Atleato <hello@atleato.com>';
+const FROM_EMAIL = 'Rahul from Evulto <hello@atleato.com>';
 const REPLY_TO = 'hello@atleato.com';
 
 const corsHeaders = {
@@ -84,7 +84,7 @@ View this email in your browser (with animations): ${hostedUrl}
 Just hit reply if you have any questions. I read every message.
 
 — Rahul
-Founder, Atleato
+Founder, Evulto
 
 ---
 You're receiving this because you joined the waitlist at atleato.com.
@@ -114,15 +114,15 @@ function generateHTML(name: string, email: string, position: number, badge: stri
           <span style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8b909a;">${d}</span>
         </td></tr>`).join('');
   return `<!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="color-scheme" content="dark"/><title>Atleato — You're In</title></head>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><meta name="color-scheme" content="dark"/><title>Evulto — You're In</title></head>
 <body style="margin:0;padding:0;background:#040506;">
-<span style="display:none;max-height:0;overflow:hidden;opacity:0;">You're on the Atleato waitlist — pass #${safePass} of 500.</span>
+<span style="display:none;max-height:0;overflow:hidden;opacity:0;">You're on the Evulto waitlist — pass #${safePass} of 500.</span>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#040506;"><tr><td align="center" style="padding:24px 12px 60px;">
   <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#0a0b0d;border:1px solid #1e2127;border-radius:18px;overflow:hidden;">
     <tr><td style="height:4px;background:#ff6b35;font-size:0;line-height:0;">&nbsp;</td></tr>
     <tr><td style="padding:24px 30px 6px;">
       <span style="display:inline-block;width:28px;height:28px;background:#16181d;border-radius:7px;text-align:center;line-height:28px;font-family:Georgia,serif;font-size:18px;font-weight:bold;color:#ff6b35;">A</span>
-      <span style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;color:#f5f6f3;margin-left:8px;">Atleato</span>
+      <span style="font-family:Arial,Helvetica,sans-serif;font-size:15px;font-weight:600;color:#f5f6f3;margin-left:8px;">Evulto</span>
     </td></tr>
     <tr><td style="padding:26px 30px 0;">
       <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;letter-spacing:2px;color:#ff8050;text-transform:uppercase;">&#9679; You're in</p>
@@ -150,7 +150,7 @@ function generateHTML(name: string, email: string, position: number, badge: stri
     </td></tr>
     <tr><td style="padding:26px 30px 0;">
       <p style="margin:0 0 4px;font-family:Arial,Helvetica,sans-serif;font-size:15px;color:#f5f6f3;">— Rahul</p>
-      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8b909a;">Founder, Atleato</p>
+      <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8b909a;">Founder, Evulto</p>
     </td></tr>
     <tr><td style="padding:8px 30px 30px;">
       <p style="margin:18px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.6;color:#5d626b;border-top:1px solid #1e2127;padding-top:16px;">You joined the waitlist at atleato.com. Coach personas are fictional AI characters. <a href="${hostedUrl}" style="color:#8b909a;">View in browser</a> · <a href="mailto:hello@atleato.com?subject=unsubscribe" style="color:#5d626b;">Unsubscribe</a></p>

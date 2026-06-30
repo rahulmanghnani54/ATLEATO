@@ -1,6 +1,6 @@
 // Supabase Edge Function — Lemon Squeezy webhook receiver.
 //
-// LS calls this on every payment-related event for the Atleato store. We:
+// LS calls this on every payment-related event for the Evulto store. We:
 //   1. Verify the X-Signature header against LEMONSQUEEZY_WEBHOOK_SECRET
 //      (HMAC-SHA256 of the raw request body)
 //   2. Insert/update the order in public.vanguard_orders (idempotent on ls_order_id)
@@ -35,7 +35,7 @@ const REPLAY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 // Set via: supabase secrets set LEMONSQUEEZY_VANGUARD_PRODUCT_IDS=12345,67890
 const ALLOWED_PRODUCT_IDS = (Deno.env.get('LEMONSQUEEZY_VANGUARD_PRODUCT_IDS') || '')
   .split(',').map((s) => s.trim()).filter(Boolean);
-const FROM_EMAIL = 'Rahul from Atleato <hello@atleato.com>';
+const FROM_EMAIL = 'Rahul from Evulto <hello@atleato.com>';
 const REPLY_TO = 'hello@atleato.com';
 // Set via: supabase secrets set DISCORD_INVITE_URL=https://discord.gg/yourcode
 // If unset, the email omits the Discord block gracefully.
@@ -125,7 +125,7 @@ View animated welcome: ${hostedUrl}
 Just hit reply if you have any questions. I read every message.
 
 — Rahul
-Founder, Atleato
+Founder, Evulto
 
 P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. Refundable anytime before launch. No questions.`;
 
@@ -134,7 +134,7 @@ P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. 
   <div style="height:4px;background:linear-gradient(90deg,#39e08a 0%,#2bb56e 100%);"></div>
   <div style="padding:28px 32px 8px;border-bottom:1px solid #eee;">
     <span style="display:inline-block;width:28px;height:28px;background:#0a0b0d;border-radius:7px;text-align:center;line-height:28px;font-family:Georgia,serif;font-size:18px;font-weight:bold;color:#ff6b35;vertical-align:middle;">A</span>
-    <span style="margin-left:8px;font-size:15px;font-weight:600;color:#0a0b0d;vertical-align:middle;">Atleato</span>
+    <span style="margin-left:8px;font-size:15px;font-weight:600;color:#0a0b0d;vertical-align:middle;">Evulto</span>
   </div>
   <div style="padding:32px 32px 0;">
     <p style="margin:0 0 12px;font-size:13px;font-weight:700;letter-spacing:2px;color:#39e08a;text-transform:uppercase;">● Payment Confirmed</p>
@@ -151,7 +151,7 @@ P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. 
     <p style="margin:0 0 12px;font-size:14px;color:#666;">Order summary:</p>
     <p style="margin:0 0 24px;padding:14px 18px;background:#faf8f5;border-radius:8px;font-family:'JetBrains Mono','SF Mono',monospace;font-size:13px;color:#1a1a1a;line-height:1.6;">
       <strong>Order #${opts.orderNumber}</strong><br/>
-      VIP Vanguard Pass — Atleato<br/>
+      VIP Vanguard Pass — Evulto<br/>
       Amount: ${opts.totalFormatted}<br/>
       Status: <span style="color:#39e08a;font-weight:700;">PAID</span>
     </p>
@@ -171,7 +171,7 @@ P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. 
   <div style="padding:0 32px 0;">
     <p style="margin:0 0 16px;font-size:16px;color:#1a1a1a;">Just hit reply if you have any questions. I read every message.</p>
     <p style="margin:0 0 4px;font-size:16px;color:#1a1a1a;">— Rahul</p>
-    <p style="margin:0 0 24px;font-size:14px;color:#888;">Founder, Atleato</p>
+    <p style="margin:0 0 24px;font-size:14px;color:#888;">Founder, Evulto</p>
   </div>
   <div style="padding:0 32px 32px;">
     <div style="padding:16px 18px;background:#faf8f5;border-radius:8px;border-left:3px solid #ddd;">
@@ -179,7 +179,7 @@ P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. 
     </div>
   </div>
   <div style="padding:24px 32px;border-top:1px solid #eee;background:#fafafa;">
-    <p style="margin:0;font-size:12px;color:#999;line-height:1.6;">Payment processed by Lemon Squeezy on behalf of Atleato. Coach personas are fictional AI characters. <a href="mailto:${REPLY_TO}" style="color:#999;">${REPLY_TO}</a></p>
+    <p style="margin:0;font-size:12px;color:#999;line-height:1.6;">Payment processed by Lemon Squeezy on behalf of Evulto. Coach personas are fictional AI characters. <a href="mailto:${REPLY_TO}" style="color:#999;">${REPLY_TO}</a></p>
   </div>
 </div>
 </body></html>`;

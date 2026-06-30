@@ -1,10 +1,10 @@
-# ProductHunt Launch — Atleato
+# ProductHunt Launch — Evulto
 
 ## Pre-Launch Setup (do 2-3 weeks before)
 
 1. Create ProductHunt account 60+ days before launch (anti-spam)
 2. Get 20-30 friends/connections to follow you on PH
-3. Submit Atleato to Coming Soon page 2 weeks ahead
+3. Submit Evulto to Coming Soon page 2 weeks ahead
 4. DM 10 power users (people with 1000+ upvotes given) week-of for support
 5. Build a small Telegram/Discord group of "launch hunters" — ask them to be online at launch time
 
@@ -18,7 +18,7 @@ ProductHunt resets at midnight Pacific Time. Submit AT 12:01 AM PST for full 24-
 
 ### Name
 ```
-Atleato
+Evulto
 ```
 
 ### Tagline (60 chars max)
@@ -36,7 +36,7 @@ The AI fitness coach that actually calls your phone
 ```
 Hey Product Hunt! 👋
 
-I'm Rahul, solo dev behind Atleato. Quick story:
+I'm Rahul, solo dev behind Evulto. Quick story:
 
 For 3 years, my 5 AM alarm beat me. Every morning I tapped snooze 4 times, skipped the gym, ate like crap, repeated.
 
@@ -106,7 +106,7 @@ Use 1080×1920 for portrait, 1920×1080 for landscape. PH compresses anyway.
 30-60 second demo video. Same as your hero video.
 
 Format: MP4, <500MB, 1080p
-Title: "Atleato — The AI fitness coach that calls your phone"
+Title: "Evulto — The AI fitness coach that calls your phone"
 
 ---
 
@@ -127,9 +127,9 @@ If you can't get a top hunter, submit yourself. Your maker comment matters more 
 
 | Time (PST) | Action |
 |---|---|
-| 12:01 AM | Submit Atleato to ProductHunt |
+| 12:01 AM | Submit Evulto to ProductHunt |
 | 12:05 AM | Post first comment (the one above) |
-| 12:10 AM | DM your launch hunters group: "Atleato is live: [link]" |
+| 12:10 AM | DM your launch hunters group: "Evulto is live: [link]" |
 | 6:00 AM | Tweet thread (the one in 04-twitter-launch-thread.md) |
 | 8:00 AM | LinkedIn post linking to PH |
 | 10:00 AM | Reply to every PH comment so far |

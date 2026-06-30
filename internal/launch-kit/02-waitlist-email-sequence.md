@@ -1,4 +1,4 @@
-# 14-Day Waitlist Email Sequence — Atleato
+# 14-Day Waitlist Email Sequence — Evulto
 
 Send via Mailchimp / Resend / Sendgrid. Each email is ~60-120 words. Subject lines proven on fitness audiences.
 
@@ -9,7 +9,7 @@ Send via Mailchimp / Resend / Sendgrid. Each email is ~60-120 words. Subject lin
 **Preview:** Only 500 exist. You can lock yours right now.
 
 ```
-You're #{POSITION} on the Atleato waitlist.
+You're #{POSITION} on the Evulto waitlist.
 
 Before we launch, you've got 2 ways to claim a 1-of-1 VIP Vanguard Pass:
 
@@ -34,7 +34,7 @@ For 3 years I set my 5 AM alarm. For 3 years I dismissed it. My fitness suffered
 
 Then I realized: nobody ignores a phone call.
 
-That's how Atleato started. Your coach doesn't ding you with a notification — they RING you. Full screen. Loud ringtone. Persistent vibration. Decline? They call back in 5 minutes (LEGEND tier).
+That's how Evulto started. Your coach doesn't ding you with a notification — they RING you. Full screen. Loud ringtone. Persistent vibration. Decline? They call back in 5 minutes (LEGEND tier).
 
 The result: a 91% morning wake-up rate vs 12% with normal alarms (tested with 47 beta users).
 
@@ -51,7 +51,7 @@ Get up. No excuses. Train under a legend.
 **Subject:** Which coach calls you? 🥇
 
 ```
-Atleato has 5 AI coach personas, each modeled after a legendary training philosophy. The app TRANSFORMS based on who you pick:
+Evulto has 5 AI coach personas, each modeled after a legendary training philosophy. The app TRANSFORMS based on who you pick:
 
 🟢 THE CLASSIC — Lime green theme. PPL splits. "Quality reps. Stay humble."
 
@@ -78,7 +78,7 @@ Which one are YOU?
 ```
 {FIRST_NAME},
 
-{TOTAL_SIGNUPS}+ people have joined the Atleato waitlist this week. {VIP_CLAIMED} of them locked their VIP Vanguard Pass.
+{TOTAL_SIGNUPS}+ people have joined the Evulto waitlist this week. {VIP_CLAIMED} of them locked their VIP Vanguard Pass.
 
 That leaves {VIP_REMAINING} Passes available. Once they're gone, they're gone forever.
 
@@ -101,7 +101,7 @@ Here's what early Vanguard holders said:
 **Subject:** I just shipped 5 new features. Want a preview?
 
 ```
-Building Atleato in public means you see everything before launch. This week I shipped:
+Building Evulto in public means you see everything before launch. This week I shipped:
 
 📷 AI Food Photo Scanning — snap a photo, get instant macro breakdown
 🗺️  Territory Heatmap — see contested zones across your city in 3D
@@ -124,7 +124,7 @@ All 5 are LIVE in the next beta build. Vanguard Pass holders get first access.
 ```
 Most fitness apps treat you like a spreadsheet row.
 
-Atleato coaches REMEMBER you. They know your last workout. They reference your injuries. They call back the goals you set 3 weeks ago.
+Evulto coaches REMEMBER you. They know your last workout. They reference your injuries. They call back the goals you set 3 weeks ago.
 
 Coach memory examples:
 • "Last week you said your knees were sore. How are they today?"
@@ -144,7 +144,7 @@ It's not magic. It's just every fitness app should have done this years ago.
 **Subject:** ⏰ 5 days. {VIP_REMAINING} Passes left.
 
 ```
-Atleato launches in 5 days on Google Play.
+Evulto launches in 5 days on Google Play.
 
 Vanguard Pass status:
 ✅ {VIP_CLAIMED} claimed
@@ -194,7 +194,7 @@ Same question. 5 wildly different answers. That's persona-driven coaching.
 **Subject:** 3 days. Last call for Vanguard.
 
 ```
-72 hours until Atleato goes live on Google Play.
+72 hours until Evulto goes live on Google Play.
 
 If you haven't claimed your Vanguard Pass, you'll lose:
 ❌ 90% off Legend Tier forever
@@ -217,7 +217,7 @@ It's $1.99. Refundable for 14 days if you change your mind.
 ```
 Set your alarm for 9 AM EST tomorrow.
 
-Atleato goes LIVE on Google Play. Direct link will hit your inbox the moment it's approved.
+Evulto goes LIVE on Google Play. Direct link will hit your inbox the moment it's approved.
 
 Vanguard holders: your unique Badge unlocks the instant you install. Check your profile.
 
@@ -231,10 +231,10 @@ This is the moment.
 ---
 
 ## Email 11 — Day 14 (Launch day)
-**Subject:** 🚀 We're LIVE. Download Atleato now.
+**Subject:** 🚀 We're LIVE. Download Evulto now.
 
 ```
-ATLEATO IS LIVE ON GOOGLE PLAY.
+EVULTO IS LIVE ON GOOGLE PLAY.
 
 ⬇️ Download: https://play.google.com/store/apps/details?id=com.madsales.atleato
 
@@ -247,7 +247,7 @@ What to do in the next 5 minutes:
 
 Tomorrow morning, your coach RINGS you. Don't sleep through it.
 
-— Rahul & the Atleato team
+— Rahul & the Evulto team
 ```
 
 ---
@@ -258,7 +258,7 @@ Tomorrow morning, your coach RINGS you. Don't sleep through it.
 ```
 {FIRST_NAME},
 
-I noticed you downloaded Atleato but haven't set a wake-up call yet.
+I noticed you downloaded Evulto but haven't set a wake-up call yet.
 
 Setting your first call takes 30 seconds:
 1. Open app → Profile → Coach Calls
@@ -268,7 +268,7 @@ Setting your first call takes 30 seconds:
 
 Tomorrow morning your phone rings. You decline? Coach calls back in 5 minutes.
 
-→ Open Atleato: atleato://open
+→ Open Evulto: atleato://open
 
 — Rahul
 
@@ -281,7 +281,7 @@ P.S. If you don't have it yet: https://play.google.com/store/apps/details?id=com
 **Subject:** Your 7-day streak status
 
 ```
-You've been on Atleato for 7 days. How's it going?
+You've been on Evulto for 7 days. How's it going?
 
 Streak holders get:
 🔥 1 freeze every 7 consecutive training days
@@ -308,7 +308,7 @@ I read every reply.
 ```
 30 days. 12 wake-up calls. {WORKOUT_COUNT} workouts.
 
-You're past the "trying it out" phase. Atleato is your habit now.
+You're past the "trying it out" phase. Evulto is your habit now.
 
 Free tier limits:
 ❌ 1 coach (locked to whoever you picked)

@@ -8,7 +8,7 @@
 ## Setup (5 minutes)
 1. Sign up at https://www.lemonsqueezy.com/
 2. Create a Store
-3. New Product → **"Atleato VIP Vanguard Pass"**
+3. New Product → **"Evulto VIP Vanguard Pass"**
 4. Price: **$1.99 USD**, one-time payment (NOT subscription)
 5. Description: paste the product description from chat
 6. Publish → copy the checkout / buy link

@@ -82,8 +82,8 @@ export async function createReferralLink(code: string): Promise<string> {
   if (!branch) return fallback;
   try {
     const buo = await branch.createBranchUniversalObject(`referral/${code}`, {
-      title: 'Atleato — Train Under a Legend',
-      contentDescription: 'Join me on Atleato. An AI coach that actually calls your phone.',
+      title: 'Evulto — Train Under a Legend',
+      contentDescription: 'Join me on Evulto. An AI coach that actually calls your phone.',
       contentMetadata: { customMetadata: { referrer_code: code } },
     });
     const { url } = await buo.generateShortUrl(

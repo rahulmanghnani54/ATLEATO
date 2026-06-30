@@ -1,10 +1,10 @@
-# Atleato Logo Files
+# Evulto Logo Files
 
 ## Files
 
 - `logo-icon.svg` — main "A" icon, orange gradient
 - `logo-icon-white.svg` — white variant for dark backgrounds
-- `logo-full.svg` — icon + "Atleato™" wordmark
+- `logo-full.svg` — icon + "Evulto™" wordmark
 - `logo-icon-48.png` through `logo-icon-1024.png` — raster sizes
 - `logo-icon-white-512.png` — white raster
 - `logo-full-512.png` — full lockup, 4:1 ratio

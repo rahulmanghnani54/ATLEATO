@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Atleato",
+    "name": "Evulto",
     "slug": "fitai-pro",
     "version": "1.0.0",
     "scheme": "atleato",
@@ -70,14 +70,14 @@
       "bundleIdentifier": "com.madsales.atleato",
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Atleato uses your location during runs to track the route and award you the grid cells you pass through in the Territory game.",
-        "NSCameraUsageDescription": "Atleato uses your camera to analyze your exercise form in real time and to capture physique progress photos. Photos are encrypted on your device before upload.",
-        "NSMicrophoneUsageDescription": "Microphone access is required by the camera framework but is not used by Atleato.",
-        "NSPhotoLibraryUsageDescription": "Atleato accesses your photo library so you can select physique progress photos. Photos are encrypted on your device before upload \u2014 we never see the originals.",
-        "NSPhotoLibraryAddUsageDescription": "Atleato may save processed images to your photo library.",
-        "NSHealthShareUsageDescription": "Atleato does not access Apple Health data.",
-        "NSHealthUpdateUsageDescription": "Atleato does not write to Apple Health.",
-        "NSHealthClinicalHealthRecordsShareUsageDescription": "Atleato does not access clinical health records.",
+        "NSLocationWhenInUseUsageDescription": "Evulto uses your location during runs to track the route and award you the grid cells you pass through in the Territory game.",
+        "NSCameraUsageDescription": "Evulto uses your camera to analyze your exercise form in real time and to capture physique progress photos. Photos are encrypted on your device before upload.",
+        "NSMicrophoneUsageDescription": "Microphone access is required by the camera framework but is not used by Evulto.",
+        "NSPhotoLibraryUsageDescription": "Evulto accesses your photo library so you can select physique progress photos. Photos are encrypted on your device before upload \u2014 we never see the originals.",
+        "NSPhotoLibraryAddUsageDescription": "Evulto may save processed images to your photo library.",
+        "NSHealthShareUsageDescription": "Evulto does not access Apple Health data.",
+        "NSHealthUpdateUsageDescription": "Evulto does not write to Apple Health.",
+        "NSHealthClinicalHealthRecordsShareUsageDescription": "Evulto does not access clinical health records.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },

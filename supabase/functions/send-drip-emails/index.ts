@@ -21,7 +21,7 @@ const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY   = Deno.env.get('RESEND_API_KEY') || '';
 const CRON_SECRET      = Deno.env.get('DRIP_CRON_SECRET') || '';
-const FROM_EMAIL = 'Rahul from Atleato <hello@atleato.com>';
+const FROM_EMAIL = 'Rahul from Evulto <hello@atleato.com>';
 const REPLY_TO   = 'hello@atleato.com';
 
 const VANGUARD_TOTAL = 500;
@@ -69,7 +69,7 @@ function shell(name: string, kicker: string, headline: string, bodyHtml: string,
   <div style="height:4px;background:linear-gradient(90deg,#ff6b35,#e05a26);"></div>
   <div style="padding:26px 30px 6px;">
     <span style="display:inline-block;width:26px;height:26px;background:#0a0b0d;border-radius:7px;text-align:center;line-height:26px;font-family:Georgia,serif;font-size:17px;font-weight:bold;color:#ff6b35;vertical-align:middle;">A</span>
-    <span style="margin-left:8px;font-size:14px;font-weight:600;color:#f5f6f3;vertical-align:middle;">Atleato</span>
+    <span style="margin-left:8px;font-size:14px;font-weight:600;color:#f5f6f3;vertical-align:middle;">Evulto</span>
   </div>
   <div style="padding:22px 30px 0;">
     <p style="margin:0 0 10px;font-size:12px;font-weight:700;letter-spacing:2px;color:#ff8050;text-transform:uppercase;">${esc(kicker)}</p>
@@ -81,10 +81,10 @@ function shell(name: string, kicker: string, headline: string, bodyHtml: string,
   </div>
   <div style="padding:14px 30px 26px;">
     <p style="margin:18px 0 4px;font-size:15px;color:#f5f6f3;">— Rahul</p>
-    <p style="margin:0;font-size:13px;color:#8b909a;">Founder, Atleato</p>
+    <p style="margin:0;font-size:13px;color:#8b909a;">Founder, Evulto</p>
   </div>
   <div style="padding:18px 30px;border-top:1px solid rgba(255,255,255,.08);background:#0a0b0d;">
-    <p style="margin:0;font-size:11px;color:#5d626b;line-height:1.6;">You're on the Atleato waitlist. Coach personas are fictional AI characters. <a href="mailto:${REPLY_TO}?subject=unsubscribe" style="color:#5d626b;">Unsubscribe</a></p>
+    <p style="margin:0;font-size:11px;color:#5d626b;line-height:1.6;">You're on the Evulto waitlist. Coach personas are fictional AI characters. <a href="mailto:${REPLY_TO}?subject=unsubscribe" style="color:#5d626b;">Unsubscribe</a></p>
   </div>
 </div></body></html>`;
 }
@@ -94,25 +94,25 @@ const STEPS: DripStep[] = [
     day: 2,
     column: 'drip_day2_sent_at',
     campaign: 'day2',
-    subject: (n) => `${n}, here's what makes Atleato different`,
+    subject: (n) => `${n}, here's what makes Evulto different`,
     build: (name, email) => {
       const url = upsellUrl(email, 'day2');
       const text = `Hey ${name},
 
 Most fitness apps are silent checklists you ignore.
 
-Atleato is the one where your AI coach actually CALLS your phone to get you training — and corrects your form in real time through your camera. Five coaches, each with their own voice and philosophy. Pick one and the whole app changes around them.
+Evulto is the one where your AI coach actually CALLS your phone to get you training — and corrects your form in real time through your camera. Five coaches, each with their own voice and philosophy. Pick one and the whole app changes around them.
 
 60-second look: https://atleato.com/showreel.html
 
 Your founding Vanguard pass (one-time $1.99, first 500 only): ${url}
 
 — Rahul
-Founder, Atleato`;
+Founder, Evulto`;
       const html = shell(
-        name, 'Why Atleato',
+        name, 'Why Evulto',
         `An AI coach that actually <span style="color:#ff8050;">calls your phone</span>.`,
-        `<p style="margin:0 0 14px;color:#c4c8cd;">Most fitness apps are silent checklists you ignore. Atleato calls you to train, then corrects your form live through your camera — five coaches, each with their own voice.</p>
+        `<p style="margin:0 0 14px;color:#c4c8cd;">Most fitness apps are silent checklists you ignore. Evulto calls you to train, then corrects your form live through your camera — five coaches, each with their own voice.</p>
          <p style="margin:0 0 4px;"><a href="https://atleato.com/showreel.html?utm_source=email&utm_medium=drip&utm_campaign=day2" style="color:#ff8050;font-weight:600;">Watch the 60-second showreel →</a></p>`,
         url, 'Claim your Vanguard pass',
       );

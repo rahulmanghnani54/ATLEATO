@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Atleato — "The Coach That Calls" — Veo 3 ad generator.
+Evulto — "The Coach That Calls" — Veo 3 ad generator.
 
 Generates the 6 × 8s scenes as MP4s using the Google Gemini API (Veo 3).
 
@@ -62,7 +62,7 @@ STYLE = (
     "Character: Dev, a 27-year-old man, lean but slightly soft build, warm brown "
     "skin, short black hair, light stubble, tired expressive eyes, wearing a "
     "charcoal-grey t-shirt and black gym shorts. Phone app UI is dark with a bold "
-    "lime-green accent labeled Atleato. No on-screen captions, no subtitles, no "
+    "lime-green accent labeled Evulto. No on-screen captions, no subtitles, no "
     "watermark, no warped text. "
 )
 
@@ -103,11 +103,11 @@ SCENES = [
     "'Rest day. Recover. I'll call you tomorrow.'",
 
     # 6 — LOGO + CTA
-    "Clean product shot: a black phone held up, screen showing the Atleato "
+    "Clean product shot: a black phone held up, screen showing the Evulto "
     "incoming-call screen glowing lime-green against a dark background, phone "
-    "rotating subtly, then resolving to the Atleato wordmark in lime-green on "
+    "rotating subtly, then resolving to the Evulto wordmark in lime-green on "
     "near-black. Premium, minimal, confident. Audio: one short ringtone sting, "
-    "then a deep confident voiceover: 'Atleato. Your coach actually calls.'",
+    "then a deep confident voiceover: 'Evulto. Your coach actually calls.'",
 ]
 
 

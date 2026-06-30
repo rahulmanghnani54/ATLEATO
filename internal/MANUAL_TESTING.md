@@ -60,7 +60,7 @@ First build takes 5-10 minutes. Subsequent builds are faster.
 ## D. Common Bugs to Watch For
 
 - White screen on launch -> check Metro bundler logs (in terminal)
-- Camera permission denied -> re-grant in phone Settings -> Apps -> Atleato
+- Camera permission denied -> re-grant in phone Settings -> Apps -> Evulto
 - Notifications not arriving -> ensure notifications enabled
 - Wake-up calls not ringing -> check Do Not Disturb is OFF
 - Supabase data not loading -> check internet, check .env.local has SUPABASE_URL/KEY

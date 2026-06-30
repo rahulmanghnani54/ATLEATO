@@ -1,5 +1,5 @@
 /**
- * Atleato Theme — Direction C (Nike/Telegram)
+ * Evulto Theme — Direction C (Nike/Telegram)
  *
  * Migrated from v0 (Apple/Stark dark + volt-green everywhere + Anton+Mono+Inter triad)
  * to v1 (warmer dark + persona-accent primary + Plus Jakarta Sans + Inter +
@@ -38,7 +38,7 @@ export const Colors = {
   textTertiary: 'rgba(245,245,244,0.38)',
   textMuted: 'rgba(245,245,244,0.50)',
 
-  // ── PRIMARY — Atleato brand orange (replaces volt-green default) ───────────
+  // ── PRIMARY — Evulto brand orange (replaces volt-green default) ───────────
   // This is the new default accent. Used for non-persona buttons, brand
   // moments, and the logo.
   primary: '#e05a26',

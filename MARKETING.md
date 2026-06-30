@@ -1,6 +1,6 @@
-# Atleato — Marketing Copy & Campaign Kit
+# Evulto — Marketing Copy & Campaign Kit
 
-The single source of truth for how we describe Atleato. Everything downstream
+The single source of truth for how we describe Evulto. Everything downstream
 (ads, posts, emails, video, DMs) reuses these. Don't reinvent the pitch per
 channel — adapt tone, keep the substance identical.
 
@@ -22,7 +22,7 @@ sentence of any DM. If you only get one sentence, it's this one.
 ## 2. The Pitch (3 lines)
 
 > Most fitness apps are silent checklists you ignore.
-> Atleato gives you an AI coach with a personality who calls your phone to get you training, corrects your form live through your camera, and turns your runs into a map you conquer.
+> Evulto gives you an AI coach with a personality who calls your phone to get you training, corrects your form live through your camera, and turns your runs into a map you conquer.
 > One-time $1.99 for a founding Vanguard pass — first 500 only, then it's gone.
 
 Use this as: landing sub-headline, Product Hunt tagline, the body of a cold DM,
@@ -42,7 +42,7 @@ already on you. Pick from five legends, each with their own voice, philosophy,
 and attitude."
 
 **[0:15–0:30] — Form correction (screen-record the form coach)**
-"Start your set. Atleato watches through your camera and corrects your form in
+"Start your set. Evulto watches through your camera and corrects your form in
 real time — knees caving, depth, bar path — the stuff a $80/hour trainer
 charges for. Free, in your pocket."
 

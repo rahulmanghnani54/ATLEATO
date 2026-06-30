@@ -10,7 +10,7 @@ Go to: https://play.google.com/console/u/0/developers/{your-dev-id}/app/{your-ap
 
 ### Product 1: PRO Monthly
 - Product ID: `atleato_pro_monthly`
-- Name: "Atleato PRO — Monthly"
+- Name: "Evulto PRO — Monthly"
 - Description: "3 coaches, AI form correction, reward chests, physique photos, ringtone picker, unlimited streak freezes."
 - Base plan: Auto-renewing, monthly billing period
 - Price: $9.99 USD (other regions auto-converted)
@@ -19,21 +19,21 @@ Go to: https://play.google.com/console/u/0/developers/{your-dev-id}/app/{your-ap
 
 ### Product 2: PRO Yearly
 - Product ID: `atleato_pro_yearly`
-- Name: "Atleato PRO — Yearly (Save 15%)"
+- Name: "Evulto PRO — Yearly (Save 15%)"
 - Description: Same as monthly + "Save 15% with annual billing"
 - Base plan: Auto-renewing, yearly
 - Price: $101.90 USD (= $9.99 x 12 x 0.85)
 
 ### Product 3: LEGEND Monthly
 - Product ID: `atleato_legend_monthly`
-- Name: "Atleato LEGEND — Monthly"
+- Name: "Evulto LEGEND — Monthly"
 - Description: "All 5 coaches, advanced form AI + video review, snooze re-calls, territory heatmap, voice customization."
 - Base plan: Auto-renewing, monthly
 - Price: $19.99 USD
 
 ### Product 4: LEGEND Yearly
 - Product ID: `atleato_legend_yearly`
-- Name: "Atleato LEGEND — Yearly (Save 20%)"
+- Name: "Evulto LEGEND — Yearly (Save 20%)"
 - Description: Same as monthly + "Save 20% with annual billing"
 - Base plan: Auto-renewing, yearly
 - Price: $191.90 USD (= $19.99 x 12 x 0.80)

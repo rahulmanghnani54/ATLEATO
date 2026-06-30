@@ -44,7 +44,7 @@ module.exports = ({ config }) => {
   // (lib/wearableHealth) lazy-loads + no-ops when the native modules absent.
   //   eas env:create --environment preview --name EXPO_PUBLIC_ENABLE_HEALTH --value 1
   if (healthEnabled) {
-    const HEALTH_USAGE = 'Atleato reads your steps, heart rate, HRV and sleep to calculate daily recovery and adjust your training.';
+    const HEALTH_USAGE = 'Evulto reads your steps, heart rate, HRV and sleep to calculate daily recovery and adjust your training.';
     expo.plugins = [
       ...(expo.plugins ?? []),
       'react-native-health-connect',

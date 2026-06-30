@@ -1,5 +1,5 @@
 // Capture each .card from docs/product-images.html as a 1600x1200 PNG.
-// These ARE the actual welcome-email/upsell design — pixel-perfect Atleato brand.
+// These ARE the actual welcome-email/upsell design — pixel-perfect Evulto brand.
 // Run: node scripts/capture-product-images.js
 const puppeteer = require('puppeteer');
 const path = require('path');
@@ -44,5 +44,5 @@ const targets = [
   }
 
   await browser.close();
-  console.log('\nDone. 4 images captured at 1600x1200 from the real Atleato design pages.');
+  console.log('\nDone. 4 images captured at 1600x1200 from the real Evulto design pages.');
 })();

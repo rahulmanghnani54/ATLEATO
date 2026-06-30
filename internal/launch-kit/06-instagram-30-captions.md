@@ -4,7 +4,7 @@ Use Buffer or Later to schedule. Aim for 1 post/day, 6-9 AM local time. Mix Reel
 
 ---
 
-## WEEK 1 — Awareness ("What is Atleato?")
+## WEEK 1 — Awareness ("What is Evulto?")
 
 ### Day 1 — Reel: The Wake-Up Call Demo
 ```
@@ -12,7 +12,7 @@ POV: It's 5 AM and your AI coach just called your phone like an actual incoming 
 
 No more dismissable notifications. Coach calls. Full screen. Loud ringtone. Decline? Calls back in 5.
 
-This is Atleato. 5 AI coaches that won't let you skip a workout.
+This is Evulto. 5 AI coaches that won't let you skip a workout.
 
 Launching this month → atleato.com (link in bio)
 
@@ -44,7 +44,7 @@ Slide 1: "Every fitness app feels the same."
 Slide 2: "Generic interface, generic voice, generic advice."
 Slide 3: "No personality. No drama. No story."
 Slide 4: "That's why people quit within 7 days."
-Slide 5: "Atleato gives you 5 distinct coach personalities to train under."
+Slide 5: "Evulto gives you 5 distinct coach personalities to train under."
 Slide 6: "Each one transforms the entire app — colors, programs, voice."
 Slide 7: "Pick yours → atleato.com"
 
@@ -63,7 +63,7 @@ Back rounding? Vibration + voice.
 
 All on-device. No cloud. No upload.
 
-This is Atleato Form Coach 🎯
+This is Evulto Form Coach 🎯
 
 #tech #ai #fitnesstech #computervision #posedetection #ml
 ```
@@ -80,7 +80,7 @@ I realized: nobody ignores a phone CALL.
 
 So I built one for fitness.
 
-12 months later, Atleato launches this month. AI coaches that actually call your phone like a real coach checking in.
+12 months later, Evulto launches this month. AI coaches that actually call your phone like a real coach checking in.
 
 Wake-up rate: 12% → 91%.
 
@@ -112,7 +112,7 @@ Slide 1: "I've used 14 fitness apps in 7 years."
 Slide 2: "I've finished exactly 0 of their workout programs."
 Slide 3: "Not because I'm lazy. Because they're all the same."
 Slide 4: "Same UI. Same friendly tone. Same dashboard."
-Slide 5: "I built Atleato to feel like 5 different apps in one."
+Slide 5: "I built Evulto to feel like 5 different apps in one."
 Slide 6: "Each coach transforms the entire experience."
 Slide 7: "Variety = adherence. Adherence = results."
 Slide 8: "Launch this month. Join: atleato.com"
@@ -156,7 +156,7 @@ The discipline you need this week.
 
 ### Day 10 — Carousel: Pricing Breakdown
 ```
-Slide 1: "Atleato pricing — no BS."
+Slide 1: "Evulto pricing — no BS."
 Slide 2: "FREE FOREVER — 1 coach, all workouts, nutrition, wake-up calls"
 Slide 3: "PRO $9.99/mo — 3 coaches, AI form check, reward chests"
 Slide 4: "LEGEND $19.99/mo — All 5 coaches, video review, voice tuning"
@@ -201,7 +201,7 @@ When you want to quit, you've got one more rep.
 
 ### Day 13 — Carousel: Wake-Up Call Mechanics
 ```
-Slide 1: "How Atleato wake-up calls actually work:"
+Slide 1: "How Evulto wake-up calls actually work:"
 Slide 2: "Set a time. Pick a ringtone."
 Slide 3: "Tomorrow, your phone RINGS like an incoming call."
 Slide 4: "Full screen. Full ringtone. Persistent vibration."
@@ -214,9 +214,9 @@ Slide 9: "Launch this month. Lock your access: atleato.com"
 #wakeupcall #5amclub #fitnessmotivation #app
 ```
 
-### Day 14 — Reel: Day In The Life with Atleato
+### Day 14 — Reel: Day In The Life with Evulto
 ```
-A day on Atleato:
+A day on Evulto:
 
 5:00 AM — Phone RINGS. Coach Iron yells "WAKE UP!"
 5:15 AM — Open app, see today's workout
@@ -237,7 +237,7 @@ Want this day? → atleato.com
 
 ### Day 15 — Static: Waitlist Counter
 ```
-{WAITLIST_COUNT}+ athletes on the Atleato waitlist.
+{WAITLIST_COUNT}+ athletes on the Evulto waitlist.
 
 {VIP_REMAINING} Vanguard Passes remaining.
 
@@ -250,7 +250,7 @@ Once they're gone, they're gone forever.
 
 ### Day 16 — Carousel: Beta Tester Quotes
 ```
-Slide 1: "What beta testers said about Atleato..."
+Slide 1: "What beta testers said about Evulto..."
 Slide 2: ⭐ "The persona switching is wild." — Marcus, beta tester
 Slide 3: ⭐ "First alarm I haven't slept through in 4 years." — Priya
 Slide 4: ⭐ "The 1-of-1 Vanguard Badge thing is genius." — David
@@ -263,7 +263,7 @@ Slide 7: "Want in? → atleato.com"
 
 ### Day 17 — Reel: Form Mistake Compilation
 ```
-3 form mistakes Atleato catches in REAL TIME:
+3 form mistakes Evulto catches in REAL TIME:
 
 1. Knees caving on squats → red overlay + "DRIVE THEM OUT!"
 2. Back rounding on deadlifts → vibration + "FLAT BACK!"
@@ -311,7 +311,7 @@ Which one is YOU?
 
 ### Day 20 — Carousel: Pre-Launch Roadmap
 ```
-Slide 1: "Atleato roadmap — what's coming"
+Slide 1: "Evulto roadmap — what's coming"
 Slide 2: "✅ Done — Core training, nutrition, wake-up calls"
 Slide 3: "✅ Done — 5 coaches, persona theming"
 Slide 4: "✅ Done — AI form correction"
@@ -326,7 +326,7 @@ Slide 9: "Launch waitlist: atleato.com"
 
 ### Day 21 — Static: Behind The Scenes Tech
 ```
-Atleato tech stack:
+Evulto tech stack:
 
 ⚛️  React Native + Expo SDK 54
 🧠 MoveNet (on-device pose detection)
@@ -351,7 +351,7 @@ Time: 12 months solo
 
 Set your countdown.
 
-⏰ Atleato drops on Google Play in 7 days.
+⏰ Evulto drops on Google Play in 7 days.
 
 Vanguard Pass closes at launch. Final {VIP_REMAINING} spots.
 
@@ -362,7 +362,7 @@ Vanguard Pass closes at launch. Final {VIP_REMAINING} spots.
 
 ### Day 23 — Carousel: The 5 Hardest Parts
 ```
-Slide 1: "5 hardest parts of building Atleato:"
+Slide 1: "5 hardest parts of building Evulto:"
 Slide 2: "Making wake-up calls ring like real calls — 3 weeks of debugging"
 Slide 3: "On-device pose detection at 30fps — 5 weeks"
 Slide 4: "Per-coach voice tuning — 2 weeks per persona"
@@ -404,7 +404,7 @@ Closes on launch day. {VIP_REMAINING} remaining.
 
 ### Day 26 — Carousel: What Free Includes
 ```
-Slide 1: "FREE tier on Atleato — fully featured."
+Slide 1: "FREE tier on Evulto — fully featured."
 Slide 2: "✅ 1 coach (pick at signup)"
 Slide 3: "✅ Full workout programs (push, pull, legs, etc)"
 Slide 4: "✅ Nutrition tracking (1.2M food database)"
@@ -432,7 +432,7 @@ Final chance to be #001-500.
 
 ### Day 28 — Static: The Tagline
 ```
-ATLEATO™
+EVULTO™
 Your Coach Calls.
 
 No more alarms.
@@ -453,7 +453,7 @@ TOMORROW.
 
 Google Play.
 
-Atleato goes live.
+Evulto goes live.
 
 🔥
 
@@ -464,7 +464,7 @@ Atleato goes live.
 
 ### Day 30 — LAUNCH DAY
 ```
-🚀 ATLEATO IS LIVE 🚀
+🚀 EVULTO IS LIVE 🚀
 
 5 AI coaches. Real wake-up calls. Live form correction. Territory conquest.
 

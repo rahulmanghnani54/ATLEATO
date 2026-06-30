@@ -66,7 +66,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ---
 
-# Atleato — Project Guide
+# Evulto — Project Guide
 
 AI fitness coaching app. Pre-launch: collecting a waitlist while finishing the app. Five fictional AI "coach" personas; the hooks are **the coach calls your phone** and **live camera form correction**.
 

@@ -1,4 +1,4 @@
-# Atleato™ Paywall System — Design Spec
+# Evulto™ Paywall System — Design Spec
 
 ## Goal
 

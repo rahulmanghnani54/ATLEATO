@@ -103,7 +103,7 @@ export async function ensureNotifeePermission(): Promise<AuthorizationStatus> {
         'android.permission.POST_NOTIFICATIONS' as any,
         {
           title: 'Allow Coach Calls',
-          message: 'Atleato needs notification permission to ring you with wake-up + workout calls.',
+          message: 'Evulto needs notification permission to ring you with wake-up + workout calls.',
           buttonPositive: 'Allow',
           buttonNegative: 'Not now',
         },

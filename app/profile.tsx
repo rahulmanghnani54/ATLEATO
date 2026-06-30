@@ -542,8 +542,8 @@ export default function ProfileScreen() {
           )}
         </SettingsGroup>
 
-        {/* ── About Atleato — marketing links + share ── */}
-        <SettingsGroup title="About Atleato">
+        {/* ── About Evulto — marketing links + share ── */}
+        <SettingsGroup title="About Evulto">
           <SettingsRow
             Icon={Film}
             iconColor={programColor}
@@ -574,15 +574,15 @@ export default function ProfileScreen() {
           <SettingsRow
             Icon={Share2}
             iconColor={programColor}
-            label="Share Atleato"
+            label="Share Evulto"
             sub="Send the showreel to a friend"
             trailIcon={ChevronRight}
             onPress={() =>
               Share.share({
                 message:
-                  "Atleato — your coach calls. 5 legend coaches, real wake-up calls, live AI form correction. Watch the 60-sec showreel: https://atleato.com/showreel.html",
+                  "Evulto — your coach calls. 5 legend coaches, real wake-up calls, live AI form correction. Watch the 60-sec showreel: https://atleato.com/showreel.html",
                 url: 'https://atleato.com/showreel.html',
-                title: 'Atleato — Your Coach Calls',
+                title: 'Evulto — Your Coach Calls',
               }).catch(() => {})
             }
           />
@@ -652,15 +652,15 @@ export default function ProfileScreen() {
 
         {/* Branded footer — claim trademark + show domain + dated copyright */}
         <View style={styles.brandFooter}>
-          <Text style={styles.brandMark}>Atleato™</Text>
+          <Text style={styles.brandMark}>Evulto™</Text>
           <Text style={styles.brandTag}>TRAIN  ·  FUEL  ·  RISE</Text>
           <Text style={styles.brandUrl}>atleato.com</Text>
           <Text style={styles.brandCopyright}>
-            © {new Date().getFullYear()} Atleato.  v1.0.0
+            © {new Date().getFullYear()} Evulto.  v1.0.0
           </Text>
           <Text style={styles.brandLegal}>
             Coach Hub™, PR Shelf™, Morning Brief™, Streak Hero™ and Coach Calls™ are
-            trademarks of Atleato. All persona theming, voice routing, and form-coach
+            trademarks of Evulto. All persona theming, voice routing, and form-coach
             biomechanics analysis are proprietary.
           </Text>
         </View>

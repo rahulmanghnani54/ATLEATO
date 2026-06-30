@@ -9,7 +9,7 @@ fs.mkdirSync(OUT_DIR, { recursive: true });
 
 const W = 1600, H = 1200;
 
-// Reusable: Atleato A logo (orange gradient + crossbar cutout)
+// Reusable: Evulto A logo (orange gradient + crossbar cutout)
 function logoA(x, y, size, barColor = '#0a0b0d') {
   const s = size / 100;
   // polygon: 50,8 14,92 30,92 50,42 70,92 86,92 → scaled by s and offset
@@ -41,7 +41,7 @@ const defs = `
   </defs>
 `;
 
-// ── Image 1: HERO — "VIP Vanguard Pass — Atleato" ──
+// ── Image 1: HERO — "VIP Vanguard Pass — Evulto" ──
 const hero = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
   ${defs}
   <rect width="${W}" height="${H}" fill="url(#bgGrad)"/>
@@ -51,7 +51,7 @@ const hero = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
   <text x="${W/2}" y="780" text-anchor="middle" font-family="Arial Black, Helvetica, sans-serif" font-size="56" font-weight="800" fill="url(#orangeText)" letter-spacing="6">1 OF 500 · LIFETIME ACCESS</text>
   <line x1="${W/2 - 200}" y1="850" x2="${W/2 + 200}" y2="850" stroke="#ff6b35" stroke-width="3"/>
   <text x="${W/2}" y="930" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, sans-serif" font-size="38" font-weight="500" fill="#8b909a">Train under a legend. Your coach calls.</text>
-  <text x="${W/2}" y="1100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="26" font-weight="700" fill="#d4ff3d" letter-spacing="4">$1.99 · ATLEATO.COM</text>
+  <text x="${W/2}" y="1100" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="26" font-weight="700" fill="#d4ff3d" letter-spacing="4">$1.99 · EVULTO.COM</text>
 </svg>`;
 
 // ── Image 2: 5 COACHES LINEUP ──
@@ -81,7 +81,7 @@ const lineup = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
   ${defs}
   <rect width="${W}" height="${H}" fill="${'#0a0b0d'}"/>
   ${logoA(80, 80, 110)}
-  <text x="220" y="155" font-family="Arial Black, sans-serif" font-size="44" font-weight="900" fill="#ffffff" letter-spacing="-1">Atleato</text>
+  <text x="220" y="155" font-family="Arial Black, sans-serif" font-size="44" font-weight="900" fill="#ffffff" letter-spacing="-1">Evulto</text>
   <text x="${W - 80}" y="155" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="22" fill="#8b909a" letter-spacing="3">// YOUR LINEUP</text>
   <text x="100" y="290" font-family="Arial Black, sans-serif" font-size="96" font-weight="900" fill="#ffffff" letter-spacing="-3">5 LEGENDS. <tspan fill="url(#orangeText)">1 APP.</tspan></text>
   ${coachCards}
@@ -98,7 +98,7 @@ const callImg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"
   </radialGradient>
   <ellipse cx="${W/2}" cy="500" rx="900" ry="600" fill="url(#redGlow)"/>
   ${logoA(80, 80, 110)}
-  <text x="220" y="155" font-family="Arial Black, sans-serif" font-size="44" font-weight="900" fill="#ffffff" letter-spacing="-1">Atleato</text>
+  <text x="220" y="155" font-family="Arial Black, sans-serif" font-size="44" font-weight="900" fill="#ffffff" letter-spacing="-1">Evulto</text>
   <!-- Phone frame -->
   <rect x="${W/2 - 200}" y="320" width="400" height="700" rx="50" fill="#15171b" stroke="#1d2026" stroke-width="6"/>
   <!-- Call pulse rings -->

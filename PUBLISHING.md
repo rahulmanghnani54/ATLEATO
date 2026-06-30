@@ -1,4 +1,4 @@
-# Atleato — Publishing Checklist
+# Evulto — Publishing Checklist
 
 Everything we need when we hit "Submit" on Google Play Console.
 
@@ -8,8 +8,8 @@ Everything we need when we hit "Submit" on Google Play Console.
 
 | Field | Value |
 |---|---|
-| **Play Store title** | `Atleato™ — Your Coach Calls` *(28 chars)* |
-| **App label (under icon)** | `Atleato` *(short, clean)* |
+| **Play Store title** | `Evulto™ — Your Coach Calls` *(28 chars)* |
+| **App label (under icon)** | `Evulto` *(short, clean)* |
 | **Package name** | `com.madsales.atleato` |
 | **Category** | Health & Fitness *(NOT Sports — better discovery)* |
 | **Pricing** | Free *(with in-app purchases later)* |
@@ -34,7 +34,7 @@ Everything we need when we hit "Submit" on Google Play Console.
 Below is a draft long description. Tweak before submitting.
 
 ```
-ATLEATO — YOUR COACH CALLS.
+EVULTO — YOUR COACH CALLS.
 
 This isn't another fitness tracker. This is a coaching system that calls
 you out, calls you up, and calls the shots.
@@ -47,7 +47,7 @@ Their voice, their workouts, their nutrition philosophy — applied to your
 body.
 
 AI FORM COACH
-Point your phone at yourself and lift. Atleato analyses your form in real
+Point your phone at yourself and lift. Evulto analyses your form in real
 time using on-device pose detection and tells you what to fix. No more
 guessing if you're squatting deep enough.
 
@@ -79,7 +79,7 @@ This is for the hungry. Not the curious.
 Built by an athlete, for athletes. Privacy-first (your physique photos
 stay encrypted on your device). Zero ads. Zero noise.
 
-Download Atleato. Your coach is calling.
+Download Evulto. Your coach is calling.
 ```
 
 ---
@@ -161,4 +161,4 @@ Download Atleato. Your coach is calling.
 
 ---
 
-*Last updated: title locked to `Atleato™ — Your Coach Calls`.*
+*Last updated: title locked to `Evulto™ — Your Coach Calls`.*

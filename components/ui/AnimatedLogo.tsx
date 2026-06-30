@@ -1,5 +1,5 @@
 /**
- * AnimatedLogo — the Atleato wordmark with a cinematic intro animation.
+ * AnimatedLogo — the Evulto wordmark with a cinematic intro animation.
  *
  * Sequence (~1.5s):
  *   1. "A" punches in from left (scale 0→1, x -40→0) — bounce easing

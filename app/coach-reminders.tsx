@@ -59,7 +59,7 @@ export default function CoachRemindersScreen() {
     if (!currentlyOn && permission === 'denied') {
       Alert.alert(
         'Notifications blocked',
-        'Enable notifications for Atleato in your phone Settings, then try again.',
+        'Enable notifications for Evulto in your phone Settings, then try again.',
       );
     }
   };
@@ -84,7 +84,7 @@ export default function CoachRemindersScreen() {
     if (status === AuthorizationStatus.DENIED) {
       Alert.alert(
         'Notifications blocked',
-        'Opened your phone settings — turn on Notifications for Atleato and try again.',
+        'Opened your phone settings — turn on Notifications for Evulto and try again.',
       );
       return;
     }
@@ -106,7 +106,7 @@ export default function CoachRemindersScreen() {
       } catch (e2: any) {
         Alert.alert(
           'Could not start call',
-          `Reason: ${e2?.message ?? String(e2)}\n\nCheck: Notifications + Battery → Unrestricted for Atleato.`,
+          `Reason: ${e2?.message ?? String(e2)}\n\nCheck: Notifications + Battery → Unrestricted for Evulto.`,
         );
         return;
       }
@@ -261,7 +261,7 @@ export default function CoachRemindersScreen() {
             {permission === 'denied' && (
               <View style={styles.warningCard}>
                 <Text style={styles.warningText}>
-                  ⚠ Notifications are blocked. Open your phone&apos;s Settings → Apps → Atleato →
+                  ⚠ Notifications are blocked. Open your phone&apos;s Settings → Apps → Evulto →
                   Notifications to allow them.
                 </Text>
               </View>

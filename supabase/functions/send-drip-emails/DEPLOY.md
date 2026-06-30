@@ -63,7 +63,7 @@ Returns `{ ok:true, sent:{ day2:N, day5:N, day9:N }, claimed, left }`.
 
 ## Copy
 Lives in the function (`STEPS` array). Mirrors MARKETING.md:
-- **Day 2** — "what makes Atleato different" + showreel
+- **Day 2** — "what makes Evulto different" + showreel
 - **Day 5** — live scarcity ("X of 500 claimed, Y left", pulled from
   `vanguard_claimed_count`)
 - **Day 9** — last-call deadline

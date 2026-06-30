@@ -80,8 +80,8 @@ export default function ReferralScreen() {
       // attributed to this user — that's what counts toward the reward.
       const link = await createReferralLink(code);
       await Share.share({
-        message: `Join me on Atleato — an AI coach that actually calls your phone. Install with my link: ${link}`,
-        title: 'Atleato — Train Under a Legend',
+        message: `Join me on Evulto — an AI coach that actually calls your phone. Install with my link: ${link}`,
+        title: 'Evulto — Train Under a Legend',
       });
       // No optimistic increment — the count reflects REAL installs, refreshed
       // on focus / pull-to-refresh. Sharing isn't a referral; an install is.
@@ -183,7 +183,7 @@ export default function ReferralScreen() {
           <Text style={styles.howLabel}>HOW IT WORKS</Text>
           {[
             { n: '1', text: 'Share your link with friends' },
-            { n: '2', text: 'They tap it and install Atleato — the install is credited to you automatically' },
+            { n: '2', text: 'They tap it and install Evulto — the install is credited to you automatically' },
             { n: '3', text: 'Hit 10 active referrals → 1 month of Legend, free. Repeatable — refer more, earn more' },
           ].map((step) => (
             <View key={step.n} style={styles.howRow}>

@@ -4,7 +4,7 @@
 
 1. Go to https://dashboard.stripe.com/payment-links
 2. Click "+ New"
-3. Product: "Atleato VIP Founder's Pass — $1.99 Deposit"
+3. Product: "Evulto VIP Founder's Pass — $1.99 Deposit"
 4. Price: $1.99 USD, one-time
 5. Description: "Reserves your 90% off lifetime pricing + Founder badge. Remaining $18 charged at launch."
 6. Click "Create link"

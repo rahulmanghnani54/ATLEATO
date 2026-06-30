@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Atleato full lockup on BLACK background — polygon A (with bar cutout)
+<!-- Evulto full lockup on BLACK background — polygon A (with bar cutout)
      + WHITE wordmark. Matches atleato.com header. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" fill="none">
   <defs>
@@ -11,6 +11,6 @@
   <rect x="0" y="0" width="400" height="100" fill="#0a0b0d"/>
   <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#atleatoGradFullBlk)"/>
   <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
-  <text x="108" y="76" font-family="Arial Black, Helvetica, sans-serif" font-size="62" font-weight="900" fill="#ffffff" letter-spacing="-2">Atleato</text>
+  <text x="108" y="76" font-family="Arial Black, Helvetica, sans-serif" font-size="62" font-weight="900" fill="#ffffff" letter-spacing="-2">Evulto</text>
   <text x="345" y="34" font-family="monospace" font-size="13" fill="#888">™</text>
 </svg>

@@ -27,7 +27,7 @@ const jobs = [
   // logo-full-black (icon + white wordmark on black bar)
   ['logo-full-black.svg', 'logo-full-black-512.png',  2048, 512 ],
 
-  // logo-wordmark (just "Atleato" text, transparent)
+  // logo-wordmark (just "Evulto" text, transparent)
   ['logo-wordmark.svg',   'logo-wordmark-512.png',    1638, 512 ],
 ];
 

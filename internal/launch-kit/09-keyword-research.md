@@ -1,4 +1,4 @@
-# Google Play Keyword Research — Atleato
+# Google Play Keyword Research — Evulto
 
 Curated keyword list with priority tiers. Use these in: app title, short description, full description (top 250 chars are highest weight), promo text, in-app text.
 
@@ -6,7 +6,7 @@ Curated keyword list with priority tiers. Use these in: app title, short descrip
 
 ## TIER 1 — Primary Keywords (use 8-12x in description)
 
-These are HIGH VOLUME + ALIGNED with what Atleato actually does. Mention each at least 3 times naturally.
+These are HIGH VOLUME + ALIGNED with what Evulto actually does. Mention each at least 3 times naturally.
 
 | Keyword | Monthly searches | Competition | Why |
 |---|---|---|---|
@@ -25,7 +25,7 @@ These are HIGH VOLUME + ALIGNED with what Atleato actually does. Mention each at
 
 ## TIER 2 — Unique Differentiators (use 4-6x)
 
-These are LOW competition + UNIQUE to Atleato. Mention to capture "blue ocean" search.
+These are LOW competition + UNIQUE to Evulto. Mention to capture "blue ocean" search.
 
 | Keyword | Why it's gold |
 |---|---|
@@ -86,12 +86,12 @@ Your app TITLE has the highest keyword weight. Use one of these (max 30 chars):
 
 | Title Option | Char count | Keyword power |
 |---|---|---|
-| `Atleato — Your Coach Calls` | 27 | Brand-focused |
-| `Atleato: AI Fitness Coach` | 26 | Keyword-focused (**recommended**) |
-| `Atleato — AI Gym Coach App` | 27 | Keyword + brand |
-| `Atleato: Workout & Coach` | 25 | Generic but searchable |
+| `Evulto — Your Coach Calls` | 27 | Brand-focused |
+| `Evulto: AI Fitness Coach` | 26 | Keyword-focused (**recommended**) |
+| `Evulto — AI Gym Coach App` | 27 | Keyword + brand |
+| `Evulto: Workout & Coach` | 25 | Generic but searchable |
 
-**Recommendation:** `Atleato: AI Fitness Coach` — captures the 2 highest-volume keywords ("AI fitness" + "coach") while preserving brand.
+**Recommendation:** `Evulto: AI Fitness Coach` — captures the 2 highest-volume keywords ("AI fitness" + "coach") while preserving brand.
 
 ---
 

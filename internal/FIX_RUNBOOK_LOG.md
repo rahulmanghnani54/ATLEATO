@@ -56,7 +56,7 @@ Last verified: **2026-06-10**
 **Recommendation:** still rotate Lemon Squeezy webhook secret + Resend API key as hygiene + enable Resend webhook restrictions.
 
 ### 1.6 MFA everywhere
-**Status:** ⏳ User action across 6 providers (Namecheap, Cloudflare, GitHub, Supabase, Lemon Squeezy, Firebase, Gmail/Atleato mailbox)
+**Status:** ⏳ User action across 6 providers (Namecheap, Cloudflare, GitHub, Supabase, Lemon Squeezy, Firebase, Gmail/Evulto mailbox)
 
 ---
 
