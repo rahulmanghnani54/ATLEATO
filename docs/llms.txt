@@ -20,11 +20,11 @@ Evulto turns "AI fitness app" into something that actually shows up: instead of 
 Android (Google Play). Currently in closed beta — join the waitlist for early access.
 
 ## Key pages
-- [Home](https://atleato.com/): Product overview
-- [Pricing](https://atleato.com/#pricing): Free, Pro, and Legend tiers
-- [FAQ](https://atleato.com/#faq): Common questions answered
-- [Privacy Policy](https://atleato.com/privacy)
-- [Terms of Service](https://atleato.com/terms)
+- [Home](https://evulto.com/): Product overview
+- [Pricing](https://evulto.com/#pricing): Free, Pro, and Legend tiers
+- [FAQ](https://evulto.com/#faq): Common questions answered
+- [Privacy Policy](https://evulto.com/privacy)
+- [Terms of Service](https://evulto.com/terms)
 
 ## Contact
-Email: hello@atleato.com
+Email: hello@evulto.com

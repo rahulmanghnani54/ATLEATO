@@ -1,4 +1,4 @@
-# Evulto — https://atleato.com
+# Evulto — https://evulto.com
 User-agent: *
 Allow: /
 
@@ -43,4 +43,4 @@ Allow: /
 User-agent: Applebot-Extended
 Allow: /
 
-Sitemap: https://atleato.com/sitemap.xml
+Sitemap: https://evulto.com/sitemap.xml

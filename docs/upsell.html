@@ -169,7 +169,7 @@
         </p>
 
         <div class="referral-box">
-          <code id="referral-link">https://atleato.com?ref=…</code>
+          <code id="referral-link">https://evulto.com?ref=…</code>
           <button class="referral-copy-btn" id="copy-btn">Copy Link</button>
         </div>
 
@@ -266,7 +266,7 @@
     }
 
     function generateBadge(em) {
-      if (!em) em = 'guest@atleato.com';
+      if (!em) em = 'guest@evulto.com';
       var h1 = hashStr(em, 7);
       var h2 = hashStr(em, 131);
       var h3 = hashStr(em, 977);
@@ -288,7 +288,7 @@
     }
 
     // ── Referral link + share buttons ──
-    var refUrl = 'https://atleato.com?ref=' + encodeURIComponent(email);
+    var refUrl = 'https://evulto.com?ref=' + encodeURIComponent(email);
     var refLinkEl = document.getElementById('referral-link');
     if (refLinkEl) refLinkEl.textContent = refUrl;
 
