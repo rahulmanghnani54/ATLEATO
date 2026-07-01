@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+  <title>Evulto — Your Coach Actually Calls You | AI Fitness Coach</title>
+  <meta name="description" content="Evulto is the AI fitness coach that phone-calls you awake and for workouts, corrects your form in real time, scans your meals, and backs off on rest days. Five coaches, one app. Join the waitlist free." />
+  <meta name="robots" content="noindex" />
+  <link rel="canonical" href="https://evulto.com/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Evulto — Your Coach Actually Calls You" />
+  <meta property="og:description" content="The AI fitness coach that phone-calls you awake, corrects your form live, and knows your rest days." />
+  <meta property="og:url" content="https://evulto.com/" />
+  <meta property="og:image" content="https://evulto.com/og-image.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#F4F7F5" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@graph":[
+    {"@type":"Organization","@id":"https://evulto.com/#organization","name":"Evulto","alternateName":["Evulto App","Evulto Fitness"],"url":"https://evulto.com/","logo":"https://evulto.com/assets/logo-icon-512.png","image":"https://evulto.com/og-image.png","slogan":"Your Coach Calls. No Excuses.","foundingDate":"2026","founder":{"@type":"Person","name":"Rahul"},"email":"hello@evulto.com","description":"Evulto is an independent AI fitness coaching app whose coaches phone-call you awake and for workouts, correct your exercise form in real time, scan your meals for macros, and adapt to your training plan.","sameAs":["https://instagram.com/atleato_app","https://www.tiktok.com/@atleato3","https://x.com/atleato","https://youtube.com/@atleato"]},
+    {"@type":"WebSite","@id":"https://evulto.com/#website","url":"https://evulto.com/","name":"Evulto","publisher":{"@id":"https://evulto.com/#organization"},"inLanguage":"en"},
+    {"@type":"MobileApplication","@id":"https://evulto.com/#app","name":"Evulto","url":"https://evulto.com/","description":"AI fitness coaching app with 5 coach personas, live form correction, an AI food scanner, and real wake-up & workout calls.","applicationCategory":"HealthApplication","operatingSystem":"Android","image":"https://evulto.com/og-image.png","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"1.99","priceCurrency":"USD","name":"Vanguard Pass"}]},
+    {"@type":"FAQPage","@id":"https://evulto.com/#faq","mainEntity":[
+      {"@type":"Question","name":"What is Evulto?","acceptedAnswer":{"@type":"Answer","text":"Evulto is an AI fitness coaching app for Android. Five coach personas phone-call you awake and for workouts, correct your form in real time using your camera, scan your meals for macros, and only call on training days."}},
+      {"@type":"Question","name":"How do Evulto's wake-up calls work?","acceptedAnswer":{"@type":"Answer","text":"Set a time and pick a ringtone. Your phone rings like an actual incoming call — full screen and vibration. Decline and your coach calls back in 5 minutes. It's not a notification you can swipe away."}},
+      {"@type":"Question","name":"Is Evulto free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The Free tier includes one coach, workouts, nutrition tracking, and wake-up & workout calls — forever, no card required."}},
+      {"@type":"Question","name":"What does the name Evulto mean?","acceptedAnswer":{"@type":"Answer","text":"Evulto is a coined brand name evoking 'exult' — the triumph of showing up and rising to your best."}}
+    ]}
+  ]}
+  </script>
+  <style>
+    :root{
+      --paper:#F4F7F5; --ink:#0A1F19; --accent:#12B981; --accent-ink:#0FA968;
+      --card:#FFFFFF; --border:#E1E8E4; --border-strong:#DCE5E0;
+      --ring-track:#D8E2DD; --icon-track:#E2EAE6; --muted:#5A6B63; --dim:#8A968F; --btn-ink:#07130F;
+      --phone-bg:#081712; --phone-border:#1F4A3A; --phone-track:#123C30; --phone-muted:#5E7268;
+      --font-d:'Sora',system-ui,sans-serif; --font-t:'Inter',system-ui,sans-serif;
+      --shadow:0 1px 2px rgba(10,31,25,0.04),0 14px 40px -18px rgba(10,31,25,0.14);
+      --maxw:1120px;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html{scroll-behavior:smooth;}
+    body{background:var(--paper);color:var(--ink);font-family:var(--font-t);line-height:1.6;-webkit-font-smoothing:antialiased;font-size:17px;overflow-x:hidden;}
+    .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;}
+    a{color:inherit;text-decoration:none;}
+    h1,h2,h3{font-family:var(--font-d);letter-spacing:-0.02em;line-height:1.05;font-weight:800;}
+    .accent{color:var(--accent-ink);}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:var(--btn-ink);font-weight:700;font-size:15px;padding:14px 26px;border-radius:100px;border:none;cursor:pointer;box-shadow:0 10px 24px -10px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .15s,filter .15s;}
+    .btn:hover{transform:translateY(-1px);filter:brightness(1.03);}
+    .btn-ghost{background:var(--card);color:var(--ink);border:1px solid var(--border-strong);box-shadow:none;}
+    .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-t);font-weight:700;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent-ink);}
+    .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent);animation:pulse 2s infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+    .muted{color:var(--muted);} .dim{color:var(--dim);}
+
+    /* Nav */
+    .nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);}
+    .nav-in{display:flex;align-items:center;justify-content:space-between;height:66px;}
+    .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-d);font-weight:800;font-size:20px;letter-spacing:-0.03em;}
+    .brand .mk{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:var(--btn-ink);font-family:var(--font-d);font-weight:800;font-size:18px;}
+    .nav-links{display:flex;align-items:center;gap:28px;font-size:14.5px;font-weight:500;color:var(--muted);}
+    .nav-links a:hover{color:var(--ink);}
+    .nav .btn{padding:10px 20px;font-size:14px;}
+    @media(max-width:820px){.nav-links a:not(.btn){display:none;}}
+
+    /* Hero */
+    .hero{padding:72px 0 40px;}
+    .hero-grid{display:grid;grid-template-columns:1.15fr 0.85fr;gap:56px;align-items:center;}
+    .h1{font-size:clamp(40px,6vw,68px);margin:20px 0 18px;}
+    .hero .sub{font-size:19px;color:var(--muted);max-width:520px;margin-bottom:26px;}
+    .wl-form{max-width:480px;}
+    .input-row{display:flex;gap:10px;background:var(--card);border:1px solid var(--border-strong);border-radius:100px;padding:6px 6px 6px 20px;box-shadow:var(--shadow);}
+    .input-row input{flex:1;border:none;outline:none;background:transparent;font-size:15.5px;color:var(--ink);font-family:var(--font-t);min-width:0;}
+    .input-row input::placeholder{color:var(--dim);}
+    .wl-msg{min-height:18px;font-size:13px;margin:10px 2px 0;}
+    .microcopy{font-size:13px;color:var(--dim);margin-top:12px;}
+    .badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}
+    .badge{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 15px;font-size:12.5px;color:var(--muted);font-weight:500;}
+
+    /* Ring */
+    .ring-card{background:var(--card);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow);padding:34px;display:flex;flex-direction:column;align-items:center;gap:14px;}
+    .ring{position:relative;width:210px;height:210px;}
+    .ring svg{transform:rotate(-90deg);}
+    .ring .track{fill:none;stroke:var(--ring-track);stroke-width:12;}
+    .ring .prog{fill:none;stroke:var(--accent);stroke-width:12;stroke-linecap:round;stroke-dasharray:571;stroke-dashoffset:34;}
+    .ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .ring .val b{font-family:var(--font-d);font-size:52px;font-weight:800;letter-spacing:-0.03em;}
+    .ring .val span{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-top:2px;}
+    .ring-cap{font-size:13.5px;color:var(--muted);text-align:center;}
+    .ring-cap b{color:var(--ink);}
+
+    /* Pillars */
+    .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:30px 0 8px;}
+    .pill{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;text-align:center;}
+    .pill .ic{font-size:22px;}
+    .pill b{display:block;font-family:var(--font-d);font-size:14px;margin:8px 0 3px;font-weight:700;}
+    .pill span{font-size:12.5px;color:var(--muted);}
+    @media(max-width:720px){.pillars{grid-template-columns:1fr 1fr;}}
+
+    /* Sections */
+    section{padding:64px 0;}
+    .sec-head{text-align:center;max-width:640px;margin:0 auto 44px;}
+    .sec-head h2{font-size:clamp(28px,4vw,44px);margin:14px 0 12px;}
+    .sec-head p{color:var(--muted);font-size:17px;}
+
+    /* Features */
+    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+    .fcard{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:30px;box-shadow:var(--shadow);}
+    .fcard .mini{width:60px;height:60px;position:relative;margin-bottom:18px;}
+    .fcard .mini svg{transform:rotate(-90deg);} .fcard .mini .t{fill:none;stroke:var(--icon-track);stroke-width:7;} .fcard .mini .p{fill:none;stroke:var(--accent);stroke-width:7;stroke-linecap:round;stroke-dasharray:150;stroke-dashoffset:35;}
+    .fcard .mini i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:22px;}
+    .fcard h3{font-size:20px;margin-bottom:8px;}
+    .fcard p{color:var(--muted);font-size:15px;}
+    @media(max-width:820px){.features{grid-template-columns:1fr;}}
+
+    /* Coach switcher */
+    .switch{background:var(--card);border:1px solid var(--border);border-radius:28px;padding:40px;box-shadow:var(--shadow);text-align:center;}
+    .chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:22px 0 10px;}
+    .chip{display:flex;align-items:center;gap:9px;background:var(--paper);border:1.5px solid var(--border-strong);border-radius:100px;padding:9px 16px 9px 12px;cursor:pointer;font-size:14px;font-weight:600;transition:transform .15s;}
+    .chip .sw{width:16px;height:16px;border-radius:50%;}
+    .chip:hover{transform:translateY(-1px);}
+    .chip.is-active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--paper));}
+    .switch .caption{color:var(--muted);font-size:15px;margin-top:14px;}
+    .switch .caption b{color:var(--accent-ink);}
+
+    /* Devices */
+    .devices{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;}
+    .phone{background:var(--phone-bg);border:1px solid var(--phone-border);border-radius:34px;padding:22px;color:#fff;box-shadow:0 30px 60px -30px rgba(10,31,25,0.5);}
+    .phone .notch{width:110px;height:6px;border-radius:100px;background:var(--phone-border);margin:0 auto 20px;}
+    .call{text-align:center;padding:14px 6px 6px;}
+    .call .who{width:84px;height:84px;border-radius:50%;background:color-mix(in srgb,var(--accent) 22%,var(--phone-bg));border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:var(--font-d);font-weight:800;font-size:30px;color:var(--accent);}
+    .call .lab{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--phone-muted);}
+    .call .nm{font-family:var(--font-d);font-size:22px;font-weight:800;margin:6px 0 2px;}
+    .call .q{color:var(--phone-muted);font-size:13px;font-style:italic;margin-bottom:22px;}
+    .call .acts{display:flex;justify-content:center;gap:44px;}
+    .call .acts div{text-align:center;}
+    .call .rb{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 7px;}
+    .call .rb.no{background:#F2432E;} .call .rb.yes{background:#12B981;}
+    .call .acts span{font-size:11px;color:var(--phone-muted);}
+    .dash .dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+    .dash .dh b{font-family:var(--font-d);font-size:15px;} .dash .dh span{font-size:11px;color:var(--phone-muted);letter-spacing:0.14em;text-transform:uppercase;}
+    .dash .dring{width:130px;height:130px;position:relative;margin:0 auto 20px;}
+    .dash .dring svg{transform:rotate(-90deg);} .dash .dring .t{fill:none;stroke:var(--phone-track);stroke-width:11;} .dash .dring .p{fill:none;stroke:var(--accent);stroke-width:11;stroke-linecap:round;stroke-dasharray:352;stroke-dashoffset:32;}
+    .dash .dring i{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-style:normal;}
+    .dash .dring i b{font-family:var(--font-d);font-size:34px;font-weight:800;} .dash .dring i span{font-size:9px;color:var(--phone-muted);letter-spacing:0.16em;text-transform:uppercase;}
+    .drow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--phone-border);font-size:13px;}
+    .drow span{color:var(--phone-muted);} .drow b{font-family:var(--font-d);font-weight:700;}
+    .drow .ok{color:var(--accent);}
+    @media(max-width:820px){.devices{grid-template-columns:1fr;max-width:380px;margin:0 auto;}}
+
+    /* Pricing */
+    .price{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:760px;margin:0 auto;}
+    .pcard{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:32px;box-shadow:var(--shadow);}
+    .pcard.feat{border:1.5px solid var(--accent);position:relative;}
+    .pcard .tag{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);font-weight:700;}
+    .pcard.feat .tag{color:var(--accent-ink);}
+    .pcard .amt{font-family:var(--font-d);font-size:44px;font-weight:800;margin:8px 0 2px;letter-spacing:-0.03em;}
+    .pcard .amt small{font-size:15px;color:var(--muted);font-weight:600;}
+    .pcard ul{list-style:none;margin:18px 0 22px;}
+    .pcard li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--muted);padding:5px 0;}
+    .pcard li::before{content:"✓";color:var(--accent);font-weight:800;}
+    .pcard .btn{width:100%;}
+    .pnote{text-align:center;color:var(--dim);font-size:13px;margin-top:20px;}
+    @media(max-width:640px){.price{grid-template-columns:1fr;}}
+
+    /* FAQ */
+    .faq{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
+    details{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;}
+    summary{font-family:var(--font-d);font-size:16px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;}
+    summary::-webkit-details-marker{display:none;}
+    summary .pm{color:var(--accent);font-size:20px;}
+    details p{color:var(--muted);font-size:15px;margin-top:12px;}
+
+    /* CTA + footer */
+    .cta{background:var(--ink);color:#fff;border-radius:28px;padding:56px 40px;text-align:center;}
+    .cta h2{font-size:clamp(28px,4vw,42px);color:#fff;margin-bottom:14px;}
+    .cta p{color:#9fb3aa;margin-bottom:26px;font-size:17px;}
+    .cta .input-row{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.14);}
+    .cta .input-row input{color:#fff;} .cta .input-row input::placeholder{color:#9fb3aa;}
+    .cta form{max-width:460px;margin:0 auto;}
+    footer{padding:50px 0 40px;border-top:1px solid var(--border);margin-top:70px;}
+    .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;}
+    .foot .links{display:flex;gap:22px;flex-wrap:wrap;font-size:14px;color:var(--muted);}
+    .foot .links a:hover{color:var(--ink);}
+    .foot .cr{font-size:12.5px;color:var(--dim);width:100%;text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
+    @media(max-width:820px){.hero-grid{grid-template-columns:1fr;gap:36px;}.ring-card{max-width:340px;}}
+  </style>
+</head>
+<body>
+  <!-- Nav -->
+  <nav class="nav"><div class="wrap nav-in">
+    <a class="brand" href="/"><span class="mk">e</span>Evulto</a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#coaches">Coaches</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+      <a href="#waitlist" class="btn">Join Free</a>
+    </div>
+  </div></nav>
+
+  <!-- Hero -->
+  <header class="hero"><div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>The coach that calls you</span>
+      <h1 class="h1">Your coach<br/><span class="accent">actually calls.</span></h1>
+      <p class="sub">Five AI coaches that phone-call you awake and for workouts — real two-way conversations, live form correction, and a plan that respects your rest days. The accountability you can't swipe away.</p>
+      <form id="hero-wl" class="wl-form" novalidate>
+        <div class="input-row">
+          <input type="email" name="email" placeholder="Enter your email" autocomplete="email" required />
+          <button type="submit" class="btn">Join Waitlist</button>
+        </div>
+        <div class="wl-msg"></div>
+        <p class="microcopy">Free forever. No credit card. <span class="dim">Android — iOS coming later.</span></p>
+      </form>
+      <div class="badges">
+        <span class="badge">🤖 Coming soon to Google Play</span>
+        <span class="badge">🍎 iOS coming later</span>
+      </div>
+    </div>
+    <div class="ring-card">
+      <div class="ring">
+        <svg viewBox="0 0 210 210"><circle class="track" cx="105" cy="105" r="91"/><circle class="prog" cx="105" cy="105" r="91"/></svg>
+        <div class="val"><b data-target="94">0</b><span>Form Score</span></div>
+      </div>
+      <p class="ring-cap"><b>Live form check.</b> Every rep scored on-device — 33 joints, real-time.</p>
+    </div>
+  </div></header>
+
+  <!-- Pillars -->
+  <div class="wrap"><div class="pillars">
+    <div class="pill"><div class="ic">📞</div><b>Wake-up calls</b><span>It rings. You rise.</span></div>
+    <div class="pill"><div class="ic">🎥</div><b>Live form check</b><span>Scored every rep</span></div>
+    <div class="pill"><div class="ic">🍎</div><b>AI food scanner</b><span>Snap → macros</span></div>
+    <div class="pill"><div class="ic">🌙</div><b>Rest-day aware</b><span>Silent when you recover</span></div>
+  </div></div>
+
+  <!-- Features -->
+  <section id="features"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>What you get</span><h2>A real coach, in software.</h2><p>Not another tracker you ignore — a coach that shows up, pushes when it counts, and backs off when it matters.</p></div>
+    <div class="features">
+      <div class="fcard">
+        <div class="mini"><svg viewBox="0 0 60 60"><circle class="t" cx="30" cy="30" r="24"/><circle class="p" cx="30" cy="30" r="24"/></svg><i>🎥</i></div>
+        <h3>AI Form Coach</h3>
+        <p>Point your phone and lift. On-device pose tracking checks 33 joints in real time and calls out exactly what to fix — knees caving, depth short, back rounding. And it tells you honestly when it can't see you.</p>
+      </div>
+      <div class="fcard">
+        <div class="mini"><svg viewBox="0 0 60 60"><circle class="t" cx="30" cy="30" r="24"/><circle class="p" cx="30" cy="30" r="24"/></svg><i>📞</i></div>
+        <h3>Real Wake-Up Calls</h3>
+        <p>Your phone rings like an actual call — full screen, ringtone, vibration. Decline, and your coach calls back in five minutes. It's not a notification you can swipe away at 6 AM.</p>
+      </div>
+      <div class="fcard">
+        <div class="mini"><svg viewBox="0 0 60 60"><circle class="t" cx="30" cy="30" r="24"/><circle class="p" cx="30" cy="30" r="24"/></svg><i>🌙</i></div>
+        <h3>Knows Your Rest Days</h3>
+        <p>Evulto reads your training plan and only calls on workout days. Rest days stay completely silent. A coach, not a nag — it pushes when it counts and lets you recover when it matters.</p>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- Coach switcher -->
+  <section id="coaches"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Five coaches, one app</span><h2>Pick a coach. Watch it transform.</h2><p>Every coach changes the whole experience — voice, program, nutrition philosophy, and the app's color. Tap one:</p></div>
+    <div class="switch">
+      <div class="chips">
+        <button class="chip is-active" data-accent="#12B981" data-coach="The Sculptor" aria-pressed="true"><span class="sw" style="background:#12B981"></span>The Sculptor</button>
+        <button class="chip" data-accent="#E0A83A" data-coach="The Monument" aria-pressed="false"><span class="sw" style="background:#E0A83A"></span>The Monument</button>
+        <button class="chip" data-accent="#3B9BF5" data-coach="The Analyst" aria-pressed="false"><span class="sw" style="background:#3B9BF5"></span>The Analyst</button>
+        <button class="chip" data-accent="#F2432E" data-coach="The Commander" aria-pressed="false"><span class="sw" style="background:#F2432E"></span>The Commander</button>
+        <button class="chip" data-accent="#8B5CF6" data-coach="The Architect" aria-pressed="false"><span class="sw" style="background:#8B5CF6"></span>The Architect</button>
+      </div>
+      <p class="caption">Now coaching as <b id="coach-active">The Sculptor</b> — the whole page just re-themed live, exactly like the app does.</p>
+    </div>
+  </div></section>
+
+  <!-- Devices -->
+  <section><div class="wrap">
+    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Inside the app</span><h2>It looks like a real call. Because it is one.</h2></div>
+    <div class="devices">
+      <div class="phone"><div class="notch"></div>
+        <div class="call">
+          <div class="who">TS</div>
+          <div class="lab">Incoming call · Wake-up</div>
+          <div class="nm">The Sculptor</div>
+          <div class="q">"Time to build. You with me?"</div>
+          <div class="acts">
+            <div><div class="rb no">✕</div><span>Decline</span></div>
+            <div><div class="rb yes">✓</div><span>Answer</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="phone"><div class="notch"></div>
+        <div class="dash">
+          <div class="dh"><b>Today's Set</b><span>Live</span></div>
+          <div class="dring"><svg viewBox="0 0 130 130"><circle class="t" cx="65" cy="65" r="56"/><circle class="p" cx="65" cy="65" r="56"/></svg><i><b data-target="94">0</b><span>Form</span></i></div>
+          <div class="drow"><span>Knee angle</span><b class="ok">92° · Good</b></div>
+          <div class="drow"><span>Depth</span><b class="ok">Parallel · Good</b></div>
+          <div class="drow"><span>Tempo</span><b class="ok">3-1-1 · On</b></div>
+          <div class="drow"><span>Reps</span><b>8 / 8</b></div>
+        </div>
+      </div>
+    </div>
+  </div></section>
+
+  <!-- Pricing -->
+  <section id="pricing"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Pricing</span><h2>Train free. Upgrade when ready.</h2></div>
+    <div class="price">
+      <div class="pcard">
+        <div class="tag">Free</div>
+        <div class="amt">$0<small> /forever</small></div>
+        <ul><li>1 Coach</li><li>Wake-up + workout calls</li><li>Persona-themed workouts</li><li>Global nutrition (1.2M foods)</li><li>Rest-day-aware coaching</li></ul>
+        <a href="#waitlist" class="btn btn-ghost">Join Waitlist</a>
+      </div>
+      <div class="pcard feat">
+        <div class="tag">Best value · Early access</div>
+        <div class="amt">$1.99<small> one-time</small></div>
+        <ul><li><strong>3 months of Legend free</strong> at launch</li><li>All 5 coaches</li><li>AI form correction (live)</li><li>Leaderboards + private Discord</li><li>Never auto-charged</li></ul>
+        <a href="#waitlist" class="btn">Claim Vanguard Spot</a>
+      </div>
+    </div>
+    <p class="pnote">Full Pro ($9.99/mo) and Legend ($19.99/mo) plans arrive at launch — no auto-charge.</p>
+  </div></section>
+
+  <!-- FAQ -->
+  <section id="faq"><div class="wrap">
+    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Questions</span><h2>Answered.</h2></div>
+    <div class="faq">
+      <details open><summary>What is Evulto? <span class="pm">+</span></summary><p>An AI fitness coaching app for Android. Five coach personas phone-call you awake and for workouts, correct your form in real time using your camera, scan your meals for macros, and only call on training days.</p></details>
+      <details><summary>How do the wake-up calls work? <span class="pm">+</span></summary><p>Set a time, pick a ringtone. Your phone rings like an actual incoming call — full screen and vibration. Decline and your coach calls back in five minutes. It's not a notification you can swipe away.</p></details>
+      <details><summary>Is it really free? <span class="pm">+</span></summary><p>Yes — the Free tier includes one coach, workouts, nutrition tracking, and wake-up & workout calls, forever. No credit card required.</p></details>
+      <details><summary>What does "Evulto" mean? <span class="pm">+</span></summary><p>It's our coined brand name, evoking <em>exult</em> — the rush of triumph when you push through and rise to your best.</p></details>
+    </div>
+  </div></section>
+
+  <!-- CTA -->
+  <section id="waitlist"><div class="wrap">
+    <div class="cta">
+      <h2>Be first to train under a coach that calls.</h2>
+      <p>Join the waitlist — free forever, no card, no catch.</p>
+      <form id="cta-wl" class="wl-form" novalidate>
+        <div class="input-row">
+          <input type="email" name="email" placeholder="Enter your email" autocomplete="email" required />
+          <button type="submit" class="btn">Join Now</button>
+        </div>
+        <div class="wl-msg"></div>
+      </form>
+    </div>
+  </div></section>
+
+  <footer><div class="wrap">
+    <div class="foot">
+      <a class="brand" href="/"><span class="mk">e</span>Evulto</a>
+      <div class="links">
+        <a href="#features">Features</a><a href="#coaches">Coaches</a><a href="#pricing">Pricing</a>
+        <a href="/blog/">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>
+        <a href="mailto:hello@evulto.com">Contact</a>
+      </div>
+      <p class="cr">© 2026 Evulto™. An independent AI fitness app. Coach personas are fictional AI characters.</p>
+    </div>
+  </div></footer>
+
+  <script defer src="home.js"></script>
+</body>
+</html>
