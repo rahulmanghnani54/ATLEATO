@@ -27,10 +27,10 @@
   // ── Lighting ──
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.25);
   scene.add(ambientLight);
-  const pointLight = new THREE.PointLight(0xff6b35, 1.8, 30);
+  const pointLight = new THREE.PointLight(0x12b981, 1.8, 30);
   pointLight.position.set(5, 10, 8);
   scene.add(pointLight);
-  const backLight = new THREE.PointLight(0xff6b35, 0.7, 25);
+  const backLight = new THREE.PointLight(0x12b981, 0.7, 25);
   backLight.position.set(-5, 8, -5);
   scene.add(backLight);
 
@@ -41,7 +41,7 @@
 
   const groundGeo = new THREE.PlaneGeometry(14, 14);
   const groundMat = new THREE.MeshBasicMaterial({
-    color: 0xff6b35,
+    color: 0x12b981,
     transparent: true,
     opacity: 0.015,
     side: THREE.DoubleSide,
@@ -180,14 +180,14 @@
   ];
 
   const JOINT_COLORS = {
-    head: 0xff6b35, neck: 0xff6b35,
+    head: 0x12b981, neck: 0x12b981,
     shoulderL: 0x00e5ff, shoulderR: 0x00e5ff,
     elbowL: 0x00e5ff, elbowR: 0x00e5ff,
     wristL: 0x00e5ff, wristR: 0x00e5ff,
-    spine: 0xff6b35, hipCenter: 0xff6b35,
-    hipL: 0xff6b35, hipR: 0xff6b35,
-    kneeL: 0xff6b35, kneeR: 0xff6b35,
-    ankleL: 0xff6b35, ankleR: 0xff6b35,
+    spine: 0x12b981, hipCenter: 0x12b981,
+    hipL: 0x12b981, hipR: 0x12b981,
+    kneeL: 0x12b981, kneeR: 0x12b981,
+    ankleL: 0x12b981, ankleR: 0x12b981,
   };
 
   // ── Create Joint Spheres ──
@@ -195,7 +195,7 @@
   const jointGlow = {};
 
   Object.keys(STANDING).forEach((name) => {
-    const color = JOINT_COLORS[name] || 0xff6b35;
+    const color = JOINT_COLORS[name] || 0x12b981;
 
     // Inner dot
     const geo = new THREE.SphereGeometry(0.13, 16, 16);
@@ -238,11 +238,11 @@
     return new THREE.Mesh(geo, mat);
   }
 
-  const torso = createHolographicCylinder(0.9, 0xff6b35);
-  const upperLegL = createHolographicCylinder(0.35, 0xff6b35);
-  const upperLegR = createHolographicCylinder(0.35, 0xff6b35);
-  const lowerLegL = createHolographicCylinder(0.28, 0xff6b35);
-  const lowerLegR = createHolographicCylinder(0.28, 0xff6b35);
+  const torso = createHolographicCylinder(0.9, 0x12b981);
+  const upperLegL = createHolographicCylinder(0.35, 0x12b981);
+  const upperLegR = createHolographicCylinder(0.35, 0x12b981);
+  const lowerLegL = createHolographicCylinder(0.28, 0x12b981);
+  const lowerLegR = createHolographicCylinder(0.28, 0x12b981);
   const upperArmL = createHolographicCylinder(0.25, 0x00e5ff);
   const upperArmR = createHolographicCylinder(0.25, 0x00e5ff);
 
@@ -279,14 +279,14 @@
     const positions = new Float32Array(6);
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-    let color = 0xff6b35;
+    let color = 0x12b981;
     if (['shoulderL','elbowL','wristL','shoulderR','elbowR','wristR'].includes(j1) ||
         ['shoulderL','elbowL','wristL','shoulderR','elbowR','wristR'].includes(j2)) {
       color = 0x00e5ff;
     }
     if (['hipL','kneeL','ankleL','footL','hipR','kneeR','ankleR','footR'].includes(j1) ||
         ['hipL','kneeL','ankleL','footL','hipR','kneeR','ankleR','footR'].includes(j2)) {
-      color = 0xff6b35;
+      color = 0x12b981;
     }
 
     const mat = new THREE.LineBasicMaterial({
@@ -305,7 +305,7 @@
     const points = new Float32Array(32 * 3);
     curveGeo.setAttribute('position', new THREE.BufferAttribute(points, 3));
     const mat = new THREE.LineBasicMaterial({
-      color: 0xff6b35,
+      color: 0x12b981,
       transparent: true,
       opacity: 0.7,
     });
@@ -320,7 +320,7 @@
   // ── Scanning Line Effect ──
   const scanLineGeo = new THREE.PlaneGeometry(5.5, 0.02);
   const scanLineMat = new THREE.MeshBasicMaterial({
-    color: 0xff6b35,
+    color: 0x12b981,
     transparent: true,
     opacity: 0.25,
     side: THREE.DoubleSide,
@@ -654,7 +654,7 @@
       const circumference = 2 * Math.PI * 54;
       const offset = circumference - (formScore / 100) * circumference;
       scoreCircleEl.style.strokeDashoffset = offset;
-      scoreCircleEl.style.stroke = formScore >= 80 ? '#22c55e' : formScore >= 60 ? '#f59e0b' : '#ef4444';
+      scoreCircleEl.style.stroke = formScore >= 80 ? '#0E8C63' : formScore >= 60 ? '#B87A0E' : '#D6412A';
     }
 
     // Scanline translation
