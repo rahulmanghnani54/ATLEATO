@@ -185,7 +185,7 @@ export default function ProfileScreen() {
               Alert.alert(
                 'Could not delete',
                 (e instanceof Error ? e.message : String(e)) +
-                  '\n\nYou can also email hello@atleato.com and we will delete it within 7 days.',
+                  '\n\nYou can also email hello@evulto.com and we will delete it within 7 days.',
               );
             }
           },
@@ -550,7 +550,7 @@ export default function ProfileScreen() {
             label="Watch the Showreel"
             sub="60-second cinematic — share with friends"
             trailIcon={ExternalLink}
-            onPress={() => Linking.openURL('https://atleato.com/showreel.html').catch(() => {})}
+            onPress={() => Linking.openURL('https://evulto.com/showreel.html').catch(() => {})}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
@@ -559,16 +559,16 @@ export default function ProfileScreen() {
             label="Full Demo Video"
             sub="16:9 timeline walkthrough of every feature"
             trailIcon={ExternalLink}
-            onPress={() => Linking.openURL('https://atleato.com/demo-video.html').catch(() => {})}
+            onPress={() => Linking.openURL('https://evulto.com/demo-video.html').catch(() => {})}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
             Icon={Globe}
             iconColor={programColor}
-            label="Visit atleato.com"
+            label="Visit evulto.com"
             sub="Marketing site · waitlist · pricing"
             trailIcon={ExternalLink}
-            onPress={() => Linking.openURL('https://atleato.com').catch(() => {})}
+            onPress={() => Linking.openURL('https://evulto.com').catch(() => {})}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
@@ -580,8 +580,8 @@ export default function ProfileScreen() {
             onPress={() =>
               Share.share({
                 message:
-                  "Evulto — your coach calls. 5 legend coaches, real wake-up calls, live AI form correction. Watch the 60-sec showreel: https://atleato.com/showreel.html",
-                url: 'https://atleato.com/showreel.html',
+                  "Evulto — your coach calls. 5 legend coaches, real wake-up calls, live AI form correction. Watch the 60-sec showreel: https://evulto.com/showreel.html",
+                url: 'https://evulto.com/showreel.html',
                 title: 'Evulto — Your Coach Calls',
               }).catch(() => {})
             }
@@ -654,7 +654,7 @@ export default function ProfileScreen() {
         <View style={styles.brandFooter}>
           <Text style={styles.brandMark}>Evulto™</Text>
           <Text style={styles.brandTag}>TRAIN  ·  FUEL  ·  RISE</Text>
-          <Text style={styles.brandUrl}>atleato.com</Text>
+          <Text style={styles.brandUrl}>evulto.com</Text>
           <Text style={styles.brandCopyright}>
             © {new Date().getFullYear()} Evulto.  v1.0.0
           </Text>

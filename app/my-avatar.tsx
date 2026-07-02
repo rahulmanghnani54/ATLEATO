@@ -99,7 +99,7 @@ export default function MyAvatarScreen() {
     if (!avatarState) return;
     try {
       await Share.share({
-        message: `I'm a "${avatarState.title}" on Evulto 💪\n${streak}-day streak · ${totalWorkouts} workouts · ${levelInfo?.persona_title ?? ''}\n\nJoin me: atleato.com`,
+        message: `I'm a "${avatarState.title}" on Evulto 💪\n${streak}-day streak · ${totalWorkouts} workouts · ${levelInfo?.persona_title ?? ''}\n\nJoin me: evulto.com`,
         title: 'My Evulto Avatar',
       });
     } catch (e: any) {

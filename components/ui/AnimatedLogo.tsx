@@ -15,7 +15,7 @@ import { useEffect, useRef } from 'react';
 import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
 import { Fonts, Colors } from '@/constants/theme';
 
-const LETTERS = ['T', 'L', 'E', 'A', 'T', 'O']; // letters after the orange 'A'
+const LETTERS = ['V', 'U', 'L', 'T', 'O']; // letters after the emerald 'E'
 
 export function AnimatedLogo() {
   const aScale     = useRef(new Animated.Value(0)).current;
@@ -53,14 +53,14 @@ export function AnimatedLogo() {
   return (
     <View style={styles.area}>
       <View style={styles.wordmark}>
-        {/* The animated orange 'A' */}
+        {/* The animated emerald 'E' */}
         <Animated.Text
           style={[
             styles.wordmarkA,
             { transform: [{ translateX: aX }, { scale: Animated.multiply(aScale, aPulse) }] },
           ]}
         >
-          A
+          E
         </Animated.Text>
 
         {/* Each remaining letter staggers in */}
@@ -108,9 +108,9 @@ export function AnimatedLogo() {
 const styles = StyleSheet.create({
   area:     { marginBottom: 48, alignItems: 'center' },
   wordmark: { flexDirection: 'row', alignItems: 'baseline' },
-  wordmarkA:    { fontFamily: Fonts.display, fontSize: 48, color: '#ff6b35', letterSpacing: -1 },
+  wordmarkA:    { fontFamily: Fonts.display, fontSize: 48, color: Colors.primary, letterSpacing: -1 },
   wordmarkRest: { fontFamily: Fonts.display, fontSize: 48, color: Colors.text, letterSpacing: -1 },
   tmSymbol:     { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textTertiary, marginLeft: 3, marginBottom: 28 },
-  bar:          { height: 4, backgroundColor: '#ff6b35', borderRadius: 2, marginTop: 4, marginBottom: 8, alignSelf: 'stretch' },
+  bar:          { height: 4, backgroundColor: Colors.primary, borderRadius: 2, marginTop: 4, marginBottom: 8, alignSelf: 'stretch' },
   tagline:      { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textTertiary, letterSpacing: 2.5, marginTop: 6 },
 });
