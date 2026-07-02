@@ -27,9 +27,9 @@ export function GlassScreen({
       {/* Persona-tinted ambient gradient background */}
       <LinearGradient
         colors={[
-          `${persona.accent}26`,
-          `${persona.accent}0d`,
-          '#0a0b0d',
+          `${persona.accent}1f`,
+          `${persona.accent}08`,
+          '#F4F7F5',
         ]}
         locations={[0, 0.35, 1]}
         style={StyleSheet.absoluteFill}
@@ -37,7 +37,7 @@ export function GlassScreen({
       {/* Secondary cyan glow */}
       <View style={styles.glowSpot} pointerEvents="none">
         <LinearGradient
-          colors={['rgba(93,211,250,0.18)', 'transparent']}
+          colors={['rgba(18,185,129,0.10)', 'transparent']}
           style={{ flex: 1, borderRadius: 200 }}
         />
       </View>
@@ -49,7 +49,7 @@ export function GlassScreen({
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#0a0b0d' },
+  root: { flex: 1, backgroundColor: '#F4F7F5' },
   glowSpot: {
     position: 'absolute',
     top: -120, right: -140,

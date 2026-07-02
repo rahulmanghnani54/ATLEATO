@@ -18,39 +18,41 @@
 // COLORS
 // ─────────────────────────────────────────────────────────────────────────────
 export const Colors = {
-  // ── Surfaces (warmer than v0 — cinematic, not clinical) ────────────────────
-  bg: '#0a0b0d',              // deep base
-  background: '#0a0b0d',
-  bgWarm: '#0d0a0a',          // slightly warmer for hero backgrounds
-  surface: '#15171b',          // card surface (legacy)
-  surfaceWarm: '#181a1f',     // slightly warmer card surface — preferred for new screens
-  raised: '#1d2026',
-  raisedWarm: '#22242a',
+  // ── EVULTO LIGHT (emerald) — flipped from Direction-C dark 2026-07-02 ──────
+  // Same token NAMES (screens reference them); only the VALUES changed to the
+  // premium light-emerald palette that matches the website.
+  // ── Surfaces ───────────────────────────────────────────────────────────────
+  bg: '#F4F7F5',              // Paper base
+  background: '#F4F7F5',
+  bgWarm: '#EEF3F0',          // slightly tinted for hero backgrounds
+  surface: '#FFFFFF',          // white card surface
+  surfaceWarm: '#FFFFFF',
+  raised: '#FFFFFF',
+  raisedWarm: '#F4F7F5',
 
   // ── Borders ────────────────────────────────────────────────────────────────
-  border: 'rgba(255,255,255,0.07)' as string,
-  borderStrong: 'rgba(255,255,255,0.14)' as string,
-  borderWarm: 'rgba(255,180,120,0.10)' as string,  // tinted border for warm cards
+  border: 'rgba(10,31,25,0.08)' as string,
+  borderStrong: 'rgba(10,31,25,0.16)' as string,
+  borderWarm: 'rgba(18,185,129,0.16)' as string,   // emerald-tinted border
 
-  // ── Text ───────────────────────────────────────────────────────────────────
-  text: '#f5f5f4',
-  textSecondary: 'rgba(245,245,244,0.62)',
-  textTertiary: 'rgba(245,245,244,0.38)',
-  textMuted: 'rgba(245,245,244,0.50)',
+  // ── Text (Forest Ink on Paper) ──────────────────────────────────────────────
+  text: '#0A1F19',
+  textSecondary: 'rgba(10,31,25,0.62)',
+  textTertiary: 'rgba(10,31,25,0.40)',
+  textMuted: 'rgba(10,31,25,0.50)',
 
-  // ── PRIMARY — Evulto brand orange (replaces volt-green default) ───────────
-  // This is the new default accent. Used for non-persona buttons, brand
-  // moments, and the logo.
-  primary: '#e05a26',
-  primaryDeep: '#c4471a',
-  primaryLight: 'rgba(224,90,38,0.14)',
-  accentInk: '#ffffff',                              // text on primary buttons
+  // ── PRIMARY — Evulto emerald ─────────────────────────────────────────────
+  // Default accent: non-persona buttons, brand moments, the ring logo.
+  primary: '#12B981',
+  primaryDeep: '#0FA968',
+  primaryLight: 'rgba(18,185,129,0.14)',
+  accentInk: '#ffffff',                              // text on emerald buttons
 
-  // ── SYSTEM accent — RESERVED for OS-level controls ONLY ───────────────────
-  // Per Direction C spec: volt green moves to ONLY system actions (toggles,
-  // switches, push-notification dots, etc). DO NOT use as a brand color.
-  systemAccent: '#dfff1f',
-  systemAccentSoft: 'rgba(223,255,31,0.12)',
+  // ── SYSTEM accent — OS-level controls (toggles/switches) ──────────────────
+  // Was volt-green (#dfff1f) — invisible on a light bg — now emerald so it
+  // stays visible. Reserved for system controls only.
+  systemAccent: '#12B981',
+  systemAccentSoft: 'rgba(18,185,129,0.14)',
 
   // ── Status ─────────────────────────────────────────────────────────────────
   success: '#39e08a',

@@ -1,6 +1,6 @@
 import '@/lib/domExceptionPolyfill'; // must be first — livekit/ElevenLabs needs DOMException
 import { useEffect, useState } from 'react';
-import { View, AppState } from 'react-native';
+import { View, AppState, StatusBar } from 'react-native';
 import { Stack, useRouter, useSegments, useGlobalSearchParams , SplashScreen } from 'expo-router';
 import {
   useFonts,
@@ -272,7 +272,8 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <View style={{ flex: 1, backgroundColor: '#0a0b0d' }}>
+        <View style={{ flex: 1, backgroundColor: '#F4F7F5' }}>
+          <StatusBar barStyle="dark-content" backgroundColor="#F4F7F5" />
           <OfflineBanner />
           <RootNavigator />
         </View>
