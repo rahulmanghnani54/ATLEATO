@@ -72,6 +72,12 @@ export const supabase = createClient<Database>(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
+      // PKCE is required for the OAuth (Google/Facebook) code-exchange flow and
+      // is the more secure default for native apps. supabase-js generates +
+      // stores the code_verifier via the storage adapter above; the OAuth
+      // callback then calls exchangeCodeForSession(code). Also hardens the
+      // magic-link / password-reset links against interception.
+      flowType: 'pkce',
       // CRITICAL on React Native: supabase-js defaults to a navigator.locks-based
       // lock for token refresh, which doesn't exist in RN. Without processLock,
       // an expired access token (1h) makes the *next* request trigger a refresh

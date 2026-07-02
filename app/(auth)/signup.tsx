@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView,
+  KeyboardAvoidingView, Platform, ScrollView, Alert,
 } from 'react-native';
 import { Link } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
 import { AnimatedLogo } from '@/components/ui';
+import { authErrorMessage } from '@/lib/authErrors';
 
 export default function Signup() {
   const [fullName, setFullName] = useState('');
@@ -28,15 +29,19 @@ export default function Signup() {
     setError('');
     setLoading(true);
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: { data: { full_name: fullName.trim() } },
     });
 
     setLoading(false);
-    if (authError) { setError(authError.message); return; }
-    // Navigation handled by auth state listener
+    if (authError) { setError(authErrorMessage(authError.message, 'signup')); return; }
+    // If email confirmation is required, no session is returned — tell the user
+    // to check their inbox. Otherwise the auth-state listener navigates.
+    if (!data.session) {
+      Alert.alert('Almost there', 'Check your inbox to confirm your account, then sign in.');
+    }
   };
 
   return (
@@ -131,7 +136,7 @@ export default function Signup() {
             onPress={handleSignup}
             disabled={loading}
           >
-            <Text style={[styles.primaryBtnText, { color: '#1a1208' }]}>{loading ? '...' : 'CREATE ACCOUNT'}</Text>
+            <Text style={styles.primaryBtnText}>{loading ? '...' : 'CREATE ACCOUNT'}</Text>
           </TouchableOpacity>
 
           <View style={styles.signinRow}>
@@ -171,7 +176,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.body, fontSize: 15, color: Colors.text,
   },
   primaryBtn: {
-    height: 56, backgroundColor: '#ff6b35', borderRadius: Radius.sm,
+    height: 56, backgroundColor: Colors.primary, borderRadius: Radius.sm,
     alignItems: 'center', justifyContent: 'center', marginBottom: 20,
   },
 

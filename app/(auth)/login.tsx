@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { supabase } from '@/lib/supabase';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
 import { AnimatedLogo } from '@/components/ui';
+import { authErrorMessage } from '@/lib/authErrors';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -24,16 +25,20 @@ export default function Login() {
     setLoading(true);
     const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setLoading(false);
-    if (authError) setError(authError.message);
+    if (authError) setError(authErrorMessage(authError.message, 'login'));
   };
 
   const handleForgotPassword = async () => {
     if (!email.trim()) { setError('Enter your email first, then tap Forgot Password.'); return; }
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_RE.test(email.trim())) { setError('Please enter a valid email address.'); return; }
+    setError('');
     setLoading(true);
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim());
+    // Respond identically whether or not the email exists, so the reset flow
+    // can't be used to enumerate registered accounts (CWE-204).
+    await supabase.auth.resetPasswordForEmail(email.trim()).catch(() => {});
     setLoading(false);
-    if (resetError) setError(resetError.message);
-    else Alert.alert('Check your email', 'We sent a password reset link to ' + email.trim());
+    Alert.alert('Check your email', "If an account exists for that address, we've sent a password reset link.");
   };
 
   return (
@@ -141,10 +146,10 @@ const styles = StyleSheet.create({
   forgotBtn: { alignSelf: 'flex-end', marginTop: 12 },
   forgotText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1.2 },
   primaryBtn: {
-    height: 56, backgroundColor: '#ff6b35', borderRadius: Radius.sm,
+    height: 56, backgroundColor: Colors.primary, borderRadius: Radius.sm,
     alignItems: 'center', justifyContent: 'center', marginBottom: 20,
   },
-  primaryBtnText: { fontFamily: Fonts.display, fontSize: 15, color: '#1a1208', letterSpacing: 0.8 },
+  primaryBtnText: { fontFamily: Fonts.display, fontSize: 15, color: Colors.accentInk, letterSpacing: 0.8 },
 
   // Password row with show/hide toggle
   passwordRow: {

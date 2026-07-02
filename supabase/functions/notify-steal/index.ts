@@ -44,15 +44,19 @@ serve(async (req) => {
   // ── Gate: require cron secret in production ──
   // Without this, anyone discovering the function URL can POST it repeatedly,
   // burning Expo push quota and prematurely draining the queue.
-  if (CRON_SECRET) {
-    const provided = req.headers.get('x-cron-secret') || '';
-    if (!timingSafeEq(provided, CRON_SECRET)) {
-      return new Response(JSON.stringify({ error: 'forbidden' }), {
-        status: 403, headers: { 'content-type': 'application/json' },
-      });
-    }
-  } else {
-    console.warn('NOTIFY_STEAL_CRON_SECRET unset — accepting unauthenticated invocation (DEV ONLY)');
+  // Fail CLOSED: never accept unauthenticated invocations. Set
+  // NOTIFY_STEAL_CRON_SECRET in the function env (prod + local) and send it as
+  // the x-cron-secret header from the cron scheduler.
+  if (!CRON_SECRET) {
+    console.error('NOTIFY_STEAL_CRON_SECRET unset — refusing invocation');
+    return new Response(JSON.stringify({ error: 'not configured' }), {
+      status: 503, headers: { 'content-type': 'application/json' },
+    });
+  }
+  if (!timingSafeEq(req.headers.get('x-cron-secret') || '', CRON_SECRET)) {
+    return new Response(JSON.stringify({ error: 'forbidden' }), {
+      status: 403, headers: { 'content-type': 'application/json' },
+    });
   }
 
   try {

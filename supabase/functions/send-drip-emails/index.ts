@@ -204,14 +204,18 @@ async function sendEmail(to: string, subject: string, text: string, html: string
 
 serve(async (req) => {
   // Gate — same pattern as notify-steal (function is publicly invokable).
-  if (CRON_SECRET) {
-    if (!timingSafeEq(req.headers.get('x-cron-secret') || '', CRON_SECRET)) {
-      return new Response(JSON.stringify({ error: 'forbidden' }), {
-        status: 403, headers: { 'content-type': 'application/json' },
-      });
-    }
-  } else {
-    console.warn('DRIP_CRON_SECRET unset — accepting unauthenticated call (DEV ONLY)');
+  // Fail CLOSED: never accept unauthenticated invocations. Set DRIP_CRON_SECRET
+  // in the function env and send it as x-cron-secret from the cron scheduler.
+  if (!CRON_SECRET) {
+    console.error('DRIP_CRON_SECRET unset — refusing invocation');
+    return new Response(JSON.stringify({ error: 'not configured' }), {
+      status: 503, headers: { 'content-type': 'application/json' },
+    });
+  }
+  if (!timingSafeEq(req.headers.get('x-cron-secret') || '', CRON_SECRET)) {
+    return new Response(JSON.stringify({ error: 'forbidden' }), {
+      status: 403, headers: { 'content-type': 'application/json' },
+    });
   }
 
   if (!RESEND_API_KEY) {

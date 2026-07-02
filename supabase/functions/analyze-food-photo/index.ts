@@ -1,5 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders, jsonResponse, errorResponse, internalError } from '../_shared/claude.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  corsHeaders, jsonResponse, errorResponse, internalError,
+  SUPABASE_URL, SUPABASE_ANON_KEY,
+} from '../_shared/claude.ts';
+import { checkRateLimit } from '../_shared/security.ts';
 
 // ---------------------------------------------------------------------------
 // MVP food recognition — returns realistic mock macro data.
@@ -62,19 +67,31 @@ serve(async (req) => {
   if (req.method !== 'POST') return errorResponse('Method not allowed', 405);
 
   try {
-    // In a real implementation we would:
-    // 1. Parse the Authorization header and validate the JWT
-    // 2. Decode the base64 image from the body
-    // 3. Send the image to a vision model (e.g. Claude claude-sonnet-4-5 with vision)
-    // 4. Parse the model's structured response
-    //
-    // For MVP we return a deterministic-looking but randomised response so the
-    // UI flow is fully exercised end-to-end without requiring a vision model key.
+    // Auth gate — require a valid Supabase JWT. The client calls this via
+    // supabase.functions.invoke(), which attaches the user's token automatically.
+    // This endpoint is the intended home for real vision inference, so it must
+    // never be anonymously callable (that would be unlimited paid inference).
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) return errorResponse('Unauthorized', 401);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) return errorResponse('Unauthorized', 401);
+
+    // Per-user rate limit — vision is expensive; 5/min is generous for a camera flow.
+    if (!checkRateLimit(user.id, 'analyze-food-photo', 5, 60_000)) {
+      return errorResponse('Too many requests. Please wait a moment.', 429);
+    }
 
     const body = await req.json() as { image_base64?: string };
 
     if (!body.image_base64) {
       return errorResponse('image_base64 is required', 400);
+    }
+    // Cap payload (~8MB raw ≈ 11M base64 chars) to prevent memory-abuse DoS.
+    if (body.image_base64.length > 11_000_000) {
+      return errorResponse('Image too large', 413);
     }
 
     // Simulate ~600ms analysis latency
