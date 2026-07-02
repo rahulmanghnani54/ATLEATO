@@ -67,7 +67,9 @@ function hexAlpha(hex: string, alpha: number): string {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: Radius.lg,
     padding: Spacing.md - 2,                       // off-ladder 14
     marginBottom: Spacing.sm + 2,                  // off-ladder 10

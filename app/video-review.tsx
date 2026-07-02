@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: 4 },
   metaChip: {
     flex: 1, backgroundColor: Colors.bg, borderRadius: 8,
-    padding: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
+    padding: 12, borderWidth: 1, borderColor: Colors.border,
   },
   metaLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1.6, marginBottom: 4 },
   metaValue: { fontFamily: Fonts.bodySemi, fontSize: 13, color: Colors.text },
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
   notesInput: {
     backgroundColor: Colors.bg, borderRadius: 8, padding: 14,
     fontFamily: Fonts.body, fontSize: 14, color: Colors.text,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    borderWidth: 1, borderColor: Colors.border,
     minHeight: 120, lineHeight: 22,
   },
 

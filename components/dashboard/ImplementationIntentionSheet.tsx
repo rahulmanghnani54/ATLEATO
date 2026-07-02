@@ -286,7 +286,7 @@ export function ImplementationIntentionSheet({
 
 const styles = StyleSheet.create({
   dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 18 },
-  dot: { width: 8, height: 3, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)' },
+  dot: { width: 8, height: 3, borderRadius: 2, backgroundColor: Colors.borderStrong },
 
   eyebrow: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 8 },
   question: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, lineHeight: 26, letterSpacing: -0.4, marginBottom: 6 },
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
 
   coachLineBox: {
     marginTop: 18, paddingTop: 14, alignSelf: 'stretch',
-    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopWidth: 1, borderTopColor: Colors.border,
   },
   coachAttrib: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 6 },
   coachLine: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 19, fontStyle: 'italic' },

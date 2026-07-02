@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)',
     borderRadius: 4, padding: 12, marginBottom: 14,
   },
-  warningText: { fontFamily: Fonts.body, fontSize: 12, color: '#fca5a5', lineHeight: 17 },
+  warningText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.error, lineHeight: 17 },
 
   footnote: {
     fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,

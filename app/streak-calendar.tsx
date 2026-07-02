@@ -84,7 +84,7 @@ export default function StreakCalendarScreen() {
         <View style={styles.legend}>
           <LegendDot color={persona.accent} label="TRAINED" />
           <LegendDot color="#5DD3FA" label="FROZEN" />
-          <LegendDot color="rgba(255,255,255,0.06)" label="MISSED" border />
+          <LegendDot color={Colors.border} label="MISSED" border />
         </View>
 
         {months.map((month) => (
@@ -100,7 +100,7 @@ export default function StreakCalendarScreen() {
 function LegendDot({ color, label, border }: { color: string; label: string; border?: boolean }) {
   return (
     <View style={styles.legendItem}>
-      <View style={[styles.legendDot, { backgroundColor: color }, border && { borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' }]} />
+      <View style={[styles.legendDot, { backgroundColor: color }, border && { borderWidth: 1, borderColor: Colors.border }]} />
       <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );
@@ -134,7 +134,7 @@ function MonthGrid({ month, accent }: { month: CalendarMonth; accent: string }) 
 
 function DayCell({ cell, accent }: { cell: CalendarDay; accent: string }) {
   if (cell.status === 'empty') return <View style={styles.dayCell} />;
-  let bg: string = 'rgba(255,255,255,0.04)';
+  let bg: string = Colors.border;
   let txt: string = Colors.textTertiary;
   if (cell.status === 'trained') { bg = accent; txt = Colors.background; }
   else if (cell.status === 'frozen') { bg = '#5DD3FA'; txt = '#0a1f2c'; }

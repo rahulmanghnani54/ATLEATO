@@ -66,7 +66,7 @@ export function RewardChestModal({
   return (
     <Modal visible={visible} animationType="fade" transparent statusBarTranslucent>
       <View style={styles.backdrop}>
-        <View style={[styles.card, ts && { borderColor: ts.color, shadowColor: ts.glow }]}>
+        <View style={[styles.card, ts && { borderColor: ts.accent, shadowColor: ts.glow }]}>
           {!drop ? (
             <>
               <Text style={[styles.label, { color: persona.accent }]}>
@@ -88,11 +88,11 @@ export function RewardChestModal({
               <Text style={[styles.dropTitle, { color: ts!.color }]}>{drop.title}</Text>
               <Text style={styles.dropBody}>{drop.body}</Text>
               <TouchableOpacity
-                style={[styles.continueBtn, { backgroundColor: ts!.color }]}
+                style={[styles.continueBtn, { backgroundColor: ts!.accent }]}
                 onPress={handleContinue}
                 activeOpacity={0.85}
               >
-                <Text style={[styles.continueText, { color: Colors.background }]}>
+                <Text style={[styles.continueText, { color: Colors.text }]}>
                   CONTINUE
                 </Text>
               </TouchableOpacity>

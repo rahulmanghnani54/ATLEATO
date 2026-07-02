@@ -94,9 +94,9 @@ function cellStyle(cell: CalendarDay, persona: PersonaTheme) {
   switch (cell.status) {
     case 'trained': return { backgroundColor: persona.accent };
     case 'frozen':  return { backgroundColor: '#5DD3FA', opacity: 0.65 };
-    case 'missed':  return { backgroundColor: 'rgba(255,255,255,0.06)' };
-    case 'future':  return { backgroundColor: 'transparent', borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)' };
-    case 'rest':    return { backgroundColor: 'rgba(255,255,255,0.10)' };
+    case 'missed':  return { backgroundColor: Colors.borderStrong };
+    case 'future':  return { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border };
+    case 'rest':    return { backgroundColor: Colors.border };
     default:        return { backgroundColor: 'transparent' };
   }
 }

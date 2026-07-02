@@ -163,9 +163,9 @@ const CELL_SIZE = 160;
 const styles = StyleSheet.create({
   container: { flex: 1 },
   dueBanner: {
-    backgroundColor: 'rgba(223,255,31,0.06)',
+    backgroundColor: Colors.systemAccentSoft,
     borderWidth: 1,
-    borderColor: 'rgba(223,255,31,0.15)',
+    borderColor: Colors.borderWarm,
     borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,

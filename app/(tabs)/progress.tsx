@@ -334,7 +334,8 @@ const styles = StyleSheet.create({
 
   achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   achievementChip: {
-    alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center', backgroundColor: Colors.bg,
+    borderWidth: 1, borderColor: Colors.border,
     borderRadius: Radius.md, padding: Spacing.sm, width: '30%',
   },
   achievementEmoji: { fontSize: 26, marginBottom: 4 },

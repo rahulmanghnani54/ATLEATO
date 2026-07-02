@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   historyRpeBold: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text },
   setGrid: { flexDirection: 'row', gap: 6 },
   setCell: {
-    flex: 1, padding: 10, backgroundColor: 'rgba(255,255,255,0.03)',
+    flex: 1, padding: 10, backgroundColor: Colors.surface,
     borderWidth: 1, borderColor: Colors.border, borderRadius: 3,
   },
   setCellWeight: { fontFamily: Fonts.display, fontSize: 16, color: Colors.text, lineHeight: 18 },
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
 
   // Reasoning
   reasonCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
     borderRadius: 6, padding: 14, marginBottom: 20,
   },
   reasonRow: { flexDirection: 'row', gap: 8, marginTop: 6 },

@@ -273,7 +273,7 @@ export default function PostWorkout() {
                 <Text style={styles.exerciseName}>{e.name}</Text>
                 <Text style={styles.exerciseMeta}>{e.sets} · {e.volume}</Text>
               </View>
-              <View style={[styles.exerciseTag, { borderColor: `${e.tagColor}33` }]}>
+              <View style={[styles.exerciseTag, { borderColor: `${e.tagColor}33`, backgroundColor: `${e.tagColor}14` }]}>
                 <Text style={[styles.exerciseTagText, { color: e.tagColor }]}>{e.tag}</Text>
               </View>
             </View>
@@ -386,7 +386,7 @@ const styles = StyleSheet.create({
   exerciseMeta: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.1 },
   exerciseTag: {
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1,
+    backgroundColor: 'transparent', borderWidth: 1,
   },
   exerciseTagText: { fontFamily: Fonts.bodyBold, fontSize: 10, letterSpacing: 0.1 },
 

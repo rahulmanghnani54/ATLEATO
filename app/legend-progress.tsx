@@ -35,7 +35,7 @@ function XPRing({
           cy={RING_SIZE / 2}
           r={R}
           strokeWidth={STROKE}
-          stroke={Colors.surface}
+          stroke={Colors.border}
           fill="none"
         />
         {/* Progress */}

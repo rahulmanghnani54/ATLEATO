@@ -94,7 +94,7 @@ function CustomSlider({
 
 const sliderStyles = StyleSheet.create({
   track: {
-    height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.12)',
+    height: 4, borderRadius: 2, backgroundColor: Colors.borderStrong,
     marginTop: 8, marginBottom: 20,
   },
   fill: { height: 4, borderRadius: 2, position: 'absolute', top: 0, left: 0 },
@@ -294,12 +294,12 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: Spacing.md, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.07)',
+    borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   backBtn: { width: 32 },
   backText: { fontSize: 22, color: Colors.text },
   headerTitle: {
-    fontFamily: Fonts.mono, fontSize: 10, color: 'rgba(245,245,244,0.38)',
+    fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary,
     letterSpacing: 1.6,
   },
 
@@ -312,15 +312,15 @@ const styles = StyleSheet.create({
   },
   personaInitials: { fontFamily: Fonts.display, fontSize: 28 },
   personaName: { fontFamily: Fonts.display, fontSize: 16, color: Colors.text, letterSpacing: -0.3 },
-  personaEra:  { fontFamily: Fonts.mono, fontSize: 9, color: 'rgba(245,245,244,0.38)', letterSpacing: 0.5, marginTop: 2 },
+  personaEra:  { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.5, marginTop: 2 },
   legendBadge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
   legendBadgeText: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1.4 },
 
   sliderSection: { marginBottom: 8 },
   sliderHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  sliderLabel:   { fontFamily: Fonts.mono, fontSize: 9, color: 'rgba(245,245,244,0.38)', letterSpacing: 1.8 },
+  sliderLabel:   { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 1.8 },
   sliderValue:   { fontFamily: Fonts.display, fontSize: 18 },
-  sliderHint:    { fontFamily: Fonts.mono, fontSize: 9, color: 'rgba(245,245,244,0.28)', letterSpacing: 0.4, marginTop: 2 },
+  sliderHint:    { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.4, marginTop: 2 },
 
   previewBtn: {
     borderWidth: 1.5, borderRadius: 8,
@@ -329,16 +329,16 @@ const styles = StyleSheet.create({
   previewBtnText: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: 1 },
 
   previewLine: {
-    fontFamily: Fonts.mono, fontSize: 10, color: 'rgba(245,245,244,0.38)',
+    fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary,
     textAlign: 'center', marginTop: 10, marginBottom: 24,
     letterSpacing: 0.3, lineHeight: 16,
   },
 
   resetBtn: {
     alignItems: 'center', paddingVertical: 12,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)', borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.border, borderRadius: 8,
   },
   resetBtnText: {
-    fontFamily: Fonts.mono, fontSize: 9, color: 'rgba(245,245,244,0.38)', letterSpacing: 1.6,
+    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 1.6,
   },
 });

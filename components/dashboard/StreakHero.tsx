@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: 8, marginBottom: 6,
     borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
+    borderColor: Colors.border,
   },
   freezeIcon:      { fontSize: 16 },
   freezeIconEmpty: { fontSize: 16, color: Colors.textTertiary, opacity: 0.4 },
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   milestoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   milestoneTrack: {
     flex: 1, height: 4, borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.border,
     overflow: 'hidden',
   },
   milestoneFill: { height: '100%', borderRadius: 2 },

@@ -274,8 +274,10 @@ const styles = StyleSheet.create({
 
   // Exercise library accordion
   groupCard: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Colors.surface,
     borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: Colors.border,
     marginBottom: Spacing.sm + 2,
     overflow: 'hidden',
   },

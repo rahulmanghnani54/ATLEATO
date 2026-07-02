@@ -32,11 +32,11 @@ interface SquadMeta {
 }
 
 const SQUAD_META: SquadMeta[] = [
-  { persona_key: 'sculptor',  name: 'The Sculptor Squad',  accent: '#dfff1f', description: 'Aesthetic over numbers. PPL discipline.', tagline: 'Build the statue.' },
-  { persona_key: 'monument',  name: 'The Monument Squad',  accent: '#f5b942', description: 'High volume. Pump the iron.',             tagline: 'Stay in motion.' },
-  { persona_key: 'analyst',   name: 'The Analyst Squad',   accent: '#5DD3FA', description: 'Evidence-driven. RIR-tracked.',           tagline: 'Run the protocol.' },
-  { persona_key: 'commander', name: 'The Commander Squad', accent: '#ef4444', description: 'Heavy raw intensity. No excuses.',        tagline: 'Answer the call.' },
-  { persona_key: 'architect', name: 'The Architect Squad', accent: '#7be38c', description: 'Periodization. Volume landmarks.',         tagline: 'Grow by design.' },
+  { persona_key: 'sculptor',  name: 'The Sculptor Squad',  accent: Colors.personaSculptor, description: 'Aesthetic over numbers. PPL discipline.', tagline: 'Build the statue.' },
+  { persona_key: 'monument',  name: 'The Monument Squad',  accent: Colors.personaMonument, description: 'High volume. Pump the iron.',             tagline: 'Stay in motion.' },
+  { persona_key: 'analyst',   name: 'The Analyst Squad',   accent: Colors.personaAnalyst, description: 'Evidence-driven. RIR-tracked.',           tagline: 'Run the protocol.' },
+  { persona_key: 'commander', name: 'The Commander Squad', accent: Colors.personaCommander, description: 'Heavy raw intensity. No excuses.',        tagline: 'Answer the call.' },
+  { persona_key: 'architect', name: 'The Architect Squad', accent: Colors.personaArchitect, description: 'Periodization. Volume landmarks.',         tagline: 'Grow by design.' },
 ];
 
 const PROGRAM_TO_PERSONA: Record<string, string> = {

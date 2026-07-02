@@ -26,5 +26,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 32 },
   dot: { borderRadius: 999 },
   active: { width: 24, height: 8, backgroundColor: Colors.primary },
-  inactive: { width: 8, height: 8, backgroundColor: 'rgba(255,255,255,0.12)' },
+  inactive: { width: 8, height: 8, backgroundColor: Colors.borderStrong },
 });

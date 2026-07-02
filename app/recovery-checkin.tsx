@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
   scoreBadge: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.2, marginTop: 4 },
   modBox: { alignItems: 'flex-end' },
   modNum: { fontFamily: Fonts.display, fontSize: 28 },
-  scoreBarTrack: { height: 4, backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden', marginBottom: 10 },
+  scoreBarTrack: { height: 4, backgroundColor: Colors.border, borderRadius: 2, overflow: 'hidden', marginBottom: 10 },
   scoreBarFill: { height: '100%', borderRadius: 2 },
   recommendation: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, lineHeight: 18, fontStyle: 'italic' },
 

@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   dayLeft: {
     alignItems: 'center', justifyContent: 'center',
     width: 50, paddingVertical: 6,
-    borderRadius: 6, backgroundColor: 'rgba(255,255,255,0.04)',
+    borderRadius: 6, backgroundColor: Colors.raisedWarm,
   },
   dayNum: { fontFamily: Fonts.display, fontWeight: '800', fontSize: 18 },
   dayLabel: { fontFamily: Fonts.bodyMedium, fontSize: 10, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 2 },

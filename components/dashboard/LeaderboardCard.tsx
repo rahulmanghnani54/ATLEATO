@@ -42,12 +42,12 @@ export function LeaderboardCard({ persona }: { persona: PersonaTheme }) {
       ) : (
         <>
           {top3.map((r) => (
-            <Row key={r.rank} row={r} accent={persona.accent} />
+            <Row key={r.rank} row={r} accent={persona.accent} soft={persona.accentSoft} />
           ))}
           {showMeRow && (
             <>
               <Text style={styles.divider}>· · ·</Text>
-              <Row row={me!} accent={persona.accent} />
+              <Row row={me!} accent={persona.accent} soft={persona.accentSoft} />
             </>
           )}
           {!me && (
@@ -61,13 +61,13 @@ export function LeaderboardCard({ persona }: { persona: PersonaTheme }) {
   );
 }
 
-function Row({ row, accent }: { row: { rank: number; anon_handle: string; volume_kg: number; sessions: number; is_current_user: boolean }; accent: string }) {
+function Row({ row, accent, soft }: { row: { rank: number; anon_handle: string; volume_kg: number; sessions: number; is_current_user: boolean }; accent: string; soft: string }) {
   const medal =
     row.rank === 1 ? '🥇' :
     row.rank === 2 ? '🥈' :
     row.rank === 3 ? '🥉' : `#${row.rank}`;
   return (
-    <View style={[styles.row, row.is_current_user && { backgroundColor: 'rgba(255,255,255,0.05)' }]}>
+    <View style={[styles.row, row.is_current_user && { backgroundColor: soft }]}>
       <Text style={[styles.rank, { width: 36 }]}>{medal}</Text>
       <Text
         style={[

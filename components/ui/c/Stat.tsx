@@ -33,7 +33,9 @@ export function Stat({ value, label, accent, accentColor = Colors.primary }: Pro
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: Radius.lg,
     padding: Spacing.md - 2,           // off-ladder 14
     minHeight: 76,

@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   sub:      { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, lineHeight: 20, marginBottom: 22 },
 
   errorBox: { backgroundColor: 'rgba(239,68,68,0.10)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', borderRadius: Radius.sm, padding: Spacing.md, marginBottom: Spacing.md },
-  errorText: { color: '#fca5a5', fontSize: 13, fontFamily: Fonts.body },
+  errorText: { color: Colors.error, fontSize: 13, fontFamily: Fonts.body },
   label: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4, marginBottom: 8, marginTop: 16 },
   sublabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginBottom: 6 },
 

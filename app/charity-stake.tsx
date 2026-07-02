@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4, marginBottom: 8,
   },
   donatedSub: {
-    fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary,
+    fontFamily: Fonts.body, fontSize: 14, color: 'rgba(255,255,255,0.8)',
     textAlign: 'center', paddingHorizontal: 32, lineHeight: 20,
   },
 

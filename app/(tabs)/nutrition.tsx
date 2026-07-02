@@ -43,7 +43,7 @@ function MacroRing({ eaten, goal, color }: { eaten: number; goal: number; color:
   const pct = Math.min(eaten / Math.max(goal, 1), 1);
   return (
     <Svg width={140} height={140} viewBox="0 0 140 140" style={{ transform: [{ rotate: '-90deg' }] }}>
-      <Circle cx={cx} cy={cy} r={r} stroke="rgba(255,255,255,0.06)" strokeWidth={11} fill="none" />
+      <Circle cx={cx} cy={cy} r={r} stroke={Colors.border} strokeWidth={11} fill="none" />
       <Circle
         cx={cx} cy={cy} r={r}
         stroke={color} strokeWidth={11} fill="none"
@@ -264,7 +264,9 @@ const styles = StyleSheet.create({
 
   // AI tip cards
   tipCard: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
     borderRadius: Radius.lg,
     padding: Spacing.md - 2,
     marginBottom: Spacing.sm + 2,

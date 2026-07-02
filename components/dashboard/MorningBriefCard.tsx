@@ -153,7 +153,7 @@ export function MorningBriefCard({ persona }: { persona: PersonaTheme }) {
         <View style={[styles.progressDot, { backgroundColor: persona.accent }]} />
         <View style={[
           styles.progressDot,
-          { backgroundColor: isStep1 ? 'rgba(255,255,255,0.18)' : persona.accent },
+          { backgroundColor: isStep1 ? Colors.borderStrong : persona.accent },
         ]} />
       </View>
     </View>
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   modifierRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     marginTop: 14, paddingTop: 14,
-    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopWidth: 1, borderTopColor: Colors.border,
   },
   modifierLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4 },
   modifierValue: { fontFamily: Fonts.display, fontSize: 20, letterSpacing: -0.3 },

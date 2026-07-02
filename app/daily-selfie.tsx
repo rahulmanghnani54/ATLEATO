@@ -140,7 +140,7 @@ export default function DailySelfieScreen() {
   const [showCamera, setShowCamera] = useState(false);
 
   // Fixed accent color — selfie screen is persona-agnostic (privacy tool)
-  const accent = '#dfff1f';
+  const accent = Colors.primary; // emerald #12B981, readable on light Paper/white surfaces
 
   useEffect(() => {
     (async () => {
@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
   captureBtn: {
     paddingVertical: 16, paddingHorizontal: 32, borderRadius: 8, marginTop: 8,
   },
-  captureBtnText: { fontFamily: Fonts.display, fontSize: 14, color: '#0a0b0d', letterSpacing: 0.4 },
+  captureBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 0.4 },
 
   explainCard: {
     backgroundColor: Colors.raised, borderRadius: 8, padding: 16, marginTop: 16,

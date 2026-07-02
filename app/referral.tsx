@@ -16,14 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { refreshReferralReward, getReferralProUntil } from '@/lib/subscriptionManager';
 import { createReferralLink } from '@/lib/branchReferral';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
-
-const PROGRAM_COLORS: Record<string, string> = {
-  cbum_evolved:         '#dfff1f',
-  arnold_blueprint:     '#ffb13a',
-  nippard_fundamentals: '#5b8cff',
-  ct_strength:          '#ff5b3a',
-  dr_mike_mav:          '#00e0a4',
-};
+import { personaFromProgramId } from '@/lib/personaTheme';
 
 const REWARD_TARGET = 10;
 
@@ -38,7 +31,7 @@ export default function ReferralScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [rewardUntil, setRewardUntil] = useState<number | null>(null);
 
-  const accentColor = PROGRAM_COLORS[profile?.selected_program ?? ''] ?? Colors.primary;
+  const accentColor = personaFromProgramId(profile?.selected_program).accent;
   const code = user ? generateCode(user.id) : 'XXXXXXXX';
 
   // Count = ACTIVE referrals (referred users who opened the app on 3+ distinct

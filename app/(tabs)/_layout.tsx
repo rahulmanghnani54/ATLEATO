@@ -113,8 +113,8 @@ const styles = StyleSheet.create({
   //   - softer top border (alpha 0.04 instead of 0.07)
   //   - background slightly warmer than the v0 cold near-black
   tabBar: {
-    backgroundColor: 'rgba(13,10,10,0.96)',
-    borderTopColor: 'rgba(255,255,255,0.04)',
+    backgroundColor: Colors.surface,
+    borderTopColor: Colors.border,
     borderTopWidth: 1,
     height: 78,
     paddingTop: 10,

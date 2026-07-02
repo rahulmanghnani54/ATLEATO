@@ -36,6 +36,6 @@ const styles = StyleSheet.create({
   },
   rule: {
     flex: 1, height: 1,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: Colors.border,
   },
 });

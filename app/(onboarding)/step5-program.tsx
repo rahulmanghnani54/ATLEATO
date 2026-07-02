@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   dot: {
     width: 8, height: 4, borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: Colors.borderStrong,
   },
 
   // ── Persona card ──

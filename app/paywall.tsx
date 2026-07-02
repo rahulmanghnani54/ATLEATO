@@ -173,7 +173,7 @@ export default function PaywallScreen() {
           </Text>
           {period === 'yearly' && (
             <View style={[s.saveBadgeInline, { backgroundColor: 'rgba(174,219,69,0.15)' }]}>
-              <Text style={[s.saveBadgeText, { color: '#aedb45' }]}>Save 20%</Text>
+              <Text style={[s.saveBadgeText, { color: Colors.primaryDeep }]}>Save 20%</Text>
             </View>
           )}
           <View style={s.featureList}>
