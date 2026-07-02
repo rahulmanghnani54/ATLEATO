@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 210" width="260" height="210" fill="none"><g transform="translate(80,0)">
+  <circle cx="50" cy="50" r="34" fill="none" stroke="#D8E2DD" stroke-width="9"></circle>
+  <circle cx="50" cy="50" r="34" fill="none" stroke="#12B981" stroke-width="9" stroke-linecap="round" stroke-dasharray="150 214" transform="rotate(128 50 50)"></circle>
+  <circle cx="76" cy="30" r="6.5" fill="#12B981"></circle></g>
+     <text x="130" y="178" text-anchor="middle" font-size="46" letter-spacing="7" fill="#0A1F19">EVULTO</text></svg>

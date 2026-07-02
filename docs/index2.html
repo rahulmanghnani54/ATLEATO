@@ -3,365 +3,1150 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
-  <title>Evulto — Your Coach Actually Calls You | AI Fitness Coach</title>
-  <meta name="description" content="Evulto is the AI fitness coach that phone-calls you awake and for workouts, corrects your form in real time, scans your meals, and backs off on rest days. Five coaches, one app. Join the waitlist free." />
-  <meta name="robots" content="noindex" />
-  <link rel="canonical" href="https://evulto.com/" />
+  <meta name="theme-color" content="#0a0b0d" />
+  <!-- Security headers -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.googletagmanager.com https://connect.facebook.net https://www.clarity.ms https://*.clarity.ms; object-src 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' https://kbldncrurztfwlqzajen.supabase.co https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.clarity.ms https://*.clarity.ms https://connect.facebook.net https://www.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="X-Frame-Options" content="SAMEORIGIN" />
+  <meta http-equiv="Permissions-Policy" content="geolocation=(self), camera=(self), microphone=(self), payment=(self)" />
+  <title>Evulto™ — Your Coach Calls.</title>
+  <meta name="description" content="5 AI coach personas that phone-call you awake and for workouts. Real-time form correction, AI food scanner, and rest-day-aware coaching — all in one app. Your coach actually rings you." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Evulto™ — Your Coach Calls." />
+  <meta property="og:description" content="5 world-class AI coaches, live form check, real wake-up calls. No excuses." />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Evulto — Your Coach Actually Calls You" />
-  <meta property="og:description" content="The AI fitness coach that phone-calls you awake, corrects your form live, and knows your rest days." />
-  <meta property="og:url" content="https://evulto.com/" />
+  <meta property="og:url" content="https://evulto.com" />
   <meta property="og:image" content="https://evulto.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="theme-color" content="#F4F7F5" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <script type="application/ld+json">
-  {"@context":"https://schema.org","@graph":[
-    {"@type":"Organization","@id":"https://evulto.com/#organization","name":"Evulto","alternateName":["Evulto App","Evulto Fitness"],"url":"https://evulto.com/","logo":"https://evulto.com/assets/logo-icon-512.png","image":"https://evulto.com/og-image.png","slogan":"Your Coach Calls. No Excuses.","foundingDate":"2026","founder":{"@type":"Person","name":"Rahul"},"email":"hello@evulto.com","description":"Evulto is an independent AI fitness coaching app whose coaches phone-call you awake and for workouts, correct your exercise form in real time, scan your meals for macros, and adapt to your training plan.","sameAs":["https://instagram.com/atleato_app","https://www.tiktok.com/@atleato3","https://x.com/atleato","https://youtube.com/@atleato"]},
-    {"@type":"WebSite","@id":"https://evulto.com/#website","url":"https://evulto.com/","name":"Evulto","publisher":{"@id":"https://evulto.com/#organization"},"inLanguage":"en"},
-    {"@type":"MobileApplication","@id":"https://evulto.com/#app","name":"Evulto","url":"https://evulto.com/","description":"AI fitness coaching app with 5 coach personas, live form correction, an AI food scanner, and real wake-up & workout calls.","applicationCategory":"HealthApplication","operatingSystem":"Android","image":"https://evulto.com/og-image.png","offers":[{"@type":"Offer","price":"0","priceCurrency":"USD","name":"Free"},{"@type":"Offer","price":"1.99","priceCurrency":"USD","name":"Vanguard Pass"}]},
-    {"@type":"FAQPage","@id":"https://evulto.com/#faq","mainEntity":[
-      {"@type":"Question","name":"What is Evulto?","acceptedAnswer":{"@type":"Answer","text":"Evulto is an AI fitness coaching app for Android. Five coach personas phone-call you awake and for workouts, correct your form in real time using your camera, scan your meals for macros, and only call on training days."}},
-      {"@type":"Question","name":"How do Evulto's wake-up calls work?","acceptedAnswer":{"@type":"Answer","text":"Set a time and pick a ringtone. Your phone rings like an actual incoming call — full screen and vibration. Decline and your coach calls back in 5 minutes. It's not a notification you can swipe away."}},
-      {"@type":"Question","name":"Is Evulto free?","acceptedAnswer":{"@type":"Answer","text":"Yes. The Free tier includes one coach, workouts, nutrition tracking, and wake-up & workout calls — forever, no card required."}},
-      {"@type":"Question","name":"What does the name Evulto mean?","acceptedAnswer":{"@type":"Answer","text":"Evulto is a coined brand name evoking 'exult' — the triumph of showing up and rising to your best."}}
-    ]}
-  ]}
-  </script>
-  <style>
-    :root{
-      --paper:#F4F7F5; --ink:#0A1F19; --accent:#12B981; --accent-ink:#0FA968;
-      --card:#FFFFFF; --border:#E1E8E4; --border-strong:#DCE5E0;
-      --ring-track:#D8E2DD; --icon-track:#E2EAE6; --muted:#5A6B63; --dim:#8A968F; --btn-ink:#07130F;
-      --phone-bg:#081712; --phone-border:#1F4A3A; --phone-track:#123C30; --phone-muted:#5E7268;
-      --font-d:'Sora',system-ui,sans-serif; --font-t:'Inter',system-ui,sans-serif;
-      --shadow:0 1px 2px rgba(10,31,25,0.04),0 14px 40px -18px rgba(10,31,25,0.14);
-      --maxw:1120px;
+  <meta name="twitter:title" content="Evulto™ — Your Coach Calls." />
+  <meta name="twitter:description" content="5 world-class AI coaches, live form check, real wake-up calls. No excuses." />
+  <meta name="twitter:image" content="https://evulto.com/og-image.png" />
+
+  <link rel="canonical" href="https://evulto.com/" />
+  <link rel="icon" href="/assets/brand/svg/evulto-appicon-emerald.svg" />
+  <meta name="robots" content="noindex" /><!-- index2 = preview; don't index the duplicate -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Archivo+Black&display=swap" as="style" />
+  <link rel="preload" as="image" href="og-image.png" fetchpriority="high" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+
+
+  <link rel="stylesheet" href="style.css" />
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://evulto.com/#organization",
+      "name": "Evulto",
+      "alternateName": ["Evulto App", "Evulto Fitness", "Evulto AI Coach"],
+      "url": "https://evulto.com/",
+      "logo": "https://evulto.com/assets/logo-icon-512.png",
+      "image": "https://evulto.com/og-image.png",
+      "slogan": "Your Coach Calls. No Excuses.",
+      "foundingDate": "2026",
+      "founder": { "@type": "Person", "name": "Rahul" },
+      "sameAs": [
+        "https://instagram.com/atleato_app",
+        "https://www.tiktok.com/@atleato3",
+        "https://x.com/atleato",
+        "https://youtube.com/@atleato"
+      ],
+      "email": "hello@evulto.com",
+      "description": "Evulto is an AI fitness coaching app whose coaches phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days.",
+      "disambiguatingDescription": "Evulto is an independent AI fitness and workout coaching app and software brand for Android. 'Evulto' is a distinct, coined brand name evoking 'exult' — the triumph of showing up.",
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "hello@evulto.com",
+        "contactType": "customer support"
+      }
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://evulto.com/#website",
+      "url": "https://evulto.com/",
+      "name": "Evulto",
+      "description": "AI fitness coaching app with 5 persona coaches, real wake-up calls, real-time form correction, and rest-day-aware scheduling.",
+      "publisher": { "@id": "https://evulto.com/#organization" },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "MobileApplication",
+      "@id": "https://evulto.com/#app",
+      "name": "Evulto",
+      "url": "https://evulto.com/",
+      "description": "AI-powered fitness coaching app with 5 persona coaches, live form correction, an AI food scanner, and real wake-up & workout calls that ring your phone like an actual call.",
+      "applicationCategory": "HealthApplication",
+      "operatingSystem": "Android",
+      "publisher": { "@id": "https://evulto.com/#organization" },
+      "image": "https://evulto.com/og-image.png",
+      "screenshot": [
+        "https://evulto.com/assets/marketing/03-your-coach-calls.png",
+        "https://evulto.com/assets/marketing/05-ai-form-coach.png",
+        "https://evulto.com/assets/marketing/02-5-legend-coaches.png",
+        "https://evulto.com/assets/marketing/06-nutrition-macros.png"
+      ],
+      "featureList": [
+        "AI wake-up and workout phone calls",
+        "Real-time AI exercise form correction via camera",
+        "5 switchable AI coach personas",
+        "AI food and macro scanner",
+        "Rest-day-aware scheduling tied to your workout plan"
+      ],
+      "offers": [
+        {"@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free"},
+        {"@type": "Offer", "price": "9.99", "priceCurrency": "USD", "name": "Pro"},
+        {"@type": "Offer", "price": "19.99", "priceCurrency": "USD", "name": "Legend"}
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://evulto.com/#faq",
+      "isPartOf": { "@id": "https://evulto.com/#website" },
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is Evulto?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Evulto is an AI fitness coaching app for Android. Five world-class coach personas phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does Evulto's AI form correction work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Evulto uses your phone's camera and on-device pose detection to track your joints during a set. It analyzes your movement live and flags issues — like knees caving in or a shallow squat — so you fix your form rep by rep, without a human trainer in the room."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What makes Evulto different from other AI fitness apps?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Most fitness apps send notifications you swipe away. Evulto actually rings your phone like a real call — full-screen, ringtone, and a callback if you decline. It pairs that with five switchable coach personas, real-time form correction, and rest-day-aware scheduling in one app."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is Evulto really free?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes. The Free tier includes 1 coach, workouts, nutrition tracking, wake-up and workout calls, and streaks — forever. No credit card required. PRO and LEGEND unlock additional coaches, AI form correction, and premium features."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How do Evulto's wake-up calls work?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Set a time, pick a ringtone. Your phone rings like an actual incoming call — full screen, vibration, the works. If you decline, your coach calls back 5 minutes later. It's not a notification you can swipe away."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Will Evulto bug me on rest days?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "No. Evulto reads your training plan and only calls on workout days — your rest days stay completely silent. It's a coach, not a nag: it pushes when it counts and lets you recover when it matters."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I switch coaches in Evulto?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Free users get 1 coach. PRO unlocks 3. LEGEND gets all 5. When you switch, the entire app transforms — colors, workout programs, nutrition philosophy, voice, and motivational style all change to match your new coach."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "When does Evulto launch?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Evulto is in closed beta. Join the waitlist to get early access. Waitlist members will be the first to download when it launches on Google Play."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What does the name Evulto mean?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Evulto is our own coined brand name — it carries the spirit of exult: the rush of triumph when you push through a workout and rise to your best. It is an independent AI fitness app for Android with five AI coach personas that call you, correct your form, and keep you showing up."
+          }
+        }
+      ]
     }
-    *{box-sizing:border-box;margin:0;padding:0;}
-    html{scroll-behavior:smooth;}
-    body{background:var(--paper);color:var(--ink);font-family:var(--font-t);line-height:1.6;-webkit-font-smoothing:antialiased;font-size:17px;overflow-x:hidden;}
-    .wrap{max-width:var(--maxw);margin:0 auto;padding:0 24px;}
-    a{color:inherit;text-decoration:none;}
-    h1,h2,h3{font-family:var(--font-d);letter-spacing:-0.02em;line-height:1.05;font-weight:800;}
-    .accent{color:var(--accent-ink);}
-    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);color:var(--btn-ink);font-weight:700;font-size:15px;padding:14px 26px;border-radius:100px;border:none;cursor:pointer;box-shadow:0 10px 24px -10px color-mix(in srgb,var(--accent) 70%,transparent);transition:transform .15s,filter .15s;}
-    .btn:hover{transform:translateY(-1px);filter:brightness(1.03);}
-    .btn-ghost{background:var(--card);color:var(--ink);border:1px solid var(--border-strong);box-shadow:none;}
-    .eyebrow{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-t);font-weight:700;font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent-ink);}
-    .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 20%,transparent);animation:pulse 2s infinite;}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-    .muted{color:var(--muted);} .dim{color:var(--dim);}
-
-    /* Nav */
-    .nav{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 82%,transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);}
-    .nav-in{display:flex;align-items:center;justify-content:space-between;height:66px;}
-    .brand{display:flex;align-items:center;gap:10px;font-family:var(--font-d);font-weight:800;font-size:20px;letter-spacing:-0.03em;}
-    .brand .mk{width:30px;height:30px;border-radius:9px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:var(--btn-ink);font-family:var(--font-d);font-weight:800;font-size:18px;}
-    .nav-links{display:flex;align-items:center;gap:28px;font-size:14.5px;font-weight:500;color:var(--muted);}
-    .nav-links a:hover{color:var(--ink);}
-    .nav .btn{padding:10px 20px;font-size:14px;}
-    @media(max-width:820px){.nav-links a:not(.btn){display:none;}}
-
-    /* Hero */
-    .hero{padding:72px 0 40px;}
-    .hero-grid{display:grid;grid-template-columns:1.15fr 0.85fr;gap:56px;align-items:center;}
-    .h1{font-size:clamp(40px,6vw,68px);margin:20px 0 18px;}
-    .hero .sub{font-size:19px;color:var(--muted);max-width:520px;margin-bottom:26px;}
-    .wl-form{max-width:480px;}
-    .input-row{display:flex;gap:10px;background:var(--card);border:1px solid var(--border-strong);border-radius:100px;padding:6px 6px 6px 20px;box-shadow:var(--shadow);}
-    .input-row input{flex:1;border:none;outline:none;background:transparent;font-size:15.5px;color:var(--ink);font-family:var(--font-t);min-width:0;}
-    .input-row input::placeholder{color:var(--dim);}
-    .wl-msg{min-height:18px;font-size:13px;margin:10px 2px 0;}
-    .microcopy{font-size:13px;color:var(--dim);margin-top:12px;}
-    .badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;}
-    .badge{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:9px 15px;font-size:12.5px;color:var(--muted);font-weight:500;}
-
-    /* Ring */
-    .ring-card{background:var(--card);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow);padding:34px;display:flex;flex-direction:column;align-items:center;gap:14px;}
-    .ring{position:relative;width:210px;height:210px;}
-    .ring svg{transform:rotate(-90deg);}
-    .ring .track{fill:none;stroke:var(--ring-track);stroke-width:12;}
-    .ring .prog{fill:none;stroke:var(--accent);stroke-width:12;stroke-linecap:round;stroke-dasharray:571;stroke-dashoffset:34;}
-    .ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .ring .val b{font-family:var(--font-d);font-size:52px;font-weight:800;letter-spacing:-0.03em;}
-    .ring .val span{font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-top:2px;}
-    .ring-cap{font-size:13.5px;color:var(--muted);text-align:center;}
-    .ring-cap b{color:var(--ink);}
-
-    /* Pillars */
-    .pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:30px 0 8px;}
-    .pill{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;text-align:center;}
-    .pill .ic{font-size:22px;}
-    .pill b{display:block;font-family:var(--font-d);font-size:14px;margin:8px 0 3px;font-weight:700;}
-    .pill span{font-size:12.5px;color:var(--muted);}
-    @media(max-width:720px){.pillars{grid-template-columns:1fr 1fr;}}
-
-    /* Sections */
-    section{padding:64px 0;}
-    .sec-head{text-align:center;max-width:640px;margin:0 auto 44px;}
-    .sec-head h2{font-size:clamp(28px,4vw,44px);margin:14px 0 12px;}
-    .sec-head p{color:var(--muted);font-size:17px;}
-
-    /* Features */
-    .features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
-    .fcard{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:30px;box-shadow:var(--shadow);}
-    .fcard .mini{width:60px;height:60px;position:relative;margin-bottom:18px;}
-    .fcard .mini svg{transform:rotate(-90deg);} .fcard .mini .t{fill:none;stroke:var(--icon-track);stroke-width:7;} .fcard .mini .p{fill:none;stroke:var(--accent);stroke-width:7;stroke-linecap:round;stroke-dasharray:150;stroke-dashoffset:35;}
-    .fcard .mini i{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:22px;}
-    .fcard h3{font-size:20px;margin-bottom:8px;}
-    .fcard p{color:var(--muted);font-size:15px;}
-    @media(max-width:820px){.features{grid-template-columns:1fr;}}
-
-    /* Coach switcher */
-    .switch{background:var(--card);border:1px solid var(--border);border-radius:28px;padding:40px;box-shadow:var(--shadow);text-align:center;}
-    .chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:22px 0 10px;}
-    .chip{display:flex;align-items:center;gap:9px;background:var(--paper);border:1.5px solid var(--border-strong);border-radius:100px;padding:9px 16px 9px 12px;cursor:pointer;font-size:14px;font-weight:600;transition:transform .15s;}
-    .chip .sw{width:16px;height:16px;border-radius:50%;}
-    .chip:hover{transform:translateY(-1px);}
-    .chip.is-active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--paper));}
-    .switch .caption{color:var(--muted);font-size:15px;margin-top:14px;}
-    .switch .caption b{color:var(--accent-ink);}
-
-    /* Devices */
-    .devices{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:center;}
-    .phone{background:var(--phone-bg);border:1px solid var(--phone-border);border-radius:34px;padding:22px;color:#fff;box-shadow:0 30px 60px -30px rgba(10,31,25,0.5);}
-    .phone .notch{width:110px;height:6px;border-radius:100px;background:var(--phone-border);margin:0 auto 20px;}
-    .call{text-align:center;padding:14px 6px 6px;}
-    .call .who{width:84px;height:84px;border-radius:50%;background:color-mix(in srgb,var(--accent) 22%,var(--phone-bg));border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:var(--font-d);font-weight:800;font-size:30px;color:var(--accent);}
-    .call .lab{font-size:11px;letter-spacing:0.2em;text-transform:uppercase;color:var(--phone-muted);}
-    .call .nm{font-family:var(--font-d);font-size:22px;font-weight:800;margin:6px 0 2px;}
-    .call .q{color:var(--phone-muted);font-size:13px;font-style:italic;margin-bottom:22px;}
-    .call .acts{display:flex;justify-content:center;gap:44px;}
-    .call .acts div{text-align:center;}
-    .call .rb{width:58px;height:58px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 7px;}
-    .call .rb.no{background:#F2432E;} .call .rb.yes{background:#12B981;}
-    .call .acts span{font-size:11px;color:var(--phone-muted);}
-    .dash .dh{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
-    .dash .dh b{font-family:var(--font-d);font-size:15px;} .dash .dh span{font-size:11px;color:var(--phone-muted);letter-spacing:0.14em;text-transform:uppercase;}
-    .dash .dring{width:130px;height:130px;position:relative;margin:0 auto 20px;}
-    .dash .dring svg{transform:rotate(-90deg);} .dash .dring .t{fill:none;stroke:var(--phone-track);stroke-width:11;} .dash .dring .p{fill:none;stroke:var(--accent);stroke-width:11;stroke-linecap:round;stroke-dasharray:352;stroke-dashoffset:32;}
-    .dash .dring i{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;font-style:normal;}
-    .dash .dring i b{font-family:var(--font-d);font-size:34px;font-weight:800;} .dash .dring i span{font-size:9px;color:var(--phone-muted);letter-spacing:0.16em;text-transform:uppercase;}
-    .drow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-top:1px solid var(--phone-border);font-size:13px;}
-    .drow span{color:var(--phone-muted);} .drow b{font-family:var(--font-d);font-weight:700;}
-    .drow .ok{color:var(--accent);}
-    @media(max-width:820px){.devices{grid-template-columns:1fr;max-width:380px;margin:0 auto;}}
-
-    /* Pricing */
-    .price{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:760px;margin:0 auto;}
-    .pcard{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:32px;box-shadow:var(--shadow);}
-    .pcard.feat{border:1.5px solid var(--accent);position:relative;}
-    .pcard .tag{font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--dim);font-weight:700;}
-    .pcard.feat .tag{color:var(--accent-ink);}
-    .pcard .amt{font-family:var(--font-d);font-size:44px;font-weight:800;margin:8px 0 2px;letter-spacing:-0.03em;}
-    .pcard .amt small{font-size:15px;color:var(--muted);font-weight:600;}
-    .pcard ul{list-style:none;margin:18px 0 22px;}
-    .pcard li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--muted);padding:5px 0;}
-    .pcard li::before{content:"✓";color:var(--accent);font-weight:800;}
-    .pcard .btn{width:100%;}
-    .pnote{text-align:center;color:var(--dim);font-size:13px;margin-top:20px;}
-    @media(max-width:640px){.price{grid-template-columns:1fr;}}
-
-    /* FAQ */
-    .faq{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:12px;}
-    details{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px 22px;}
-    summary{font-family:var(--font-d);font-size:16px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;}
-    summary::-webkit-details-marker{display:none;}
-    summary .pm{color:var(--accent);font-size:20px;}
-    details p{color:var(--muted);font-size:15px;margin-top:12px;}
-
-    /* CTA + footer */
-    .cta{background:var(--ink);color:#fff;border-radius:28px;padding:56px 40px;text-align:center;}
-    .cta h2{font-size:clamp(28px,4vw,42px);color:#fff;margin-bottom:14px;}
-    .cta p{color:#9fb3aa;margin-bottom:26px;font-size:17px;}
-    .cta .input-row{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.14);}
-    .cta .input-row input{color:#fff;} .cta .input-row input::placeholder{color:#9fb3aa;}
-    .cta form{max-width:460px;margin:0 auto;}
-    footer{padding:50px 0 40px;border-top:1px solid var(--border);margin-top:70px;}
-    .foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:24px;}
-    .foot .links{display:flex;gap:22px;flex-wrap:wrap;font-size:14px;color:var(--muted);}
-    .foot .links a:hover{color:var(--ink);}
-    .foot .cr{font-size:12.5px;color:var(--dim);width:100%;text-align:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
-    @media(max-width:820px){.hero-grid{grid-template-columns:1fr;gap:36px;}.ring-card{max-width:340px;}}
+  ]
+}
+</script>
+<style>
+  /* Mobile UI section card hover effects */
+  .mobile-ui-card:hover{transform:translateY(-4px);box-shadow:0 20px 50px -20px rgba(0,0,0,0.6);}
+  .mobile-ui-card:hover[style*="rgba(18,185,129"]{border-color:rgba(18,185,129,0.5) !important;}
+  .mobile-ui-card:hover[style*="rgba(255,107,53"]{border-color:rgba(255,107,53,0.5) !important;}
+  .mobile-ui-card:hover[style*="rgba(10,31,25,0.08)"]{border-color:rgba(255,255,255,0.2) !important;}
+  .mobile-ui-card:focus-visible{outline:2px solid var(--lime);outline-offset:3px;}
+  /* Sticky mobile "Join Waitlist" CTA (conversion) */
+  .sticky-cta{display:inline-flex;align-items:center;justify-content:center;gap:6px;position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:60;background:var(--lime);color:#0a0b0d;font-weight:800;font-size:15px;padding:14px 30px;border-radius:100px;text-decoration:none;box-shadow:0 12px 34px -8px rgba(0,0,0,0.6);letter-spacing:0.3px;}
+  @media (max-width:768px){
+    .sticky-cta{left:12px;right:12px;bottom:12px;transform:none;border-radius:14px;padding:15px;}
+    body{padding-bottom:80px;}
+  }
+  .footer-socials a{color:var(--text-secondary);display:inline-flex;transition:color .2s;}
+  .footer-socials a:hover{color:var(--lime);}
+</style>
+  <!-- Evulto light-emerald theme override (index2 preview) -->
+  <style id="evulto-light">
+    :root{
+      --bg:#F4F7F5; --bg-rgb:244,247,245;
+      --surface:#FFFFFF; --raised:#EEF3F0;
+      --border:#E1E8E4; --border-hover:#D3DED8;
+      --text:#0A1F19; --text-secondary:#5A6B63; --text-tertiary:#8A968F;
+      --orange:#12B981; --orange-rgb:18,185,129; --orange-deep:#0FA968;
+      --ink:#07130F;
+      --shadow-glow:0 20px 50px -24px rgba(18,185,129,0.35);
+    }
+    #three-canvas{display:none !important;}
+    body{background:#F4F7F5;}
+    /* soft premium shadows on white cards (light theme) */
+    .feature-card,.coach-card,.price-card,.step-card,.hud-panel{box-shadow:0 1px 3px rgba(10,31,25,0.04),0 8px 24px -16px rgba(10,31,25,0.12);}
   </style>
 </head>
 <body>
-  <!-- Nav -->
-  <nav class="nav"><div class="wrap nav-in">
-    <a class="brand" href="/"><span class="mk">e</span>Evulto</a>
-    <div class="nav-links">
-      <a href="#features">Features</a>
-      <a href="#coaches">Coaches</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
-      <a href="#waitlist" class="btn">Join Free</a>
-    </div>
-  </div></nav>
 
-  <!-- Hero -->
-  <header class="hero"><div class="wrap hero-grid">
-    <div>
-      <span class="eyebrow"><span class="dot"></span>The coach that calls you</span>
-      <h1 class="h1">Your coach<br/><span class="accent">actually calls.</span></h1>
-      <p class="sub">Five AI coaches that phone-call you awake and for workouts — real two-way conversations, live form correction, and a plan that respects your rest days. The accountability you can't swipe away.</p>
-      <form id="hero-wl" class="wl-form" novalidate>
-        <div class="input-row">
-          <input type="email" name="email" placeholder="Enter your email" autocomplete="email" required />
-          <button type="submit" class="btn">Join Waitlist</button>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- 3D Canvas Background -->
+  <canvas id="three-canvas"></canvas>
+
+  <!-- Navigation -->
+  <nav id="main-nav">
+    <div class="nav-container">
+      <div class="wordmark">
+        <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#D8E2DD" stroke-width="9"/>
+          <circle cx="50" cy="50" r="34" fill="none" stroke="var(--lime)" stroke-width="9" stroke-linecap="round" stroke-dasharray="150 214" transform="rotate(128 50 50)"/>
+          <circle cx="76" cy="30" r="6.5" fill="var(--lime)"/>
+        </svg>
+        Evulto<span class="tm">™</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#coaches">Coaches</a>
+        <a href="#mobile-ui">Mobile UI</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+        <a href="/about">About</a>
+        <a href="#waitlist" class="nav-cta">Join Waitlist</a>
+        <button id="sound-toggle" class="sound-btn" aria-label="Toggle Sound">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="sound-icon-svg">
+            <path class="speaker" d="M11 5L6 9H2V15H6L11 19V5Z" fill="currentColor"/>
+            <path class="waves" d="M15.54 8.46C16.48 9.4 17 10.68 17 12C17 13.32 16.48 14.6 15.54 15.54M19.07 4.93C20.89 6.75 22 9.3 22 12C22 14.7 20.89 17.25 19.07 19.07" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <button class="mobile-menu" id="mobile-menu-btn" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <main id="main-content">
+
+  <!-- Hero Section -->
+  <section id="hero" class="section">
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span class="eyebrow-dot"></span>
+        THE COACH THAT CALLS YOU
+      </div>
+      <h1 class="hero-headline">
+        YOUR COACH<br/>
+        <span class="lime-text">ACTUALLY CALLS.</span>
+      </h1>
+      <p class="hero-sub">
+        5 AI coaches that phone-call you awake and for your workouts — real two-way conversations, real-time form correction, and a plan that respects your rest days. The accountability you can't swipe away.
+      </p>
+      <div class="scarcity-banner">
+        <span class="scarcity-banner-dot"></span>
+        <span id="vanguard-counter">ONLY 500 VIP VANGUARD PASSES AVAILABLE</span>
+      </div>
+      <style>
+        .plat-toggle{display:flex;align-items:center;gap:8px;max-width:520px;margin:10px 0 0;flex-wrap:wrap;}
+        .plat-toggle .plat-label{font-size:12px;color:var(--text-tertiary);}
+        .plat-opt{position:relative;cursor:pointer;}
+        .plat-opt input{position:absolute;opacity:0;width:0;height:0;}
+        .plat-opt span{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border:1px solid var(--border);border-radius:100px;font-size:12.5px;color:var(--text-secondary);transition:all .15s;}
+        .plat-opt input:checked + span{border-color:var(--lime);color:var(--text);background:rgba(18,185,129,0.08);}
+        .plat-opt input:focus-visible + span{outline:2px solid var(--lime);outline-offset:2px;}
+      </style>
+      <form id="hero-waitlist-form" class="waitlist-form" style="margin-bottom:20px;text-align:left;" novalidate>
+        <div class="input-group" style="max-width:520px;margin:0;">
+          <input type="email" name="email" placeholder="Enter your email" required autocomplete="email" />
+          <button type="submit" class="cta-primary submit-btn">
+            <span class="cta-glow"></span>
+            JOIN WAITLIST
+          </button>
         </div>
-        <div class="wl-msg"></div>
-        <p class="microcopy">Free forever. No credit card. <span class="dim">Android — iOS coming later.</span></p>
+        <div class="plat-toggle" role="radiogroup" aria-label="Your platform">
+          <span class="plat-label">Notify me for:</span>
+          <label class="plat-opt"><input type="radio" name="platform" value="android" checked /><span>🤖 Android</span></label>
+          <label class="plat-opt"><input type="radio" name="platform" value="ios" /><span>🍎 iOS</span></label>
+        </div>
+        <div class="waitlist-msg" id="hero-waitlist-msg"></div>
+        <p style="font-size:12px;color:var(--text-tertiary);margin-top:10px;">Free forever. No credit card required. <a href="#features" style="color:var(--lime);text-decoration:none;border-bottom:1px solid rgba(255,107,53,0.3);">See how it works ↓</a></p>
       </form>
-      <div class="badges">
-        <span class="badge">🤖 Coming soon to Google Play</span>
-        <span class="badge">🍎 iOS coming later</span>
+      <div class="store-badges" style="display:flex;gap:10px;align-items:center;margin:0 0 22px;flex-wrap:wrap;">
+        <span style="display:inline-flex;align-items:center;gap:9px;background:rgba(10,31,25,0.04);border:1px solid var(--border);border-radius:12px;padding:10px 16px;font-size:12.5px;color:var(--text-secondary);letter-spacing:0.3px;">
+          <svg width="15" height="17" viewBox="0 0 24 27" aria-hidden="true"><path d="M1 1.5 13.5 13.5 1 25.5z" fill="#12B981"/><path d="M1 1.5 18 11 13.5 13.5z" fill="#34a853"/><path d="M1 25.5 18 16 13.5 13.5z" fill="#ea4335"/><path d="M18 11 23 13.5 18 16 13.5 13.5z" fill="#fbbc04"/></svg>
+          Coming soon to <strong style="color:var(--text);margin-left:2px;">Google Play</strong>
+        </span>
+        <span style="display:inline-flex;align-items:center;gap:9px;background:rgba(10,31,25,0.04);border:1px solid var(--border);border-radius:12px;padding:10px 16px;font-size:12.5px;color:var(--text-tertiary);letter-spacing:0.3px;">
+          <svg width="14" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 12.5c-.03-2.7 2.2-4 2.3-4.06-1.25-1.83-3.2-2.08-3.9-2.11-1.66-.17-3.24.97-4.08.97-.84 0-2.14-.95-3.52-.92-1.81.03-3.48 1.05-4.4 2.67-1.88 3.26-.48 8.08 1.35 10.72.9 1.3 1.96 2.75 3.36 2.7 1.35-.06 1.86-.87 3.49-.87 1.62 0 2.08.87 3.5.84 1.45-.02 2.36-1.32 3.24-2.62 1.02-1.5 1.44-2.95 1.46-3.02-.03-.01-2.8-1.07-2.83-4.27zM14.4 4.5c.74-.9 1.24-2.15 1.1-3.4-1.07.04-2.36.71-3.13 1.6-.69.79-1.29 2.06-1.13 3.27 1.19.09 2.42-.6 3.16-1.47z"/></svg>
+          iOS <strong style="color:var(--text-secondary);margin-left:2px;">coming later</strong>
+        </span>
       </div>
+      <!-- Voice sample: a real Commander wake-up call. Hidden until assets/commander-sample.mp3 exists. -->
+      <div id="voice-sample" style="display:none;align-items:center;gap:13px;margin:0 0 22px;background:rgba(10,31,25,0.04);border:1px solid var(--border);border-radius:14px;padding:12px 16px;max-width:520px;">
+        <button id="voice-sample-btn" type="button" aria-label="Play a wake-up call sample" style="flex:none;width:44px;height:44px;border-radius:50%;border:none;background:var(--lime);color:#0a0b0d;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px -6px rgba(18,185,129,0.5);">▶</button>
+        <div style="flex:1;text-align:left;min-width:0;">
+          <div style="font-size:13px;font-weight:800;color:var(--text);letter-spacing:0.2px;">Hear a 6&nbsp;AM wake-up call</div>
+          <div style="font-size:11.5px;color:var(--text-tertiary);margin-top:2px;">The Commander · real AI voice</div>
+          <div style="height:3px;background:rgba(255,255,255,0.1);border-radius:3px;margin-top:8px;overflow:hidden;"><div id="voice-sample-bar" style="height:100%;width:0%;background:var(--lime);transition:width .1s linear;"></div></div>
+        </div>
+        <audio id="voice-sample-audio" preload="none" src="assets/commander-sample.mp3"></audio>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-number" id="live-waitlist-count" style="font-size:0.6em;letter-spacing:0.5px;">OPEN</span>
+          <span class="stat-label" id="live-waitlist-label">Early Access</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-number">33</span>
+          <span class="stat-label">Joint Tracking</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-number">24/7</span>
+          <span class="stat-label">Wake-Up Calls</span>
+        </div>
+      </div>
+      <!-- Real-time stat fetcher — pulls counts from Supabase every 20s -->
+      <script defer src="live-counts.js"></script>
+      <!-- Hero voice-sample player (auto-hides until the mp3 exists) -->
+      <script defer src="voice-sample.js"></script>
     </div>
-    <div class="ring-card">
-      <div class="ring">
-        <svg viewBox="0 0 210 210"><circle class="track" cx="105" cy="105" r="91"/><circle class="prog" cx="105" cy="105" r="91"/></svg>
-        <div class="val"><b data-target="94">0</b><span>Form Score</span></div>
-      </div>
-      <p class="ring-cap"><b>Live form check.</b> Every rep scored on-device — 33 joints, real-time.</p>
+    <div class="scroll-indicator">
+      <div class="scroll-line"></div>
+      <span>SCROLL</span>
     </div>
-  </div></header>
+  </section>
 
-  <!-- Pillars -->
-  <div class="wrap"><div class="pillars">
-    <div class="pill"><div class="ic">📞</div><b>Wake-up calls</b><span>It rings. You rise.</span></div>
-    <div class="pill"><div class="ic">🎥</div><b>Live form check</b><span>Scored every rep</span></div>
-    <div class="pill"><div class="ic">🍎</div><b>AI food scanner</b><span>Snap → macros</span></div>
-    <div class="pill"><div class="ic">🌙</div><b>Rest-day aware</b><span>Silent when you recover</span></div>
-  </div></div>
-
-  <!-- Features -->
-  <section id="features"><div class="wrap">
-    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>What you get</span><h2>A real coach, in software.</h2><p>Not another tracker you ignore — a coach that shows up, pushes when it counts, and backs off when it matters.</p></div>
-    <div class="features">
-      <div class="fcard">
-        <div class="mini"><svg viewBox="0 0 60 60"><circle class="t" cx="30" cy="30" r="24"/><circle class="p" cx="30" cy="30" r="24"/></svg><i>🎥</i></div>
-        <h3>AI Form Coach</h3>
-        <p>Point your phone and lift. On-device pose tracking checks 33 joints in real time and calls out exactly what to fix — knees caving, depth short, back rounding. And it tells you honestly when it can't see you.</p>
-      </div>
-      <div class="fcard">
-        <div class="mini"><svg viewBox="0 0 60 60"><circle class="t" cx="30" cy="30" r="24"/><circle class="p" cx="30" cy="30" r="24"/></svg><i>📞</i></div>
-        <h3>Real Wake-Up Calls</h3>
-        <p>Your phone rings like an actual call — full screen, ringtone, vibration. Decline, and your coach calls back in five minutes. It's not a notification you can swipe away at 6 AM.</p>
-      </div>
-      <div class="fcard">
-        <div class="mini"><svg viewBox="0 0 60 60"><circle class="t" cx="30" cy="30" r="24"/><circle class="p" cx="30" cy="30" r="24"/></svg><i>🌙</i></div>
-        <h3>Knows Your Rest Days</h3>
-        <p>Evulto reads your training plan and only calls on workout days. Rest days stay completely silent. A coach, not a nag — it pushes when it counts and lets you recover when it matters.</p>
-      </div>
-    </div>
-  </div></section>
-
-  <!-- Coach switcher -->
-  <section id="coaches"><div class="wrap">
-    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Five coaches, one app</span><h2>Pick a coach. Watch it transform.</h2><p>Every coach changes the whole experience — voice, program, nutrition philosophy, and the app's color. Tap one:</p></div>
-    <div class="switch">
-      <div class="chips">
-        <button class="chip is-active" data-accent="#12B981" data-coach="The Sculptor" aria-pressed="true"><span class="sw" style="background:#12B981"></span>The Sculptor</button>
-        <button class="chip" data-accent="#E0A83A" data-coach="The Monument" aria-pressed="false"><span class="sw" style="background:#E0A83A"></span>The Monument</button>
-        <button class="chip" data-accent="#3B9BF5" data-coach="The Analyst" aria-pressed="false"><span class="sw" style="background:#3B9BF5"></span>The Analyst</button>
-        <button class="chip" data-accent="#F2432E" data-coach="The Commander" aria-pressed="false"><span class="sw" style="background:#F2432E"></span>The Commander</button>
-        <button class="chip" data-accent="#8B5CF6" data-coach="The Architect" aria-pressed="false"><span class="sw" style="background:#8B5CF6"></span>The Architect</button>
-      </div>
-      <p class="caption">Now coaching as <b id="coach-active">The Sculptor</b> — the whole page just re-themed live, exactly like the app does.</p>
-    </div>
-  </div></section>
-
-  <!-- Devices -->
-  <section><div class="wrap">
-    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Inside the app</span><h2>It looks like a real call. Because it is one.</h2></div>
-    <div class="devices">
-      <div class="phone"><div class="notch"></div>
-        <div class="call">
-          <div class="who">TS</div>
-          <div class="lab">Incoming call · Wake-up</div>
-          <div class="nm">The Sculptor</div>
-          <div class="q">"Time to build. You with me?"</div>
-          <div class="acts">
-            <div><div class="rb no">✕</div><span>Decline</span></div>
-            <div><div class="rb yes">✓</div><span>Answer</span></div>
+  <!-- Coach Roster Bar -->
+  <section id="coaches-bar" class="section">
+    <div class="container">
+      <p class="coaches-eyebrow">YOUR LEGENDS AWAIT</p>
+      <div class="coach-row">
+        <div class="coach-chip" data-coach="sculptor">
+          <div class="coach-avatar">TS</div>
+          <div class="coach-info">
+            <span class="coach-name">THE SCULPTOR</span>
+            <span class="coach-style">Classic Aesthetics</span>
+          </div>
+        </div>
+        <div class="coach-chip" data-coach="monument">
+          <div class="coach-avatar">TG</div>
+          <div class="coach-info">
+            <span class="coach-name">THE MONUMENT</span>
+            <span class="coach-style">Old School Volume</span>
+          </div>
+        </div>
+        <div class="coach-chip" data-coach="analyst">
+          <div class="coach-avatar">SC</div>
+          <div class="coach-info">
+            <span class="coach-name">THE ANALYST</span>
+            <span class="coach-style">Science-Based</span>
+          </div>
+        </div>
+        <div class="coach-chip" data-coach="commander">
+          <div class="coach-avatar">TC</div>
+          <div class="coach-info">
+            <span class="coach-name">THE COMMANDER</span>
+            <span class="coach-style">Raw Intensity</span>
+          </div>
+        </div>
+        <div class="coach-chip" data-coach="architect">
+          <div class="coach-avatar">DG</div>
+          <div class="coach-info">
+            <span class="coach-name">THE ARCHITECT</span>
+            <span class="coach-style">Hypertrophy & Periodization</span>
           </div>
         </div>
       </div>
-      <div class="phone"><div class="notch"></div>
-        <div class="dash">
-          <div class="dh"><b>Today's Set</b><span>Live</span></div>
-          <div class="dring"><svg viewBox="0 0 130 130"><circle class="t" cx="65" cy="65" r="56"/><circle class="p" cx="65" cy="65" r="56"/></svg><i><b data-target="94">0</b><span>Form</span></i></div>
-          <div class="drow"><span>Knee angle</span><b class="ok">92° · Good</b></div>
-          <div class="drow"><span>Depth</span><b class="ok">Parallel · Good</b></div>
-          <div class="drow"><span>Tempo</span><b class="ok">3-1-1 · On</b></div>
-          <div class="drow"><span>Reps</span><b>8 / 8</b></div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">BUILT DIFFERENT</span>
+        <h2 class="section-title">Features That<br/><span class="lime-text">Change Everything.</span></h2>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1: AI Form Coach (LARGE) -->
+        <div class="feature-card feature-card-large" data-feature="form">
+          <div class="feature-badge live-badge">
+            <span class="pulse-dot"></span> IN THE APP
+          </div>
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="32" cy="12" r="6" stroke="currentColor" stroke-width="2"/>
+              <path d="M20 52V32L14 26M44 52V32L50 26M32 22V42M24 42H40" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M10 18L18 14M54 18L46 14" stroke="var(--lime)" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+              <circle cx="32" cy="32" r="28" stroke="var(--lime)" stroke-width="1" opacity="0.15" stroke-dasharray="4 4"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">AI Form Coach</h3>
+          <p class="feature-desc">
+            Point your phone, lift. On-device pose detection tracks 33 skeletal joints in real time and calls out exactly what to fix — knees caving, back rounding, depth short. Your coach's voice tells you the correction mid-rep.
+            <em>Try it below — orbit the 3D model and hit "Simulate Bad Form" to see AI corrections fire live.</em>
+          </p>
+          <div class="feature-tags">
+            <span class="tag">MediaPipe</span>
+            <span class="tag">Real-Time</span>
+            <span class="tag">On-Device</span>
+            <span class="tag">Voice Feedback</span>
+          </div>
+        </div>
+
+        <!-- Feature 2: Real Wake-Up Calls -->
+        <div class="feature-card" data-feature="wakeup">
+          <div class="feature-badge live-badge">
+            <span class="pulse-dot"></span> IN THE APP
+          </div>
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="32" cy="34" r="18" stroke="currentColor" stroke-width="2"/>
+              <path d="M32 24V34L38 38" stroke="var(--lime)" stroke-width="2" stroke-linecap="round"/>
+              <path d="M18 14L12 20M46 14L52 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M32 16V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M28 8H36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Real Wake-Up Calls</h3>
+          <p class="feature-desc">
+            Not a notification — an actual incoming call. Full-screen ring, persistent vibration, 5 bundled ringtones. Decline? Your coach calls back in 5 minutes. No excuses.
+          </p>
+        </div>
+
+        <!-- Feature 3: Rest-Day Aware -->
+        <div class="feature-card" data-feature="rest">
+          <div class="feature-badge live-badge">
+            <span class="pulse-dot"></span> IN THE APP
+          </div>
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M44 38C40 40 35 40 30 37C24 33 22 26 24 20C16 23 11 31 13 40C15 49 24 54 33 52C40 50 44 45 44 38Z" stroke="var(--lime)" stroke-width="2" stroke-linejoin="round"/>
+              <circle cx="46" cy="20" r="2" fill="currentColor"/>
+              <circle cx="52" cy="28" r="1.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Knows Your Rest Days</h3>
+          <p class="feature-desc">
+            It's a coach, not a nag. Evulto reads your training plan and only calls on workout days — rest days stay silent. Push when it counts, recover when it matters. Accountability that actually respects recovery.
+          </p>
+        </div>
+
+        <!-- Feature 4: Persona-Themed Everything -->
+        <div class="feature-card" data-feature="persona">
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="12" y="8" width="40" height="48" rx="8" stroke="currentColor" stroke-width="2"/>
+              <circle cx="32" cy="26" r="8" stroke="var(--lime)" stroke-width="2"/>
+              <path d="M20 48C20 42 25 38 32 38C39 38 44 42 44 48" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">5 Coaches, 5 Apps</h3>
+          <p class="feature-desc">
+            Pick THE SCULPTOR — the entire app transforms: lime green, classic physique splits, "quality reps" philosophy. Switch to The Commander and it goes blood-red with heavy-metal intensity. Colors, programs, nutrition, voice — everything morphs.
+          </p>
+        </div>
+
+        <!-- Feature 5: Streak + Retention -->
+        <div class="feature-card" data-feature="retention">
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M32 8C32 8 44 20 44 32C44 42 36 48 32 48C28 48 20 42 20 32C20 20 32 8 32 8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M32 20C32 20 38 28 38 34C38 38 35 41 32 41C29 41 26 38 26 34C26 28 32 20 32 20Z" stroke="var(--lime)" stroke-width="2" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Streak Calendar + Rewards</h3>
+          <p class="feature-desc">
+            Chain calendar tracks daily consistency. Streak freezes save your progress. Reward chests unlock at 7/30/90 day milestones. Leaderboards rank you against your city. Every mechanic from Duolingo + Strava — for lifting.
+          </p>
+        </div>
+
+        <!-- Feature 6: Global Nutrition -->
+        <div class="feature-card" data-feature="nutrition">
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 28C12 40 20 48 32 48C44 48 52 40 52 28H12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M22 28V16M32 28V12M42 28V16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M14 40C20 44 44 44 50 40" stroke="var(--lime)" stroke-width="2" opacity="0.6"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Global Nutrition DB</h3>
+          <p class="feature-desc">
+            1.2 million packaged foods via USDA + OpenFoodFacts. 200+ global dishes — paneer, biryani, sushi, burritos, pho. Each coach has their own nutrition philosophy, macro split, and signature foods.
+          </p>
+        </div>
+
+        <!-- Feature 7: Physique Check-In -->
+        <div class="feature-card" data-feature="physique">
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="16" y="4" width="32" height="56" rx="6" stroke="currentColor" stroke-width="2"/>
+              <circle cx="32" cy="24" r="10" stroke="var(--lime)" stroke-width="2"/>
+              <path d="M22 44h20M26 50h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="32" cy="24" r="4" fill="var(--lime)" opacity="0.3"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Physique Check-In</h3>
+          <p class="feature-desc">
+            Weekly progress photos with side-by-side comparison. Track visual changes your scale can't measure. Overlay measurements, timeline slider, and coach-specific feedback on your physique evolution.
+          </p>
+        </div>
+
+        <!-- Feature 8: Smart Workouts -->
+        <div class="feature-card" data-feature="workouts">
+          <div class="feature-icon">
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M16 32h32M12 26v12M52 26v12M20 22v20M44 22v20" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M28 32v-8l8 4-8 4z" fill="var(--lime)" opacity="0.6"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">Coach-Designed Programs</h3>
+          <p class="feature-desc">
+            The Monument's double-split, THE SCULPTOR's PPL, The Analyst's evidence-based hypertrophy, The Commander's heavy singles, The Architect's mesocycle periodization. Each program is signature to the coach — not generic templates.
+          </p>
         </div>
       </div>
     </div>
-  </div></section>
+  </section>
 
-  <!-- Pricing -->
-  <section id="pricing"><div class="wrap">
-    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Pricing</span><h2>Train free. Upgrade when ready.</h2></div>
-    <div class="price">
-      <div class="pcard">
-        <div class="tag">Free</div>
-        <div class="amt">$0<small> /forever</small></div>
-        <ul><li>1 Coach</li><li>Wake-up + workout calls</li><li>Persona-themed workouts</li><li>Global nutrition (1.2M foods)</li><li>Rest-day-aware coaching</li></ul>
-        <a href="#waitlist" class="btn btn-ghost">Join Waitlist</a>
-      </div>
-      <div class="pcard feat">
-        <div class="tag">Best value · Early access</div>
-        <div class="amt">$1.99<small> one-time</small></div>
-        <ul><li><strong>3 months of Legend free</strong> at launch</li><li>All 5 coaches</li><li>AI form correction (live)</li><li>Leaderboards + private Discord</li><li>Never auto-charged</li></ul>
-        <a href="#waitlist" class="btn">Claim Vanguard Spot</a>
-      </div>
-    </div>
-    <p class="pnote">Full Pro ($9.99/mo) and Legend ($19.99/mo) plans arrive at launch — no auto-charge.</p>
-  </div></section>
+  <!-- 3D Form Correction Demo Section -->
+  <section id="form-demo" class="section">
+    <div class="container">
+      <div class="demo-grid">
+        <!-- Text & HUD Column -->
+        <div class="demo-info">
+          <span class="section-eyebrow">LIVE VISION DEMO</span>
+          <h2 class="section-title">AI-Powered<br/><span class="lime-text">Form Correction.</span></h2>
+          <p class="demo-subtext">
+            Experience real-time on-device pose detection (MediaPipe). Our AI tracks 33 key skeletal joints, computes angles instantly, and delivers voice corrections in your coach's signature style.
+          </p>
+          <p class="demo-privacy" style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);margin:-4px 0 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--lime)" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Your camera runs <strong style="color:var(--text);">100% on-device</strong> — video frames are never uploaded.
+          </p>
+          
+          <!-- HUD / Stats Cards -->
+          <div class="hud-panel">
+            <div class="hud-header">
+              <span class="hud-title">REAL-TIME TELEMETRY</span>
+              <span class="hud-status"><span class="pulse-dot"></span> CONNECTED</span>
+            </div>
+            
+            <div class="hud-stats-grid" role="group" aria-label="Live form telemetry">
+              <div class="hud-stat-box">
+                <span class="hud-label">KNEE ANGLE</span>
+                <span id="knee-angle" class="angle-value good">0°</span>
+              </div>
+              <div class="hud-stat-box">
+                <span class="hud-label">BACK LEAN</span>
+                <span id="back-angle" class="angle-value good">0°</span>
+              </div>
+              <div class="hud-stat-box">
+                <span class="hud-label">SQUAT DEPTH</span>
+                <span id="squat-depth" class="depth-value">PARALLEL</span>
+              </div>
+            </div>
 
-  <!-- FAQ -->
-  <section id="faq"><div class="wrap">
-    <div class="sec-head"><span class="eyebrow"><span class="dot"></span>Questions</span><h2>Answered.</h2></div>
-    <div class="faq">
-      <details open><summary>What is Evulto? <span class="pm">+</span></summary><p>An AI fitness coaching app for Android. Five coach personas phone-call you awake and for workouts, correct your form in real time using your camera, scan your meals for macros, and only call on training days.</p></details>
-      <details><summary>How do the wake-up calls work? <span class="pm">+</span></summary><p>Set a time, pick a ringtone. Your phone rings like an actual incoming call — full screen and vibration. Decline and your coach calls back in five minutes. It's not a notification you can swipe away.</p></details>
-      <details><summary>Is it really free? <span class="pm">+</span></summary><p>Yes — the Free tier includes one coach, workouts, nutrition tracking, and wake-up & workout calls, forever. No credit card required.</p></details>
-      <details><summary>What does "Evulto" mean? <span class="pm">+</span></summary><p>It's our coined brand name, evoking <em>exult</em> — the rush of triumph when you push through and rise to your best.</p></details>
-    </div>
-  </div></section>
+            <div class="hud-correction-box">
+              <span class="hud-label">COACH'S CORRECTION</span>
+              <div id="correction-text" class="correction-text good" role="status" aria-live="polite">✓ Form looks great! Keep it up.</div>
+            </div>
+          </div>
 
-  <!-- CTA -->
-  <section id="waitlist"><div class="wrap">
-    <div class="cta">
-      <h2>Be first to train under a coach that calls.</h2>
-      <p>Join the waitlist — free forever, no card, no catch.</p>
-      <form id="cta-wl" class="wl-form" novalidate>
-        <div class="input-row">
-          <input type="email" name="email" placeholder="Enter your email" autocomplete="email" required />
-          <button type="submit" class="btn">Join Now</button>
+          <!-- Score circle -->
+          <div class="score-display">
+            <div class="score-ring">
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="54" class="score-circle-bg" />
+                <circle cx="60" cy="60" r="54" id="score-circle-progress" class="score-circle-fg" />
+              </svg>
+              <div class="score-value-container">
+                <span id="form-score">0%</span>
+                <span class="score-label">FORM SCORE</span>
+              </div>
+            </div>
+            <div class="score-info">
+              <h4>Legend Standard</h4>
+              <p>Keep your score above 85% to maximize hypertrophy and prevent injury.</p>
+            </div>
+          </div>
         </div>
-        <div class="wl-msg"></div>
-      </form>
-    </div>
-  </div></section>
 
-  <footer><div class="wrap">
-    <div class="foot">
-      <a class="brand" href="/"><span class="mk">e</span>Evulto</a>
-      <div class="links">
-        <a href="#features">Features</a><a href="#coaches">Coaches</a><a href="#pricing">Pricing</a>
-        <a href="/blog/">Blog</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>
-        <a href="mailto:hello@evulto.com">Contact</a>
+        <!-- 3D Visualization Column -->
+        <div class="demo-visual">
+          <div id="demo-canvas-wrap" class="canvas-wrap" tabindex="0" role="group" aria-label="Interactive 3D form-analysis demo. Press Left or Right arrow to rotate, Space to simulate bad form, P to pause.">
+            <canvas id="person-canvas" aria-hidden="true"></canvas>
+            <div class="canvas-overlay">
+              <div class="overlay-corner top-left"></div>
+              <div class="overlay-corner top-right"></div>
+              <div class="overlay-corner bottom-left"></div>
+              <div class="overlay-corner bottom-right"></div>
+              
+              <div class="overlay-top-row">
+                <span class="overlay-tag" aria-hidden="true"><span class="scanner-dot"></span> SKELETAL CAMERA ACTIVE</span>
+                <div class="overlay-controls" style="display:flex;gap:8px;">
+                  <button id="demo-pause-btn" class="hud-control-btn" aria-pressed="false" aria-label="Pause form demo animation">❚❚ PAUSE</button>
+                  <button id="bad-form-btn" class="hud-control-btn" aria-pressed="false" aria-label="Simulate incorrect form to see the AI corrections">SIMULATE BAD FORM</button>
+                </div>
+              </div>
+
+              <div class="exercise-selector-bar" role="group" aria-label="Choose exercise to preview">
+                <button class="exercise-tab active" data-ex="squat">SQUAT</button>
+                <button class="exercise-tab" data-ex="deadlift">DEADLIFT</button>
+                <button class="exercise-tab" data-ex="curl">BICEP CURL</button>
+              </div>
+
+              <span class="overlay-hint">← → Rotate · Space Simulate · P Pause · or drag to orbit</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <p class="cr">© 2026 Evulto™. An independent AI fitness app. Coach personas are fictional AI characters.</p>
     </div>
-  </div></footer>
+  </section>
 
-  <script defer src="home.js"></script>
+  <!-- Coaches Lineup Section -->
+  <section id="coaches" class="section">
+    <div class="container">
+      <div class="section-header" style="text-align: center; margin-bottom: 48px;">
+        <span class="section-eyebrow">YOUR LINEUP</span>
+        <h2 class="section-title">5 Legends. <span class="lime-text">1 App.</span></h2>
+        <p class="demo-subtext" style="margin: 16px auto 0; max-width: 640px;">
+          Pick one as your active coach. Switch any time. Each persona changes the colors, training philosophy, nutrition rules, and voice — top to bottom.
+        </p>
+      </div>
+
+      <div class="coach-grid">
+        <div class="coach-card" data-coach="sculptor" style="--coach-accent: #c8ff3d;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#c8ff3d;" role="img" aria-label="The Sculptor V-taper silhouette">
+              <path d="M40 8 C 35 8 32 12 32 18 C 32 22 34 24 34 24 L 28 32 L 22 50 L 28 58 L 34 50 L 32 70 L 48 70 L 46 50 L 52 58 L 58 50 L 52 32 L 46 24 C 46 24 48 22 48 18 C 48 12 45 8 40 8 Z" fill="currentColor" opacity="0.85"/>
+              <circle cx="40" cy="14" r="6" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="coach-name" style="color: #c8ff3d;">THE SCULPTOR</div>
+          <div class="coach-tag">Classic Aesthetics</div>
+          <p class="coach-bio">Train for timeless aesthetics — symmetry, proportion, and lines that look carved. Quality over ego. Build a statue, not a pile.</p>
+        </div>
+        <div class="coach-card" data-coach="monument" style="--coach-accent: #f5b942;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#f5b942;" role="img" aria-label="The Monument flexing bicep silhouette">
+              <path d="M14 50 C 14 42 22 36 30 36 C 38 36 44 40 50 44 C 58 50 64 46 66 38 C 68 30 60 26 52 28 L 48 22 C 56 16 70 18 72 30 C 74 44 64 56 50 56 C 38 56 30 50 24 50 L 18 56 L 14 50 Z" fill="currentColor" opacity="0.9"/>
+            </svg>
+          </div>
+          <div class="coach-name" style="color: #f5b942;">THE MONUMENT</div>
+          <div class="coach-tag">Golden-Era Volume</div>
+          <p class="coach-bio">A golden-era, high-volume philosophy — mind-muscle connection and chasing the pump until you can't lift your arms. Training as celebration.</p>
+        </div>
+        <div class="coach-card" data-coach="analyst" style="--coach-accent: #5DD3FA;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#5DD3FA;" role="img" aria-label="The Analyst atom symbol">
+              <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none"/>
+              <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none" transform="rotate(60 40 40)"/>
+              <ellipse cx="40" cy="40" rx="28" ry="12" stroke="currentColor" stroke-width="2.5" fill="none" transform="rotate(120 40 40)"/>
+              <circle cx="40" cy="40" r="5" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="coach-name" style="color: #5DD3FA;">THE ANALYST</div>
+          <div class="coach-tag">Evidence-driven</div>
+          <p class="coach-bio">A powerhouse optimizing every rep based on the latest data literature. Science-based hypertrophy.</p>
+        </div>
+        <div class="coach-card" data-coach="commander" style="--coach-accent: #ef4444;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#ef4444;" role="img" aria-label="The Commander towering figure with raised arms">
+              <circle cx="40" cy="14" r="7" fill="currentColor"/>
+              <path d="M40 22 L 40 50 L 30 70 M40 50 L 50 70 M40 28 L 18 18 M40 28 L 62 18" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+              <circle cx="16" cy="16" r="4" fill="currentColor"/>
+              <circle cx="64" cy="16" r="4" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="coach-name" style="color: #ef4444;">THE COMMANDER</div>
+          <div class="coach-tag">Raw Intensity · No Excuses</div>
+          <p class="coach-bio">Comfort is the enemy. A relentless force who drags the last rep out of you when your body wants to quit — hard, but never reckless.</p>
+        </div>
+        <div class="coach-card" data-coach="architect" style="--coach-accent: #7be38c;">
+          <div class="coach-silhouette">
+            <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:56px;height:56px;color:#7be38c;" role="img" aria-label="The Architect professor with glasses silhouette">
+              <ellipse cx="40" cy="34" rx="22" ry="26" fill="currentColor" opacity="0.85"/>
+              <circle cx="30" cy="36" r="6" fill="#0a0b0d" stroke="#fff" stroke-width="1.5"/>
+              <circle cx="50" cy="36" r="6" fill="#0a0b0d" stroke="#fff" stroke-width="1.5"/>
+              <line x1="36" y1="36" x2="44" y2="36" stroke="#fff" stroke-width="1.5"/>
+              <path d="M28 52 Q40 58 52 52" stroke="#0a0b0d" stroke-width="2" fill="none"/>
+            </svg>
+          </div>
+          <div class="coach-name" style="color: #7be38c;">THE ARCHITECT</div>
+          <div class="coach-tag">Hypertrophy · Volume Landmarks</div>
+          <p class="coach-bio">A periodization specialist who prescribes the exact recoverable dose your body can grow on, then progresses it methodically across each mesocycle.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">3 STEPS</span>
+        <h2 class="section-title">Start Training in<br/><span class="lime-text">Under 60 Seconds.</span></h2>
+      </div>
+
+      <div class="steps-row">
+        <div class="step-card">
+          <div class="step-number">01</div>
+          <div class="step-content">
+            <h3>Pick a Coach</h3>
+            <p>Choose from THE SCULPTOR, The Monument, The Analyst, The Commander, or The Architect. The app transforms around their philosophy — programs, nutrition, voice, colors.</p>
+          </div>
+        </div>
+
+        <div class="step-connector">
+          <svg viewBox="0 0 80 2" fill="none"><line x1="0" y1="1" x2="80" y2="1" stroke="var(--lime)" stroke-width="1" stroke-dasharray="6 4"/></svg>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">02</div>
+          <div class="step-content">
+            <h3>Set Your Wake-Up</h3>
+            <p>Pick a time. Pick a ringtone. The next morning your phone rings like an actual incoming call — your coach pushing you out of bed.</p>
+          </div>
+        </div>
+
+        <div class="step-connector">
+          <svg viewBox="0 0 80 2" fill="none"><line x1="0" y1="1" x2="80" y2="1" stroke="var(--lime)" stroke-width="1" stroke-dasharray="6 4"/></svg>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number">03</div>
+          <div class="step-content">
+            <h3>Train. Eat. Show up.</h3>
+            <p>Live form check at the gym. Macro tracking with global foods. Streak grows. Coach calls you back if you skip.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       MOBILE UI / SHOWREEL SECTION
+       Links to the two flagship demo experiences:
+       1. /showreel.html  — vertical cinematic 7-scene reel (scroll-snap)
+       2. /demo-video.html — 16:9 timeline-based animated walkthrough
+       Plus quick links to app screenshots.
+       ═══════════════════════════════════════════════════════════════ -->
+  <section id="mobile-ui" class="section" style="padding:80px 0;background:linear-gradient(180deg,rgba(18,185,129,0.02),transparent);">
+    <div class="container">
+      <div class="section-header" style="text-align:center;margin-bottom:48px;">
+        <span class="section-eyebrow">SEE IT IN MOTION</span>
+        <h2 class="section-title">Watch the <span class="lime-text">Show.</span></h2>
+        <p class="demo-subtext" style="margin:16px auto 0;max-width:680px;">
+          Two ways to experience Evulto before you ever install it. Both built with the actual app's design system — same fonts, same volt-green, same DNA.
+        </p>
+      </div>
+
+      <div class="mobile-ui-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;max-width:1100px;margin:0 auto;">
+
+        <!-- Card 1: Showreel -->
+        <a href="/showreel.html" class="mobile-ui-card" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;background:linear-gradient(135deg,rgba(18,185,129,0.05),rgba(18,185,129,0.01));border:1px solid rgba(18,185,129,0.18);border-radius:18px;padding:28px;transition:transform .25s, border-color .25s, box-shadow .25s;position:relative;overflow:hidden;">
+          <div style="display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--lime);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(18,185,129,0.3);padding:6px 12px;border-radius:100px;background:rgba(18,185,129,0.06);margin-bottom:22px;">
+            <span style="display:inline-block;width:6px;height:6px;background:var(--lime);border-radius:50%;box-shadow:0 0 8px var(--lime);"></span> NEW · 60-SECOND SHOWREEL
+          </div>
+          <h3 style="font-family:'Archivo Black',sans-serif;font-size:28px;letter-spacing:-0.5px;margin:0 0 8px;line-height:1.1;">Cinematic Vertical Reel</h3>
+          <p style="color:var(--text-secondary);font-size:14px;line-height:1.55;margin:0 0 20px;">Scroll-snap through scenes: cold-open clock → wake-up call → 5 coaches → AI form coach → stats → CTA. Built for mobile + desktop.</p>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px;">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">🎬 7 scenes</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">📱 mobile-first</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;">⌨ keyboard nav</div>
+          </div>
+          <div style="display:inline-flex;align-items:center;gap:8px;color:var(--lime);font-family:'Archivo Black',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;">
+            Watch the showreel <span style="font-size:18px;">→</span>
+          </div>
+        </a>
+
+        <!-- Card 2 (Demo Video) removed: demo-video.html is a 2 MB in-browser-Babel
+             React app that hangs the renderer. Re-add once it's precompiled. The
+             showreel + app-preview cards below are the working demos. -->
+
+        <!-- Card 3: App Preview Screenshots -->
+        <a href="/app-preview.html" class="mobile-ui-card" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;background:rgba(10,31,25,0.03);border:1px solid rgba(10,31,25,0.08);border-radius:18px;padding:28px;transition:transform .25s, border-color .25s, box-shadow .25s;">
+          <div style="display:inline-flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-secondary);letter-spacing:2px;text-transform:uppercase;border:1px solid rgba(10,31,25,0.10);padding:6px 12px;border-radius:100px;margin-bottom:22px;">📷 8 SCREENS</div>
+          <h3 style="font-family:'Archivo Black',sans-serif;font-size:24px;letter-spacing:-0.4px;margin:0 0 8px;line-height:1.1;">App Screenshots</h3>
+          <p style="color:var(--text-secondary);font-size:13.5px;line-height:1.55;margin:0 0 18px;">Phone-frame mockups of the real React Native app screens — launch, onboarding, dashboard, workout, form coach, nutrition.</p>
+          <div style="color:var(--text-tertiary);font-family:'Archivo Black',sans-serif;font-size:13px;letter-spacing:1px;text-transform:uppercase;">View screenshots →</div>
+        </a>
+
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Quote / Social Proof Section -->
+  <section id="quote-section" class="section">
+    <div class="container">
+      <div class="quote-block">
+        <div class="quote-marks">"</div>
+        <p class="quote-text">
+          Most fitness apps give you a spreadsheet.<br/>
+          <span class="lime-text">Evulto gives you a coach who knows your name.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials (early beta feedback — add real names when you can) -->
+  <section id="testimonials" class="section" style="padding:72px 0;">
+    <div class="container">
+      <div class="section-header" style="text-align:center;margin-bottom:40px;">
+        <span class="section-eyebrow">EARLY FEEDBACK</span>
+        <h2 class="section-title">What beta testers<br/><span class="lime-text">are saying.</span></h2>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(258px,1fr));gap:18px;max-width:920px;margin:0 auto;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="color:#12B981;font-size:14px;letter-spacing:2px;margin-bottom:12px;">★★★★★</div>
+          <p style="color:var(--text);font-size:15px;line-height:1.6;margin:0 0 16px;">"For the first time, a fitness app feels motivating instead of boring."</p>
+          <div style="color:var(--text-tertiary);font-size:12px;letter-spacing:0.3px;">— Beta tester</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="color:#12B981;font-size:14px;letter-spacing:2px;margin-bottom:12px;">★★★★★</div>
+          <p style="color:var(--text);font-size:15px;line-height:1.6;margin:0 0 16px;">"The coach personalities make workouts feel more personal."</p>
+          <div style="color:var(--text-tertiary);font-size:12px;letter-spacing:0.3px;">— Beta tester</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="color:#12B981;font-size:14px;letter-spacing:2px;margin-bottom:12px;">★★★★★</div>
+          <p style="color:var(--text);font-size:15px;line-height:1.6;margin:0 0 16px;">"The form correction feature helped me spot mistakes I didn't even know I was making."</p>
+          <div style="color:var(--text-tertiary);font-size:12px;letter-spacing:0.3px;">— Beta tester</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="color:#12B981;font-size:14px;letter-spacing:2px;margin-bottom:12px;">★★★★★</div>
+          <p style="color:var(--text);font-size:15px;line-height:1.6;margin:0 0 16px;">"The wake-up call feature is surprisingly effective. It's harder to ignore than a normal alarm."</p>
+          <div style="color:var(--text-tertiary);font-size:12px;letter-spacing:0.3px;">— Beta tester</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Founder Story (trust signal — swap the RM avatar for a real founder photo) -->
+  <section id="founder" class="section" style="padding:72px 0;background:linear-gradient(180deg,rgba(18,185,129,0.025),transparent);">
+    <div class="container" style="max-width:720px;">
+      <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:22px;">
+        <div aria-hidden="true" style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#12B981,#0FA968);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:900;font-size:28px;color:#0a0b0d;letter-spacing:-1px;box-shadow:0 8px 30px -8px rgba(18,185,129,0.4);">RM</div>
+        <span class="section-eyebrow">WHY WE BUILT EVULTO</span>
+        <p style="font-size:19px;line-height:1.7;color:var(--text);max-width:640px;">
+          Most fitness apps track workouts. We wanted to build something that <span class="lime-text">actually motivates people to show up</span>. Evulto combines AI coaching, real-time form feedback, personalized motivation, and gamified challenges into one experience designed to help athletes stay consistent.
+        </p>
+        <p style="font-size:16px;line-height:1.7;color:var(--text-secondary);max-width:640px;margin:0;">
+          Our mission is simple: <span style="color:var(--text);font-weight:600;">help people train harder, move better, and stay accountable — every single day.</span>
+        </p>
+        <div style="font-family:var(--font-display);font-size:15px;color:var(--text-secondary);letter-spacing:0.3px;">— Rahul · <span style="color:var(--text);">Founder, Evulto</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="section">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-eyebrow">PRICING</span>
+        <h2 class="section-title">Train Free.<br/><span class="lime-text">Upgrade When Ready.</span></h2>
+      </div>
+
+      <div class="pricing-grid pricing-grid-two" style="max-width:760px;margin:0 auto;">
+        <!-- Free -->
+        <div class="price-card">
+          <div class="price-tier">FREE</div>
+          <div class="price-amount">
+            <span class="price-currency">$</span>
+            <span class="price-value">0</span>
+            <span class="price-period">/forever</span>
+          </div>
+          <ul class="price-features">
+            <li><span class="check">✓</span> 1 Legend Coach</li>
+            <li><span class="check">✓</span> Persona-Themed Workouts</li>
+            <li><span class="check">✓</span> Wake-Up + Workout Calls</li>
+            <li><span class="check">✓</span> Global Nutrition (1.2M foods)</li>
+            <li><span class="check">✓</span> Rest-Day-Aware Coaching</li>
+            <li><span class="check">✓</span> Streak Calendar + Freezes</li>
+          </ul>
+          <a href="#waitlist" class="price-cta price-cta-secondary">JOIN WAITLIST</a>
+        </div>
+
+        <!-- Vanguard Pass -->
+        <div class="price-card price-card-featured">
+          <div class="price-popular">BEST VALUE · EARLY ACCESS</div>
+          <div class="price-tier">VANGUARD PASS</div>
+          <div class="price-amount">
+            <span class="price-currency">$</span>
+            <span class="price-value">1</span>
+            <span class="price-decimal">.99</span>
+            <span class="price-period">one-time</span>
+          </div>
+          <ul class="price-features">
+            <li><span class="check lime">✓</span> <strong>3 months of LEGEND free</strong> at launch</li>
+            <li><span class="check lime">✓</span> All 5 Legend Coaches</li>
+            <li><span class="check lime">✓</span> AI Form Correction (Live)</li>
+            <li><span class="check lime">✓</span> Reward Chests + Leaderboards</li>
+            <li><span class="check lime">✓</span> Private Founders' Discord</li>
+            <li><span class="check lime">✓</span> Never auto-charged</li>
+          </ul>
+          <a href="#waitlist" class="price-cta price-cta-primary">CLAIM VANGUARD SPOT</a>
+          <p style="margin:12px 0 0;font-family:var(--font-mono);font-size:11px;letter-spacing:1px;color:var(--lime);text-align:center;">⚡ LIMITED TO 500 PASSES</p>
+        </div>
+      </div>
+      <p style="text-align:center;color:var(--text-tertiary);font-size:13px;margin:26px auto 0;max-width:560px;line-height:1.6;">
+        Full <strong style="color:var(--text-secondary);">PRO ($9.99/mo)</strong> and <strong style="color:var(--text-secondary);">LEGEND ($19.99/mo)</strong> plans arrive at launch — no auto-charge, cancel anytime. <a href="#compare" style="color:var(--lime);text-decoration:none;">Compare all plans ↓</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Paywall Feature Comparison -->
+  <section id="compare" class="section" style="padding:0 0 80px;">
+    <div class="container" style="max-width:960px;margin:0 auto;">
+      <details style="border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;background:var(--bg);">
+        <summary style="padding:16px 20px;cursor:pointer;font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--text-secondary);list-style:none;display:flex;justify-content:space-between;align-items:center;">COMPARE ALL PLANS · PRO &amp; LEGEND AT LAUNCH <span style="color:var(--lime);">+</span></summary>
+      <div style="border-top:1px solid var(--border);">
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border);background:var(--surface);">
+              <th style="padding:18px 20px;text-align:left;font-family:var(--font-mono);font-size:11px;letter-spacing:1.5px;color:var(--text-tertiary);">FEATURE</th>
+              <th style="padding:18px 12px;text-align:center;font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--text-secondary);">FREE</th>
+              <th style="padding:18px 12px;text-align:center;font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--lime);">PRO</th>
+              <th style="padding:18px 12px;text-align:center;font-family:var(--font-display);font-size:13px;letter-spacing:1px;color:var(--text);">LEGEND</th>
+            </tr>
+          </thead>
+          <tbody style="color:var(--text-secondary);">
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Legend Coaches</td><td style="text-align:center;">1</td><td style="text-align:center;color:var(--lime);">3</td><td style="text-align:center;color:var(--lime);">All 5</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Persona-Themed Workouts</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Wake-Up Calls</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Rest-Day-Aware Coaching</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Global Nutrition (1.2M foods)</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Streak Calendar</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">AI Form Correction (Live Camera)</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Reward Chests + Leaderboards</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Physique Progress Photos</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Custom Ringtone Picker</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Unlimited Streak Freezes</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">5-Min Snooze Re-Calls</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Advanced Progress Analytics</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr style="border-bottom:1px solid var(--border);"><td style="padding:14px 20px;">Advanced Form AI + Video Review</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+            <tr><td style="padding:14px 20px;">Coach Voice Customization</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:var(--text-tertiary);">—</td><td style="text-align:center;color:#22c55e;">✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faq" class="section" style="padding:80px 0;">
+    <div class="container" style="max-width:800px;">
+      <div class="section-header" style="text-align:center;margin-bottom:48px;">
+        <span class="section-eyebrow">FAQ</span>
+        <h2 class="section-title">Questions?<br/><span class="lime-text">Answered.</span></h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">What is Evulto? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Evulto is an AI fitness coaching app for Android. Five world-class coach personas phone-call you awake and for workouts, correct your exercise form in real time using your camera, scan your meals for macros, and adapt to your training plan so they never disturb you on rest days.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">What does the name "Evulto" mean? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Evulto is our own coined brand name — it carries the spirit of "exult": the rush of triumph when you push through a workout and rise to your best. It's an independent AI fitness app for Android with five AI coach personas that call you, correct your form, and keep you showing up.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">How does Evulto's AI form correction work? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Evulto uses your phone's camera and on-device pose detection to track your joints during a set. It analyzes your movement live and flags issues — like knees caving in or a shallow squat — so you fix your form rep by rep, without a human trainer in the room.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">What makes Evulto different from other AI fitness apps? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Most fitness apps send notifications you swipe away. Evulto actually rings your phone like a real call — full-screen, ringtone, and a callback if you decline. It pairs that with five switchable coach personas, real-time form correction, and rest-day-aware scheduling in one app.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Is Evulto really free? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Yes. The Free tier includes 1 coach, workouts, nutrition tracking, wake-up and workout calls, and streaks — forever. No credit card required. PRO and LEGEND unlock additional coaches, AI form correction, and premium features.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">How do Evulto's wake-up calls work? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Set a time, pick a ringtone. Your phone rings like an actual incoming call — full screen, vibration, the works. If you decline, your coach calls back 5 minutes later. It's not a notification you can swipe away.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Will Evulto bug me on rest days? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">No. Evulto reads your training plan and only calls on workout days — your rest days stay completely silent. It's a coach, not a nag: it pushes when it counts and lets you recover when it matters.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">Can I switch coaches in Evulto? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Free users get 1 coach. PRO unlocks 3. LEGEND gets all 5. When you switch, the entire app transforms — colors, workout programs, nutrition philosophy, voice, and motivational style all change to match your new coach.</p>
+        </details>
+        <details style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px 24px;cursor:pointer;">
+          <summary style="font-family:var(--font-display);font-size:15px;color:var(--text);letter-spacing:-0.3px;list-style:none;display:flex;justify-content:space-between;align-items:center;">When does Evulto launch? <span style="color:var(--lime);">+</span></summary>
+          <p style="color:var(--text-secondary);font-size:14px;margin-top:14px;line-height:1.7;">Evulto is in closed beta. Join the waitlist to get early access. Waitlist members will be the first to download when it launches on Google Play.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- Waitlist Section -->
+  <section id="waitlist" class="section">
+    <div class="container">
+      <div class="waitlist-block">
+        <div class="waitlist-content">
+          <span class="section-eyebrow">EARLY ACCESS</span>
+          <h2 class="section-title">Be First to<br/><span class="lime-text">Train Under a Legend.</span></h2>
+          <p class="waitlist-sub">The app is <strong>free forever</strong> — join the waitlist and you're in. No card, no catch. <em>Optional upgrade:</em> the first 500 can claim a <strong>Vanguard Pass</strong> — <strong>refer 3 friends free</strong>, or pay $1.99 once — for <strong>3 months of Legend tier free</strong> at launch + the private Discord. Never auto-charged. Only 500. No spam, ever.</p>
+          <form id="waitlist-form" class="waitlist-form" novalidate>
+            <div class="input-group">
+              <input type="email" name="email" id="waitlist-email" placeholder="Enter your email" required autocomplete="email" />
+              <button type="submit" id="waitlist-submit" class="cta-primary submit-btn">
+                <span class="cta-glow"></span>
+                JOIN NOW
+              </button>
+            </div>
+            <div class="plat-toggle" role="radiogroup" aria-label="Your platform">
+              <span class="plat-label">Notify me for:</span>
+              <label class="plat-opt"><input type="radio" name="platform" value="android" checked /><span>🤖 Android</span></label>
+              <label class="plat-opt"><input type="radio" name="platform" value="ios" /><span>🍎 iOS</span></label>
+            </div>
+            <div class="waitlist-msg" id="waitlist-msg"></div>
+            <p class="waitlist-note">🔒 We respect your privacy. Read our <a href="/privacy" style="color:var(--lime);text-decoration:underline;">Privacy Policy</a>.</p>
+          </form>
+          <div class="waitlist-count">
+            <div class="avatar-stack">
+              <div class="mini-avatar" style="color:#c8ff3d;">TS</div>
+              <div class="mini-avatar" style="color:#f5b942;">TG</div>
+              <div class="mini-avatar" style="color:#5DD3FA;">SC</div>
+              <div class="mini-avatar" style="color:#ef4444;">TC</div>
+              <div class="mini-avatar" style="color:#7be38c;">DG</div>
+            </div>
+            <span><strong>5 Legend Coaches</strong> waiting for you</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  </main>
+
+  <!-- Sticky mobile CTA (hidden on desktop via CSS) -->
+  <a href="#waitlist" class="sticky-cta" aria-label="Join the Evulto waitlist">⚡ Join the Waitlist — Free</a>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <div class="container">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <div class="wordmark wordmark-footer">
+            <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="34" fill="none" stroke="#D8E2DD" stroke-width="9"/>
+              <circle cx="50" cy="50" r="34" fill="none" stroke="var(--lime)" stroke-width="9" stroke-linecap="round" stroke-dasharray="150 214" transform="rotate(128 50 50)"/>
+              <circle cx="76" cy="30" r="6.5" fill="var(--lime)"/>
+            </svg>
+            Evulto<span class="tm">™</span>
+          </div>
+          <p class="footer-tagline">Your Coach Calls. No Excuses.</p>
+          <div class="footer-socials" style="display:flex;gap:16px;margin-top:18px;">
+            <a href="https://instagram.com/atleato_app" target="_blank" rel="noopener" aria-label="Evulto on Instagram">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            </a>
+            <a href="https://www.tiktok.com/@atleato3" target="_blank" rel="noopener" aria-label="Evulto on TikTok">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82a4.28 4.28 0 0 1-1.05-2.82h-3.2v12.86a2.59 2.59 0 1 1-2.59-2.59c.27 0 .53.04.78.12V9.9a5.79 5.79 0 0 0-.78-.05 5.79 5.79 0 1 0 5.79 5.79V8.9a7.45 7.45 0 0 0 4.36 1.4V7.1a4.28 4.28 0 0 1-3.31-1.28z"/></svg>
+            </a>
+            <a href="https://x.com/atleato" target="_blank" rel="noopener" aria-label="Evulto on X">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.966 6.817H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"/></svg>
+            </a>
+            <a href="https://youtube.com/@atleato" target="_blank" rel="noopener" aria-label="Evulto on YouTube">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.6 12 3.6 12 3.6s-7.5 0-9.4.5A3 3 0 0 0 .5 6.2 31 31 0 0 0 0 12a31 31 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.5 9.4.5 9.4.5s7.5 0 9.4-.5a3 3 0 0 0 2.1-2.1A31 31 0 0 0 24 12a31 31 0 0 0-.5-5.8zM9.6 15.6V8.4l6.3 3.6-6.3 3.6z"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Product</h4>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#coaches">Coaches</a>
+            <a href="/blog/">Blog</a>
+            <a href="/about">About</a>
+          </div>
+          <div class="footer-col">
+            <h4>Legal</h4>
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/cookies">Cookie Policy</a>
+            <a href="mailto:hello@evulto.com">Contact Us</a>
+          </div>
+          <div class="footer-col">
+            <h4>Connect</h4>
+            <a href="mailto:hello@evulto.com">Email</a>
+            <a href="#waitlist">Join Waitlist</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p style="font-size:10px;color:var(--text-tertiary);margin-bottom:12px;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.5;">
+          Coach personas are fictional AI characters with distinct training philosophies. Not affiliated with any real individuals.
+        </p>
+        <p>© 2026 Evulto™. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- CDN Libraries (loaded after HTML to prevent render-blocking) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" integrity="sha384-CI3ELBVUz9XQO+97x6nwMDPosPR5XvsxW2ua7N1Xeygeh1IxtgqtCkGfQY9WWdHu" crossorigin="anonymous"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha384-g4NTh/Iv5PPU4xPyhEWqPcwtNXOvdaDI8LLnyYfyNZOjKJeYQyjzQ9X5275eBjpt" crossorigin="anonymous"></script>
+
+  <script defer src="main.js"></script>
+  <script defer src="exercise-demo.js"></script>
+  <script defer src="analytics.js"></script>
+
+  <!-- GDPR/ePrivacy Cookie Banner -->
+  <div id="cookie-banner" class="cookie-banner" style="display:none;" role="dialog" aria-label="Cookie consent">
+    <div class="cookie-banner-content">
+      <div class="cookie-banner-text">
+        🍪 We use essential cookies to make the site work + optional analytics to improve it. By clicking "Accept", you consent to analytics cookies. Read our <a href="/privacy">Privacy Policy</a>.
+      </div>
+      <div class="cookie-banner-actions">
+        <button id="cookie-reject" class="cookie-btn cookie-btn-secondary">Essential Only</button>
+        <button id="cookie-accept" class="cookie-btn cookie-btn-primary">Accept All</button>
+      </div>
+    </div>
+  </div>
+  <script defer src="cookie-consent.js"></script>
 </body>
 </html>
