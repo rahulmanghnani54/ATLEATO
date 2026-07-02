@@ -16,6 +16,7 @@
       "expo-router",
       "react-native-vision-camera",
       "expo-file-system",
+      "expo-web-browser",
       [
         "expo-notifications",
         {

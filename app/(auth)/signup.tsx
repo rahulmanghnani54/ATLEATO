@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
 import { AnimatedLogo } from '@/components/ui';
 import { authErrorMessage } from '@/lib/authErrors';
+import { signInWithProvider, type OAuthProvider } from '@/lib/socialAuth';
 
 export default function Signup() {
   const [fullName, setFullName] = useState('');
@@ -41,6 +42,19 @@ export default function Signup() {
     // to check their inbox. Otherwise the auth-state listener navigates.
     if (!data.session) {
       Alert.alert('Almost there', 'Check your inbox to confirm your account, then sign in.');
+    }
+  };
+
+  const handleOAuth = async (provider: OAuthProvider) => {
+    setError('');
+    setLoading(true);
+    try {
+      await signInWithProvider(provider);
+      // On success the auth-state listener (app/_layout.tsx) navigates.
+    } catch {
+      setError('Could not sign in with that provider. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -139,6 +153,34 @@ export default function Signup() {
             <Text style={styles.primaryBtnText}>{loading ? '...' : 'CREATE ACCOUNT'}</Text>
           </TouchableOpacity>
 
+          {/* Divider */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Social sign-in */}
+          <TouchableOpacity
+            style={[styles.oauthBtn, styles.googleBtn, loading && { opacity: 0.5 }]}
+            onPress={() => handleOAuth('google')}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.googleG}>G</Text>
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.oauthBtn, styles.facebookBtn, loading && { opacity: 0.5 }]}
+            onPress={() => handleOAuth('facebook')}
+            disabled={loading}
+            activeOpacity={0.85}
+          >
+            <Text style={styles.facebookF}>f</Text>
+            <Text style={styles.facebookBtnText}>Continue with Facebook</Text>
+          </TouchableOpacity>
+
           <View style={styles.signinRow}>
             <Text style={styles.signinPrompt}>Already have an account? </Text>
             <Link href="/(auth)/login" asChild>
@@ -196,4 +238,19 @@ const styles = StyleSheet.create({
   signinRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   signinPrompt: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary },
   signinLink: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.primary, letterSpacing: 1 },
+
+  // ── Social sign-in ──
+  dividerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.5, marginHorizontal: 12 },
+  oauthBtn: {
+    height: 52, borderRadius: Radius.sm, flexDirection: 'row',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
+  googleBtn: { backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: Colors.borderStrong },
+  googleG: { fontFamily: Fonts.displayBold, fontSize: 16, color: '#4285F4', marginRight: 10 },
+  googleBtnText: { fontFamily: Fonts.bodySemi, fontSize: 14.5, color: Colors.text },
+  facebookBtn: { backgroundColor: '#1877F2' },
+  facebookF: { fontFamily: Fonts.displayBold, fontSize: 17, color: '#FFFFFF', marginRight: 10 },
+  facebookBtnText: { fontFamily: Fonts.bodySemi, fontSize: 14.5, color: '#FFFFFF' },
 });
