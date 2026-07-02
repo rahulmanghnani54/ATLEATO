@@ -28,6 +28,24 @@
   );
   camera.position.z = 30;
 
+  // ── Theme-aware accent + blending ─────────────────────────────────────────
+  // Reads CSS design tokens so the SAME scene works on the dark homepage
+  // (orange + additive glow) and the light Evulto reskin (emerald + normal
+  // blending so particles are visible on Paper). Falls back to the dark
+  // defaults if a token is missing, so nothing changes on the live page.
+  const _cssVar = (n, fb) => {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+    return v || fb;
+  };
+  const ACCENT1 = _cssVar('--orange', '#ff6b35');
+  const ACCENT2 = _cssVar('--orange-deep', '#e84d20');
+  const _bg = _cssVar('--bg', '#0a0b0d').replace('#', '');
+  const LIGHT_BG = _bg.length >= 6 &&
+    (0.299 * parseInt(_bg.slice(0, 2), 16) +
+     0.587 * parseInt(_bg.slice(2, 4), 16) +
+     0.114 * parseInt(_bg.slice(4, 6), 16)) > 140;
+  const BLEND = LIGHT_BG ? THREE.NormalBlending : THREE.AdditiveBlending;
+
   // ── Particles ──
   const PARTICLE_COUNT = 800;
   const particleGeo = new THREE.BufferGeometry();
@@ -51,9 +69,9 @@
   const particleMat = new THREE.ShaderMaterial({
     uniforms: {
       uTime: { value: 0 },
-      uColor1: { value: new THREE.Color('#ff6b35') },
-      uColor2: { value: new THREE.Color('#e84d20') },
-      uOpacity: { value: 0.5 },
+      uColor1: { value: new THREE.Color(ACCENT1) },
+      uColor2: { value: new THREE.Color(ACCENT2) },
+      uOpacity: { value: LIGHT_BG ? 0.9 : 0.5 },
     },
     vertexShader: `
       attribute float size;
@@ -85,7 +103,7 @@
     `,
     transparent: true,
     depthWrite: false,
-    blending: THREE.AdditiveBlending,
+    blending: BLEND,
   });
 
   const particles = new THREE.Points(particleGeo, particleMat);
@@ -122,10 +140,10 @@
 
   shapeConfigs.forEach((cfg) => {
     const mat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color('#ff6b35'),
+      color: new THREE.Color(ACCENT1),
       wireframe: true,
       transparent: true,
-      opacity: 0.08,
+      opacity: LIGHT_BG ? 0.16 : 0.08,
     });
     const mesh = new THREE.Mesh(cfg.geo, mat);
     mesh.position.set(...cfg.pos);
@@ -140,9 +158,9 @@
   const linePositions = new Float32Array(300 * 6);
   lineGeo.setAttribute('position', new THREE.BufferAttribute(linePositions, 3));
   const lineMat = new THREE.LineBasicMaterial({
-    color: new THREE.Color('#ff6b35'),
+    color: new THREE.Color(ACCENT1),
     transparent: true,
-    opacity: 0.04,
+    opacity: LIGHT_BG ? 0.09 : 0.04,
   });
   const lines = new THREE.LineSegments(lineGeo, lineMat);
   scene.add(lines);

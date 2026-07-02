@@ -218,7 +218,10 @@
       --ink:#07130F;
       --shadow-glow:0 20px 50px -24px rgba(18,185,129,0.35);
     }
-    #three-canvas{display:none !important;}
+    /* Hero 3D particle field stays ON — main.js reads the emerald tokens above
+       and switches to normal blending so it shows on Paper. Softened so it
+       reads as ambient depth, not noise. */
+    #three-canvas{opacity:0.6;}
     body{background:#F4F7F5;}
     /* soft premium shadows on white cards (light theme) */
     .feature-card,.coach-card,.price-card,.step-card,.hud-panel{box-shadow:0 1px 3px rgba(10,31,25,0.04),0 8px 24px -16px rgba(10,31,25,0.12);}
