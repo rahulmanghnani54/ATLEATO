@@ -39,7 +39,7 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0d0d0d"
+      "backgroundColor": "#0A1F19"
     },
     "experiments": {
       "typedRoutes": true
@@ -49,7 +49,7 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0a0b0d"
+        "backgroundColor": "#12B981"
       },
       "permissions": [
         "android.permission.CAMERA",
