@@ -123,14 +123,29 @@ export async function startPersistentRing(
   //    file), then load + play it on loop.
   try {
     const source = await getActiveRingtoneSource();
+    // Load PAUSED first. createAsync is async (the WAV takes a moment to load);
+    // if the user declines/answers in that window, stopPersistentRing() runs
+    // while ringSound is still null and stops nothing — then the sound would
+    // finish loading and loop forever ("still ringing after cancel"). So after
+    // loading we re-check ringActive: if the ring was cancelled mid-load, unload
+    // the orphan and bail instead of starting it.
     const { sound } = await Audio.Sound.createAsync(
       source,
-      { isLooping: true, volume: 1.0, shouldPlay: true },
+      { isLooping: true, volume: 1.0, shouldPlay: false },
     );
+    if (!ringActive) {
+      try { await sound.unloadAsync(); } catch { /* ignore */ }
+      return;
+    }
     ringSound = sound;
+    await sound.playAsync();
   } catch (e: any) {
     if (__DEV__) console.warn('[wakeup] ringtone load failed:', e?.message);
   }
+
+  // If the ring was cancelled while the audio was loading, don't post the
+  // call notification or arm the 60s timer either.
+  if (!ringActive) return;
 
   // 3. Display a high-importance CALL-category notification (NOT a
   //    foreground service — that variant lingers in the tray after the
