@@ -5,7 +5,7 @@
   --bg:#0a0b0d; --surface:#121316; --surface-2:#16181c;
   --border:rgba(255,255,255,0.10); --border-soft:rgba(255,255,255,0.06);
   --text:#f4f4ef; --text-secondary:#b9bbb6; --text-tertiary:#7d8079;
-  --lime:#2ee6d6; --lime-dim:#14b8a6;
+  --lime:#12B981; --lime-dim:#0FA968;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}

@@ -1816,7 +1816,7 @@ footer {
 }
 
 .upsell-card-label-free {
-  background: #2ee6d6;
+  background: #12B981;
   color: var(--ink);
 }
 
@@ -1920,7 +1920,7 @@ footer {
 
 .referral-copy-btn {
   padding: 14px 18px;
-  background: #2ee6d6;
+  background: #12B981;
   color: var(--ink);
   border: none;
   border-radius: var(--radius-sm);
@@ -2011,8 +2011,8 @@ footer {
 }
 
 .referral-progress-dots .dot.filled {
-  background: #2ee6d6;
-  border-color: #2ee6d6;
+  background: #12B981;
+  border-color: #12B981;
   box-shadow: 0 0 14px rgba(46,230,214, 0.6);
 }
 
@@ -2025,7 +2025,7 @@ footer {
 
 .referral-progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #2ee6d6, #b8e600);
+  background: linear-gradient(90deg, #12B981, #b8e600);
   width: 0%;
   transition: width 0.5s ease;
   box-shadow: 0 0 12px rgba(46,230,214, 0.5);
