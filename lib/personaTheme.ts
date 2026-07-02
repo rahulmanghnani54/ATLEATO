@@ -68,9 +68,9 @@ const ARNOLD: PersonaTheme = {
   era: 'Old School Volume · Golden Era Mass',
   initials: 'TG',
 
-  accent: '#f5b942',
-  accentSoft: 'rgba(245,185,66,0.14)',
-  ink: '#1a1208',
+  accent: '#B87A0E',
+  accentSoft: 'rgba(184,122,14,0.14)',
+  ink: '#ffffff',
   textCase: 'normal',
   vibe: 'GOLDEN',
 
@@ -116,9 +116,9 @@ const CBUM: PersonaTheme = {
   era: 'Classic Aesthetics · Modern Physique Specialist',
   initials: 'TS',
 
-  accent: '#aedb45',
-  accentSoft: 'rgba(174,219,69,0.14)',
-  ink: '#0a0b0d',
+  accent: '#5E8C00',
+  accentSoft: 'rgba(94,140,0,0.14)',
+  ink: '#ffffff',
   textCase: 'normal',
   vibe: 'PRECISION',
 
@@ -164,8 +164,8 @@ const NIPPARD: PersonaTheme = {
   era: 'Evidence-Based · Hypertrophy Research',
   initials: 'SC',
 
-  accent: '#6f93e6',
-  accentSoft: 'rgba(111,147,230,0.14)',
+  accent: '#3E72D6',
+  accentSoft: 'rgba(62,114,214,0.14)',
   ink: '#fafafa',
   textCase: 'normal',
   vibe: 'EVIDENCE',
@@ -212,8 +212,8 @@ const CT_FLETCHER: PersonaTheme = {
   era: 'Iron Commander · "I COMMAND YOU TO GROW"',
   initials: 'TC',
 
-  accent: '#e85a3c',
-  accentSoft: 'rgba(232,90,60,0.14)',
+  accent: '#D6412A',
+  accentSoft: 'rgba(214,65,42,0.14)',
   ink: '#fafafa',
   textCase: 'upper',
   vibe: 'INTENSE',
@@ -260,9 +260,9 @@ const DR_MIKE: PersonaTheme = {
   era: 'Hypertrophy & Periodization · Periodization Specialist',
   initials: 'DG',
 
-  accent: '#3dbf8d',
-  accentSoft: 'rgba(61,191,141,0.14)',
-  ink: '#0a0b0d',
+  accent: '#0E8C63',
+  accentSoft: 'rgba(14,140,99,0.14)',
+  ink: '#ffffff',
   textCase: 'normal',
   vibe: 'CLINICAL',
 

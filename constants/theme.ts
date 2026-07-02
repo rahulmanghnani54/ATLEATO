@@ -71,11 +71,12 @@ export const Colors = {
   // ── Persona accents (for ref — actual per-persona colors live in
   //     lib/personaTheme.ts; these are just so screens that don't have a
   //     persona context can fall back gracefully) ──────────────────────────
-  personaSculptor:  '#c8ff3d',
-  personaMonument:  '#f5b942',
-  personaAnalyst:   '#5DD3FA',
-  personaCommander: '#ef4444',
-  personaArchitect: '#7be38c',
+  // Darkened for light-mode contrast (readable on Paper; match lib/personaTheme.ts)
+  personaSculptor:  '#5E8C00',
+  personaMonument:  '#B87A0E',
+  personaAnalyst:   '#3E72D6',
+  personaCommander: '#D6412A',
+  personaArchitect: '#0E8C63',
 
   // ── Legacy aliases (DO NOT REMOVE — existing screens reference these) ────
   dark: '#0a0b0d',
