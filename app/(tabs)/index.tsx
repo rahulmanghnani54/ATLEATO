@@ -15,7 +15,7 @@ import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, View, RefreshControl, Text, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { Dumbbell, Lightbulb, Flame, Trophy, Activity } from 'lucide-react-native';
+import { Dumbbell, Lightbulb, Flame, Trophy, Activity, PhoneCall } from 'lucide-react-native';
 
 import { HeroBlock, Stat, RowCard, AnchorCTA } from '@/components/ui/c';
 import { Colors, Spacing, Fonts, Radius } from '@/constants/theme';
@@ -146,6 +146,34 @@ export default function Dashboard() {
           </View>
         </TouchableOpacity>
 
+        {/* ── 2c. WAKE-UP CALL — premium hero feature ─────────────── */}
+        <TouchableOpacity
+          style={[styles.wakeCard, { borderColor: persona.accent }]}
+          activeOpacity={0.9}
+          onPress={() => router.push('/coach-reminders' as any)}
+        >
+          <View style={[styles.wakeGlow, { backgroundColor: persona.accentSoft }]} pointerEvents="none" />
+          <View style={styles.wakeRow}>
+            <View style={[styles.wakeIcon, { backgroundColor: persona.accent }]}>
+              <PhoneCall size={24} color={persona.ink} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <View style={styles.wakeTitleRow}>
+                <Text style={styles.wakeTitle}>Your coach calls you</Text>
+                <View style={[styles.wakeBadge, { backgroundColor: persona.accent }]}>
+                  <Text style={[styles.wakeBadgeText, { color: persona.ink }]}>PREMIUM</Text>
+                </View>
+              </View>
+              <Text style={styles.wakeSub}>
+                Wake up to a real call from {persona.shortName} — not a boring alarm.
+              </Text>
+            </View>
+          </View>
+          <View style={[styles.wakeCta, { backgroundColor: persona.accent }]}>
+            <Text style={[styles.wakeCtaText, { color: persona.ink }]}>Set up wake-up call  →</Text>
+          </View>
+        </TouchableOpacity>
+
         {/* ── 3. ROW CARDS ─────────────────────────────────────────── */}
         <SafeAreaView edges={['left', 'right']} style={styles.rows}>
           {!today?.isRest && (
@@ -240,7 +268,37 @@ const styles = StyleSheet.create({
   macroCol: { flex: 1, gap: 6 },
   macroVal: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text },
   macroGoal: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary },
-  macroTrack: { height: 5, backgroundColor: Colors.raised, borderRadius: 3, overflow: 'hidden' },
+  macroTrack: { height: 5, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
   macroFill: { height: '100%', borderRadius: 3 },
   macroLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1 },
+
+  // ── Wake-up call hero card (premium feature) ──
+  wakeCard: {
+    marginHorizontal: Spacing.md + 2,
+    marginBottom: Spacing.sm + 2,
+    backgroundColor: Colors.surface,
+    borderWidth: 1.5,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    overflow: 'hidden',
+  },
+  wakeGlow: {
+    position: 'absolute', top: -50, right: -50,
+    width: 170, height: 170, borderRadius: 100, opacity: 0.6,
+  },
+  wakeRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  wakeIcon: {
+    width: 52, height: 52, borderRadius: 16,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  wakeTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
+  wakeTitle: { fontFamily: Fonts.displayBold, fontSize: 18, color: Colors.text, letterSpacing: -0.4 },
+  wakeBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
+  wakeBadgeText: { fontFamily: Fonts.bodyBold, fontSize: 8.5, letterSpacing: 1 },
+  wakeSub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
+  wakeCta: {
+    marginTop: 14, height: 46, borderRadius: Radius.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  wakeCtaText: { fontFamily: Fonts.displayMedium, fontSize: 14, letterSpacing: 0.3 },
 });
