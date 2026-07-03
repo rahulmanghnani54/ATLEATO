@@ -209,17 +209,21 @@ function RootNavigator() {
 
     const inAuth = segments[0] === '(auth)';
     const inOnboarding = segments[0] === '(onboarding)';
+    // OAuth deep-link callback (atleato://auth-callback): while it exchanges the
+    // PKCE code the user isn't authenticated yet, so DON'T bounce it to login;
+    // once signed in, route away from it just like we do from the auth group.
+    const inAuthCallback = segments[0] === 'auth-callback';
     // Onboarding-complete users can intentionally re-enter onboarding screens to
     // EDIT settings (e.g. "Change program" / "Edit goals" from Profile). Those
     // links pass ?fromProfile=1 so the guard below doesn't bounce them to home.
     const editingFromProfile = glob.fromProfile === '1';
 
     if (!user) {
-      if (!inAuth) router.replace('/(auth)/login');
+      if (!inAuth && !inAuthCallback) router.replace('/(auth)/login');
     } else if (profile && !profile.onboarding_complete) {
       if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
     } else if (profile?.onboarding_complete) {
-      if (inAuth) router.replace('/(tabs)');
+      if (inAuth || inAuthCallback) router.replace('/(tabs)');
       else if (inOnboarding && !editingFromProfile) router.replace('/(tabs)');
     } else if (user && !profile) {
       if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
