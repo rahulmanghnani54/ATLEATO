@@ -150,16 +150,16 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: Colors.border,
     position: 'relative', overflow: 'hidden',
   },
-  cardActive: { backgroundColor: 'rgba(223,255,31,0.06)', borderColor: Colors.primary },
+  cardActive: { backgroundColor: 'rgba(18,185,129,0.06)', borderColor: Colors.primary },
   accentStripe: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: Colors.primary },
 
   iconWrap: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(18,185,129,0.06)',
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1, borderColor: Colors.border,
   },
-  iconWrapActive: { backgroundColor: 'rgba(223,255,31,0.12)', borderColor: Colors.primary },
+  iconWrapActive: { backgroundColor: 'rgba(18,185,129,0.12)', borderColor: Colors.primary },
   icon: { fontSize: 24 },
 
   cardBody: { flex: 1 },
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     borderWidth: 1, borderColor: Colors.border,
   },
-  macroChipActive: { borderColor: Colors.primary, backgroundColor: 'rgba(223,255,31,0.1)' },
+  macroChipActive: { borderColor: Colors.primary, backgroundColor: 'rgba(18,185,129,0.1)' },
   macroChipText:        { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 0.8 },
   macroChipTextActive:  { color: Colors.primary },
 

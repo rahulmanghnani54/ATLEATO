@@ -1,9 +1,10 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import {
   View, Text, Modal, TouchableOpacity, FlatList,
   StyleSheet, Platform,
+  type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 
 export interface PickerOption {
   label: string;
@@ -19,82 +20,120 @@ interface Props {
   onClose: () => void;
 }
 
-const ITEM_HEIGHT = 52;
+// iOS-style rolling wheel. An odd number of visible rows; the CENTER row is the
+// selection. Scrolling snaps to each row; the value under the center band is
+// committed on "Done" (or when you tap a row).
+const ITEM_HEIGHT = 44;
+const VISIBLE_ROWS = 5;                       // must be odd
+const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ROWS;
+const CENTER_OFFSET = Math.floor(VISIBLE_ROWS / 2); // rows above center
+const PAD = ITEM_HEIGHT * CENTER_OFFSET;      // lets first/last row reach the centre
 
 export function PickerModal({ visible, title, options, selectedValue, onSelect, onClose }: Props) {
-  const listRef = useRef<FlatList>(null);
-  const selectedIndex = options.findIndex((o) => o.value === selectedValue);
+  const listRef = useRef<FlatList<PickerOption>>(null);
+  const initialIndex = Math.max(0, options.findIndex((o) => o.value === selectedValue));
+  const [centerIndex, setCenterIndex] = useState(initialIndex);
 
+  // Jump to the current value each time the wheel opens.
   useEffect(() => {
-    if (!visible || selectedIndex < 0) return;
-    // Scroll to selected item after modal renders
-    const timer = setTimeout(() => {
-      listRef.current?.scrollToIndex({ index: selectedIndex, animated: false, viewPosition: 0.5 });
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [visible, selectedIndex]);
+    if (!visible) return;
+    setCenterIndex(initialIndex);
+    const t = setTimeout(() => {
+      listRef.current?.scrollToOffset({ offset: initialIndex * ITEM_HEIGHT, animated: false });
+    }, 50);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
+
+  const indexFromOffset = (y: number) =>
+    Math.max(0, Math.min(options.length - 1, Math.round(y / ITEM_HEIGHT)));
+
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const idx = indexFromOffset(e.nativeEvent.contentOffset.y);
+    setCenterIndex((prev) => (prev === idx ? prev : idx));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options.length]);
+
+  const onMomentumEnd = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setCenterIndex(indexFromOffset(e.nativeEvent.contentOffset.y));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options.length]);
+
+  const confirm = () => {
+    const opt = options[centerIndex];
+    if (opt) onSelect(opt.value);
+    onClose();
+  };
+
+  const tapRow = (index: number) => {
+    listRef.current?.scrollToOffset({ offset: index * ITEM_HEIGHT, animated: true });
+    setCenterIndex(index);
+  };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
       <View style={styles.sheet}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={onClose} hitSlop={10}>
             <Text style={styles.cancel}>Cancel</Text>
           </TouchableOpacity>
           <Text style={styles.title}>{title}</Text>
-          <TouchableOpacity onPress={onClose}>
+          <TouchableOpacity onPress={confirm} hitSlop={10}>
             <Text style={styles.done}>Done</Text>
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          ref={listRef}
-          data={options}
-          keyExtractor={(item) => item.value}
-          getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
-          onScrollToIndexFailed={({ index }) => {
-            // Fallback: scroll to offset directly
-            listRef.current?.scrollToOffset({ offset: index * ITEM_HEIGHT - ITEM_HEIGHT * 2, animated: false });
-          }}
-          renderItem={({ item }) => {
-            const isSelected = item.value === selectedValue;
-            return (
-              <TouchableOpacity
-                style={[styles.item, isSelected && styles.itemSelected]}
-                onPress={() => { onSelect(item.value); onClose(); }}
-              >
-                <Text style={[styles.itemText, isSelected && styles.itemTextSelected]}>
-                  {item.label}
-                </Text>
-                {isSelected && <Text style={styles.check}>✓</Text>}
-              </TouchableOpacity>
-            );
-          }}
-          style={styles.list}
-          showsVerticalScrollIndicator={false}
-          initialScrollIndex={selectedIndex >= 0 ? selectedIndex : undefined}
-        />
+        <View style={styles.wheelWrap}>
+          {/* Centre selection band (fixed, behind the rows) */}
+          <View style={styles.centerBand} pointerEvents="none" />
+
+          <FlatList
+            ref={listRef}
+            data={options}
+            keyExtractor={(item) => item.value}
+            extraData={centerIndex}
+            getItemLayout={(_, index) => ({ length: ITEM_HEIGHT, offset: ITEM_HEIGHT * index, index })}
+            initialScrollIndex={initialIndex}
+            showsVerticalScrollIndicator={false}
+            snapToInterval={ITEM_HEIGHT}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            scrollEventThrottle={16}
+            onScroll={onScroll}
+            onMomentumScrollEnd={onMomentumEnd}
+            contentContainerStyle={{ paddingVertical: PAD }}
+            renderItem={({ item, index }) => {
+              const dist = Math.abs(index - centerIndex);
+              const selected = dist === 0;
+              return (
+                <TouchableOpacity activeOpacity={0.7} style={styles.item} onPress={() => tapRow(index)}>
+                  <Text
+                    style={[
+                      styles.itemText,
+                      selected && styles.itemTextSelected,
+                      dist === 1 && styles.itemTextNear,
+                      dist >= 2 && styles.itemTextFar,
+                    ]}
+                  >
+                    {item.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
   sheet: {
     backgroundColor: Colors.surface,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: '60%',
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
   },
   header: {
@@ -106,20 +145,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  title: { ...Typography.bodyMedium },
+  title: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.text },
   cancel: { fontSize: 16, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
-  done: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: Colors.primary },
-  list: { flex: 1 },
-  item: {
+  done: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.primary },
+
+  wheelWrap: { height: WHEEL_HEIGHT, position: 'relative' },
+  centerBand: {
+    position: 'absolute',
+    left: 12, right: 12,
+    top: PAD,
     height: ITEM_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    borderRadius: 10,
+    backgroundColor: Colors.primaryLight,
+    borderTopWidth: 1, borderBottomWidth: 1,
+    borderColor: Colors.borderStrong,
   },
-  itemSelected: { backgroundColor: Colors.primaryLight },
-  itemText: { flex: 1, fontSize: 17, fontFamily: 'Inter_400Regular', color: Colors.text },
-  itemTextSelected: { fontFamily: 'Inter_600SemiBold', color: Colors.primary },
-  check: { fontSize: 18, color: Colors.primary },
+  item: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  itemText: { fontSize: 20, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+  itemTextSelected: { fontSize: 22, fontFamily: 'Inter_700Bold', color: Colors.primary },
+  itemTextNear: { color: Colors.text, opacity: 0.9 },
+  itemTextFar: { color: Colors.textTertiary, opacity: 0.55 },
 });

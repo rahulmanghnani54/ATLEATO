@@ -293,7 +293,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
     backgroundColor: Colors.surface,
   },
-  toggleBtnActive: { borderColor: Colors.primary, backgroundColor: 'rgba(223,255,31,0.08)' },
+  toggleBtnActive: { borderColor: Colors.primary, backgroundColor: 'rgba(18,185,129,0.08)' },
   toggleText: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.textSecondary, letterSpacing: 0.2 },
   toggleTextActive: { color: Colors.primary },
   pickerBtn: {
