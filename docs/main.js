@@ -707,28 +707,28 @@ window.addEventListener('scroll', () => {
 // ── Interactive Coach Persona Switcher ──────────────────────────
 const coachConfigs = {
   sculptor: {  // THE SCULPTOR
-    lime: '#c8ff3d', limeRgb: '200, 255, 61', limeDim: '#b4e632', color2: '#d4af37', limeLight: '#5E8C00', limeLightRgb: '94, 140, 0',
+    lime: '#c8ff3d', limeRgb: '200, 255, 61', limeDim: '#b4e632', color2: '#d4af37', limeLight: '#16A34A', limeLightRgb: '22, 163, 74',
     headline: 'TRAIN UNDER<br/><span class="lime-text">THE SCULPTOR.</span>',
     quote: 'Symmetry, proportion, lines that look carved. <span class="lime-text">Quality over ego — build the statue.</span>',
     speech: "Good morning, champion. Time to build those classic lines — control every rep. Let's get it today.",
     pitch: 0.85, rate: 0.95
   },
   monument: {  // THE MONUMENT
-    lime: '#f5b942', limeRgb: '245, 185, 66', limeDim: '#dd9b25', color2: '#ff6b35', limeLight: '#B87A0E', limeLightRgb: '184, 122, 14',
+    lime: '#f5b942', limeRgb: '245, 185, 66', limeDim: '#dd9b25', color2: '#ff6b35', limeLight: '#EA580C', limeLightRgb: '234, 88, 12',
     headline: 'PUMP UNDER<br/><span class="lime-text">THE MONUMENT.</span>',
     quote: 'Golden-era volume and the mind-muscle connection. <span class="lime-text">Chase the pump till you can\'t lift your arms.</span>',
     speech: "Come on, get up! The iron is waiting and there is no time to sleep. Let's move!",
     pitch: 0.75, rate: 0.9
   },
   analyst: {  // THE ANALYST
-    lime: '#5dd3fa', limeRgb: '93, 211, 250', limeDim: '#3cbbe5', color2: '#ff6b35', limeLight: '#3E72D6', limeLightRgb: '62, 114, 214',
+    lime: '#5dd3fa', limeRgb: '93, 211, 250', limeDim: '#3cbbe5', color2: '#ff6b35', limeLight: '#2563EB', limeLightRgb: '37, 99, 235',
     headline: 'OPTIMIZE UNDER<br/><span class="lime-text">THE ANALYST.</span>',
     quote: 'Every rep based on the latest peer-reviewed research. <span class="lime-text">Science-based hypertrophy.</span>',
     speech: "Good morning. Skipping this session means zero muscle protein synthesis today. Let's start.",
     pitch: 1.02, rate: 1.05
   },
   commander: {  // THE COMMANDER
-    lime: '#ef4444', limeRgb: '239, 68, 68', limeDim: '#d32f2f', color2: '#ff6b35', limeLight: '#D6412A', limeLightRgb: '214, 65, 42',
+    lime: '#ef4444', limeRgb: '239, 68, 68', limeDim: '#d32f2f', color2: '#ff6b35', limeLight: '#DC2626', limeLightRgb: '220, 38, 38',
     headline: 'CONQUER UNDER<br/><span class="lime-text">THE COMMANDER.</span>',
     quote: 'Comfort is the enemy. <span class="lime-text">The last rep is where it\'s won — push past where your body wants to quit.</span>',
     speech: "Wake up! No excuses today. Get to that gym and earn it!",
