@@ -219,7 +219,9 @@ function CoachCallInner() {
         // phone's OWN offline voice (device TTS), and show it on screen + End call.
         const copy = getCallCopy(persona, kind);
         const first = profile?.full_name?.trim().split(/\s+/)[0] || '';
-        try { speakAs(personaId, (first ? first + '. ' : '') + copy.body); } catch { /* ignore */ }
+        // Stop any in-flight audio from the failed connect before the offline
+        // voice speaks — prevents overlapping/garbled TTS.
+        try { silence(); speakAs(personaId, (first ? first + '. ' : '') + copy.body); } catch { /* ignore */ }
         setOffline(true);
         setError('Couldn’t reach your live coach right now — here’s your wake-up:\n\n“' + copy.body + '”');
       }

@@ -18,6 +18,7 @@ export default function AuthCallback() {
   const params = useLocalSearchParams<{ code?: string; error?: string; error_description?: string }>();
   const [status, setStatus] = useState('Signing you in…');
   const ran = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (ran.current) return;   // guard against re-runs / double exchange
@@ -28,7 +29,7 @@ export default function AuthCallback() {
 
       if (params.error || !code) {
         setStatus('Sign-in was cancelled.');
-        setTimeout(() => router.replace('/(auth)/login'), 700);
+        timerRef.current = setTimeout(() => router.replace('/(auth)/login'), 700);
         return;
       }
 
@@ -40,7 +41,7 @@ export default function AuthCallback() {
         const { data } = await supabase.auth.getSession();
         if (!data.session) {
           setStatus('Could not complete sign-in. Please try again.');
-          setTimeout(() => router.replace('/(auth)/login'), 900);
+          timerRef.current = setTimeout(() => router.replace('/(auth)/login'), 900);
           return;
         }
       }
@@ -48,6 +49,10 @@ export default function AuthCallback() {
       // the gate routes to onboarding / the app. Show a brief "success" state.
       setStatus('Signed in! Loading your dashboard…');
     })();
+
+    // If the auth-gate routes away before a pending timer fires, don't navigate
+    // from a dead screen.
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

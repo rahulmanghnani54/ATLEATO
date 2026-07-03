@@ -355,7 +355,7 @@ export async function cancelSnoozeCall(): Promise<void> {
 
 export async function listScheduledWakeupIds(): Promise<string[]> {
   const ids = await notifee.getTriggerNotificationIds();
-  return ids.filter((x) => x.startsWith(WAKEUP_NOTIFEE_ID_PREFIX) || true);
+  return ids.filter((x) => x.startsWith(WAKEUP_NOTIFEE_ID_PREFIX));
 }
 
 // ─── Background event handler hook ──────────────────────────────────────────

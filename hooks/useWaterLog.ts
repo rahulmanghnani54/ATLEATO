@@ -44,7 +44,7 @@ export function useWaterLog(date: Date) {
       if (error) throw error;
     },
     onError: (err: Error) => {
-      console.warn('[useWaterLog] insert failed:', err.message);
+      if (__DEV__) console.warn('[useWaterLog] insert failed:', err.message);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });

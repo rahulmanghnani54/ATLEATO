@@ -213,13 +213,16 @@ function commonLine(persona: PersonaTheme): string {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-// Tier styling exported for the modal
-export function tierStyle(tier: DropTier): { color: string; glow: string; label: string } {
+// Tier styling exported for the modal.
+//   color  — dark, saturated text color readable on the white card (Colors.surface)
+//   accent — the original vivid/light hue, used for the card border + button fill
+//   glow   — soft translucent hue for the border shadow
+export function tierStyle(tier: DropTier): { color: string; accent: string; glow: string; label: string } {
   switch (tier) {
-    case 'mythic':   return { color: '#ffd24a', glow: 'rgba(255,210,74,0.35)',   label: 'MYTHIC DROP' };
-    case 'epic':     return { color: '#c879ff', glow: 'rgba(200,121,255,0.30)',  label: 'EPIC DROP' };
-    case 'rare':     return { color: '#5DD3FA', glow: 'rgba(93,211,250,0.30)',   label: 'RARE DROP' };
-    case 'uncommon': return { color: '#7be38c', glow: 'rgba(123,227,140,0.22)',  label: 'UNCOMMON' };
-    default:         return { color: '#cccccc', glow: 'rgba(204,204,204,0.18)',  label: 'COMMON' };
+    case 'mythic':   return { color: '#b8860b', accent: '#ffd24a', glow: 'rgba(255,210,74,0.35)',   label: 'MYTHIC DROP' };
+    case 'epic':     return { color: '#9333ea', accent: '#c879ff', glow: 'rgba(200,121,255,0.30)',  label: 'EPIC DROP' };
+    case 'rare':     return { color: '#0284c7', accent: '#5DD3FA', glow: 'rgba(93,211,250,0.30)',   label: 'RARE DROP' };
+    case 'uncommon': return { color: '#16a34a', accent: '#7be38c', glow: 'rgba(123,227,140,0.22)',  label: 'UNCOMMON' };
+    default:         return { color: '#6b7280', accent: '#cccccc', glow: 'rgba(204,204,204,0.18)',  label: 'COMMON' };
   }
 }

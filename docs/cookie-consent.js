@@ -1,11 +1,18 @@
 // GDPR/ePrivacy cookie banner (extracted from inline <script> so the page can
 // ship a strict CSP without 'unsafe-inline' in script-src).
 (function(){
-  var KEY = 'atleato_cookie_consent';
+  var KEY = 'evulto_cookie_consent';
+  var LEGACY_KEY = 'atleato_cookie_consent'; // pre-rebrand key — migrate silently
   var banner = document.getElementById('cookie-banner');
   if (!banner) return;
   var stored = null;
-  try { stored = localStorage.getItem(KEY); } catch (e) {}
+  try {
+    stored = localStorage.getItem(KEY);
+    if (!stored) {
+      var legacy = localStorage.getItem(LEGACY_KEY);
+      if (legacy) { localStorage.setItem(KEY, legacy); localStorage.removeItem(LEGACY_KEY); stored = legacy; }
+    }
+  } catch (e) {}
   if (!stored) {
     banner.style.display = 'flex';
     setTimeout(function(){ banner.classList.add('show'); }, 600);

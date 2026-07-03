@@ -508,8 +508,10 @@ export async function handleDecline(args: { kind: CallKind; personaId: PersonaId
   // Cancel the current ringing call
   await cancelAllCalls();
 
-  // Speak the "no excuses" line via TTS
+  // Speak the "no excuses" line via TTS — stop any in-flight speech first so
+  // it never overlaps a greeting/ring teardown into garbled double audio.
   try {
+    Speech.stop();
     Speech.speak(line, { language: 'en-US', pitch: voice.pitch, rate: voice.rate, volume: 1.0 });
   } catch { /* TTS unavailable */ }
 

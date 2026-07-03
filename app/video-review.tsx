@@ -74,6 +74,15 @@ export default function VideoReview() {
 
   const startRecording = useCallback(async () => {
     if (!cameraRef.current || recording) return;
+    // recordAsync fails SILENTLY on Android without mic permission — the user
+    // would "record" nothing. Block with an actionable message instead.
+    if (!permission?.granted || !micPermission?.granted) {
+      Alert.alert(
+        'Permissions needed',
+        'Camera and microphone access are required to record your set. Enable them in Settings and try again.',
+      );
+      return;
+    }
     setDuration(0);
     setRecording(true);
     setRecordedAt(new Date());

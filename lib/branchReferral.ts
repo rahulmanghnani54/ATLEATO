@@ -27,7 +27,7 @@ try {
 }
 
 const REFERRER_APPLIED_KEY = 'referrer_applied:v1';
-const FALLBACK_BASE = 'https://atleato.com';
+const FALLBACK_BASE = 'https://evulto.com';
 
 /** Pull the referrer code out of a Branch session params object (tolerant of shape). */
 function extractCode(params: any): string | null {

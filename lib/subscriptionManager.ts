@@ -192,7 +192,7 @@ export function getReferralProUntil(): number | null {
  * Returns false so the paywall shows its "not configured" path gracefully.
  */
 export async function purchaseSubscription(_productId: string): Promise<boolean> {
-  console.warn('[subscription] purchases unavailable — native billing not installed');
+  if (__DEV__) console.warn('[subscription] purchases unavailable — native billing not installed');
   return false;
 }
 

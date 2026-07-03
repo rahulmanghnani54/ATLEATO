@@ -45,8 +45,10 @@ export default function AddFoodScreen() {
   const handleFoodLogged = () => {
     setSelectedFood(null);
     setQuery('');
-    // Invalidate daily nutrition so the Eat tab refreshes immediately
-    queryClient.invalidateQueries({ queryKey: ['daily-nutrition'] });
+    // Invalidate daily nutrition so the Eat tab refreshes immediately.
+    // NOTE: useDailyNutrition's key is ['nutrition', userId, date] — the old
+    // 'daily-nutrition' key matched nothing, leaving the Eat tab stale.
+    queryClient.invalidateQueries({ queryKey: ['nutrition'] });
     router.back();
   };
 

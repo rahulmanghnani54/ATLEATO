@@ -84,7 +84,7 @@ export default function Signup() {
               autoCapitalize="words"
               autoComplete="name"
               returnKeyType="next"
-              keyboardAppearance="dark"
+              keyboardAppearance="light"
             />
 
             <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>EMAIL</Text>
@@ -98,7 +98,7 @@ export default function Signup() {
               autoCapitalize="none"
               autoComplete="email"
               returnKeyType="next"
-              keyboardAppearance="dark"
+              keyboardAppearance="light"
             />
 
             <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>PASSWORD</Text>
@@ -111,7 +111,7 @@ export default function Signup() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 returnKeyType="next"
-                keyboardAppearance="dark"
+                keyboardAppearance="light"
               />
               <TouchableOpacity
                 style={styles.eyeBtn}
@@ -133,7 +133,7 @@ export default function Signup() {
                 secureTextEntry={!showConfirm}
                 returnKeyType="done"
                 onSubmitEditing={handleSignup}
-                keyboardAppearance="dark"
+                keyboardAppearance="light"
               />
               <TouchableOpacity
                 style={styles.eyeBtn}

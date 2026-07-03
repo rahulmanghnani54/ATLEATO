@@ -105,7 +105,7 @@ export default function SquadsScreen() {
       setMySquad(row);
       setLeaderboard((lbData as LeaderRow[] | null) ?? []);
     } catch (e: any) {
-      console.warn('Squad fetch failed:', e?.message);
+      if (__DEV__) console.warn('Squad fetch failed:', e?.message);
       setFetchError(e?.message ?? 'Could not load squads — pull to retry.');
     } finally {
       setLoading(false);

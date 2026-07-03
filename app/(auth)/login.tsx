@@ -82,7 +82,7 @@ export default function Login() {
               autoCapitalize="none"
               autoComplete="email"
               returnKeyType="next"
-              keyboardAppearance="dark"
+              keyboardAppearance="light"
             />
 
             <Text style={[styles.monoLabel, { marginTop: Spacing.md }]}>PASSWORD</Text>
@@ -97,7 +97,7 @@ export default function Login() {
                 autoComplete="password"
                 returnKeyType="done"
                 onSubmitEditing={handleLogin}
-                keyboardAppearance="dark"
+                keyboardAppearance="light"
               />
               <TouchableOpacity
                 style={styles.eyeBtn}

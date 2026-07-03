@@ -39,7 +39,7 @@ function weekOfYear(): number {
 }
 
 // ─── Muscle-group accordion (preserved from v0 but restyled) ─────────────────
-function MuscleGroupRow({ group, accent }: { group: MuscleGroup; accent: string }) {
+function MuscleGroupRow({ group, accent, personaId }: { group: MuscleGroup; accent: string; personaId: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   return (
@@ -61,7 +61,7 @@ function MuscleGroupRow({ group, accent }: { group: MuscleGroup; accent: string 
               onPress={() =>
                 router.push({
                   pathname: '/form-coach' as any,
-                  params: { exerciseName: ex.name, persona: 'cbum' },
+                  params: { exerciseName: ex.name, persona: personaId },
                 })
               }
             >
@@ -202,7 +202,7 @@ export default function Workouts() {
               meta={`${EXERCISE_LIBRARY.reduce((n, g) => n + g.exercises.length, 0)} exercises across ${EXERCISE_LIBRARY.length} muscle groups`}
             />
             {EXERCISE_LIBRARY.map((g) => (
-              <MuscleGroupRow key={g.id} group={g} accent={persona.accent} />
+              <MuscleGroupRow key={g.id} group={g} accent={persona.accent} personaId={persona.id} />
             ))}
           </SafeAreaView>
         )}

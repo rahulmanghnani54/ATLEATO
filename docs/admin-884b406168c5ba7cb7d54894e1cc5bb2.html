@@ -52,7 +52,8 @@
      barrier so visitors don't see the admin UI without the passphrase.
      For production-grade auth: Cloudflare Access or Supabase Auth role.
 
-     Default passphrase: 'atleato-launch-2026'  ← CHANGE BEFORE LAUNCH
+     Passphrase is NOT stored here — only its SHA-256 hash below. (Rotated
+     2026-07-03; the founder has the passphrase.)
      To rotate, run in JS console:
        crypto.subtle.digest('SHA-256', new TextEncoder().encode('your-pass'))
          .then(b => console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))
@@ -76,8 +77,8 @@
 </div>
 <script>
 (function(){
-  // SHA-256 of "atleato-launch-2026" — ROTATE BEFORE LAUNCH
-  var ADMIN_PASS_HASH = '0c39669e86440271e11cb6ca4590e3653aec98f6d60032d0f02d11993689e9cb';
+  // SHA-256 of the founder's passphrase (rotated 2026-07-03; plaintext not in source)
+  var ADMIN_PASS_HASH = '24f64555f3f92fbd3cdda2f7cb42683a3644995471d11cd1c59064513874f2d4';
   var SESSION_KEY = 'atleato_admin_ok_v1';
   function sha256Hex(s) {
     return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))

@@ -24,7 +24,7 @@
   var CLARITY_ID    = '';   // Microsoft Clarity, e.g. 'abcdefghij'
   // ──────────────────────────────────────────────────────────────
 
-  var CONSENT_KEY = 'atleato_cookie_consent';
+  var CONSENT_KEY = 'evulto_cookie_consent';
   var started = false;
 
   function hasConsent() {

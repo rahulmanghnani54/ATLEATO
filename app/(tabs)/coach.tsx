@@ -400,7 +400,7 @@ export default function CoachHub() {
             placeholderTextColor={Colors.textTertiary}
             multiline
             maxLength={500}
-            keyboardAppearance="dark"
+            keyboardAppearance="light"
           />
           <TouchableOpacity
             style={[

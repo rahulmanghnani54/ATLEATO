@@ -142,7 +142,10 @@ export default function VoiceSettingsScreen() {
         }
       }
       setLoaded(true);
-    });
+    }).catch(() => setLoaded(true)); // storage read failed — render with defaults
+
+    // Stop any preview TTS still speaking when the user navigates away.
+    return () => { try { Speech.stop(); } catch { /* ignore */ } };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
