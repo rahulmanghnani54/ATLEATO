@@ -11,8 +11,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
-const FROM_EMAIL = 'Rahul from Evulto <hello@atleato.com>';
-const REPLY_TO = 'hello@atleato.com';
+const FROM_EMAIL = 'Rahul from Evulto <hello@evulto.com>';
+const REPLY_TO = 'hello@evulto.com';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -87,7 +87,7 @@ Just hit reply if you have any questions. I read every message.
 Founder, Evulto
 
 ---
-You're receiving this because you joined the waitlist at atleato.com.
+You're receiving this because you joined the waitlist at evulto.com.
 Coach personas are fictional AI characters and are not affiliated with any real individuals.
 Unsubscribe: reply with UNSUB.`;
 }
@@ -153,7 +153,7 @@ function generateHTML(name: string, email: string, position: number, badge: stri
       <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#8b909a;">Founder, Evulto</p>
     </td></tr>
     <tr><td style="padding:8px 30px 30px;">
-      <p style="margin:18px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.6;color:#5d626b;border-top:1px solid #1e2127;padding-top:16px;">You joined the waitlist at atleato.com. Coach personas are fictional AI characters. <a href="${hostedUrl}" style="color:#8b909a;">View in browser</a> · <a href="mailto:hello@atleato.com?subject=unsubscribe" style="color:#5d626b;">Unsubscribe</a></p>
+      <p style="margin:18px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:11px;line-height:1.6;color:#5d626b;border-top:1px solid #1e2127;padding-top:16px;">You joined the waitlist at evulto.com. Coach personas are fictional AI characters. <a href="${hostedUrl}" style="color:#8b909a;">View in browser</a> · <a href="mailto:hello@evulto.com?subject=unsubscribe" style="color:#5d626b;">Unsubscribe</a></p>
     </td></tr>
   </table>
 </td></tr></table>
@@ -184,8 +184,8 @@ serve(async (req) => {
     const position = record.id || 1;
     const { passNo, full: badge } = deriveBadge(email);
 
-    const upsellUrl = `https://atleato.com/upsell.html?email=${encodeURIComponent(email)}`;
-    const hostedUrl = `https://atleato.com/welcome-email.html?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&pos=${position}&pass=${passNo}`;
+    const upsellUrl = `https://evulto.com/upsell.html?email=${encodeURIComponent(email)}`;
+    const hostedUrl = `https://evulto.com/welcome-email.html?email=${encodeURIComponent(email)}&name=${encodeURIComponent(name)}&pos=${position}&pass=${passNo}`;
 
     const plain = generatePlainText(name, email, position, badge, passNo, upsellUrl, hostedUrl);
     const html = generateHTML(name, email, position, badge, passNo, upsellUrl, hostedUrl);

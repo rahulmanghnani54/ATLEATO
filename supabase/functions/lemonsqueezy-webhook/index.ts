@@ -35,8 +35,8 @@ const REPLAY_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 // Set via: supabase secrets set LEMONSQUEEZY_VANGUARD_PRODUCT_IDS=12345,67890
 const ALLOWED_PRODUCT_IDS = (Deno.env.get('LEMONSQUEEZY_VANGUARD_PRODUCT_IDS') || '')
   .split(',').map((s) => s.trim()).filter(Boolean);
-const FROM_EMAIL = 'Rahul from Evulto <hello@atleato.com>';
-const REPLY_TO = 'hello@atleato.com';
+const FROM_EMAIL = 'Rahul from Evulto <hello@evulto.com>';
+const REPLY_TO = 'hello@evulto.com';
 // Set via: supabase secrets set DISCORD_INVITE_URL=https://discord.gg/yourcode
 // If unset, the email omits the Discord block gracefully.
 const DISCORD_INVITE_URL = Deno.env.get('DISCORD_INVITE_URL') || '';
@@ -100,8 +100,8 @@ async function sendVanguardConfirmedEmail(opts: {
     return;
   }
   const passStr = String(opts.passNo).padStart(4, '0');
-  const hostedUrl = `https://atleato.com/welcome-email.html?email=${encodeURIComponent(opts.email)}&name=${encodeURIComponent(opts.name)}&pass=${opts.passNo}`;
-  const upsellUrl = `https://atleato.com/upsell.html?email=${encodeURIComponent(opts.email)}&paid=true`;
+  const hostedUrl = `https://evulto.com/welcome-email.html?email=${encodeURIComponent(opts.email)}&name=${encodeURIComponent(opts.name)}&pass=${opts.passNo}`;
+  const upsellUrl = `https://evulto.com/upsell.html?email=${encodeURIComponent(opts.email)}&paid=true`;
 
   const plain = `Hey ${opts.name},
 
@@ -166,7 +166,7 @@ P.S. — Lemon Squeezy handles refunds via reply to this email or your receipt. 
   </div>
   <div style="padding:0 32px 8px;">
     <p style="margin:0 0 8px;font-size:14px;color:#666;">Your Vanguard page:</p>
-    <p style="margin:0 0 24px;"><a href="${upsellUrl}" style="display:inline-block;color:#0a0b0d;font-size:15px;font-weight:600;text-decoration:none;border-bottom:2px solid #39e08a;padding:2px 0;">atleato.com/upsell →</a></p>
+    <p style="margin:0 0 24px;"><a href="${upsellUrl}" style="display:inline-block;color:#0a0b0d;font-size:15px;font-weight:600;text-decoration:none;border-bottom:2px solid #39e08a;padding:2px 0;">evulto.com/upsell →</a></p>
   </div>
   <div style="padding:0 32px 0;">
     <p style="margin:0 0 16px;font-size:16px;color:#1a1a1a;">Just hit reply if you have any questions. I read every message.</p>

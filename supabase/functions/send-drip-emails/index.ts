@@ -21,8 +21,8 @@ const SUPABASE_URL     = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const RESEND_API_KEY   = Deno.env.get('RESEND_API_KEY') || '';
 const CRON_SECRET      = Deno.env.get('DRIP_CRON_SECRET') || '';
-const FROM_EMAIL = 'Rahul from Evulto <hello@atleato.com>';
-const REPLY_TO   = 'hello@atleato.com';
+const FROM_EMAIL = 'Rahul from Evulto <hello@evulto.com>';
+const REPLY_TO   = 'hello@evulto.com';
 
 const VANGUARD_TOTAL = 500;
 const MAX_PER_STEP = 100; // Resend free-tier-friendly; raise as needed
@@ -58,7 +58,7 @@ interface DripStep {
 }
 
 function upsellUrl(email: string, campaign: string): string {
-  return `https://atleato.com/upsell.html?email=${encodeURIComponent(email)}`
+  return `https://evulto.com/upsell.html?email=${encodeURIComponent(email)}`
     + `&utm_source=email&utm_medium=drip&utm_campaign=${campaign}`;
 }
 
@@ -103,7 +103,7 @@ Most fitness apps are silent checklists you ignore.
 
 Evulto is the one where your AI coach actually CALLS your phone to get you training — and corrects your form in real time through your camera. Five coaches, each with their own voice and philosophy. Pick one and the whole app changes around them.
 
-60-second look: https://atleato.com/showreel.html
+60-second look: https://evulto.com/showreel.html
 
 Your founding Vanguard pass (one-time $1.99, first 500 only): ${url}
 
@@ -113,7 +113,7 @@ Founder, Evulto`;
         name, 'Why Evulto',
         `An AI coach that actually <span style="color:#ff8050;">calls your phone</span>.`,
         `<p style="margin:0 0 14px;color:#c4c8cd;">Most fitness apps are silent checklists you ignore. Evulto calls you to train, then corrects your form live through your camera — five coaches, each with their own voice.</p>
-         <p style="margin:0 0 4px;"><a href="https://atleato.com/showreel.html?utm_source=email&utm_medium=drip&utm_campaign=day2" style="color:#ff8050;font-weight:600;">Watch the 60-second showreel →</a></p>`,
+         <p style="margin:0 0 4px;"><a href="https://evulto.com/showreel.html?utm_source=email&utm_medium=drip&utm_campaign=day2" style="color:#ff8050;font-weight:600;">Watch the 60-second showreel →</a></p>`,
         url, 'Claim your Vanguard pass',
       );
       return { text, html };
