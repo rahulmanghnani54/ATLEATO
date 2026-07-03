@@ -1,0 +1,15 @@
+{
+  "name": "Evulto — Your Coach Calls",
+  "short_name": "Evulto",
+  "description": "5 AI coaches that phone-call you awake and for your workouts. Real two-way conversations, live form correction, rest-day-aware plans.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F4F7F5",
+  "theme_color": "#12B981",
+  "icons": [
+    { "src": "/assets/brand/png/favicon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/assets/brand/png/favicon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/brand/png/evulto-appicon-emerald-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

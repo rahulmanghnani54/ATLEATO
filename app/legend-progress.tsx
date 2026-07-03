@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -81,11 +81,19 @@ export default function LegendProgressScreen() {
   const accentColor = persona.accent;
 
   const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
+  const [loadState, setLoadState] = useState<'loading' | 'error' | 'done'>('loading');
   const milestones = levelInfo ? getMilestones(levelInfo.xp) : [];
 
-  useEffect(() => {
-    getLevel(persona.id).then(setLevelInfo);
+  // Explicit loading/error states: without them a failed RPC left this screen
+  // permanently half-empty (header + label, no ring, no explanation).
+  const load = useCallback(() => {
+    setLoadState('loading');
+    getLevel(persona.id)
+      .then((info) => { setLevelInfo(info); setLoadState('done'); })
+      .catch(() => setLoadState('error'));
   }, [persona.id]);
+
+  useEffect(() => { load(); }, [load]);
 
   const xpColor = levelInfo ? LEVEL_COLORS[levelInfo.level] : accentColor;
 
@@ -112,6 +120,20 @@ export default function LegendProgressScreen() {
         <Text style={[styles.personaLabel, { color: accentColor }]}>
           {persona.shortName} PATH
         </Text>
+
+        {loadState === 'loading' && !levelInfo && (
+          <ActivityIndicator color={accentColor} style={{ marginTop: 48 }} />
+        )}
+
+        {loadState === 'error' && !levelInfo && (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorTitle}>Couldn't load your progress</Text>
+            <Text style={styles.errorBody}>Check your connection and try again.</Text>
+            <TouchableOpacity style={[styles.retryBtn, { borderColor: accentColor }]} onPress={load}>
+              <Text style={[styles.retryText, { color: accentColor }]}>RETRY</Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* XP Ring */}
         {levelInfo && (
@@ -222,6 +244,16 @@ const styles = StyleSheet.create({
   personaLabel: {
     fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 2, textAlign: 'center', marginTop: 20,
   },
+
+  // ── Load-failure state ──
+  errorBox: { alignItems: 'center', marginTop: 48, paddingHorizontal: 32, gap: 8 },
+  errorTitle: { fontFamily: Fonts.displayMedium, fontSize: 16, color: Colors.text },
+  errorBody: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
+  retryBtn: {
+    marginTop: 10, paddingHorizontal: 26, paddingVertical: 10,
+    borderRadius: 8, borderWidth: 1.5,
+  },
+  retryText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 1.2 },
 
   ringRow: { alignItems: 'center', marginTop: 12, marginBottom: 8 },
   ringWrap: {

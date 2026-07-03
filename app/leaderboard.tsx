@@ -26,7 +26,7 @@ export default function LeaderboardScreen() {
     }
   }, []);
   const persona = personaFromProgramId(profile?.selected_program);
-  const { data: rows = [], isLoading, refetch, isFetching } = useGlobalLeaderboard(100);
+  const { data: rows = [], isLoading, refetch, isFetching, isError } = useGlobalLeaderboard(100);
 
   const me = rows.find((r) => r.is_current_user);
   const top = rows.filter((r) => r.rank <= 100);
@@ -58,10 +58,33 @@ export default function LeaderboardScreen() {
 
       {isLoading ? (
         <ActivityIndicator color={persona.accent} style={{ marginTop: 24 }} />
+      ) : isError ? (
+        <View style={styles.emptyWrap}>
+          <Text style={styles.emptyTitle}>Couldn't load the leaderboard</Text>
+          <Text style={styles.empty}>Check your connection and try again.</Text>
+          <TouchableOpacity
+            style={[styles.emptyBtn, { backgroundColor: persona.accent }]}
+            onPress={() => refetch()}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.emptyBtnText, { color: persona.ink }]}>RETRY</Text>
+          </TouchableOpacity>
+        </View>
       ) : top.length === 0 ? (
-        <Text style={styles.empty}>
-          No lifts logged yet this week. Be the first.
-        </Text>
+        <View style={styles.emptyWrap}>
+          <Text style={styles.emptyEmoji}>🏆</Text>
+          <Text style={styles.emptyTitle}>Fresh board — resets every Monday</Text>
+          <Text style={styles.empty}>
+            No lifts logged yet this week. One workout puts you at #1.
+          </Text>
+          <TouchableOpacity
+            style={[styles.emptyBtn, { backgroundColor: persona.accent }]}
+            onPress={() => router.push('/(tabs)/workouts' as any)}
+            activeOpacity={0.85}
+          >
+            <Text style={[styles.emptyBtnText, { color: persona.ink }]}>LOG TODAY'S WORKOUT →</Text>
+          </TouchableOpacity>
+        </View>
       ) : (
         <FlatList
           data={top}
@@ -130,7 +153,12 @@ const styles = StyleSheet.create({
 
   list: { paddingHorizontal: 16, paddingBottom: 24 },
   sep: { height: 1, backgroundColor: Colors.border },
-  empty: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, textAlign: 'center', marginTop: 40 },
+  empty: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
+  emptyWrap: { alignItems: 'center', marginTop: 40, paddingHorizontal: 32, gap: 8 },
+  emptyEmoji: { fontSize: 40, marginBottom: 4 },
+  emptyTitle: { fontFamily: Fonts.displayMedium, fontSize: 16, color: Colors.text, textAlign: 'center' },
+  emptyBtn: { marginTop: 12, paddingHorizontal: 22, paddingVertical: 12, borderRadius: 8 },
+  emptyBtnText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 1 },
 
   row: {
     flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 10,
