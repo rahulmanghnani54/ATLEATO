@@ -78,12 +78,14 @@
 
   // Public helper: send a custom event to whichever providers are live.
   // No-ops silently until consent + IDs are in place.
-  window.atleatoTrack = function (name, params) {
+  window.evultoTrack = function (name, params) {
     params = params || {};
     if (window.gtag) window.gtag('event', name, params);
     if (window.fbq)  window.fbq('trackCustom', name, params);
     if (window.clarity) { try { window.clarity('event', name); } catch (e) {} }
   };
+  // Back-compat alias (old brand name) so any lingering caller keeps working.
+  window.atleatoTrack = window.evultoTrack;
 
   // ── Wire conversion events (always wired; only SEND once providers are live) ──
   function wireEvents() {
@@ -92,26 +94,28 @@
       f.addEventListener('submit', function () {
         var plat = '';
         try { plat = (new FormData(f).get('platform') || '').toString(); } catch (e) {}
-        window.atleatoTrack('waitlist_signup', { location: f.id || 'waitlist', platform: plat || 'unknown' });
-        if (window.fbq) window.fbq('track', 'Lead');
+        // Attempt only — fires even on invalid/duplicate/rate-limited submits.
+        // The real conversion (waitlist_signup + Meta 'Lead') fires from main.js
+        // once the signup actually succeeds, so ad optimisation isn't inflated.
+        window.evultoTrack('waitlist_attempt', { location: f.id || 'waitlist', platform: plat || 'unknown' });
       });
     });
     // Coach interest (coach chips + cards carry data-coach)
     document.querySelectorAll('[data-coach]').forEach(function (el) {
       el.addEventListener('click', function () {
-        window.atleatoTrack('coach_interest', { coach: el.getAttribute('data-coach') });
+        window.evultoTrack('coach_interest', { coach: el.getAttribute('data-coach') });
       });
     });
     // Vanguard CTA interest (matched by text — there's no dedicated id)
     document.querySelectorAll('a, button').forEach(function (el) {
       if ((el.textContent || '').toLowerCase().indexOf('vanguard') !== -1) {
-        el.addEventListener('click', function () { window.atleatoTrack('vanguard_interest', {}); });
+        el.addEventListener('click', function () { window.evultoTrack('vanguard_interest', {}); });
       }
     });
     // 3D demo interaction
     var bad = document.getElementById('bad-form-btn');
     if (bad) bad.addEventListener('click', function () {
-      window.atleatoTrack('demo_interaction', { action: 'simulate_bad_form' });
+      window.evultoTrack('demo_interaction', { action: 'simulate_bad_form' });
     });
     wireScrollDepth();
   }
@@ -124,7 +128,7 @@
       var pct = (h.scrollTop || document.body.scrollTop) / max * 100;
       for (var i = 0; i < marks.length; i++) {
         var m = marks[i];
-        if (pct >= m && !fired[m]) { fired[m] = true; window.atleatoTrack('scroll_depth', { percent: m }); }
+        if (pct >= m && !fired[m]) { fired[m] = true; window.evultoTrack('scroll_depth', { percent: m }); }
       }
       if (fired[90]) window.removeEventListener('scroll', onScroll);
     }

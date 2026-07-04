@@ -421,7 +421,8 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
         });
 
         if (res.status === 409 || res.status === 23505) {
-          // Duplicate — still redirect to upsell so existing users can claim
+          // Duplicate — existing subscriber re-engaging (not a new Lead).
+          if (window.evultoTrack) window.evultoTrack('waitlist_returning', { source: sourceValue });
           window.location.href = '/upsell.html?email=' + encodeURIComponent(email);
           return;
         } else if (res.status >= 400) {
@@ -441,7 +442,10 @@ document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
             return;
           }
         } else {
-          // Success — redirect to upsell page
+          // Success — the real conversion. Fire the funnel event + Meta's
+          // standard 'Lead' here (not on submit) so counts reflect true signups.
+          if (window.evultoTrack) window.evultoTrack('waitlist_signup', { source: sourceValue });
+          if (window.fbq) window.fbq('track', 'Lead');
           window.location.href = '/upsell.html?email=' + encodeURIComponent(email);
           return;
         }
