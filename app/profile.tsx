@@ -15,7 +15,7 @@ import type { ActivityLevel, Goal } from '@/lib/tdee';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import {
   ArrowLeft, ChevronRight, ArrowUpRight, ArrowDownRight, ExternalLink,
-  Zap, Dna, HeartPulse, Trophy, Gift, Handshake, DollarSign, Camera, Users,
+  Zap, Dna, Trophy, Gift, Handshake, DollarSign, Camera, Users,
   Phone, Volume2, Mic, Film, Tv, Globe, Share2, Unlock, Ticket, Award, RotateCcw,
   Flame, Calendar,
 } from 'lucide-react-native';
@@ -332,15 +332,10 @@ export default function ProfileScreen() {
             trailIcon={ChevronRight}
             onPress={() => router.push('/my-avatar' as any)}
           />
-          <View style={styles.rowDivider} />
-          <SettingsRow
-            Icon={HeartPulse}
-            iconColor={programColor}
-            label="Health Dashboard"
-            sub="Steps, HRV, sleep quality & recovery modifier"
-            trailIcon={ChevronRight}
-            onPress={() => router.push('/health-dashboard' as any)}
-          />
+          {/* Health Dashboard / watch integration hidden for launch (founder
+              call 2026-07-04): focus the app on the coach-calls core. The
+              /health-dashboard route + healthIntegration lib stay dormant —
+              re-add this row to bring it back. */}
         </SettingsGroup>
 
         {/* ── Active Coach ── */}
