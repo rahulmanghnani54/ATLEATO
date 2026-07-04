@@ -19,9 +19,9 @@
   // ──────────────────────────────────────────────────────────────
   // 1) PASTE YOUR IDs HERE (leave '' to keep that provider disabled)
   // ──────────────────────────────────────────────────────────────
-  var GA4_ID        = '';   // Google Analytics 4, e.g. 'G-XXXXXXXXXX'
-  var META_PIXEL_ID = '';   // Meta / Facebook Pixel, e.g. '123456789012345'
-  var CLARITY_ID    = '';   // Microsoft Clarity, e.g. 'abcdefghij'
+  var GA4_ID        = 'G-WLRWB5DKYN';   // Google Analytics 4
+  var META_PIXEL_ID = '';               // Meta / Facebook Pixel (add when running ads)
+  var CLARITY_ID    = 'xh4bwlby3j';     // Microsoft Clarity
   // ──────────────────────────────────────────────────────────────
 
   var CONSENT_KEY = 'evulto_cookie_consent';
