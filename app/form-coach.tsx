@@ -220,6 +220,58 @@ function evaluateVisibility(kpts: Kpt[], category: string | undefined): {
   return { visibilityLow: false, reason: '' };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Geometric plausibility gate — is this a REAL human body, or did MLKit map a
+// 33-point skeleton onto a hand / face / object held close to the lens?
+//
+// MLKit will happily return a full pose for a hand; the giveaway is proportion.
+// These checks are scale- and position-invariant (pure ratios) and only fire
+// when the joints they need are confidently visible — so a real body at an odd
+// angle (with occluded joints) is never falsely rejected. Returns true when the
+// geometry can't be a human.
+// ─────────────────────────────────────────────────────────────────────────────
+const GEO_CONF = 0.4; // min confidence to use a landmark for geometry
+
+function isImplausibleBody(raw: Kpt[]): boolean {
+  const pt = (i: number): [number, number] | null =>
+    raw[i] && raw[i][2] >= GEO_CONF ? [raw[i][0], raw[i][1]] : null;
+  const dist = (a: [number, number] | null, b: [number, number] | null) =>
+    a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : NaN;
+  const mid = (a: [number, number] | null, b: [number, number] | null): [number, number] | null =>
+    a && b ? [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] : null;
+
+  const lsh = pt(KP.l_shoulder), rsh = pt(KP.r_shoulder);
+  const lhip = pt(KP.l_hip), rhip = pt(KP.r_hip);
+  // Without a confident torso we can't judge proportion — let the confidence /
+  // bbox gates decide instead of guessing (avoids false rejects of real bodies).
+  if (!lsh || !rsh || !lhip || !rhip) return false;
+
+  const shoulderW = dist(lsh, rsh);
+  const hipW = dist(lhip, rhip);
+  const torso = dist(mid(lsh, rsh), mid(lhip, rhip));
+  if (!(shoulderW > 0) || !(hipW > 0) || !(torso > 0)) return true;
+
+  // 1) Torso must not be collapsed relative to shoulder width (a hand scrunches it).
+  if (torso < 0.45 * shoulderW) return true;
+  // 2) Shoulder-to-hip width ratio must sit in the human range.
+  const shHip = shoulderW / hipW;
+  if (shHip < 0.45 || shHip > 3.2) return true;
+
+  // 3) Left/right limb lengths must be roughly symmetric when both are visible —
+  //    a fabricated hand-skeleton has wildly mismatched limbs.
+  const lArm = dist(lsh, pt(KP.l_elbow)) + dist(pt(KP.l_elbow), pt(KP.l_wrist));
+  const rArm = dist(rsh, pt(KP.r_elbow)) + dist(pt(KP.r_elbow), pt(KP.r_wrist));
+  if (isFinite(lArm) && isFinite(rArm) && lArm > 0 && rArm > 0) {
+    if (Math.max(lArm, rArm) / Math.min(lArm, rArm) > 3.0) return true;
+  }
+  const lLeg = dist(lhip, pt(KP.l_knee)) + dist(pt(KP.l_knee), pt(KP.l_ankle));
+  const rLeg = dist(rhip, pt(KP.r_knee)) + dist(pt(KP.r_knee), pt(KP.r_ankle));
+  if (isFinite(lLeg) && isFinite(rLeg) && lLeg > 0 && rLeg > 0) {
+    if (Math.max(lLeg, rLeg) / Math.min(lLeg, rLeg) > 3.0) return true;
+  }
+  return false;
+}
+
 /**
  * Heuristic for "looks like a true max attempt" — we refuse to coach these.
  * Signals: very slow tempo (no significant motion across 12 frames = grinding rep)
@@ -704,10 +756,13 @@ export default function FormCoach() {
       // say "form looks solid" when it couldn't even see your lower body. Reject
       // anything outside the frame so the visibility gate is honest.
       const inFrame = p.x > 0 && p.y > 0 && p.x <= imgW && p.y <= imgH;
+      // Real MLKit confidence (Android now emits inFrameLikelihood via patch;
+      // fall back to a binary in-frame flag on older native builds).
+      const lk = typeof p.inFrameLikelihood === 'number' ? p.inFrameLikelihood : 1;
       let sx = p.x * scale + offX;
       const sy = p.y * scale + offY;
       if (mirror) sx = viewW - sx;
-      raw[MLKIT_TO_INDEX[name]] = [sx, sy, inFrame ? 1 : 0];
+      raw[MLKIT_TO_INDEX[name]] = [sx, sy, inFrame ? lk : 0];
     }
 
     // ── REJECT non-real "humans" ───────────────────────────────────────────
@@ -715,17 +770,23 @@ export default function FormCoach() {
     // those appear small & clustered. A real person doing an exercise fills a
     // large vertical span of the frame. So require the pose's bounding box to be
     // tall enough; otherwise it's a picture-of-a-person, not a person.
-    let minY = Infinity, maxY = -Infinity;
+    // Only count landmarks MLKit is genuinely confident about (real body points),
+    // not every hallucinated joint. This is what stops a hand held to the lens
+    // from rendering a full skeleton.
+    const STRONG = 0.5;
+    let minY = Infinity, maxY = -Infinity, strong = 0;
     for (const k of raw) {
-      if (k[2] > 0) { if (k[1] < minY) minY = k[1]; if (k[1] > maxY) maxY = k[1]; }
+      if (k[2] >= STRONG) { strong += 1; if (k[1] < minY) minY = k[1]; if (k[1] > maxY) maxY = k[1]; }
     }
     const bboxH = maxY - minY;
     const minBodyH = viewH * 0.45;   // body must span ≥45% of the camera view
-    const visible = raw.filter(([, , c]) => c > 0).length;
-    poseLog('lm=' + visible + '/33 bboxH=' + Math.round(bboxH) + ' need>' + Math.round(minBodyH));
+    const implausible = isImplausibleBody(raw);
+    poseLog('strong=' + strong + '/33 bboxH=' + Math.round(bboxH) + ' need>' + Math.round(minBodyH) + (implausible ? ' IMPLAUSIBLE' : ''));
 
-    if (visible < 12 || bboxH < minBodyH) {
-      // Too few joints or too small → not a real person in frame. Blank + quiet.
+    // Reject unless enough HIGH-CONFIDENCE joints span a tall-enough box AND the
+    // proportions look like a real human. Any failure → blank the skeleton and
+    // let the analysis surface "step into frame" instead of drawing nonsense.
+    if (strong < 8 || bboxH < minBodyH || implausible) {
       targetKptsRef.current = null;
       kptsHistoryRef.current = [];
       setAnalysisTick((t) => t + 1);

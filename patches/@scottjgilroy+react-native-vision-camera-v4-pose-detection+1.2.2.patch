@@ -1,5 +1,5 @@
 diff --git a/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt b/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt
-index 89f218d..a32ac5b 100644
+index 89f218d..8a0516e 100644
 --- a/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt
 +++ b/node_modules/@scottjgilroy/react-native-vision-camera-v4-pose-detection/android/src/main/java/com/visioncamerav3posedetection/VisionCameraV3PoseDetectionModule.kt
 @@ -18,13 +18,13 @@ import java.util.HashMap
@@ -21,3 +21,14 @@ index 89f218d..a32ac5b 100644
        val poseDetector = PoseDetection.getClient(options.build())
        val mediaImage: Image = frame.image
        val orientation: Orientation = frame.orientation
+@@ -50,6 +50,10 @@ class VisionCameraV3PoseDetectionModule(proxy : VisionCameraProxy, options: Map<
+         val landmarkMap = WritableNativeMap()
+         landmarkMap.putDouble("x", landmark?.position?.x?.toDouble() ?: 0.0)
+         landmarkMap.putDouble("y", landmark?.position?.y?.toDouble() ?: 0.0)
++        // inFrameLikelihood: MLKit's own confidence that this landmark is a real,
++        // visible body point. Emitting it lets JS reject hallucinated skeletons
++        // (e.g. a full body mapped onto a hand) — iOS already gates on this.
++        landmarkMap.putDouble("inFrameLikelihood", landmark?.inFrameLikelihood?.toDouble() ?: 0.0)
+ 
+         map.putMap(landmarkName, landmarkMap)
+       }
