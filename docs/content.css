@@ -1,11 +1,11 @@
 /* Shared styles for Evulto content pages (blog + per-coach landing pages).
-   Matches the dark brand theme of index.html but standalone + lightweight
-   (no three.js / GSAP) so these pages load instantly and rank well. */
+   Matches the LIGHT-EMERALD brand theme of the homepage but standalone +
+   lightweight (no three.js / GSAP) so these pages load instantly and rank well. */
 :root{
-  --bg:#0a0b0d; --surface:#121316; --surface-2:#16181c;
-  --border:rgba(255,255,255,0.10); --border-soft:rgba(255,255,255,0.06);
-  --text:#f4f4ef; --text-secondary:#b9bbb6; --text-tertiary:#7d8079;
-  --lime:#12B981; --lime-dim:#0FA968;
+  --bg:#F4F7F5; --surface:#FFFFFF; --surface-2:#EEF3F0;
+  --border:rgba(10,31,25,0.10); --border-soft:rgba(10,31,25,0.06);
+  --text:#0A1F19; --text-secondary:#4C5B54; --text-tertiary:#6B7A71;
+  --lime:#0A8757; --lime-dim:#0FA968; --lime-bright:#12B981;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{scroll-behavior:smooth;}
@@ -22,12 +22,12 @@ a:hover{text-decoration:underline;}
 /* ── Site header ── */
 .site-header{
   position:sticky; top:0; z-index:20; backdrop-filter:blur(12px);
-  background:rgba(10,11,13,0.78); border-bottom:1px solid var(--border-soft);
+  background:rgba(244,247,245,0.88); border-bottom:1px solid var(--border-soft);
 }
 .site-header .container{display:flex; align-items:center; justify-content:space-between; height:60px;}
 .wordmark{display:inline-flex; align-items:center; gap:8px; font-family:'Archivo Black',sans-serif; font-size:19px; letter-spacing:-0.5px; color:var(--text);}
 .wordmark svg{width:24px; height:24px;}
-.nav-cta{font-family:'Archivo Black',sans-serif; font-size:12px; letter-spacing:0.5px; text-transform:uppercase; background:var(--lime); color:#0a0b0d; padding:9px 18px; border-radius:100px;}
+.nav-cta{font-family:'Archivo Black',sans-serif; font-size:12px; letter-spacing:0.5px; text-transform:uppercase; background:var(--lime-bright); color:#fff; padding:9px 18px; border-radius:100px;}
 .nav-cta:hover{text-decoration:none; filter:brightness(1.06);}
 
 /* ── Article ── */
@@ -48,18 +48,18 @@ a:hover{text-decoration:underline;}
 /* ── Blog index cards ── */
 .post-grid{display:grid; grid-template-columns:1fr; gap:18px; padding:34px 0 10px;}
 .post-card{display:block; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px 28px; transition:border-color .2s,transform .2s;}
-.post-card:hover{border-color:rgba(46,230,214,0.4); transform:translateY(-2px); text-decoration:none;}
+.post-card:hover{border-color:rgba(18,185,129,0.45); transform:translateY(-2px); text-decoration:none; box-shadow:0 8px 24px -16px rgba(10,31,25,0.14);}
 .post-card .tag{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--lime);}
 .post-card h2{font-family:'Archivo Black',sans-serif; font-size:21px; letter-spacing:-0.4px; margin:10px 0 8px; color:var(--text); line-height:1.18;}
 .post-card p{color:var(--text-secondary); font-size:15px; margin:0;}
 
 /* ── Coach landing hero ── */
 .coach-hero{padding:64px 0 30px; text-align:center;}
-.coach-badge{display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--lime); border:1px solid rgba(46,230,214,0.3); background:rgba(46,230,214,0.06); padding:7px 14px; border-radius:100px; margin-bottom:24px;}
+.coach-badge{display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--lime); border:1px solid rgba(18,185,129,0.35); background:rgba(18,185,129,0.07); padding:7px 14px; border-radius:100px; margin-bottom:24px;}
 .coach-hero h1{font-family:'Archivo Black',sans-serif; font-size:clamp(34px,7vw,62px); line-height:1.02; letter-spacing:-1.5px; margin-bottom:18px;}
 .coach-hero h1 .lime{color:var(--lime);}
 .coach-hero .lede{font-size:19px; color:var(--text-secondary); max-width:560px; margin:0 auto 30px;}
-.btn-primary{display:inline-flex; align-items:center; gap:8px; font-family:'Archivo Black',sans-serif; font-size:15px; letter-spacing:0.4px; text-transform:uppercase; background:var(--lime); color:#0a0b0d; padding:16px 32px; border-radius:100px; box-shadow:0 14px 34px -10px rgba(46,230,214,0.5);}
+.btn-primary{display:inline-flex; align-items:center; gap:8px; font-family:'Archivo Black',sans-serif; font-size:15px; letter-spacing:0.4px; text-transform:uppercase; background:var(--lime-bright); color:#fff; padding:16px 32px; border-radius:100px; box-shadow:0 14px 34px -10px rgba(18,185,129,0.45);}
 .btn-primary:hover{text-decoration:none; filter:brightness(1.06);}
 .feature-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:18px; padding:40px 0;}
 .feature-card{background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:26px;}

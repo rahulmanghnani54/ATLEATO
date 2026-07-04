@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="theme-color" content="#0a0b0d" />
+<meta name="theme-color" content="#F4F7F5" />
 <title>Privacy Policy — Evulto™</title>
 <meta name="description" content="How Evulto collects, uses, and protects your data. Written in plain English." />
 
@@ -23,13 +23,14 @@
 
 <style>
   :root {
-    --bg:        #0a0b0d;
-    --surface:   #15171b;
-    --border:    rgba(255,255,255,0.10);
-    --text:      #fafafa;
-    --text-sec:  #9ca3af;
-    --text-tert: #6b7280;
-    --orange:    #ff6b35;
+    --bg:        #F4F7F5;
+    --surface:   #FFFFFF;
+    --border:    rgba(10,31,25,0.10);
+    --text:      #0A1F19;
+    --text-sec:  #4C5B54;
+    --text-tert: #6B7A71;
+    --orange:    #0A8757;
+    --accent:    #12B981;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -38,13 +39,13 @@
     -webkit-font-smoothing: antialiased;
   }
   a { color: var(--orange); text-decoration: none; border-bottom: 1px dotted var(--orange); }
-  a:hover { color: #ff9166; border-bottom-color: #ff9166; }
+  a:hover { color: #0FA968; border-bottom-color: #0FA968; }
   .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
 
   /* nav */
   nav {
     padding: 18px 0; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; background: rgba(10,11,13,0.85);
+    position: sticky; top: 0; background: rgba(244,247,245,0.88);
     backdrop-filter: blur(12px); z-index: 10;
   }
   .nav-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1180px; margin: 0 auto; padding: 0 24px; }
@@ -114,15 +115,10 @@
   <div class="nav-inner">
     <div class="wordmark">
       <a href="/" style="display: flex; align-items: center; gap: 8px;">
-        <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#ff6b35"/>
-              <stop offset="100%" stop-color="#e84d20"/>
-            </linearGradient>
-          </defs>
-          <polygon points="50,8 14,92 30,92 50,42 70,92 86,92" fill="url(#g1)"/>
-          <rect x="29" y="64" width="42" height="6" rx="3" fill="#0a0b0d"/>
+        <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#D8E2DD" stroke-width="9"/>
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#12B981" stroke-width="9" stroke-linecap="round" stroke-dasharray="150 214" transform="rotate(128 50 50)"/>
+          <circle cx="76" cy="30" r="6.5" fill="#12B981"/>
         </svg>
         Evulto<span class="tm">™</span>
       </a>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="theme-color" content="#0a0b0d" />
+<meta name="theme-color" content="#F4F7F5" />
 <title>Data &amp; Account Deletion — Evulto™</title>
 <meta name="description" content="How to permanently delete your Evulto account and all associated data — in the app or by email." />
 
@@ -23,14 +23,15 @@
 
 <style>
   :root {
-    --bg:        #0a0b0d;
-    --surface:   #15171b;
-    --border:    rgba(255,255,255,0.10);
-    --text:      #fafafa;
-    --text-sec:  #9ca3af;
-    --text-tert: #6b7280;
+    --bg:        #F4F7F5;
+    --surface:   #FFFFFF;
+    --border:    rgba(10,31,25,0.10);
+    --text:      #0A1F19;
+    --text-sec:  #4C5B54;
+    --text-tert: #6B7A71;
     --orange:    #12B981;   /* Evulto emerald */
     --orange-2:  #0FA968;
+    --link:      #0A8757;   /* deeper emerald, readable at small sizes */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -38,13 +39,13 @@
     font-family: 'Inter', sans-serif; line-height: 1.65;
     -webkit-font-smoothing: antialiased;
   }
-  a { color: var(--orange); text-decoration: none; border-bottom: 1px dotted var(--orange); }
-  a:hover { color: #3fd6a3; border-bottom-color: #3fd6a3; }
+  a { color: var(--link); text-decoration: none; border-bottom: 1px dotted var(--link); }
+  a:hover { color: var(--orange-2); border-bottom-color: var(--orange-2); }
   .container { max-width: 760px; margin: 0 auto; padding: 0 24px; }
 
   nav {
     padding: 18px 0; border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; background: rgba(10,11,13,0.85);
+    position: sticky; top: 0; background: rgba(244,247,245,0.88);
     backdrop-filter: blur(12px); z-index: 10;
   }
   .nav-inner { display: flex; justify-content: space-between; align-items: center; max-width: 1180px; margin: 0 auto; padding: 0 24px; }
@@ -53,7 +54,7 @@
   .wordmark-icon { width: 26px; height: 26px; }
   .wordmark .tm { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text-tert); font-weight: 700; }
   .back-link { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-sec); border: none; letter-spacing: 0.6px; }
-  .back-link:hover { color: var(--orange); }
+  .back-link:hover { color: var(--link); }
 
   .hero { padding: 80px 0 40px; }
   .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--orange); letter-spacing: 2.2px; margin-bottom: 16px; font-weight: 700; }
@@ -75,7 +76,7 @@
 
   footer { padding: 50px 0; border-top: 1px solid var(--border); color: var(--text-tert); font-size: 13px; text-align: center; }
   footer a { color: var(--text-sec); border: none; }
-  footer a:hover { color: var(--orange); }
+  footer a:hover { color: var(--link); }
 </style>
 </head>
 <body>
@@ -85,7 +86,7 @@
     <div class="wordmark">
       <a href="/">
         <svg class="wordmark-icon" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="50" cy="50" r="34" fill="none" stroke="#2b3b34" stroke-width="9"/>
+          <circle cx="50" cy="50" r="34" fill="none" stroke="#D8E2DD" stroke-width="9"/>
           <circle cx="50" cy="50" r="34" fill="none" stroke="#12B981" stroke-width="9" stroke-linecap="round" stroke-dasharray="150 214" transform="rotate(128 50 50)"/>
           <circle cx="76" cy="30" r="6.5" fill="#12B981"/>
         </svg>
