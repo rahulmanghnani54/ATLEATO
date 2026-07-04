@@ -7,7 +7,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput,
-  Alert, ScrollView, ActivityIndicator,
+  Alert, ScrollView, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -46,12 +46,40 @@ export default function VideoReview() {
     }
   }, []);
 
-  // Permission request — camera AND microphone (recordAsync needs both; without
-  // mic permission, recording fails silently on Android).
+  // Auto-request ONCE on mount — but only while Android is still willing to show
+  // the OS dialog (canAskAgain). Re-calling request*() after a hard denial is a
+  // silent no-op, which is what made it look like the app "never asks".
+  const autoAsked = useRef(false);
   useEffect(() => {
-    if (permission && !permission.granted) requestPermission();
-    if (micPermission && !micPermission.granted) requestMicPermission();
+    if (autoAsked.current || !permission || !micPermission) return;
+    if (permission.granted && micPermission.granted) return;
+    autoAsked.current = true;
+    if (!permission.granted && permission.canAskAgain) requestPermission();
+    if (!micPermission.granted && micPermission.canAskAgain) requestMicPermission();
   }, [permission, micPermission]);
+
+  // Single source of truth for getting camera+mic access. Requests via the OS
+  // dialog when allowed; if Android won't ask again, offers a jump to Settings.
+  // Returns true only when BOTH are granted. Used by the record button AND the
+  // pre-record gate screen so there's no dead-end.
+  const ensurePermissions = useCallback(async (): Promise<boolean> => {
+    let cam = permission;
+    let mic = micPermission;
+    if (!cam?.granted && cam?.canAskAgain !== false) cam = await requestPermission();
+    if (!mic?.granted && mic?.canAskAgain !== false) mic = await requestMicPermission();
+    if (cam?.granted && mic?.granted) return true;
+
+    Alert.alert(
+      'Permissions needed',
+      'Camera and microphone access are required to record your set. ' +
+        'Open Settings to enable them, then come back and tap record.',
+      [
+        { text: 'Not now', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ],
+    );
+    return false;
+  }, [permission, micPermission, requestPermission, requestMicPermission]);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -75,14 +103,10 @@ export default function VideoReview() {
   const startRecording = useCallback(async () => {
     if (!cameraRef.current || recording) return;
     // recordAsync fails SILENTLY on Android without mic permission — the user
-    // would "record" nothing. Block with an actionable message instead.
-    if (!permission?.granted || !micPermission?.granted) {
-      Alert.alert(
-        'Permissions needed',
-        'Camera and microphone access are required to record your set. Enable them in Settings and try again.',
-      );
-      return;
-    }
+    // would "record" nothing. Actively request (OS dialog) or route to Settings
+    // rather than dead-ending on an alert.
+    const ok = await ensurePermissions();
+    if (!ok) return;
     setDuration(0);
     setRecording(true);
     setRecordedAt(new Date());
@@ -122,7 +146,7 @@ export default function VideoReview() {
       setRecording(false);
       clearTimer();
     }
-  }, [recording, stopRecording]);
+  }, [recording, stopRecording, ensurePermissions]);
 
   const handleToggleRecord = () => {
     if (recording) {
@@ -185,8 +209,12 @@ export default function VideoReview() {
       <SafeAreaView style={styles.safe}>
         <View style={styles.center}>
           <Text style={styles.permText}>Camera and microphone access are required to record workout clips.</Text>
-          <TouchableOpacity style={styles.permBtn} onPress={() => { requestPermission(); requestMicPermission(); }}>
-            <Text style={styles.permBtnText}>GRANT ACCESS</Text>
+          <TouchableOpacity style={styles.permBtn} onPress={ensurePermissions}>
+            <Text style={styles.permBtnText}>
+              {permission.canAskAgain === false || micPermission?.canAskAgain === false
+                ? 'OPEN SETTINGS'
+                : 'GRANT ACCESS'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

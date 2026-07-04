@@ -100,10 +100,15 @@ export default function SquadsScreen() {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Request timed out — check your connection.')), 10_000),
       );
-      const [{ data: squadData }, { data: lbData }] = (await Promise.race([rpcs, timeout])) as any;
-      const row = (squadData as MySquadRow[] | null)?.[0] ?? null;
+      const [mine, lb] = (await Promise.race([rpcs, timeout])) as any;
+      // A Supabase RPC error (missing function, RLS denial, bad arg) returns
+      // { data:null, error }. Swallowing it made squads render as a permanent
+      // empty "join a squad" state — surface it so the real cause is visible.
+      if (mine?.error) throw mine.error;
+      if (lb?.error) throw lb.error;
+      const row = (mine?.data as MySquadRow[] | null)?.[0] ?? null;
       setMySquad(row);
-      setLeaderboard((lbData as LeaderRow[] | null) ?? []);
+      setLeaderboard((lb?.data as LeaderRow[] | null) ?? []);
     } catch (e: any) {
       if (__DEV__) console.warn('Squad fetch failed:', e?.message);
       setFetchError(e?.message ?? 'Could not load squads — pull to retry.');
