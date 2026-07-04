@@ -342,9 +342,10 @@ export default function WorkoutSession() {
                 </TouchableOpacity>
               </View>
 
-              {/* Watch pro demo on YouTube */}
+              {/* Watch pro demo on YouTube — persona-accented so it doesn't
+                  clash (a hardcoded red read as The Commander on every coach). */}
               <TouchableOpacity
-                style={styles.demoBtn}
+                style={[styles.demoBtn, { backgroundColor: persona.accent }]}
                 onPress={() => {
                   const personaSlug = programIdToPersona(programId);
                   Linking.openURL(getProDemoUrl(ex.name, personaSlug));
