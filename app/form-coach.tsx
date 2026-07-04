@@ -25,7 +25,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Camera, useCameraDevice, useCameraPermission, useFrameProcessor, VisionCameraProxy } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission, useFrameProcessor, VisionCameraProxy, runAtTargetFps } from 'react-native-vision-camera';
 import Svg, { Circle, Line } from 'react-native-svg';
 import { useRunOnJS } from 'react-native-worklets-core';
 import { Colors, Spacing, Fonts } from '@/constants/theme';
@@ -53,9 +53,10 @@ function detectPose(frame: any, options: Record<string, string>): any {
 // Constants
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DETECTION_INTERVAL_MS = 150;   // ~6.5 fps inference target
-const RENDER_INTERVAL_MS    = 16;    // ~60 fps render/interpolation
-const INTERP_SPEED          = 0.50;  // 0..1 — raised 0.30→0.50 to cut render lag (was trailing behind motion)
+const DETECT_FPS            = 15;    // MLKit inference target (enforced via runAtTargetFps in the worklet)
+const RENDER_INTERVAL_MS    = 33;    // ~30 fps render/interpolation (60 was a render storm that delayed pose callbacks)
+const RENDER_TAU_MS         = 60;    // time-constant for dt-scaled catch-up: alpha = 1 - exp(-dt/tau)
+const REJECT_STREAK_TO_BLANK = 4;    // hysteresis: consecutive rejected detections before we blank the skeleton
 const MODEL_INPUT_SIZE      = 256;   // BlazePose expects 256×256
 const NUM_LANDMARKS         = 33;    // BlazePose body landmarks
 const CONFIDENCE_THRESHOLD  = 0.30;
@@ -243,33 +244,44 @@ function isImplausibleBody(raw: Kpt[]): boolean {
   const lsh = pt(KP.l_shoulder), rsh = pt(KP.r_shoulder);
   const lhip = pt(KP.l_hip), rhip = pt(KP.r_hip);
   // Without a confident torso we can't judge proportion — let the confidence /
-  // bbox gates decide instead of guessing (avoids false rejects of real bodies).
+  // span gates decide instead of guessing (avoids false rejects of real bodies).
   if (!lsh || !rsh || !lhip || !rhip) return false;
 
   const shoulderW = dist(lsh, rsh);
   const hipW = dist(lhip, rhip);
   const torso = dist(mid(lsh, rsh), mid(lhip, rhip));
-  if (!(shoulderW > 0) || !(hipW > 0) || !(torso > 0)) return true;
+  // SIDE-ON views collapse shoulder/hip widths to near-zero for a REAL body
+  // (side squat, side deadlift). Degenerate widths mean "can't judge", never
+  // "fake" — the old code returned true here and rejected legit side views.
+  const sideOn = shoulderW < 0.18 * torso || hipW < 0.18 * torso;
+  if (!(torso > 0) || sideOn) return false;
 
-  // 1) Torso must not be collapsed relative to shoulder width (a hand scrunches it).
-  if (torso < 0.45 * shoulderW) return true;
-  // 2) Shoulder-to-hip width ratio must sit in the human range.
+  // 2-of-3 SIGNAL VOTE — any single check can misfire on a legit extreme pose
+  // (deep hip hinge compresses the 2D torso; one limb pointed at the camera
+  // shortens wildly). Require TWO independent "not human" signals to reject.
+  let votes = 0;
+
+  // 1) Torso collapsed relative to shoulder width (a hand scrunches it).
+  //    0.30 (not 0.45): a ~70° hip hinge legitimately reads ~0.34-0.44.
+  if (torso < 0.30 * shoulderW) votes += 1;
+
+  // 2) Shoulder-to-hip width ratio outside the human range.
   const shHip = shoulderW / hipW;
-  if (shHip < 0.45 || shHip > 3.2) return true;
+  if (shHip < 0.35 || shHip > 3.6) votes += 1;
 
-  // 3) Left/right limb lengths must be roughly symmetric when both are visible —
-  //    a fabricated hand-skeleton has wildly mismatched limbs.
+  // 3) Left/right limb asymmetry (4.0x — 3.0x tripped on single-limb-toward-
+  //    camera foreshortening in real lifts).
   const lArm = dist(lsh, pt(KP.l_elbow)) + dist(pt(KP.l_elbow), pt(KP.l_wrist));
   const rArm = dist(rsh, pt(KP.r_elbow)) + dist(pt(KP.r_elbow), pt(KP.r_wrist));
-  if (isFinite(lArm) && isFinite(rArm) && lArm > 0 && rArm > 0) {
-    if (Math.max(lArm, rArm) / Math.min(lArm, rArm) > 3.0) return true;
-  }
   const lLeg = dist(lhip, pt(KP.l_knee)) + dist(pt(KP.l_knee), pt(KP.l_ankle));
   const rLeg = dist(rhip, pt(KP.r_knee)) + dist(pt(KP.r_knee), pt(KP.r_ankle));
-  if (isFinite(lLeg) && isFinite(rLeg) && lLeg > 0 && rLeg > 0) {
-    if (Math.max(lLeg, rLeg) / Math.min(lLeg, rLeg) > 3.0) return true;
-  }
-  return false;
+  const armBad = isFinite(lArm) && isFinite(rArm) && lArm > 0 && rArm > 0 &&
+    Math.max(lArm, rArm) / Math.min(lArm, rArm) > 4.0;
+  const legBad = isFinite(lLeg) && isFinite(rLeg) && lLeg > 0 && rLeg > 0 &&
+    Math.max(lLeg, rLeg) / Math.min(lLeg, rLeg) > 4.0;
+  if (armBad || legBad) votes += 1;
+
+  return votes >= 2;
 }
 
 /**
@@ -395,7 +407,10 @@ class OneEuro {
       this.prevValue = value; this.prevTime = time; this.prevDeriv = 0;
       return value;
     }
-    const dt = Math.max(0.001, (time - this.prevTime) / 1000);
+    // Clamp dt to [1/60, 0.5]s: floor stops burst-delivered samples (dt≈1ms)
+    // from collapsing alpha→0 (frozen filter); ceiling makes re-acquisition
+    // after a gap snap instead of blending from a stale position.
+    const dt = Math.min(0.5, Math.max(1 / 60, (time - this.prevTime) / 1000));
     const deriv = (value - this.prevValue) / dt;
     const dA = this.alpha(this.dCutoff, dt);
     const sDeriv = dA * deriv + (1 - dA) * (this.prevDeriv ?? 0);
@@ -409,18 +424,18 @@ class OneEuro {
 
 /** Per-axis filter for each of the 33 BlazePose landmarks. */
 class KeypointSmoother {
-  // beta raised 0.012 → 0.05: the old value barely lifted the cutoff during a
-  // rep, so the skeleton lagged behind real motion. Higher beta = the filter
-  // becomes responsive while you move but still smooth at rest (minCutoff low).
+  // minCutoff 1.0 (canonical One-Euro default): the old 0.25 gave tau=0.64s —
+  // 200-450ms of lag at every rep start/turnaround. beta 0.05 keeps the filter
+  // opening further during fast motion. Clocked on the CAMERA FRAME timestamp,
+  // not JS delivery time (bursty RunOnJS delivery collapsed dt and froze it).
   private filters: OneEuro[][] = Array.from({ length: NUM_LANDMARKS }, () => [
-    new OneEuro(0.25, 0.05),  // x — smooth at rest, responsive in motion
-    new OneEuro(0.25, 0.05),  // y
+    new OneEuro(1.0, 0.05),  // x
+    new OneEuro(1.0, 0.05),  // y
   ]);
-  smooth(kpts: Kpt[]): Kpt[] {
-    const t = Date.now();
+  smooth(kpts: Kpt[], tMs: number): Kpt[] {
     return kpts.map(([x, y, c], i) => [
-      this.filters[i][0].filter(x, t),
-      this.filters[i][1].filter(y, t),
+      this.filters[i][0].filter(x, tMs),
+      this.filters[i][1].filter(y, tMs),
       c,
     ]);
   }
@@ -565,7 +580,8 @@ export default function FormCoach() {
   // ── Two-buffer state: targetKpts (latest detection) + displayKpts (rendered, interpolated)
   const targetKptsRef  = useRef<Kpt[] | null>(null);
   const [displayKpts, setDisplayKpts] = useState<Kpt[] | null>(null);
-  const detectingRef   = useRef(false);
+  const rejectStreakRef = useRef(0);   // gate hysteresis (see rejectDetection)
+  const lastTickAtRef   = useRef(0);   // analysis-tick throttle (~8Hz)
   // One-Euro smoother — applied to RAW keypoints before they become target.
   // Kills the ±2-3px MoveNet jitter on a still body.
   const smootherRef = useRef(new KeypointSmoother());
@@ -726,21 +742,39 @@ export default function FormCoach() {
   // hallucination). We map coords to the camera view (cover-fit + front mirror),
   // build the 33-index Kpt array, then feed the SAME analysis + smoothing.
   const mirrorFront = facing === 'front';
-  const handlePose = useCallback((data: any, frameW: number, frameH: number, mirror: boolean) => {
+  const handlePose = useCallback((data: any, frameW: number, frameH: number, mirror: boolean, ts?: number) => {
+    // Camera-frame timestamp for the One-Euro clock (Android: ns since boot).
+    const tMs = typeof ts === 'number' && ts > 0 ? (ts > 1e13 ? ts / 1e6 : ts) : Date.now();
+
+    // Throttled analysis tick (~8Hz) — analysis re-runs don't need every frame,
+    // and per-frame setState was a render storm that delayed pose delivery.
+    const tickAnalysis = (force = false) => {
+      const now = Date.now();
+      if (force || now - lastTickAtRef.current >= 120) {
+        lastTickAtRef.current = now;
+        setAnalysisTick((t) => t + 1);
+      }
+    };
+    // Reject with HYSTERESIS: a single bad detection (MLKit stream dropout,
+    // joint likelihoods dipping at 0.5) must not blank the skeleton + wipe the
+    // motion history — that caused freeze/flicker + STANDBY flapping. We coast
+    // on the last good pose and only blank after N consecutive rejects, then
+    // also reset the smoother so re-acquisition doesn't blend from stale state.
+    const rejectDetection = () => {
+      rejectStreakRef.current += 1;
+      if (rejectStreakRef.current < REJECT_STREAK_TO_BLANK) return; // coast
+      if (targetKptsRef.current !== null) {
+        targetKptsRef.current = null;
+        kptsHistoryRef.current = [];
+        smootherRef.current = new KeypointSmoother();
+        tickAnalysis(true);
+      }
+    };
+
     const nose = data?.nosePosition;
-    // DIAGNOSTIC: frame dims + raw MLKit coords (nose + ankle) so we can see the
-    // exact coordinate space MLKit returns and compute the correct mapping.
-    const la = data?.leftAnklePosition;
-    poseLog(
-      'f=' + frameW + 'x' + frameH +
-      ' noseRaw=' + (nose ? Math.round(nose.x) + ',' + Math.round(nose.y) : '-') +
-      ' ankleRaw=' + (la ? Math.round(la.x) + ',' + Math.round(la.y) : '-'),
-    );
-    // No person detected → blank the skeleton and stay silent.
+    // No person detected → (hysteresis) blank the skeleton and stay silent.
     if (!data || !nose || (nose.x === 0 && nose.y === 0)) {
-      targetKptsRef.current = null;
-      kptsHistoryRef.current = [];
-      setAnalysisTick((t) => t + 1);
+      rejectDetection();
       return;
     }
     // MLKit coords are upright; portrait view → image width=min, height=max.
@@ -757,12 +791,14 @@ export default function FormCoach() {
     for (const name in MLKIT_TO_INDEX) {
       const p = data[name];
       if (!p) continue;
-      // Only count joints actually WITHIN the camera frame. MLKit ESTIMATES
-      // off-screen joints (e.g. your legs when the phone is at face height) with
-      // coordinates outside the image — counting those as "visible" made the coach
-      // say "form looks solid" when it couldn't even see your lower body. Reject
-      // anything outside the frame so the visibility gate is honest.
-      const inFrame = p.x > 0 && p.y > 0 && p.x <= imgW && p.y <= imgH;
+      // Only count joints actually WITHIN the camera frame (±3% tolerance —
+      // MLKit STREAM_MODE returns slightly negative coords for real joints at
+      // the frame edge; the old strict >0 check zeroed them and destabilized
+      // the gates for users near the edge). (0,0) is the native null sentinel.
+      const isSentinel = p.x === 0 && p.y === 0;
+      const tolX = imgW * 0.03, tolY = imgH * 0.03;
+      const inFrame = !isSentinel &&
+        p.x > -tolX && p.y > -tolY && p.x <= imgW + tolX && p.y <= imgH + tolY;
       // Real MLKit confidence (Android now emits inFrameLikelihood via patch;
       // fall back to a binary in-frame flag on older native builds).
       const lk = typeof p.inFrameLikelihood === 'number' ? p.inFrameLikelihood : 1;
@@ -791,30 +827,34 @@ export default function FormCoach() {
     // not every hallucinated joint. This is what stops a hand held to the lens
     // from rendering a full skeleton.
     const STRONG = 0.5;
-    let minY = Infinity, maxY = -Infinity, strong = 0;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, strong = 0;
     for (const k of raw) {
-      if (k[2] >= STRONG) { strong += 1; if (k[1] < minY) minY = k[1]; if (k[1] > maxY) maxY = k[1]; }
+      if (k[2] >= STRONG) {
+        strong += 1;
+        if (k[0] < minX) minX = k[0]; if (k[0] > maxX) maxX = k[0];
+        if (k[1] < minY) minY = k[1]; if (k[1] > maxY) maxY = k[1];
+      }
     }
-    const bboxH = maxY - minY;
-    const minBodyH = viewH * 0.45;   // body must span ≥45% of the camera view
+    // Span uses the LARGER bbox dimension: a vertical-only 45% gate rejected
+    // the bottom of deep squats and every horizontal exercise (push-ups).
+    const span = Math.max(maxY - minY, maxX - minX);
+    const minSpan = viewH * 0.30;
     const implausible = isImplausibleBody(raw);
-    poseLog('strong=' + strong + '/33 bboxH=' + Math.round(bboxH) + ' need>' + Math.round(minBodyH) + (implausible ? ' IMPLAUSIBLE' : ''));
+    poseLog('strong=' + strong + '/33 span=' + Math.round(span) + ' need>' + Math.round(minSpan) + (implausible ? ' IMPLAUSIBLE' : ''));
 
-    // Reject unless enough HIGH-CONFIDENCE joints span a tall-enough box AND the
-    // proportions look like a real human. Any failure → blank the skeleton and
-    // let the analysis surface "step into frame" instead of drawing nonsense.
-    if (strong < 8 || bboxH < minBodyH || implausible) {
-      targetKptsRef.current = null;
-      kptsHistoryRef.current = [];
-      setAnalysisTick((t) => t + 1);
+    // Reject (with hysteresis) unless enough HIGH-CONFIDENCE joints span a
+    // large-enough box AND the proportions could be a real human.
+    if (strong < 8 || span < minSpan || implausible) {
+      rejectDetection();
       return;
     }
 
-    const smoothed = smootherRef.current.smooth(raw);
+    rejectStreakRef.current = 0;
+    const smoothed = smootherRef.current.smooth(raw, tMs);
     targetKptsRef.current = smoothed;
     kptsHistoryRef.current.push(smoothed);
     if (kptsHistoryRef.current.length > MOTION_HISTORY_LEN) kptsHistoryRef.current.shift();
-    setAnalysisTick((t) => t + 1);
+    tickAnalysis();
   }, [screenWidth, cameraHeight]);
 
   // One-time error surface if the native frame-processor plugin isn't linked.
@@ -833,31 +873,46 @@ export default function FormCoach() {
   const frameProcessor = useFrameProcessor((frame) => {
     'worklet';
     try {
-      const data = detectPose(frame, { mode: 'stream', performanceMode: 'max' });
-      onPoseJS(data, frame.width, frame.height, mirrorFront);
+      // Throttle inference to DETECT_FPS: unthrottled per-frame detection with
+      // a blocking MLKit call chewed through queues of progressively STALE
+      // frames and burst-delivered results to JS (300ms+ perceived lag).
+      runAtTargetFps(DETECT_FPS, () => {
+        'worklet';
+        const data = detectPose(frame, { mode: 'stream', performanceMode: 'max' });
+        onPoseJS(data, frame.width, frame.height, mirrorFront, Number(frame.timestamp));
+      });
     } catch (e: any) {
       onPluginErrorJS(String(e?.message ?? e));
     }
   }, [onPoseJS, onPluginErrorJS, mirrorFront]);
 
-  // ── Render loop (60fps interpolation) ──────────────────────────────────────
-  // Smoothly glides displayKpts toward targetKptsRef.current. Even though
-  // detection is at 6fps, the visible skeleton moves at 60fps.
+  // ── Render loop (~30fps interpolation) ─────────────────────────────────────
+  // Glides displayKpts toward targetKptsRef.current with a dt-scaled catch-up
+  // factor (frame-rate independent). 30fps halves the render load of the old
+  // 60fps storm that delayed pose deliveries on the JS thread.
   useEffect(() => {
+    let lastTick = performance.now();
     const id = setInterval(() => {
+      const now = performance.now();
+      const dt = now - lastTick;
+      lastTick = now;
       const target = targetKptsRef.current;
       if (!target) {
-        if (displayKpts !== null) setDisplayKpts(null);
+        // FUNCTIONAL update — the old `if (displayKpts !== null)` read a stale
+        // closure (always null), so the skeleton NEVER cleared: it froze at the
+        // last pose (ghost skeleton = the "misaligned" complaint) and kept the
+        // LIVE pill stuck after the user left frame.
+        setDisplayKpts((curr) => (curr === null ? curr : null));
         return;
       }
+      const alpha = 1 - Math.exp(-dt / RENDER_TAU_MS);
       setDisplayKpts((curr) => {
         if (!curr) return target;          // first detection — snap to position
-        return lerpKpts(curr, target, INTERP_SPEED);
+        return lerpKpts(curr, target, alpha);
       });
     }, RENDER_INTERVAL_MS);
     return () => clearInterval(id);
-    // We intentionally don't depend on displayKpts — the interval reads
-    // targetKptsRef.current directly and uses functional setState.
+    // Interval reads targetKptsRef directly + uses functional setState only.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
