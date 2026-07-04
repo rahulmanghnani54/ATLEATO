@@ -35,7 +35,7 @@
   scene.add(backLight);
 
   // ── Ground Grid ──
-  const gridHelper = new THREE.GridHelper(12, 24, 0x1d2026, 0x1d2026);
+  const gridHelper = new THREE.GridHelper(12, 24, 0x1e4034, 0x1e4034);
   gridHelper.position.y = 0;
   scene.add(gridHelper);
 
@@ -181,9 +181,9 @@
 
   const JOINT_COLORS = {
     head: 0x12b981, neck: 0x12b981,
-    shoulderL: 0x00e5ff, shoulderR: 0x00e5ff,
-    elbowL: 0x00e5ff, elbowR: 0x00e5ff,
-    wristL: 0x00e5ff, wristR: 0x00e5ff,
+    shoulderL: 0x34d399, shoulderR: 0x34d399,
+    elbowL: 0x34d399, elbowR: 0x34d399,
+    wristL: 0x34d399, wristR: 0x34d399,
     spine: 0x12b981, hipCenter: 0x12b981,
     hipL: 0x12b981, hipR: 0x12b981,
     kneeL: 0x12b981, kneeR: 0x12b981,
@@ -243,8 +243,8 @@
   const upperLegR = createHolographicCylinder(0.35, 0x12b981);
   const lowerLegL = createHolographicCylinder(0.28, 0x12b981);
   const lowerLegR = createHolographicCylinder(0.28, 0x12b981);
-  const upperArmL = createHolographicCylinder(0.25, 0x00e5ff);
-  const upperArmR = createHolographicCylinder(0.25, 0x00e5ff);
+  const upperArmL = createHolographicCylinder(0.25, 0x34d399);
+  const upperArmR = createHolographicCylinder(0.25, 0x34d399);
 
   scene.add(torso);
   scene.add(upperLegL);
@@ -282,7 +282,7 @@
     let color = 0x12b981;
     if (['shoulderL','elbowL','wristL','shoulderR','elbowR','wristR'].includes(j1) ||
         ['shoulderL','elbowL','wristL','shoulderR','elbowR','wristR'].includes(j2)) {
-      color = 0x00e5ff;
+      color = 0x34d399;
     }
     if (['hipL','kneeL','ankleL','footL','hipR','kneeR','ankleR','footR'].includes(j1) ||
         ['hipL','kneeL','ankleL','footL','hipR','kneeR','ankleR','footR'].includes(j2)) {

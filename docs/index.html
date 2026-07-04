@@ -236,6 +236,28 @@
     .hero-eyebrow,.feature-badge,.live-badge,.nav-cta,.check.lime,.hud-status,.hud-control-btn{color:#0A8757 !important;}
     /* Scarcity line: readable burnt-orange urgency (was faded emerald) */
     #vanguard-counter{color:#C2410C !important;font-weight:700;}
+
+    /* ── AI form demo: a deliberate forest-emerald "camera viewport" ──
+       The hologram needs a dark stage (additive glow dies on white), so keep
+       it dark but ON-BRAND (forest ink, emerald rim) with a crisp edge —
+       not the old grey blob fading into the page. */
+    .canvas-wrap{background:radial-gradient(circle at center,#123227 0%,#0A1F19 75%) !important;border:1px solid rgba(18,185,129,0.28) !important;box-shadow:0 24px 60px -22px rgba(10,31,25,0.38) !important;}
+    /* Everything sitting ON the dark viewport gets light ink (overrides the
+       small-text rule above for .hud-control-btn — that one lives on the
+       viewport, not on Paper). */
+    .overlay-tag{color:#9FD9C3 !important;}
+    .overlay-hint{color:#CFE8DD !important;background:rgba(10,31,25,0.6) !important;}
+    .exercise-tab{color:#CFE8DD !important;background:rgba(10,31,25,0.62) !important;border-color:rgba(255,255,255,0.18) !important;}
+    .exercise-tab:hover{color:#ffffff !important;border-color:rgba(255,255,255,0.38) !important;}
+    .exercise-tab.active{background:#12B981 !important;border-color:#12B981 !important;color:#ffffff !important;box-shadow:0 0 15px rgba(18,185,129,0.4) !important;}
+    .hud-control-btn{background:rgba(18,185,129,0.16) !important;border-color:#12B981 !important;color:#7DEBC4 !important;}
+    .hud-control-btn:hover{background:#12B981 !important;color:#ffffff !important;box-shadow:0 0 15px rgba(18,185,129,0.4) !important;}
+
+    /* Cookie banner: dark slab -> white card on the light page */
+    .cookie-banner{background:rgba(255,255,255,0.97) !important;border:1px solid rgba(10,31,25,0.12) !important;box-shadow:0 20px 60px rgba(10,31,25,0.18) !important;}
+    .cookie-banner-text{color:#3B4A43 !important;}
+    .cookie-btn-secondary{background:rgba(10,31,25,0.06) !important;color:#3B4A43 !important;border:1px solid rgba(10,31,25,0.14) !important;}
+    .cookie-btn-secondary:hover{background:rgba(10,31,25,0.10) !important;color:#0A1F19 !important;}
   </style>
 </head>
 <body>
