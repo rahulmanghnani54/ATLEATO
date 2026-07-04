@@ -38,13 +38,42 @@
     return s;
   }
 
+  // ── GA4 via Google Consent Mode v2 ──
+  // The tag loads on EVERY page (so Google detects it + you get aggregated,
+  // cookieless "modeled" data), but with all storage DENIED by default — no
+  // cookies and no personal data until the visitor clicks "Accept All", at
+  // which point grantGA4Consent() flips storage to granted. GDPR-compliant.
+  var gaBooted = false;
   function loadGA4() {
-    if (!GA4_ID) return;
+    if (!GA4_ID || gaBooted) return;
+    gaBooted = true;
     window.dataLayer = window.dataLayer || [];
     window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag('consent', 'default', {
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+      analytics_storage: 'denied',
+      functionality_storage: 'denied',
+      personalization_storage: 'denied',
+      security_storage: 'granted',
+      wait_for_update: 500
+    });
     window.gtag('js', new Date());
     window.gtag('config', GA4_ID, { anonymize_ip: true });
     inject('https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(GA4_ID));
+  }
+
+  function grantGA4Consent() {
+    if (!GA4_ID || !window.gtag) return;
+    window.gtag('consent', 'update', {
+      ad_storage: 'granted',
+      ad_user_data: 'granted',
+      ad_personalization: 'granted',
+      analytics_storage: 'granted',
+      functionality_storage: 'granted',
+      personalization_storage: 'granted'
+    });
   }
 
   function loadMetaPixel() {
@@ -67,11 +96,12 @@
     inject('https://www.clarity.ms/tag/' + encodeURIComponent(CLARITY_ID));
   }
 
+  // Called when the visitor accepts: upgrade GA4 to full tracking and load the
+  // consent-only providers (Meta Pixel, Clarity session replay).
   function activate() {
     if (started || !hasConsent()) return;
-    if (!GA4_ID && !META_PIXEL_ID && !CLARITY_ID) return; // nothing configured yet
     started = true;
-    loadGA4();
+    grantGA4Consent();
     loadMetaPixel();
     loadClarity();
   }
@@ -135,7 +165,11 @@
     window.addEventListener('scroll', onScroll, { passive: true });
   }
 
-  function boot() { activate(); wireEvents(); }
+  function boot() {
+    loadGA4();                    // always — Consent Mode tag (denied by default)
+    wireEvents();
+    if (hasConsent()) activate(); // returning visitor who already accepted
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
