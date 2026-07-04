@@ -55,7 +55,7 @@ function detectPose(frame: any, options: Record<string, string>): any {
 
 const DETECTION_INTERVAL_MS = 150;   // ~6.5 fps inference target
 const RENDER_INTERVAL_MS    = 16;    // ~60 fps render/interpolation
-const INTERP_SPEED          = 0.30;  // 0..1 — lower = smoother (and filters jitter)
+const INTERP_SPEED          = 0.50;  // 0..1 — raised 0.30→0.50 to cut render lag (was trailing behind motion)
 const MODEL_INPUT_SIZE      = 256;   // BlazePose expects 256×256
 const NUM_LANDMARKS         = 33;    // BlazePose body landmarks
 const CONFIDENCE_THRESHOLD  = 0.30;
@@ -409,9 +409,12 @@ class OneEuro {
 
 /** Per-axis filter for each of the 33 BlazePose landmarks. */
 class KeypointSmoother {
+  // beta raised 0.012 → 0.05: the old value barely lifted the cutoff during a
+  // rep, so the skeleton lagged behind real motion. Higher beta = the filter
+  // becomes responsive while you move but still smooth at rest (minCutoff low).
   private filters: OneEuro[][] = Array.from({ length: NUM_LANDMARKS }, () => [
-    new OneEuro(0.25, 0.012),  // x — heavy smoothing at rest
-    new OneEuro(0.25, 0.012),  // y
+    new OneEuro(0.25, 0.05),  // x — smooth at rest, responsive in motion
+    new OneEuro(0.25, 0.05),  // y
   ]);
   smooth(kpts: Kpt[]): Kpt[] {
     const t = Date.now();
@@ -535,6 +538,10 @@ export default function FormCoach() {
   const [facing, setFacing] = useState<'front' | 'back'>('back');
   const device = useCameraDevice(facing);
   const cameraRef = useRef<Camera>(null);
+  // On-screen alignment diagnostic (screenshot-able) — lets us fix skeleton
+  // misalignment without adb. Toggle with the ⚙ chip; off by default.
+  const [showAlign, setShowAlign] = useState(false);
+  const alignDebugRef = useRef<string>('…');
 
   useEffect(() => {
     if (!canAccess('ai_form_coach')) {
@@ -765,6 +772,16 @@ export default function FormCoach() {
       raw[MLKIT_TO_INDEX[name]] = [sx, sy, inFrame ? lk : 0];
     }
 
+    // Alignment diagnostic: frame space, view box, and where the NOSE lands
+    // raw → mapped. If the mapped nose isn't on the person's nose on screen,
+    // these numbers tell us exactly how the transform is off.
+    alignDebugRef.current =
+      'frame ' + frameW + '×' + frameH + ' → img ' + imgW + '×' + imgH +
+      ' | view ' + viewW + '×' + viewH +
+      ' | nose raw ' + Math.round(nose.x) + ',' + Math.round(nose.y) +
+      ' → ' + Math.round(raw[0][0]) + ',' + Math.round(raw[0][1]) +
+      ' | mir ' + (mirror ? 'Y' : 'N');
+
     // ── REJECT non-real "humans" ───────────────────────────────────────────
     // MLKit also detects human shapes in PHOTOS / SCREENS / POSTERS in view —
     // those appear small & clustered. A real person doing an exercise fills a
@@ -939,7 +956,13 @@ export default function FormCoach() {
         <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn} hitSlop={10}>
           <XIcon size={20} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>{exerciseName ?? 'Form Coach'}</Text>
+        <Text
+          style={styles.title}
+          onLongPress={() => setShowAlign((s) => !s)}
+          suppressHighlighting
+        >
+          {exerciseName ?? 'Form Coach'}
+        </Text>
         <TouchableOpacity
           onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))}
           style={styles.iconBtn}
@@ -1001,6 +1024,13 @@ export default function FormCoach() {
             </>
           )}
         </Svg>
+
+        {showAlign && (
+          <View style={styles.alignDebug} pointerEvents="none">
+            {/* analysisTick drives re-render so this stays live */}
+            <Text style={styles.alignDebugText}>{alignDebugRef.current}{analysisTick ? '' : ''}</Text>
+          </View>
+        )}
 
         <View style={[styles.statusPill, { borderColor: statusColor }]}>
           <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
@@ -1149,6 +1179,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 100, borderWidth: 1,
   },
   statusText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
+  alignDebug: {
+    position: 'absolute', bottom: 8, left: 8, right: 8,
+    backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 6, padding: 6,
+  },
+  alignDebugText: { fontFamily: Fonts.mono, fontSize: 10, color: '#7DEBC4', textAlign: 'center' },
 
   formBanner: {
     position: 'absolute', top: 10, right: 10, maxWidth: '70%',
