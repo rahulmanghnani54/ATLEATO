@@ -711,7 +711,7 @@ window.addEventListener('scroll', () => {
 // ── Interactive Coach Persona Switcher ──────────────────────────
 const coachConfigs = {
   sculptor: {  // THE SCULPTOR
-    lime: '#c8ff3d', limeRgb: '200, 255, 61', limeDim: '#b4e632', color2: '#d4af37', limeLight: '#16A34A', limeLightRgb: '22, 163, 74',
+    lime: '#c8ff3d', limeRgb: '200, 255, 61', limeDim: '#b4e632', color2: '#d4af37', limeLight: '#12B981', limeLightRgb: '18, 185, 129',
     headline: 'TRAIN UNDER<br/><span class="lime-text">THE SCULPTOR.</span>',
     quote: 'Symmetry, proportion, lines that look carved. <span class="lime-text">Quality over ego — build the statue.</span>',
     speech: "Good morning, champion. Time to build those classic lines — control every rep. Let's get it today.",
