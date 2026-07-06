@@ -99,12 +99,16 @@ export default function Dashboard() {
         <View style={styles.statsRow}>
           <Stat
             value={String(streak)}
+            countTo={streak}
             label="Day streak"
             accent
             accentColor={persona.accent}
           />
           <Stat
             value={weekKg >= 1 ? `${weekKg.toFixed(1)}k` : '0'}
+            countTo={weekKg}
+            countDecimals={1}
+            countSuffix="k"
             label="Week kg"
           />
           <Stat
