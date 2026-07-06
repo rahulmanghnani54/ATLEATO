@@ -269,6 +269,13 @@ function isImplausibleBody(raw: Kpt[]): boolean {
   const shHip = shoulderW / hipW;
   if (shHip < 0.35 || shHip > 3.6) votes += 1;
 
+  // 2.5) Head-size sanity: human eye-to-eye span is a small fraction of torso
+  //      length. Hand-hallucinations scatter "face" points across fingertips,
+  //      producing a face wider than half the torso — instant tell.
+  const le = pt(KP.l_eye), re = pt(KP.r_eye);
+  const eyeSpan = dist(le, re);
+  if (isFinite(eyeSpan) && eyeSpan > 0.55 * torso) votes += 1;
+
   // 3) Left/right limb asymmetry (4.0x — 3.0x tripped on single-limb-toward-
   //    camera foreshortening in real lifts).
   const lArm = dist(lsh, pt(KP.l_elbow)) + dist(pt(KP.l_elbow), pt(KP.l_wrist));
@@ -569,6 +576,92 @@ function primaryAngle(kpts: Kpt[], category?: string): { label: string; deg: num
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SKELETON LOCK-ON — the un-fakeable "is this a real body?" test.
+//
+// Thresholds can't separate a hand-hallucination from a side-on deadlift: any
+// strictness level blocks one or admits the other. PHYSICS can. A real tracked
+// human has constant bone lengths — their 2D projections change SMOOTHLY as
+// the body rotates. A hallucinated skeleton (MLKit mapping a hand/object) has
+// "bones" whose lengths jump chaotically frame-to-frame (evidence: a static
+// hand produced elbow 109°→131° and 6 phantom reps).
+//
+// So the coach must ACQUIRE a lock before anything renders/counts/coaches:
+//   ACQUIRING → collect raw (pre-smoothing!) bone lengths; when ≥4 core bones
+//               hold a coefficient-of-variation ≤ 22% over ~0.5s → LOCKED.
+//   LOCKED    → render + reps + cues enabled. Brief mid-rep projection swings
+//               don't revoke; only SUSTAINED instability (~1s) or a gate
+//               reject drops the lock.
+// Hands never lock (no real structure → lengths never stabilise).
+// ─────────────────────────────────────────────────────────────────────────────
+const STABILITY_BONES: [number, number][] = [
+  [KP.l_shoulder, KP.l_elbow], [KP.r_shoulder, KP.r_elbow],
+  [KP.l_elbow, KP.l_wrist],    [KP.r_elbow, KP.r_wrist],
+  [KP.l_hip, KP.l_knee],       [KP.r_hip, KP.r_knee],
+  [KP.l_shoulder, KP.l_hip],   [KP.r_shoulder, KP.r_hip],
+];
+const STAB_WINDOW = 8;        // frames (~0.5s at 15fps detection)
+const STAB_MAX_CV = 0.22;     // per-bone length coefficient of variation
+const STAB_MIN_READY = 5;     // frames before a verdict is possible
+const UNLOCK_AFTER = 15;      // consecutive unstable frames to revoke a lock
+
+class SkeletonLock {
+  locked = false;
+  private hist: number[][] = [];
+  private unstableStreak = 0;
+
+  push(raw: Kpt[]): void {
+    const lens = STABILITY_BONES.map(([a, b]) => {
+      const A = raw[a], B = raw[b];
+      if (!A || !B || A[2] < 0.5 || B[2] < 0.5) return NaN;
+      return Math.hypot(A[0] - B[0], A[1] - B[1]);
+    });
+    this.hist.push(lens);
+    if (this.hist.length > STAB_WINDOW) this.hist.shift();
+
+    const stable = this.computeStable();
+    if (!this.locked) {
+      if (stable) { this.locked = true; this.unstableStreak = 0; }
+    } else if (stable) {
+      this.unstableStreak = 0;
+    } else {
+      this.unstableStreak += 1;
+      if (this.unstableStreak >= UNLOCK_AFTER) { this.locked = false; this.hist = []; this.unstableStreak = 0; }
+    }
+  }
+
+  private computeStable(): boolean {
+    if (this.hist.length < STAB_MIN_READY) return false;
+    let checked = 0, ok = 0;
+    for (let b = 0; b < STABILITY_BONES.length; b++) {
+      const vals: number[] = [];
+      for (const f of this.hist) { if (isFinite(f[b])) vals.push(f[b]); }
+      if (vals.length < STAB_MIN_READY) continue;
+      const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+      if (mean < 8) continue; // degenerate/foreshortened bone — skip
+      const sd = Math.sqrt(vals.reduce((s, v) => s + (v - mean) ** 2, 0) / vals.length);
+      checked += 1;
+      if (sd / mean <= STAB_MAX_CV) ok += 1;
+    }
+    return checked >= 4 && ok / checked >= 0.75;
+  }
+
+  reset(): void { this.locked = false; this.hist = []; this.unstableStreak = 0; }
+}
+
+/** The joint chain this exercise NEEDS visible before coaching is credible. */
+function hasRequiredChain(kpts: Kpt[], category?: string): boolean {
+  const ok = (i: number) => !!kpts[i] && kpts[i][2] >= 0.5;
+  const leg = (ok(KP.l_hip) && ok(KP.l_knee) && ok(KP.l_ankle)) ||
+              (ok(KP.r_hip) && ok(KP.r_knee) && ok(KP.r_ankle));
+  const arm = (ok(KP.l_shoulder) && ok(KP.l_elbow) && ok(KP.l_wrist)) ||
+              (ok(KP.r_shoulder) && ok(KP.r_elbow) && ok(KP.r_wrist));
+  const torso = (ok(KP.l_shoulder) || ok(KP.r_shoulder)) && (ok(KP.l_hip) || ok(KP.r_hip));
+  if (category === 'squat' || category === 'deadlift' || category === 'lunge') return torso && leg;
+  if (category === 'press' || category === 'pull' || category === 'curl') return torso && arm;
+  return torso && (leg || arm);
+}
+
 class RepCounter {
   count = 0;
   lastTempoMs = 0;      // duration of the last counted rep
@@ -665,6 +758,7 @@ export default function FormCoach() {
   const targetKptsRef  = useRef<Kpt[] | null>(null);
   const [displayKpts, setDisplayKpts] = useState<Kpt[] | null>(null);
   const rejectStreakRef = useRef(0);   // gate hysteresis (see rejectDetection)
+  const lockRef = useRef(new SkeletonLock());  // bone-stability lock-on
   const lastTickAtRef   = useRef(0);   // analysis-tick throttle (~8Hz)
   // One-Euro smoother — applied to RAW keypoints before they become target.
   // Kills the ±2-3px MoveNet jitter on a still body.
@@ -858,6 +952,7 @@ export default function FormCoach() {
         targetKptsRef.current = null;
         kptsHistoryRef.current = [];
         smootherRef.current = new KeypointSmoother();
+        lockRef.current.reset();   // person gone → re-acquire from scratch
         liveAngleRef.current = { ...liveAngleRef.current, deg: null }; // rep count survives
         tickAnalysis(true);
       }
@@ -908,7 +1003,8 @@ export default function FormCoach() {
       ' | view ' + viewW + '×' + viewH +
       ' | nose raw ' + Math.round(nose.x) + ',' + Math.round(nose.y) +
       ' → ' + Math.round(raw[0][0]) + ',' + Math.round(raw[0][1]) +
-      ' | mir ' + (mirror ? 'Y' : 'N');
+      ' | mir ' + (mirror ? 'Y' : 'N') +
+      ' | lock ' + (lockRef.current.locked ? 'Y' : 'acquiring');
 
     // ── REJECT non-real "humans" ───────────────────────────────────────────
     // MLKit also detects human shapes in PHOTOS / SCREENS / POSTERS in view —
@@ -942,6 +1038,20 @@ export default function FormCoach() {
     }
 
     rejectStreakRef.current = 0;
+
+    // ── LOCK-ON: physics test on RAW landmarks (smoothing hides the jitter
+    // we're detecting). Until the skeleton's bone lengths are stable AND the
+    // exercise's required joint chain is visible, nothing renders, counts or
+    // coaches — a hand never locks; a real body locks in ~half a second.
+    lockRef.current.push(raw);
+    const chainOk = hasRequiredChain(raw, categoryRef.current);
+    if (!lockRef.current.locked || !chainOk) {
+      targetKptsRef.current = null;         // soft-hide (no smoother/history wipe)
+      liveAngleRef.current = { ...liveAngleRef.current, deg: null };
+      tickAnalysis();
+      return;
+    }
+
     const smoothed = smootherRef.current.smooth(raw, tMs);
     targetKptsRef.current = smoothed;
     kptsHistoryRef.current.push(smoothed);
