@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Colors, Spacing, Typography } from '@/constants/theme';
+import { captureError } from '@/lib/sentry';
 
 interface Props {
   children: ReactNode;
@@ -23,6 +24,8 @@ export class ErrorBoundary extends Component<Props, State> {
     if (__DEV__) {
       console.error('[ErrorBoundary]', error, info.componentStack);
     }
+    // Report the crash so WE see it, not just the user staring at the fallback.
+    captureError(error, { componentStack: info.componentStack });
   }
 
   handleRetry = () => {

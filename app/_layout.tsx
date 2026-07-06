@@ -1,4 +1,6 @@
 import '@/lib/domExceptionPolyfill'; // must be first — livekit/ElevenLabs needs DOMException
+import { initSentry, Sentry } from '@/lib/sentry';
+initSentry(); // crash + error reporting — env-gated, no-op until DSN is set
 import { useEffect, useState } from 'react';
 import { View, AppState, StatusBar } from 'react-native';
 import { Stack, useRouter, useSegments, useGlobalSearchParams , SplashScreen } from 'expo-router';
@@ -241,7 +243,7 @@ function RootNavigator() {
   return <Stack screenOptions={{ headerShown: false }} />;
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const [fontsLoaded] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
@@ -285,3 +287,7 @@ export default function RootLayout() {
     </ErrorBoundary>
   );
 }
+
+// Sentry.wrap enables automatic error/performance instrumentation of the root.
+// No-op-safe: if Sentry isn't initialised (no DSN), wrap just returns the app.
+export default Sentry.wrap(RootLayout);

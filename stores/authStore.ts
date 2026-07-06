@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
+import { setSentryUser } from '@/lib/sentry';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -23,7 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   session: null,
   profile: null,
   loading: true,
-  setUser: (user) => set({ user }),
+  setUser: (user) => { setSentryUser(user?.id ?? null); set({ user }); },
   setSession: (session) => set({ session }),
   setProfile: (profile) => set({ profile }),
   setLoading: (loading) => set({ loading }),
