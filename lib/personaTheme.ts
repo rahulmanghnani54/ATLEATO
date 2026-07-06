@@ -116,8 +116,8 @@ const CBUM: PersonaTheme = {
   era: 'Classic Aesthetics · Modern Physique Specialist',
   initials: 'TS',
 
-  accent: '#5E8C00',
-  accentSoft: 'rgba(94,140,0,0.14)',
+  accent: '#12B981',
+  accentSoft: 'rgba(18,185,129,0.14)',
   ink: '#ffffff',
   textCase: 'normal',
   vibe: 'PRECISION',

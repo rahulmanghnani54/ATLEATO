@@ -1,6 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+
+// Time-limit any Supabase call so a stalled request can't leave a dashboard
+// stat spinning forever (same pattern as useProgressStats).
+async function withTimeout<T>(p: PromiseLike<T>, label: string): Promise<T> {
+  return Promise.race([
+    p as Promise<T>,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out — check your connection.`)), 8000),
+    ),
+  ]);
+}
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import type { WorkoutDay } from '@/constants/experts';
 import {
@@ -22,12 +33,15 @@ export function useWorkoutStreak() {
     queryKey: ['workout_streak', user?.id],
     queryFn: async (): Promise<number> => {
       if (!user) return 0;
-      const { data, error } = await supabase
-        .from('workout_logs')
-        .select('date')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false })
-        .limit(90);
+      const { data, error } = await withTimeout(
+        supabase
+          .from('workout_logs')
+          .select('date')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false })
+          .limit(90),
+        'Streak',
+      );
 
       if (error || !data?.length) return 0;
 
@@ -78,6 +92,7 @@ export function useWorkoutStreak() {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 }
 
@@ -97,11 +112,14 @@ export function useThisWeekVolume() {
       monday.setDate(now.getDate() - diffToMon);
       const since = monday.toISOString().slice(0, 10);
 
-      const { data, error } = await supabase
-        .from('workout_logs')
-        .select('total_volume_kg')
-        .eq('user_id', user.id)
-        .gte('date', since);
+      const { data, error } = await withTimeout(
+        supabase
+          .from('workout_logs')
+          .select('total_volume_kg')
+          .eq('user_id', user.id)
+          .gte('date', since),
+        'Week volume',
+      );
 
       if (error) return 0;
       const total = (data ?? []).reduce((sum: number, r: { total_volume_kg: number | null }) => sum + (r.total_volume_kg ?? 0), 0);
@@ -109,6 +127,7 @@ export function useThisWeekVolume() {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 }
 

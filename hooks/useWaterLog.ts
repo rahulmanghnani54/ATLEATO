@@ -39,18 +39,39 @@ export function useWaterLog(date: Date) {
         date: dateStr,
         amount_ml: GLASS_ML,
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error } = await (supabase.from('water_logs') as any).insert(payload);
+      // 8s cap so a stalled insert (auth-lock, network) can't leave the button
+      // spinning with no outcome.
+      const { error } = (await Promise.race([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (supabase.from('water_logs') as any).insert(payload),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Timed out — check your connection.')), 8000),
+        ),
+      ])) as { error: any };
       if (error) throw error;
     },
-    onError: (err: Error) => {
+    // Optimistic: bump the count instantly so the button always FEELS like it
+    // worked; roll back + surface the error if the write actually fails.
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey });
+      const prev = queryClient.getQueryData<number>(queryKey) ?? 0;
+      queryClient.setQueryData<number>(queryKey, prev + GLASS_ML);
+      return { prev };
+    },
+    onError: (err: Error, _vars, ctx) => {
+      if (ctx) queryClient.setQueryData(queryKey, ctx.prev);
       if (__DEV__) console.warn('[useWaterLog] insert failed:', err.message);
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey }),
   });
 
   const glasses = Math.floor(totalMl / GLASS_ML);
   const goalGlasses = Math.floor(DAILY_GOAL_ML / GLASS_ML);
 
-  return { totalMl, glasses, goalGlasses, isLoading, addGlass: addGlass.mutate, refetch };
+  return {
+    totalMl, glasses, goalGlasses, isLoading, refetch,
+    addGlass: addGlass.mutate,
+    addGlassIsPending: addGlass.isPending,
+    addGlassError: addGlass.isError,
+  };
 }

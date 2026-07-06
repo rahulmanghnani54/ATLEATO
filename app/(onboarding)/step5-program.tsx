@@ -126,7 +126,14 @@ export default function Step5Program() {
       const { error } = await (supabase.from('profiles') as ReturnType<typeof supabase.from>)
         .update(updatePayload).eq('id', user.id);
       if (error) throw error;
-      await fetchProfile(user.id);
+      // The write already succeeded — refresh the local store but NEVER let a
+      // stalled refresh (auth-lock / flaky network) block navigation. Wait up
+      // to 6s, then proceed regardless; the store re-syncs on next focus. This
+      // is what made "change active coach" spin forever.
+      await Promise.race([
+        fetchProfile(user.id),
+        new Promise<void>((resolve) => setTimeout(resolve, 6000)),
+      ]);
       // Change-program returns to Profile; full onboarding lands in the app.
       if (changeProgramOnly) router.back();
       else router.replace('/(tabs)');

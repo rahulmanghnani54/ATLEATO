@@ -170,7 +170,7 @@ export default function FriendScoreboardScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>FRIEND SCOREBOARD</Text>
+        <Text style={styles.headerTitle}>LEADERBOARD</Text>
         <View style={{ width: 32 }} />
       </View>
 

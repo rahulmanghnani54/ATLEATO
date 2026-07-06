@@ -71,7 +71,14 @@ export function ChainCalendarCard({ persona }: { persona: PersonaTheme }) {
                 <View key={ci} style={[
                   styles.cell,
                   cellStyle(cell, persona),
-                  cell.isToday && { borderWidth: 1.5, borderColor: persona.accent },
+                  cell.isToday && {
+                    borderWidth: 2,
+                    borderColor: persona.accent,
+                    transform: [{ scale: 1.14 }],
+                    ...(cell.status !== 'trained' && cell.status !== 'frozen'
+                      ? { backgroundColor: persona.accentSoft }
+                      : {}),
+                  },
                 ]} />
               ))}
             </View>
@@ -93,21 +100,23 @@ export function ChainCalendarCard({ persona }: { persona: PersonaTheme }) {
 function cellStyle(cell: CalendarDay, persona: PersonaTheme) {
   switch (cell.status) {
     case 'trained': return { backgroundColor: persona.accent };
-    case 'frozen':  return { backgroundColor: '#5DD3FA', opacity: 0.65 };
-    case 'missed':  return { backgroundColor: Colors.borderStrong };
-    case 'future':  return { backgroundColor: 'transparent', borderWidth: 1, borderColor: Colors.border };
-    case 'rest':    return { backgroundColor: Colors.border };
-    default:        return { backgroundColor: 'transparent' };
+    case 'frozen':  return { backgroundColor: '#5DD3FA' };
+    case 'missed':  return { backgroundColor: 'rgba(10,31,25,0.06)', borderWidth: 1, borderColor: 'rgba(10,31,25,0.10)' };
+    case 'future':  return { backgroundColor: 'rgba(10,31,25,0.035)' };
+    case 'rest':    return { backgroundColor: 'rgba(10,31,25,0.05)' };
+    default:        return { backgroundColor: 'rgba(10,31,25,0.035)' };
   }
 }
 
-const CELL = 16;
-const GAP  = 3;
+const CELL = 17;
+const GAP  = 4;
 
 const styles = StyleSheet.create({
   card: {
-    borderWidth: 1, borderRadius: 8, padding: 14, marginBottom: 14,
-    backgroundColor: 'rgba(255,255,255,0.02)',
+    borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 14,
+    backgroundColor: Colors.surface,
+    shadowColor: '#0A1F19', shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 },
   label:    { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4 },
@@ -119,7 +128,7 @@ const styles = StyleSheet.create({
 
   weekGrid: { flexDirection: 'row', gap: GAP, flex: 1 },
   weekCol:  { gap: GAP, flex: 1 },
-  cell:     { width: '100%', height: CELL, borderRadius: 2 },
+  cell:     { width: '100%', height: CELL, borderRadius: 4 },
 
   foot: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 0.8, marginTop: 12 },
 });

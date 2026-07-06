@@ -72,7 +72,7 @@ export const Colors = {
   //     lib/personaTheme.ts; these are just so screens that don't have a
   //     persona context can fall back gracefully) ──────────────────────────
   // Darkened for light-mode contrast (readable on Paper; match lib/personaTheme.ts)
-  personaSculptor:  '#5E8C00',
+  personaSculptor:  '#12B981',
   personaMonument:  '#B87A0E',
   personaAnalyst:   '#3E72D6',
   personaCommander: '#D6412A',

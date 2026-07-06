@@ -214,7 +214,7 @@ export default function CharityStakeScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>ANTI-CHARITY STAKE</Text>
+        <Text style={styles.headerTitle}>PENALTY STAKE</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -300,7 +300,7 @@ export default function CharityStakeScreen() {
         {/* ── SETUP FORM ── */}
         {!stake && (
           <View style={styles.form}>
-            <Text style={styles.sectionLabel}>CHOOSE YOUR ANTI-CHARITY</Text>
+            <Text style={styles.sectionLabel}>CHOOSE YOUR PENALTY TARGET</Text>
             {CHARITIES.map((c) => {
               const active = selectedCharity === c.id;
               return (

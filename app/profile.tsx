@@ -15,8 +15,8 @@ import type { ActivityLevel, Goal } from '@/lib/tdee';
 import { Colors, Fonts, Spacing } from '@/constants/theme';
 import {
   ArrowLeft, ChevronRight, ArrowUpRight, ArrowDownRight, ExternalLink,
-  Zap, Dna, Trophy, Gift, Handshake, DollarSign, Camera, Users,
-  Phone, Volume2, Mic, Film, Tv, Globe, Share2, Unlock, Ticket, Award, RotateCcw,
+  Zap, Trophy, Gift, Handshake, DollarSign, Camera, Users, User as UserIcon,
+  Phone, Volume2, Mic, Globe, Share2, Unlock, Ticket, Award, RotateCcw,
   Flame, Calendar,
 } from 'lucide-react-native';
 import { getUserTier, canAccess } from '@/lib/featureGates';
@@ -244,17 +244,31 @@ export default function ProfileScreen() {
                   <Text style={styles.heroName}>{profile?.full_name ?? '—'}</Text>
                 </TouchableOpacity>
               )}
-              <Text style={styles.heroSub}>
-                {[
+              {(() => {
+                const stats = [
                   profile?.weight_kg ? `${profile.weight_kg} kg` : null,
                   profile?.height_cm ? `${profile.height_cm} cm` : null,
                   age ? `${age} y/o` : null,
-                ].filter(Boolean).join(' · ')}
-              </Text>
+                ].filter(Boolean).join(' · ');
+                return stats ? (
+                  <Text style={styles.heroSub}>{stats}</Text>
+                ) : (
+                  <TouchableOpacity onPress={() => setEditingWeight(true)}>
+                    <Text style={[styles.heroSub, { color: programColor }]}>Add your body stats →</Text>
+                  </TouchableOpacity>
+                );
+              })()}
             </View>
-            <View style={[styles.avatarCircle, { borderColor: programColor }]}>
-              <Text style={[styles.avatarInitials, { color: programColor }]}>{initials}</Text>
-            </View>
+            {/* Avatar at the top of the panel — tappable, opens My Avatar. */}
+            <TouchableOpacity
+              style={[styles.avatarCircle, { borderColor: programColor }]}
+              onPress={() => router.push('/my-avatar' as any)}
+              activeOpacity={0.8}
+            >
+              {initials
+                ? <Text style={[styles.avatarInitials, { color: programColor }]}>{initials}</Text>
+                : <UserIcon size={30} color={programColor} />}
+            </TouchableOpacity>
           </View>
 
           {/* Stat strip — prominent: big numbers, icon-led, persona-accent
@@ -323,15 +337,7 @@ export default function ProfileScreen() {
             trailIcon={ChevronRight}
             onPress={() => router.push('/legend-progress' as any)}
           />
-          <View style={styles.rowDivider} />
-          <SettingsRow
-            Icon={Dna}
-            iconColor={programColor}
-            label="My Avatar"
-            sub="Visual avatar that evolves with your progress"
-            trailIcon={ChevronRight}
-            onPress={() => router.push('/my-avatar' as any)}
-          />
+          {/* (My Avatar moved to the tappable avatar at the top of the panel.) */}
           {/* Health Dashboard / watch integration hidden for launch (founder
               call 2026-07-04): focus the app on the coach-calls core. The
               /health-dashboard route + healthIntegration lib stay dormant —
@@ -433,6 +439,12 @@ export default function ProfileScreen() {
           />
         </SettingsGroup>
 
+        {/* ── Community + Accountability — DEV BUILDS ONLY for now ──
+            Renamed + kept wired for a future release, but hidden from the
+            public launch build to keep Settings simple (founder call). Daily
+            selfie stays public (it's complete + shipped) — see below. */}
+        {__DEV__ && (
+        <>
         {/* ── Community ── */}
         <SettingsGroup title="Community">
           <SettingsRow
@@ -459,7 +471,7 @@ export default function ProfileScreen() {
           <SettingsRow
             Icon={Handshake}
             iconColor={programColor}
-            label="Accountability witness"
+            label="Accountability partner"
             sub="One person who gets notified if you skip a week"
             trailIcon={ChevronRight}
             onPress={() => router.push('/social-stake' as any)}
@@ -468,12 +480,26 @@ export default function ProfileScreen() {
           <SettingsRow
             Icon={DollarSign}
             iconColor={programColor}
-            label="Anti-charity stake"
-            sub="Stake $2 USD against a cause you hate — real money"
+            label="Penalty stake"
+            sub="Put $2 on the line — miss your week, forfeit it"
             trailIcon={ChevronRight}
             onPress={() => router.push('/charity-stake' as any)}
           />
           <View style={styles.rowDivider} />
+          <SettingsRow
+            Icon={Users}
+            iconColor={programColor}
+            label="Leaderboard"
+            sub="Weekly ranking against your training circle"
+            trailIcon={ChevronRight}
+            onPress={() => router.push('/friend-scoreboard' as any)}
+          />
+        </SettingsGroup>
+        </>
+        )}
+
+        {/* ── Accountability (public) ── */}
+        <SettingsGroup title="Accountability">
           <SettingsRow
             Icon={Camera}
             iconColor={programColor}
@@ -481,15 +507,6 @@ export default function ProfileScreen() {
             sub="Private 7-day photo streak — never uploaded"
             trailIcon={ChevronRight}
             onPress={() => router.push('/daily-selfie' as any)}
-          />
-          <View style={styles.rowDivider} />
-          <SettingsRow
-            Icon={Users}
-            iconColor={programColor}
-            label="Friend scoreboard"
-            sub="Weekly leaderboard with friends — loss-framing"
-            trailIcon={ChevronRight}
-            onPress={() => router.push('/friend-scoreboard' as any)}
           />
         </SettingsGroup>
 
@@ -537,26 +554,8 @@ export default function ProfileScreen() {
           )}
         </SettingsGroup>
 
-        {/* ── About Evulto — marketing links + share ── */}
+        {/* ── About Evulto ── */}
         <SettingsGroup title="About Evulto">
-          <SettingsRow
-            Icon={Film}
-            iconColor={programColor}
-            label="Watch the Showreel"
-            sub="60-second cinematic — share with friends"
-            trailIcon={ExternalLink}
-            onPress={() => Linking.openURL('https://evulto.com/showreel.html').catch(() => {})}
-          />
-          <View style={styles.rowDivider} />
-          <SettingsRow
-            Icon={Tv}
-            iconColor={programColor}
-            label="Full Demo Video"
-            sub="16:9 timeline walkthrough of every feature"
-            trailIcon={ExternalLink}
-            onPress={() => Linking.openURL('https://evulto.com/demo-video.html').catch(() => {})}
-          />
-          <View style={styles.rowDivider} />
           <SettingsRow
             Icon={Globe}
             iconColor={programColor}
@@ -583,7 +582,10 @@ export default function ProfileScreen() {
           />
         </SettingsGroup>
 
-        {/* ── Founder admin (debug tier switcher) ── */}
+        {/* ── Founder admin (debug tier switcher) — DEV BUILDS ONLY ──
+            Gated behind __DEV__ so the public/release app never shows the tier
+            switcher. Stays fully available in development for the founder. */}
+        {__DEV__ && (
         <SettingsGroup title="Founder admin">
           <SettingsRow
             Icon={Unlock}
@@ -624,6 +626,7 @@ export default function ProfileScreen() {
             }}
           />
         </SettingsGroup>
+        )}
 
         {/* ── Account ── */}
         <SettingsGroup title="Account">

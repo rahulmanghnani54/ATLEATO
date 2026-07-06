@@ -141,9 +141,14 @@ export default function FoodPhotoScan() {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      const { data, error } = await supabase.functions.invoke('analyze-food-photo', {
-        body: { image_base64: base64 },
-      });
+      // Hard 30s cap — without it, a stalled edge function (cold start, slow AI
+      // inference, network drop) leaves the screen stuck on "analyzing" forever.
+      const { data, error } = (await Promise.race([
+        supabase.functions.invoke('analyze-food-photo', { body: { image_base64: base64 } }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Analysis timed out — try again with a clearer, closer photo.')), 30000),
+        ),
+      ])) as { data: any; error: any };
 
       if (error) throw error;
 

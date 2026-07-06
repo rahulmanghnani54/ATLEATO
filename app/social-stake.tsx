@@ -119,7 +119,7 @@ export default function SocialStakeScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backText}>←</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>ACCOUNTABILITY WITNESS</Text>
+        <Text style={styles.headerTitle}>ACCOUNTABILITY PARTNER</Text>
         <View style={{ width: 32 }} />
       </View>
 
@@ -142,7 +142,7 @@ export default function SocialStakeScreen() {
         {existing && !editing && (
           <>
             <View style={[styles.witnessCard, { borderLeftColor: persona.accent }]}>
-              <Text style={[styles.eyebrow, { color: persona.accent }]}>YOUR WITNESS</Text>
+              <Text style={[styles.eyebrow, { color: persona.accent }]}>YOUR PARTNER</Text>
               <Text style={styles.witnessName}>{existing.name}</Text>
               <Text style={styles.witnessMeta}>
                 {existing.relationship ?? 'Friend'}  ·  {existing.phone}
@@ -185,7 +185,7 @@ export default function SocialStakeScreen() {
         {/* ── ADD / EDIT WITNESS form ── */}
         {(!existing || editing) && (
           <View style={styles.form}>
-            <Text style={styles.label}>WITNESS NAME</Text>
+            <Text style={styles.label}>PARTNER NAME</Text>
             <TextInput
               style={styles.input}
               value={name}

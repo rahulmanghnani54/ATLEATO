@@ -11,7 +11,7 @@
  * v0 backup at nutrition-v0.tsx.bak.
  */
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { format } from 'date-fns';
@@ -60,7 +60,13 @@ export default function Nutrition() {
   const persona = personaFromProgramId(profile?.selected_program);
 
   const { data: nutrition, refetch } = useDailyNutrition(date);
-  const { glasses, goalGlasses, addGlass } = useWaterLog(date);
+  const { glasses, goalGlasses, addGlass, addGlassIsPending } = useWaterLog(date);
+  const handleAddWater = () => {
+    if (addGlassIsPending) return;
+    addGlass(undefined, {
+      onError: () => Alert.alert('Could not save water', 'Check your connection and try again.'),
+    });
+  };
   const dateStr = format(date, 'yyyy-MM-dd');
 
   const goal = profile?.tdee ?? 2000;
@@ -156,8 +162,8 @@ export default function Nutrition() {
             icon={<Droplets size={22} color="#5DD3FA" />}
             iconTintColor="#5DD3FA"
             title="Water"
-            meta={`${glasses} / ${goalGlasses} glasses today`}
-            onPress={() => addGlass()}
+            meta={`${glasses} / ${goalGlasses} glasses today · tap to add a glass`}
+            onPress={handleAddWater}
           />
 
           {/* ── 6. MEALS ─────────────────────────────────────── */}
