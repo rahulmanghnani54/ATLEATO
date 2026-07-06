@@ -303,6 +303,24 @@ export async function ensureBackgroundCallDelivery(): Promise<void> {
       await notifee.openBatteryOptimizationSettings();
     }
   } catch { /* ignore */ }
+
+  // Android 14+ (API 34): full-screen intents need the "Full screen
+  // notifications" special access. Without it a perfectly-fired call silently
+  // degrades to a small banner — no ring screen. JS can't QUERY the grant
+  // state (needs a native module), so nudge ONCE to the exact settings page.
+  try {
+    if (Number(Platform.Version) < 34) return;
+    const FSI_FLAG = 'evulto_fsi_nudged_v1';
+    if (await AsyncStorage.getItem(FSI_FLAG)) return;
+    await AsyncStorage.setItem(FSI_FLAG, '1');
+    // Opens Settings → Full screen notifications (app list). Falls back to the
+    // app's settings page if the OEM doesn't expose the action.
+    try {
+      await Linking.sendIntent('android.settings.MANAGE_APP_USE_FULL_SCREEN_INTENT');
+    } catch {
+      try { await Linking.openSettings(); } catch { /* ignore */ }
+    }
+  } catch { /* ignore */ }
 }
 
 /** Next Date that lands on weekday `dow` (0=Sun..6=Sat) at hour:minute. */

@@ -526,6 +526,83 @@ function analyzeForm(form: ExerciseForm | null, kpts: Kpt[], history?: Kpt[][]):
   return { issues, badJoints, status };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// REP COUNTING — hysteresis state machine on the exercise's PRIMARY joint angle.
+//
+// A rep = the angle crossing below `low` (bottom of the movement) then back
+// above `high` (lockout). The low/high gap is the hysteresis band, so hovering
+// at depth never double-counts. Works for both directions of movement: a curl's
+// "bottom" is elbow flexion at the top of the lift — the cycle is identical.
+// Runs on the SMOOTHED keypoints at detection rate (~15fps) with the camera
+// frame clock, so tempo numbers are real.
+// ─────────────────────────────────────────────────────────────────────────────
+const REP_THRESHOLDS: Record<string, { low: number; high: number }> = {
+  squat:    { low: 110, high: 155 },
+  lunge:    { low: 110, high: 155 },
+  deadlift: { low: 120, high: 160 },
+  press:    { low: 100, high: 150 },
+  pull:     { low: 100, high: 150 },
+  curl:     { low: 90,  high: 140 },
+};
+const REP_DEFAULT_TH = { low: 105, high: 150 };
+const MIN_REP_MS = 900;   // full cycles faster than this are tracking noise
+
+/** The angle that defines the rep for this exercise category (worst side). */
+function primaryAngle(kpts: Kpt[], category?: string): { label: string; deg: number | null } {
+  const min2 = (a: number | null, b: number | null) =>
+    a == null ? b : b == null ? a : Math.min(a, b);
+  if (category === 'squat' || category === 'lunge' || category === 'deadlift') {
+    return {
+      label: 'KNEE',
+      deg: min2(
+        jointAngle(kpts, KP.l_hip, KP.l_knee, KP.l_ankle),
+        jointAngle(kpts, KP.r_hip, KP.r_knee, KP.r_ankle),
+      ),
+    };
+  }
+  return {
+    label: 'ELBOW',
+    deg: min2(
+      jointAngle(kpts, KP.l_shoulder, KP.l_elbow, KP.l_wrist),
+      jointAngle(kpts, KP.r_shoulder, KP.r_elbow, KP.r_wrist),
+    ),
+  };
+}
+
+class RepCounter {
+  count = 0;
+  lastTempoMs = 0;      // duration of the last counted rep
+  bestBottomDeg = 180;  // deepest angle reached across the set (depth quality)
+  private phase: 'top' | 'bottom' = 'top';
+  private cycleStart = 0;
+  private bottomDeg = 180;
+
+  update(deg: number | null, tMs: number, category?: string): void {
+    if (deg == null) return;
+    const th = (category && REP_THRESHOLDS[category]) || REP_DEFAULT_TH;
+    if (this.phase === 'top') {
+      if (deg < th.low) { this.phase = 'bottom'; this.cycleStart = tMs; this.bottomDeg = deg; }
+      return;
+    }
+    if (deg < this.bottomDeg) this.bottomDeg = deg;
+    if (deg > th.high) {
+      this.phase = 'top';
+      const dur = tMs - this.cycleStart;
+      if (dur >= MIN_REP_MS) {
+        this.count += 1;
+        this.lastTempoMs = dur;
+        if (this.bottomDeg < this.bestBottomDeg) this.bestBottomDeg = this.bottomDeg;
+      }
+      this.bottomDeg = 180;
+    }
+  }
+
+  reset(): void {
+    this.count = 0; this.lastTempoMs = 0; this.bestBottomDeg = 180;
+    this.phase = 'top'; this.cycleStart = 0; this.bottomDeg = 180;
+  }
+}
+
 // Throttled debug logger (visible via `adb logcat | grep pose`).
 // Logs ~1 in 4 calls so it doesn't spam. Safe to leave — cheap, dev-only signal.
 let _poseLogN = 0;
@@ -557,6 +634,13 @@ export default function FormCoach() {
   // misalignment without adb. Toggle with the ⚙ chip; off by default.
   const [showAlign, setShowAlign] = useState(false);
   const alignDebugRef = useRef<string>('…');
+
+  // Rep counter + live primary-angle readout. Updated in handlePose at
+  // detection rate; rendered by the analysisTick re-renders (~8Hz). Refs (not
+  // state) so counting never adds render pressure of its own.
+  const repRef = useRef(new RepCounter());
+  const liveAngleRef = useRef<{ label: string; deg: number | null }>({ label: '', deg: null });
+  const categoryRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!canAccess('ai_form_coach')) {
@@ -597,6 +681,13 @@ export default function FormCoach() {
   const motionPendingRef  = useRef<{ state: 'moving' | 'still'; count: number }>({ state: 'still', count: 0 });
 
   const formLibraryData    = useMemo(() => getExerciseForm(exerciseName ?? ''), [exerciseName]);
+  // Bridge the category to handlePose via a ref (avoids re-creating the pose
+  // callback — and its RunOnJS binding — when the exercise changes).
+  useEffect(() => {
+    categoryRef.current = formLibraryData?.category;
+    repRef.current.reset();   // new exercise = new set
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formLibraryData]);
   const libraryCheckpoints = formLibraryData?.checkpoints ?? [];
   const libraryMistakes    = formLibraryData?.commonMistakes ?? [];
   const libraryBreathing   = formLibraryData?.breathingCue ?? null;
@@ -767,6 +858,7 @@ export default function FormCoach() {
         targetKptsRef.current = null;
         kptsHistoryRef.current = [];
         smootherRef.current = new KeypointSmoother();
+        liveAngleRef.current = { ...liveAngleRef.current, deg: null }; // rep count survives
         tickAnalysis(true);
       }
     };
@@ -854,6 +946,12 @@ export default function FormCoach() {
     targetKptsRef.current = smoothed;
     kptsHistoryRef.current.push(smoothed);
     if (kptsHistoryRef.current.length > MOTION_HISTORY_LEN) kptsHistoryRef.current.shift();
+
+    // Rep counting + live angle — on the smoothed pose, camera-clock timed.
+    const pa = primaryAngle(smoothed, categoryRef.current);
+    liveAngleRef.current = pa;
+    repRef.current.update(pa.deg, tMs, categoryRef.current);
+
     tickAnalysis();
   }, [screenWidth, cameraHeight]);
 
@@ -1091,6 +1189,25 @@ export default function FormCoach() {
           <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
         </View>
 
+        {/* Rep counter + live primary angle (long-press to reset the set).
+            Reads refs; refreshed by the ~8Hz analysis re-renders. */}
+        {(repRef.current.count > 0 || (isTracking && liveAngleRef.current.deg != null)) && (
+          <TouchableOpacity
+            style={styles.repPill}
+            onLongPress={() => { repRef.current.reset(); setAnalysisTick((t) => t + 1); }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.repPillCount}>
+              {repRef.current.count} REP{repRef.current.count === 1 ? '' : 'S'}
+            </Text>
+            {isTracking && liveAngleRef.current.deg != null && (
+              <Text style={styles.repPillAngle}>
+                {liveAngleRef.current.label} {Math.round(liveAngleRef.current.deg)}°
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
+
         {isTracking && formAnalysis.issues.length > 0 && (
           <View style={[styles.formBanner, styles.formBannerBad]}>
             <AlertTriangle size={14} color="#fff" />
@@ -1234,6 +1351,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 100, borderWidth: 1,
   },
   statusText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
+  repPill: {
+    position: 'absolute', bottom: 12, right: 10,   // top-right is the form banner's spot
+    alignItems: 'flex-end',
+    paddingHorizontal: 12, paddingVertical: 6,
+    backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 12,
+    borderWidth: 1, borderColor: 'rgba(18,185,129,0.7)',
+  },
+  repPillCount: { fontFamily: Fonts.display, fontSize: 18, letterSpacing: 0.5, color: '#7DEBC4' },
+  repPillAngle: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1, color: '#CFE8DD', marginTop: 1 },
   alignDebug: {
     position: 'absolute', bottom: 8, left: 8, right: 8,
     backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 6, padding: 6,
