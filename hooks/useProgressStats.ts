@@ -2,6 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
+// Hard time-limit any Supabase call so a stalled request (flaky network, a slow
+// query, or an internal auth-lock wait) can NEVER leave a section spinning
+// forever — it rejects, React Query surfaces the error, and the UI shows an
+// empty/retry state instead of an infinite loader.
+const QUERY_TIMEOUT_MS = 8000;
+async function withTimeout<T>(p: PromiseLike<T>, label: string): Promise<T> {
+  return Promise.race([
+    p as Promise<T>,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out — check your connection.`)), QUERY_TIMEOUT_MS),
+    ),
+  ]);
+}
+
 export interface WeeklyVolume {
   weekLabel: string; // "Mon Apr 28"
   weekStart: string; // ISO date
@@ -18,12 +32,15 @@ export function useWeeklyVolume(weeks = 8) {
       if (!user) return [];
       const since = new Date(Date.now() - weeks * 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-      const { data, error } = await supabase
-        .from('workout_logs')
-        .select('date, total_volume_kg')
-        .eq('user_id', user.id)
-        .gte('date', since)
-        .order('date', { ascending: true });
+      const { data, error } = await withTimeout(
+        supabase
+          .from('workout_logs')
+          .select('date, total_volume_kg')
+          .eq('user_id', user.id)
+          .gte('date', since)
+          .order('date', { ascending: true }),
+        'Weekly volume',
+      );
 
       if (error) throw error;
 
@@ -55,6 +72,7 @@ export function useWeeklyVolume(weeks = 8) {
     },
     enabled: !!user,
     staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 }
 
@@ -74,12 +92,15 @@ export function usePersonalRecords() {
     queryKey: ['personal_records', user?.id],
     queryFn: async (): Promise<PersonalRecord[]> => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('personal_records')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('one_rep_max_kg', { ascending: false })
-        .limit(20);
+      const { data, error } = await withTimeout(
+        supabase
+          .from('personal_records')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('one_rep_max_kg', { ascending: false })
+          .limit(20),
+        'Personal records',
+      );
 
       if (error) throw error;
       return (data ?? []).map((r: any) => ({
@@ -93,6 +114,7 @@ export function usePersonalRecords() {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 }
 
@@ -119,11 +141,14 @@ export function useAchievements() {
     queryKey: ['achievements', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('user_achievements')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('achieved_at', { ascending: false });
+      const { data, error } = await withTimeout(
+        supabase
+          .from('user_achievements')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('achieved_at', { ascending: false }),
+        'Achievements',
+      );
 
       if (error) throw error;
       return (data ?? []).map((a: any) => ({
@@ -135,5 +160,6 @@ export function useAchievements() {
     },
     enabled: !!user,
     staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 }
