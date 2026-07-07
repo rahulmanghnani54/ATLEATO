@@ -625,26 +625,30 @@ export default function ProfileScreen() {
               Alert.alert('Reset to Free');
             }}
           />
-          <View style={styles.rowDivider} />
-          {/* Manual app-icon test — proves the native switch path independently
-              of the coach-change flow, and helps triage stubborn launchers. */}
+        </SettingsGroup>
+        )}
+
+        {/* ── App icon (temporary test — visible in release for triage) ──
+            Proves the native icon switch works independent of the coach-change
+            flow. Remove once per-coach icons are confirmed on-device. */}
+        <SettingsGroup title="App icon">
           <SettingsRow
             Icon={RotateCcw}
-            iconColor={programColor}
-            label="Test icon: Commander (red)"
-            sub="Force the launcher icon to red"
+            iconColor="#D6412A"
+            label="Set icon: Commander (red)"
+            sub="Then press Home — Pixel repaints instantly; Samsung/Xiaomi may need an unlock"
             trailIcon={ArrowUpRight}
             onPress={async () => {
               const { forceAppIcon } = await import('@/lib/appIcon');
               const r = await forceAppIcon('ct_fletcher');
-              Alert.alert('App icon', r + ' — press home; some launchers repaint on next unlock.');
+              Alert.alert('App icon', r);
             }}
           />
           <View style={styles.rowDivider} />
           <SettingsRow
             Icon={RotateCcw}
-            iconColor={programColor}
-            label="Test icon: Sculptor (emerald)"
+            iconColor={Colors.primary}
+            label="Set icon: Sculptor (emerald)"
             sub="Force the launcher icon back to the default"
             trailIcon={ArrowUpRight}
             onPress={async () => {
@@ -654,7 +658,6 @@ export default function ProfileScreen() {
             }}
           />
         </SettingsGroup>
-        )}
 
         {/* ── Account ── */}
         <SettingsGroup title="Account">
