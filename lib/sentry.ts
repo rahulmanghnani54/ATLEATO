@@ -34,6 +34,13 @@ export function initSentry(): void {
     // Trim noisy breadcrumbs.
     maxBreadcrumbs: 50,
   });
+
+  // One-shot startup ping (release builds only) so the dashboard flips from
+  // "waiting for first error" to LIVE the moment you install + launch. Message
+  // level = info, so it appears under Issues → Info, not as a fake error.
+  if (!__DEV__) {
+    Sentry.captureMessage('Evulto launched — Sentry live ✅', 'info');
+  }
 }
 
 /** Re-export so screens can `import { Sentry } from '@/lib/sentry'`. */

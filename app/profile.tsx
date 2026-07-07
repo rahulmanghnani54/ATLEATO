@@ -625,6 +625,34 @@ export default function ProfileScreen() {
               Alert.alert('Reset to Free');
             }}
           />
+          <View style={styles.rowDivider} />
+          {/* Manual app-icon test — proves the native switch path independently
+              of the coach-change flow, and helps triage stubborn launchers. */}
+          <SettingsRow
+            Icon={RotateCcw}
+            iconColor={programColor}
+            label="Test icon: Commander (red)"
+            sub="Force the launcher icon to red"
+            trailIcon={ArrowUpRight}
+            onPress={async () => {
+              const { forceAppIcon } = await import('@/lib/appIcon');
+              const r = await forceAppIcon('ct_fletcher');
+              Alert.alert('App icon', r + ' — press home; some launchers repaint on next unlock.');
+            }}
+          />
+          <View style={styles.rowDivider} />
+          <SettingsRow
+            Icon={RotateCcw}
+            iconColor={programColor}
+            label="Test icon: Sculptor (emerald)"
+            sub="Force the launcher icon back to the default"
+            trailIcon={ArrowUpRight}
+            onPress={async () => {
+              const { forceAppIcon } = await import('@/lib/appIcon');
+              const r = await forceAppIcon('cbum');
+              Alert.alert('App icon', r);
+            }}
+          />
         </SettingsGroup>
         )}
 
