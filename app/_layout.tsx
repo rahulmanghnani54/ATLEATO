@@ -42,6 +42,8 @@ import {
 } from '@/lib/wakeupCalls';
 import { initBilling, refreshReferralReward } from '@/lib/subscriptionManager';
 import { resyncCoachCalls } from '@/hooks/useCoachReminders';
+import { personaFromProgramId } from '@/lib/personaTheme';
+import { syncAppIconToCoach } from '@/lib/appIcon';
 import { initBranchReferral } from '@/lib/branchReferral';
 import notifee from '@notifee/react-native';
 import type { PersonaId } from '@/lib/personaTheme';
@@ -238,6 +240,15 @@ function RootNavigator() {
   // a stale one. (The schedule bakes the persona in at schedule time.)
   useEffect(() => {
     if (profile?.selected_program) resyncCoachCalls();
+  }, [profile?.selected_program]);
+
+  // AUTO app-icon color: the launcher ring follows the ACTIVE coach, no matter
+  // WHERE the coach was changed (onboarding, Coach tab, Workouts tab, or any
+  // future path) — one central watcher, so it can never be missed again.
+  useEffect(() => {
+    if (!profile?.selected_program) return;
+    const personaId = personaFromProgramId(profile.selected_program).id;
+    syncAppIconToCoach(personaId);
   }, [profile?.selected_program]);
 
   return <Stack screenOptions={{ headerShown: false }} />;
