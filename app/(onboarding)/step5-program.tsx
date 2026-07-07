@@ -28,6 +28,7 @@ import type { ActivityLevel, Goal } from '@/lib/tdee';
 import type { Database } from '@/types/database';
 import { getPersona, quoteOfTheDay, styleText, type PersonaId, type PersonaTheme } from '@/lib/personaTheme';
 import { getMaxCoaches } from '@/lib/featureGates';
+import { syncAppIconToCoach } from '@/lib/appIcon';
 
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
@@ -134,6 +135,9 @@ export default function Step5Program() {
         fetchProfile(user.id),
         new Promise<void>((resolve) => setTimeout(resolve, 6000)),
       ]);
+      // The whole app transforms with the coach — including the launcher icon
+      // (fire-and-forget; cosmetic, never blocks the switch).
+      syncAppIconToCoach(currentCard.personaId);
       // Change-program returns to Profile; full onboarding lands in the app.
       if (changeProgramOnly) router.back();
       else router.replace('/(tabs)');
