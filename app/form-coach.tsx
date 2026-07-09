@@ -554,26 +554,74 @@ const REP_THRESHOLDS: Record<string, { low: number; high: number }> = {
 const REP_DEFAULT_TH = { low: 105, high: 150 };
 const MIN_REP_MS = 900;   // full cycles faster than this are tracking noise
 
-/** The angle that defines the rep for this exercise category (worst side). */
-function primaryAngle(kpts: Kpt[], category?: string): { label: string; deg: number | null } {
+/** The angle that defines the rep for this exercise category. `deg` = worst
+ *  side (drives rep counting); `left`/`right` feed the per-rep symmetry score. */
+function primaryAngle(kpts: Kpt[], category?: string): {
+  label: string; deg: number | null; left: number | null; right: number | null;
+} {
   const min2 = (a: number | null, b: number | null) =>
     a == null ? b : b == null ? a : Math.min(a, b);
+  let label: string, l: number | null, r: number | null;
   if (category === 'squat' || category === 'lunge' || category === 'deadlift') {
-    return {
-      label: 'KNEE',
-      deg: min2(
-        jointAngle(kpts, KP.l_hip, KP.l_knee, KP.l_ankle),
-        jointAngle(kpts, KP.r_hip, KP.r_knee, KP.r_ankle),
-      ),
-    };
+    label = 'KNEE';
+    l = jointAngle(kpts, KP.l_hip, KP.l_knee, KP.l_ankle);
+    r = jointAngle(kpts, KP.r_hip, KP.r_knee, KP.r_ankle);
+  } else {
+    label = 'ELBOW';
+    l = jointAngle(kpts, KP.l_shoulder, KP.l_elbow, KP.l_wrist);
+    r = jointAngle(kpts, KP.r_shoulder, KP.r_elbow, KP.r_wrist);
   }
-  return {
-    label: 'ELBOW',
-    deg: min2(
-      jointAngle(kpts, KP.l_shoulder, KP.l_elbow, KP.l_wrist),
-      jointAngle(kpts, KP.r_shoulder, KP.r_elbow, KP.r_wrist),
-    ),
-  };
+  return { label, deg: min2(l, r), left: l, right: r };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PER-REP QUALITY — every rep graded 0-100 on depth, tempo, and symmetry, so
+// the set report reads like a coach ("8 reps · 2 shallow · left side leading").
+// ─────────────────────────────────────────────────────────────────────────────
+export interface RepData {
+  index: number;
+  bottomDeg: number;   // deepest primary angle reached (lower = deeper)
+  tempoMs: number;     // full down-up duration
+  symmetry: number;    // |left − right| at the bottom (deg; lower = balanced)
+  score: number;       // 0-100
+  flaw: 'shallow' | 'rushed' | 'grindy' | 'uneven' | null; // dominant issue
+}
+
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
+
+function scoreRep(bottomDeg: number, tempoMs: number, symmetry: number, category?: string): {
+  score: number; flaw: RepData['flaw'];
+} {
+  const th = (category && REP_THRESHOLDS[category]) || REP_DEFAULT_TH;
+  // Depth: full credit at/below the target; falls off over the next 35°.
+  const depth = clamp01((th.low + 35 - bottomDeg) / 35) * 100;
+  // Tempo: ideal ~1.5-5s. Rushed (<1.2s) or grindy (>6s) lose points.
+  const s = tempoMs / 1000;
+  let tempo = 100, tempoFlaw: RepData['flaw'] = null;
+  if (s < 1.2) { tempo = clamp01(s / 1.2) * 70; tempoFlaw = 'rushed'; }
+  else if (s > 6) { tempo = Math.max(55, 100 - (s - 6) * 8); tempoFlaw = 'grindy'; }
+  // Symmetry: ≤12° balanced, ≥45° poor.
+  const sym = clamp01((45 - symmetry) / 33) * 100;
+  const score = Math.round(depth * 0.5 + tempo * 0.25 + sym * 0.25);
+  // Dominant flaw = whichever dimension scored worst (if any is weak).
+  let flaw: RepData['flaw'] = null;
+  const worst = Math.min(depth, tempo, sym);
+  if (worst < 70) {
+    if (worst === depth) flaw = 'shallow';
+    else if (worst === tempo) flaw = tempoFlaw ?? 'rushed';
+    else flaw = 'uneven';
+  }
+  return { score, flaw };
+}
+
+export interface SetReport {
+  reps: number;
+  avgScore: number;
+  avgTempoMs: number;
+  bestRep: RepData | null;
+  worstRep: RepData | null;
+  flawCounts: Record<string, number>;
+  data: RepData[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -665,34 +713,61 @@ function hasRequiredChain(kpts: Kpt[], category?: string): boolean {
 class RepCounter {
   count = 0;
   lastTempoMs = 0;      // duration of the last counted rep
+  lastScore = 0;        // quality of the last counted rep (for the live pill)
   bestBottomDeg = 180;  // deepest angle reached across the set (depth quality)
+  reps: RepData[] = []; // per-rep graded history for the set report
   private phase: 'top' | 'bottom' = 'top';
   private cycleStart = 0;
   private bottomDeg = 180;
+  private bottomSym = 0;   // |L−R| captured AT the deepest point of this rep
 
-  update(deg: number | null, tMs: number, category?: string): void {
+  update(deg: number | null, tMs: number, category?: string, symNow = 0): void {
     if (deg == null) return;
     const th = (category && REP_THRESHOLDS[category]) || REP_DEFAULT_TH;
     if (this.phase === 'top') {
-      if (deg < th.low) { this.phase = 'bottom'; this.cycleStart = tMs; this.bottomDeg = deg; }
+      if (deg < th.low) {
+        this.phase = 'bottom'; this.cycleStart = tMs;
+        this.bottomDeg = deg; this.bottomSym = symNow;
+      }
       return;
     }
-    if (deg < this.bottomDeg) this.bottomDeg = deg;
+    if (deg < this.bottomDeg) { this.bottomDeg = deg; this.bottomSym = symNow; }
     if (deg > th.high) {
       this.phase = 'top';
       const dur = tMs - this.cycleStart;
       if (dur >= MIN_REP_MS) {
+        const { score, flaw } = scoreRep(this.bottomDeg, dur, this.bottomSym, category);
         this.count += 1;
         this.lastTempoMs = dur;
+        this.lastScore = score;
+        this.reps.push({ index: this.count, bottomDeg: this.bottomDeg, tempoMs: dur, symmetry: this.bottomSym, score, flaw });
         if (this.bottomDeg < this.bestBottomDeg) this.bestBottomDeg = this.bottomDeg;
       }
-      this.bottomDeg = 180;
+      this.bottomDeg = 180; this.bottomSym = 0;
     }
   }
 
+  /** Summarize the set for the end-of-set report card. */
+  report(): SetReport {
+    const data = this.reps;
+    const n = data.length;
+    const flawCounts: Record<string, number> = {};
+    for (const r of data) if (r.flaw) flawCounts[r.flaw] = (flawCounts[r.flaw] ?? 0) + 1;
+    return {
+      reps: n,
+      avgScore: n ? Math.round(data.reduce((s, r) => s + r.score, 0) / n) : 0,
+      avgTempoMs: n ? Math.round(data.reduce((s, r) => s + r.tempoMs, 0) / n) : 0,
+      bestRep: n ? data.reduce((a, b) => (b.score > a.score ? b : a)) : null,
+      worstRep: n ? data.reduce((a, b) => (b.score < a.score ? b : a)) : null,
+      flawCounts,
+      data,
+    };
+  }
+
   reset(): void {
-    this.count = 0; this.lastTempoMs = 0; this.bestBottomDeg = 180;
-    this.phase = 'top'; this.cycleStart = 0; this.bottomDeg = 180;
+    this.count = 0; this.lastTempoMs = 0; this.lastScore = 0; this.bestBottomDeg = 180;
+    this.reps = [];
+    this.phase = 'top'; this.cycleStart = 0; this.bottomDeg = 180; this.bottomSym = 0;
   }
 }
 
@@ -734,6 +809,26 @@ export default function FormCoach() {
   const repRef = useRef(new RepCounter());
   const liveAngleRef = useRef<{ label: string; deg: number | null }>({ label: '', deg: null });
   const categoryRef = useRef<string | undefined>(undefined);
+  // End-of-set report card (null = hidden). Captured when "Finish set" is tapped.
+  const [setReport, setSetReport] = useState<SetReport | null>(null);
+
+  const finishSet = () => {
+    const r = repRef.current.report();
+    if (r.reps < 1) return;
+    setSetReport(r);
+    // Coach speaks a one-line verdict in their voice.
+    const worstFlaw = Object.entries(r.flawCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const verdict =
+      r.avgScore >= 85 ? `${r.reps} clean reps. That's the standard — keep it there.`
+      : worstFlaw === 'shallow' ? `${r.reps} reps, but ${r.flawCounts.shallow} were shallow. Hit full depth every rep.`
+      : worstFlaw === 'rushed' ? `${r.reps} reps — too fast. Control the eccentric, own the tempo.`
+      : worstFlaw === 'uneven' ? `${r.reps} reps, but you're leaning to one side. Even it out.`
+      : worstFlaw === 'grindy' ? `${r.reps} hard reps. Grind's fine near failure — watch the form.`
+      : `${r.reps} solid reps. Small tweaks and these are perfect.`;
+    try { voice.cue('form_issue', { issue: verdict }); } catch { /* ignore */ }
+    repRef.current.reset();
+    setAnalysisTick((t) => t + 1);
+  };
 
   useEffect(() => {
     if (!canAccess('ai_form_coach')) {
@@ -1060,7 +1155,8 @@ export default function FormCoach() {
     // Rep counting + live angle — on the smoothed pose, camera-clock timed.
     const pa = primaryAngle(smoothed, categoryRef.current);
     liveAngleRef.current = pa;
-    repRef.current.update(pa.deg, tMs, categoryRef.current);
+    const symNow = (pa.left != null && pa.right != null) ? Math.abs(pa.left - pa.right) : 0;
+    repRef.current.update(pa.deg, tMs, categoryRef.current, symNow);
 
     tickAnalysis();
   }, [screenWidth, cameraHeight]);
@@ -1359,6 +1455,22 @@ export default function FormCoach() {
       </View>
 
       <ScrollView style={styles.feedbackPanel} contentContainerStyle={styles.feedbackContent}>
+        {/* Finish set → grade the reps and show the report card. */}
+        <TouchableOpacity
+          style={{
+            backgroundColor: Colors.primary, borderRadius: 100,
+            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+            paddingHorizontal: 14, paddingVertical: 11,
+          }}
+          onPress={finishSet}
+          activeOpacity={0.85}
+        >
+          <Check size={15} color={Colors.accentInk} strokeWidth={3} />
+          <Text style={{ fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 0.3 }}>
+            FINISH SET &amp; GRADE
+          </Text>
+        </TouchableOpacity>
+
         {canAccess('video_review') && (
           <TouchableOpacity
             style={{
@@ -1438,6 +1550,77 @@ export default function FormCoach() {
           Stop immediately if you feel pain. Pose detection is a guide — your trainer&apos;s eyes are final.
         </Text>
       </ScrollView>
+
+      {/* ── END-OF-SET REPORT CARD ─────────────────────────────────────────── */}
+      {setReport && (
+        <View style={styles.reportOverlay}>
+          <View style={styles.reportCard}>
+            <Text style={styles.reportEyebrow}>{claudePersonaLabel} · SET REPORT</Text>
+
+            <View style={styles.reportScoreRow}>
+              <Text style={[styles.reportScore, { color: Colors.primary }]}>{setReport.avgScore}</Text>
+              <View>
+                <Text style={styles.reportScoreLabel}>QUALITY</Text>
+                <Text style={styles.reportGrade}>
+                  {setReport.avgScore >= 90 ? 'A · Excellent'
+                    : setReport.avgScore >= 80 ? 'B · Strong'
+                    : setReport.avgScore >= 70 ? 'C · Solid'
+                    : setReport.avgScore >= 55 ? 'D · Work on it'
+                    : 'Keep grinding'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.reportStatsRow}>
+              <View style={styles.reportStat}>
+                <Text style={[styles.reportStatVal, { color: Colors.primary }]}>{setReport.reps}</Text>
+                <Text style={styles.reportStatLabel}>REPS</Text>
+              </View>
+              <View style={styles.reportStat}>
+                <Text style={[styles.reportStatVal, { color: Colors.primary }]}>{(setReport.avgTempoMs / 1000).toFixed(1)}s</Text>
+                <Text style={styles.reportStatLabel}>AVG TEMPO</Text>
+              </View>
+              <View style={styles.reportStat}>
+                <Text style={[styles.reportStatVal, { color: Colors.primary }]}>
+                  {setReport.bestRep ? Math.round(setReport.bestRep.bottomDeg) : '—'}°
+                </Text>
+                <Text style={styles.reportStatLabel}>BEST DEPTH</Text>
+              </View>
+            </View>
+
+            {/* Per-rep dots — green = clean, amber = flawed, tap-free glance */}
+            <View style={styles.reportDots}>
+              {setReport.data.map((r) => (
+                <View
+                  key={r.index}
+                  style={[
+                    styles.reportDot,
+                    { backgroundColor: r.score >= 80 ? Colors.primary : r.score >= 60 ? '#E0A81E' : '#DC4A3D' },
+                  ]}
+                />
+              ))}
+            </View>
+
+            {Object.keys(setReport.flawCounts).length > 0 ? (
+              <Text style={styles.reportFlaws}>
+                {Object.entries(setReport.flawCounts)
+                  .map(([f, n]) => `${n} ${f}`)
+                  .join(' · ')}
+              </Text>
+            ) : (
+              <Text style={styles.reportFlaws}>Every rep clean — nothing to fix.</Text>
+            )}
+
+            <TouchableOpacity
+              style={[styles.reportDone, { backgroundColor: Colors.primary }]}
+              onPress={() => setSetReport(null)}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.reportDoneText, { color: Colors.accentInk }]}>DONE</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -1470,6 +1653,32 @@ const styles = StyleSheet.create({
   },
   repPillCount: { fontFamily: Fonts.display, fontSize: 18, letterSpacing: 0.5, color: '#7DEBC4' },
   repPillAngle: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1, color: '#CFE8DD', marginTop: 1 },
+
+  // ── End-of-set report card ──
+  reportOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(6,15,12,0.72)', alignItems: 'center', justifyContent: 'center', padding: 24,
+  },
+  reportCard: {
+    width: '100%', maxWidth: 380, backgroundColor: Colors.surface, borderRadius: 20, padding: 22,
+  },
+  reportEyebrow: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, color: Colors.textTertiary, marginBottom: 14 },
+  reportScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
+  reportScore: { fontFamily: Fonts.display, fontSize: 64, letterSpacing: -2 },
+  reportScoreLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4, color: Colors.textTertiary },
+  reportGrade: { fontFamily: Fonts.displayMedium, fontSize: 18, color: Colors.text, marginTop: 2 },
+  reportStatsRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+  reportStat: {
+    flex: 1, backgroundColor: Colors.raised ?? 'rgba(10,31,25,0.04)', borderRadius: 12,
+    paddingVertical: 12, alignItems: 'center',
+  },
+  reportStatVal: { fontFamily: Fonts.display, fontSize: 22, letterSpacing: -0.5 },
+  reportStatLabel: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1, color: Colors.textTertiary, marginTop: 3 },
+  reportDots: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 },
+  reportDot: { width: 14, height: 14, borderRadius: 4 },
+  reportFlaws: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, textTransform: 'capitalize', marginBottom: 20 },
+  reportDone: { borderRadius: 100, paddingVertical: 14, alignItems: 'center' },
+  reportDoneText: { fontFamily: Fonts.display, fontSize: 14, letterSpacing: 1 },
   alignDebug: {
     position: 'absolute', bottom: 8, left: 8, right: 8,
     backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 6, padding: 6,
