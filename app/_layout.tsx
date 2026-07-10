@@ -203,7 +203,10 @@ function RootNavigator() {
         }
       } catch { /* ignore */ }
     };
-    const timer = setInterval(checkAndRoute, 1000);
+    // Poll every 2.5s (was 1s). A coach call rings for far longer than that, so
+    // in-app routing still feels instant — but we stop hammering the native
+    // notifications bridge every single second for the whole app lifetime.
+    const timer = setInterval(checkAndRoute, 2500);
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') checkAndRoute(); });
     return () => { clearInterval(timer); sub.remove(); };
   }, [router]);
@@ -271,12 +274,13 @@ function RootLayout() {
   });
   const loading = useAuthStore((s) => s.loading);
 
-  // Hold the logo splash for a deliberate minimum (~1.6s) so it reads as a
-  // branded intro like other apps — instead of flashing away the instant fonts
-  // + auth resolve. We hide once BOTH the app is ready AND the min time passed.
+  // Hold the logo splash for a SHORT minimum (~700ms) so it still reads as a
+  // branded intro without feeling like a wait. We hide once BOTH the app is
+  // ready AND the min time passed. (Was 1600ms — too long; the app felt slow to
+  // open even when fonts + auth resolved instantly.)
   const [minSplashElapsed, setMinSplashElapsed] = useState(false);
   useEffect(() => {
-    const t = setTimeout(() => setMinSplashElapsed(true), 1600);
+    const t = setTimeout(() => setMinSplashElapsed(true), 700);
     return () => clearTimeout(t);
   }, []);
 
