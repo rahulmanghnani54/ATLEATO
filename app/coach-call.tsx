@@ -103,6 +103,8 @@ function CoachCallInner() {
   const [ending, setEnding] = useState(false);  // user tapped End — waiting for real disconnect
   const [offline, setOffline] = useState(false);  // couldn't reach live AI — spoke offline line
   const endTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const connectWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);  // fires if the live call never connects
+  const offlineRef = useRef(false);      // guard so the offline fallback runs exactly once
 
   // endSession() is typed to return void (the SDK fires teardown internally), so
   // we can't .catch() it — just guard a synchronous throw / stray promise.
@@ -120,6 +122,7 @@ function CoachCallInner() {
     if (endedRef.current) return;
     endedRef.current = true;
     if (endTimerRef.current) { clearTimeout(endTimerRef.current); endTimerRef.current = null; }
+    if (connectWatchdogRef.current) { clearTimeout(connectWatchdogRef.current); connectWatchdogRef.current = null; }
     hideOnCallNotification();
     silence();        // stop any offline TTS line still speaking
     safeEnd();
@@ -134,6 +137,23 @@ function CoachCallInner() {
     // screen. Fall back to the home tabs in that case.
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)');
+  };
+
+  // Fall back to the phone's OWN offline voice when the live call can't be
+  // reached — whether startSession throws (no internet) OR the connection stalls
+  // and never fires onConnect (the watchdog). The coach STILL wakes you with a
+  // device-TTS line; you're never left staring at a dead "Connecting…" forever.
+  const goOffline = (why: 'error' | 'timeout') => {
+    if (connectedRef.current || endedRef.current || offlineRef.current) return;
+    offlineRef.current = true;
+    if (connectWatchdogRef.current) { clearTimeout(connectWatchdogRef.current); connectWatchdogRef.current = null; }
+    safeEnd();  // kill any half-open session so its audio can't overlap the offline line
+    const copy = getCallCopy(persona, kind);
+    const first = profile?.full_name?.trim().split(/\s+/)[0] || '';
+    try { silence(); speakAs(personaId, (first ? first + '. ' : '') + copy.body); } catch { /* ignore */ }
+    console.log('[call] offline fallback (' + why + ')');
+    setOffline(true);
+    setError('Couldn’t reach your live coach right now — here’s your wake-up:\n\n“' + copy.body + '”');
   };
 
   // Log every status change so we can see exactly where a connection stalls.
@@ -195,6 +215,8 @@ function CoachCallInner() {
           dynamicVariables,
           onConnect: () => {
             connectedRef.current = true; console.log('[call] onConnect');
+            // Connected for real — cancel the "never connected" watchdog.
+            if (connectWatchdogRef.current) { clearTimeout(connectWatchdogRef.current); connectWatchdogRef.current = null; }
             showOnCallNotification(persona.fullName, persona.accent);  // status-bar "on call" chip
           },
           onDisconnect: (d: any) => {
@@ -210,24 +232,23 @@ function CoachCallInner() {
           onError: (m: unknown) => { console.log('[call] onError ' + String(m)); setError(String(m)); },
         };
         if (pc.voiceId) cfg.overrides = { tts: { voiceId: pc.voiceId } };
+        // WATCHDOG: if the agent doesn't actually connect within 12s (WebRTC
+        // stalls, or the ElevenLabs agent never answers), stop waiting forever —
+        // tear the dead session down and fall back to the offline wake-up voice.
+        // Cleared the instant onConnect fires.
+        connectWatchdogRef.current = setTimeout(() => goOffline('timeout'), 12000);
         await startSession(cfg);
         console.log('[call] startSession resolved');
       } catch (e: any) {
         console.log('[call] catch ' + (e?.message ?? e));
         // Couldn't reach the live AI (almost always: no internet). Don't fail
-        // silently — the coach still WAKES you: speak a motivational line via the
-        // phone's OWN offline voice (device TTS), and show it on screen + End call.
-        const copy = getCallCopy(persona, kind);
-        const first = profile?.full_name?.trim().split(/\s+/)[0] || '';
-        // Stop any in-flight audio from the failed connect before the offline
-        // voice speaks — prevents overlapping/garbled TTS.
-        try { silence(); speakAs(personaId, (first ? first + '. ' : '') + copy.body); } catch { /* ignore */ }
-        setOffline(true);
-        setError('Couldn’t reach your live coach right now — here’s your wake-up:\n\n“' + copy.body + '”');
+        // silently — the coach still WAKES you via the phone's OWN offline voice.
+        goOffline('error');
       }
     })();
     return () => {
       if (endTimerRef.current) clearTimeout(endTimerRef.current);
+      if (connectWatchdogRef.current) clearTimeout(connectWatchdogRef.current);
       hideOnCallNotification();
       safeEnd();
     };

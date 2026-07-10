@@ -64,8 +64,11 @@ async function buildUserContext(
   // deno-lint-ignore no-explicit-any
   supabase: any, userId: string, personaName: string,
 ): Promise<string> {
+  // Context is a NICE-TO-HAVE for the system prompt — it must NEVER add seconds
+  // to the reply. Cap each query hard at 1.2s: a slow/cold table degrades to
+  // "no context" instead of stalling the whole conversation.
   const guard = <T,>(p: PromiseLike<T>) =>
-    Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), 4000))]);
+    Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), 1200))]);
   try {
     const [profileRes, workoutsRes, prsRes] = await Promise.all([
       guard(supabase.from('profiles').select('full_name, goal, weight_kg, height_cm, activity_level, date_of_birth').eq('id', userId).single()),
@@ -155,10 +158,17 @@ serve(async (req) => {
 
     const reply = await callClaude(systemPrompt, messages, 600);
 
-    await supabase.from('chat_messages').insert([
+    // Persist the turn WITHOUT making the user wait on a DB write to see the
+    // reply. EdgeRuntime.waitUntil keeps the isolate alive to finish the insert
+    // AFTER the response is already on its way back.
+    const persist = supabase.from('chat_messages').insert([
       { user_id: user.id, persona, role: 'user', content: message },
       { user_id: user.id, persona, role: 'assistant', content: reply },
     ]);
+    // deno-lint-ignore no-explicit-any
+    const edgeRuntime = (globalThis as any).EdgeRuntime;
+    if (edgeRuntime?.waitUntil) edgeRuntime.waitUntil(persist);
+    else void persist.then(() => {}, () => {}); // best-effort; never block the reply
 
     return jsonResponse({ reply, persona });
   } catch (e) {
