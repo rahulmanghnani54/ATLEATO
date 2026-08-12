@@ -17,10 +17,11 @@ import {
   ArrowLeft, ChevronRight, ArrowUpRight, ArrowDownRight, ExternalLink,
   Zap, Trophy, Gift, Handshake, DollarSign, Camera, Users, User as UserIcon,
   Phone, Volume2, Mic, Globe, Share2, Unlock, Ticket, Award, RotateCcw,
-  Flame, Calendar,
+  Flame, Calendar, Monitor, Sun, Moon, Check,
 } from 'lucide-react-native';
 import { getUserTier, canAccess } from '@/lib/featureGates';
 import { personaFromProgramId } from '@/lib/personaTheme';
+import { useTheme, type ThemeMode } from '@/lib/theme';
 
 const PROGRAM_NAMES: Record<string, string> = {
   cbum_evolved:          'The Sculptor Method',
@@ -44,6 +45,18 @@ const ACTIVITY_LABELS: Record<string, string> = {
   very_active:       'Very Active',
   extremely_active:  'Extremely Active',
 };
+
+// Icon typed to SettingsRow's own prop shape so these rows stay plain SettingsRows.
+const APPEARANCE_OPTIONS: {
+  mode: ThemeMode;
+  label: string;
+  sub: string;
+  Icon: React.ComponentType<{ size?: number; color?: string }>;
+}[] = [
+  { mode: 'system', label: 'System', sub: 'Follow your device appearance', Icon: Monitor },
+  { mode: 'light',  label: 'Light',  sub: 'Always light',                  Icon: Sun },
+  { mode: 'dark',   label: 'Dark',   sub: 'Always dark',                   Icon: Moon },
+];
 
 function SettingsGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -104,6 +117,9 @@ export default function ProfileScreen() {
 
   // Voice cues — toggle that lives in the settings list below
   const voice = useVoiceCues();
+
+  // Appearance — setMode repaints the tree immediately, so no restart prompt.
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
 
   const age = profile?.date_of_birth ? getAgeFromDOB(profile.date_of_birth) : null;
   const programColor = personaFromProgramId(profile?.selected_program).accent;
@@ -552,6 +568,28 @@ export default function ProfileScreen() {
               />
             </>
           )}
+        </SettingsGroup>
+
+        {/* ── Appearance ── Deliberately not __DEV__-gated: this is a user
+            setting and has to ship in release builds. */}
+        <SettingsGroup title="Appearance">
+          {APPEARANCE_OPTIONS.map(({ mode, label, sub, Icon }, i) => {
+            const active = themeMode === mode;
+            return (
+              <View key={mode}>
+                {i > 0 && <View style={styles.rowDivider} />}
+                <SettingsRow
+                  Icon={Icon}
+                  iconColor={active ? programColor : undefined}
+                  label={label}
+                  sub={sub}
+                  trailIcon={active ? Check : undefined}
+                  trailColor={programColor}
+                  onPress={() => setThemeMode(mode)}
+                />
+              </View>
+            );
+          })}
         </SettingsGroup>
 
         {/* ── About Evulto ── */}

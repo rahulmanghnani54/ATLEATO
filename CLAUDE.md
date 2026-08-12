@@ -77,7 +77,7 @@ AI fitness coaching app. Pre-launch: collecting a waitlist while finishing the a
 - **Services:** Anthropic Claude (edge functions), Lemon Squeezy (payments), Resend (email), Expo Push, Notifee (calls).
 - **Marketing site:** static `docs/` served by GitHub Pages at atleato.com (CNAME in `docs/`). Root `index.html`/`main.js` are stale duplicates — **edit `docs/`**.
 
-## Build / deploy commands (run from C:\Dev\fitai-pro-app)
+## Build / deploy commands (run from D:\Dev\fitai-pro-app)
 - App APK: `eas build -p android --profile preview`
 - DB migrations: `supabase db push` (applies pending only)
 - Edge function: `supabase functions deploy <name>` (cron ones add `--no-verify-jwt`)

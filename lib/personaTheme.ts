@@ -24,9 +24,19 @@ export interface PersonaTheme {
   initials: string;        // "TS"
 
   // ── Visual ───────────────────────────────────────────────────────────────
-  accent: string;          // primary accent color
+  accent: string;          // BRAND colour — fills only (buttons, rings, chips)
   accentSoft: string;      // 12% tint for backgrounds
-  ink: string;             // text color on the accent (light/dark text)
+  ink: string;             // text ON the accent fill — dark or white, whichever clears AA
+  // Set ONLY when `accent` is too light to be used as text on a light page.
+  // Buttons keep the brand colour; text switches to this. `personaAccent()`
+  // falls back to `accent` when absent.
+  accentText?: string;
+  // Dark-scheme triplet. The light accents are tuned against white and fall
+  // under 4.5:1 on the dark bg (#0A0D0B), so dark needs its own hue-matched
+  // lift. Optional so a persona can opt out; `personaAccent()` falls back.
+  accentDark?: string;
+  accentSoftDark?: string;
+  inkDark?: string;
   textCase: 'normal' | 'upper';   // CT's UI is ALL CAPS, others normal
   vibe: string;            // single-word: "GOLDEN" / "CLINICAL" / "INTENSE" / "EVIDENCE" / "PRECISION"
 
@@ -68,9 +78,15 @@ const ARNOLD: PersonaTheme = {
   era: 'Old School Volume · Golden Era Mass',
   initials: 'TG',
 
+  // Brand gold restored — dark ink clears AA on it (5.20:1) where white did not.
   accent: '#B87A0E',
   accentSoft: 'rgba(184,122,14,0.14)',
-  ink: '#ffffff',
+  ink: '#0B1410',
+  accentText: '#9E680C',
+  // 9.00:1 on #0A0D0B — same 38° gold, luminance lifted off the dark ground.
+  accentDark: '#EEA01A',
+  accentSoftDark: 'rgba(238,160,26,0.18)',
+  inkDark: '#1A1103',
   textCase: 'normal',
   vibe: 'GOLDEN',
 
@@ -116,9 +132,17 @@ const CBUM: PersonaTheme = {
   era: 'Classic Aesthetics · Modern Physique Specialist',
   initials: 'TS',
 
+  // BRAND emerald — kept exactly as-is. White ink on it is only 2.54:1, so the
+  // fill carries dark ink instead (7.38:1); accentText covers the text case.
   accent: '#12B981',
   accentSoft: 'rgba(18,185,129,0.14)',
-  ink: '#ffffff',
+  ink: '#0B1410',
+  accentText: '#0A7D4D',
+  // 10.91:1 on #0A0D0B — kept the brightest green so it stays readable next to
+  // The Architect, whose hue is only ~2° away.
+  accentDark: '#2FDB9C',
+  accentSoftDark: 'rgba(47,219,156,0.18)',
+  inkDark: '#04140E',
   textCase: 'normal',
   vibe: 'PRECISION',
 
@@ -166,7 +190,12 @@ const NIPPARD: PersonaTheme = {
 
   accent: '#3E72D6',
   accentSoft: 'rgba(62,114,214,0.14)',
-  ink: '#fafafa',
+  ink: '#ffffff',   // pure white — #fafafa fell just under AA on this fill
+  // 8.06:1 on #0A0D0B — blue carries the least luminance per unit chroma, so
+  // this one lifts furthest to clear AA.
+  accentDark: '#7BA5FF',
+  accentSoftDark: 'rgba(123,165,255,0.18)',
+  inkDark: '#050A16',
   textCase: 'normal',
   vibe: 'EVIDENCE',
 
@@ -214,7 +243,12 @@ const CT_FLETCHER: PersonaTheme = {
 
   accent: '#D6412A',
   accentSoft: 'rgba(214,65,42,0.14)',
-  ink: '#fafafa',
+  ink: '#ffffff',   // pure white — #fafafa fell just under AA on this fill
+  // 7.26:1 on #0A0D0B — red saturates out before it gets bright, so the lift
+  // runs through a coral tint rather than a deeper red.
+  accentDark: '#FF7259',
+  accentSoftDark: 'rgba(255,114,89,0.18)',
+  inkDark: '#1A0603',
   textCase: 'upper',
   vibe: 'INTENSE',
 
@@ -260,9 +294,18 @@ const DR_MIKE: PersonaTheme = {
   era: 'Hypertrophy & Periodization · Periodization Specialist',
   initials: 'DG',
 
-  accent: '#0E8C63',
-  accentSoft: 'rgba(14,140,99,0.14)',
+  // The only persona whose brand value had to move: #0E8C63 cleared NEITHER ink
+  // (white 4.24, dark 4.41). Nudged one step deeper to #0C7A53 so white ink hits
+  // 5.35:1. Still 160° — and now a full step below The Sculptor's brand green,
+  // which is what keeps the two same-hue coaches apart on a light ground.
+  accent: '#0C7A53',
+  accentSoft: 'rgba(12,122,83,0.14)',
   ink: '#ffffff',
+  // 7.28:1 on #0A0D0B — held deliberately below The Sculptor's green so the
+  // two personas stay tellable apart on a dark ground.
+  accentDark: '#19B385',
+  accentSoftDark: 'rgba(25,179,133,0.18)',
+  inkDark: '#04140E',
   textCase: 'normal',
   vibe: 'CLINICAL',
 
@@ -338,6 +381,33 @@ export function quoteOfTheDay(persona: PersonaTheme): string {
 export function nutritionTipOfTheDay(persona: PersonaTheme): string {
   const day = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
   return persona.nutrition.advice[day % persona.nutrition.advice.length];
+}
+
+/**
+ * Resolve a persona's accent triplet for the active scheme.
+ * Falls back to the light values whenever a dark override is missing, so a
+ * persona without a dark triplet still renders (just under-contrasted).
+ */
+export function personaAccent(
+  p: PersonaTheme,
+  scheme: 'light' | 'dark',
+): { accent: string; accentSoft: string; ink: string; accentText: string } {
+  if (scheme === 'dark') {
+    const accent = p.accentDark ?? p.accent;
+    return {
+      accent,
+      accentSoft: p.accentSoftDark ?? p.accentSoft,
+      ink: p.inkDark ?? p.ink,
+      // Dark accents are already lifted for the dark ground, so they double as text.
+      accentText: accent,
+    };
+  }
+  return {
+    accent: p.accent,
+    accentSoft: p.accentSoft,
+    ink: p.ink,
+    accentText: p.accentText ?? p.accent,
+  };
 }
 
 /** Apply the persona's text-case rule. CT shouts; the others speak normally. */

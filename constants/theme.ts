@@ -1,87 +1,86 @@
 /**
- * Evulto Theme — Direction C (Nike/Telegram)
+ * Evulto Theme — Bold Canvas.
  *
- * Migrated from v0 (Apple/Stark dark + volt-green everywhere + Anton+Mono+Inter triad)
- * to v1 (warmer dark + persona-accent primary + Plus Jakarta Sans + Inter +
- * volt-green RESERVED for system actions only).
+ * `Colors` is the STATIC light palette, kept only for backward compatibility:
+ * ~85 files still import it, so every key name it has ever exported must stay
+ * exported. The NAMES are frozen; the VALUES now come from the Bold Canvas
+ * light tokens, so non-migrated screens pick up the new palette for free.
  *
- * Migration discipline:
- *   - Existing screens keep working — every v0 token name has been preserved
- *     and just re-pointed to the v1 equivalent. No breaking changes.
- *   - New screens should use the new tokens directly (Colors.bgWarm,
- *     Fonts.displayBold, etc).
- *   - The volt-green is still accessible as Colors.systemAccent — use ONLY
- *     for toggles, switches, and other system controls.
+ * Screens migrate off this object to useTheme() wave by wave — useTheme() is
+ * the only way to get the dark scheme and the crown tokens, which a static
+ * light-only object cannot express. Do not add keys here; add them to
+ * constants/tokens.ts instead.
  */
 
+import { TOKENS } from '@/constants/tokens';
+
+const L = TOKENS.light;
+
 // ─────────────────────────────────────────────────────────────────────────────
-// COLORS
+// COLORS — legacy surface. Left column = frozen legacy name, right = Bold Canvas.
 // ─────────────────────────────────────────────────────────────────────────────
 export const Colors = {
-  // ── EVULTO LIGHT (emerald) — flipped from Direction-C dark 2026-07-02 ──────
-  // Same token NAMES (screens reference them); only the VALUES changed to the
-  // premium light-emerald palette that matches the website.
   // ── Surfaces ───────────────────────────────────────────────────────────────
-  bg: '#F4F7F5',              // Paper base
-  background: '#F4F7F5',
-  bgWarm: '#EEF3F0',          // slightly tinted for hero backgrounds
-  surface: '#FFFFFF',          // white card surface
-  surfaceWarm: '#FFFFFF',
-  raised: '#FFFFFF',
-  raisedWarm: '#F4F7F5',
+  // Legacy `bg` is the tinted page that white cards sit ON, so it maps to
+  // bgAlt, not bg — pure white here would flatten every un-migrated card.
+  bg: L.bgAlt,
+  background: L.bgAlt,
+  bgWarm: L.surfaceAlt,        // one step deeper than the page (hero backgrounds)
+  surface: L.surface,
+  surfaceWarm: L.surface,      // no warm variant in Bold Canvas
+  raised: L.surface,
+  raisedWarm: L.surfaceAlt,
 
   // ── Borders ────────────────────────────────────────────────────────────────
-  border: 'rgba(10,31,25,0.08)' as string,
-  borderStrong: 'rgba(10,31,25,0.16)' as string,
-  borderWarm: 'rgba(18,185,129,0.16)' as string,   // emerald-tinted border
+  border: L.border,
+  borderStrong: L.borderStrong,
+  borderWarm: L.accentLine,    // emerald-tinted border → the emerald line token
 
-  // ── Text (Forest Ink on Paper) ──────────────────────────────────────────────
-  text: '#0A1F19',
-  textSecondary: 'rgba(10,31,25,0.62)',
-  textTertiary: 'rgba(10,31,25,0.40)',
-  textMuted: 'rgba(10,31,25,0.50)',
+  // ── Text ───────────────────────────────────────────────────────────────────
+  text: L.text,
+  textSecondary: L.textSecondary,
+  textTertiary: L.textTertiary,
+  // Legacy 0.50 alpha sits between the two rungs; secondary is the safe side —
+  // tertiary (0.42) would drop muted body copy below AA.
+  textMuted: L.textSecondary,
 
-  // ── PRIMARY — Evulto emerald ─────────────────────────────────────────────
-  // Default accent: non-persona buttons, brand moments, the ring logo.
-  primary: '#12B981',
-  primaryDeep: '#0FA968',
-  primaryLight: 'rgba(18,185,129,0.14)',
-  accentInk: '#ffffff',                              // text on emerald buttons
+  // ── PRIMARY — Bold Canvas emerald ──────────────────────────────────────────
+  primary: L.accent,
+  primaryDeep: L.accentText,   // the AA-on-light emerald; safe as text
+  primaryLight: L.accentSoft,
+  accentInk: L.accentInk,      // text on emerald fills
 
-  // ── SYSTEM accent — OS-level controls (toggles/switches) ──────────────────
-  // Was volt-green (#dfff1f) — invisible on a light bg — now emerald so it
-  // stays visible. Reserved for system controls only.
-  systemAccent: '#12B981',
-  systemAccentSoft: 'rgba(18,185,129,0.14)',
+  // ── SYSTEM accent — OS-level controls (toggles/switches) ───────────────────
+  systemAccent: L.accent,
+  systemAccentSoft: L.accentSoft,
 
   // ── Status ─────────────────────────────────────────────────────────────────
-  success: '#39e08a',
-  warning: '#ffb13a',
-  error: '#ff5b3a',
-  info: '#5b8cff',
-  danger: '#ff5b3a',
-  good: '#39e08a',
-  warn: '#ffb13a',
+  success: L.success,
+  warning: L.warning,
+  error: L.danger,             // Bold Canvas has one negative token
+  info: L.info,
+  danger: L.danger,
+  good: L.success,
+  warn: L.warning,
 
   // ── Macros ─────────────────────────────────────────────────────────────────
-  macroProtein: '#5b8cff',
-  macroCarbs: '#ffb13a',                             // (was volt — moved to warn-yellow)
-  macroFat: '#ff8c3a',
+  macroProtein: L.macroProtein,
+  macroCarbs: L.macroCarbs,
+  macroFat: L.macroFat,
 
-  // ── Persona accents (for ref — actual per-persona colors live in
-  //     lib/personaTheme.ts; these are just so screens that don't have a
-  //     persona context can fall back gracefully) ──────────────────────────
-  // Darkened for light-mode contrast (readable on Paper; match lib/personaTheme.ts)
-  personaSculptor:  '#12B981',
-  personaMonument:  '#B87A0E',
-  personaAnalyst:   '#3E72D6',
-  personaCommander: '#D6412A',
-  personaArchitect: '#0E8C63',
+  // ── Persona accents — fallbacks only; the real per-persona colors live in
+  //     lib/personaTheme.ts. Bold Canvas has no persona ramp, so each one
+  //     borrows the closest semantic hue.
+  personaSculptor:  L.accent,
+  personaMonument:  L.warning,
+  personaAnalyst:   L.info,
+  personaCommander: L.danger,
+  personaArchitect: L.accentText,
 
   // ── Legacy aliases (DO NOT REMOVE — existing screens reference these) ────
-  dark: '#0a0b0d',
-  ink: '#0a0b0d',
-  primaryDim: '#b4d018',                             // legacy v0 — now points at olive
+  dark: L.crown,
+  ink: L.text,
+  primaryDim: L.accentText,    // v0 olive, retired — nearest is the deep emerald
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────

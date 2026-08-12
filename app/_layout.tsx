@@ -27,6 +27,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { ThemeProvider, useTheme } from '@/lib/theme';
+import { useThemeStore } from '@/stores/themeStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import {
@@ -72,6 +74,7 @@ function RootNavigator() {
   const segments = useSegments();
   const glob = useGlobalSearchParams<{ fromProfile?: string }>();
   const { user, profile, loading, setUser, setSession, setLoading, fetchProfile } = useAuthStore();
+  const { tokens } = useTheme();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -254,11 +257,32 @@ function RootNavigator() {
     syncAppIconToCoach(personaId);
   }, [profile?.selected_program]);
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  // contentStyle overrides React Navigation's default light card background —
+  // without it every screen (and every push transition) paints white under the
+  // dark scheme. In light mode tokens.bg is #FFFFFF, so this is a no-op there.
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: tokens.bg } }} />
+  );
+}
+
+// Consumes useTheme(), so it has to sit BELOW <ThemeProvider> — RootLayout mounts
+// the provider and therefore can't read the context it is creating.
+function ThemedShell() {
+  const { tokens, scheme } = useTheme();
+  return (
+    <View style={{ flex: 1, backgroundColor: tokens.bg }}>
+      <StatusBar
+        barStyle={scheme === 'dark' ? 'light-content' : 'dark-content'}
+        backgroundColor={tokens.bg}
+      />
+      <OfflineBanner />
+      <RootNavigator />
+    </View>
+  );
 }
 
 function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     Inter_400Regular,
     Inter_500Medium,
     Inter_600SemiBold,
@@ -272,7 +296,20 @@ function RootLayout() {
     JetBrainsMono_400Regular,
     JetBrainsMono_500Medium,
   });
+  // useFonts leaves `loaded` false forever when a face fails to resolve, which
+  // would pin the app on the splash screen permanently. Missing fonts degrade to
+  // the system face — a dead launch is the far worse outcome.
+  const fontsReady = fontsLoaded || !!fontError;
   const loading = useAuthStore((s) => s.loading);
+  const hydrateTheme = useThemeStore((s) => s.hydrate);
+  const themeHydrated = useThemeStore((s) => s.hydrated);
+
+  // Kick off theme hydration here rather than leaving it to ThemeProvider: this
+  // component renders null until the fonts resolve, so the provider mounts late
+  // and the AsyncStorage read would be serialised behind font loading.
+  useEffect(() => {
+    hydrateTheme();
+  }, [hydrateTheme]);
 
   // Hold the logo splash for a SHORT minimum (~700ms) so it still reads as a
   // branded intro without feeling like a wait. We hide once BOTH the app is
@@ -284,20 +321,20 @@ function RootLayout() {
     return () => clearTimeout(t);
   }, []);
 
+  // themeHydrated gates the hide too — painting the default scheme and then
+  // flipping once storage resolves is worse than a few more ms of splash.
   useEffect(() => {
-    if (fontsLoaded && !loading && minSplashElapsed) SplashScreen.hideAsync();
-  }, [fontsLoaded, loading, minSplashElapsed]);
+    if (fontsReady && !loading && minSplashElapsed && themeHydrated) SplashScreen.hideAsync();
+  }, [fontsReady, loading, minSplashElapsed, themeHydrated]);
 
-  if (!fontsLoaded) return null;
+  if (!fontsReady) return null;
 
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <View style={{ flex: 1, backgroundColor: '#F4F7F5' }}>
-          <StatusBar barStyle="dark-content" backgroundColor="#F4F7F5" />
-          <OfflineBanner />
-          <RootNavigator />
-        </View>
+        <ThemeProvider>
+          <ThemedShell />
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
