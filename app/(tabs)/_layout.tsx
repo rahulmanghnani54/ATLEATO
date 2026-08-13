@@ -49,6 +49,14 @@ const BAR_GAP = 16;          // distance from the safe-area bottom edge
 const BAR_INSET = 16;        // distance from the left/right screen edges
 const BAR_RADIUS = BAR_HEIGHT / 2;   // fully rounded — a pill, not a card
 
+/**
+ * Width of one tab's icon+label slot. The longest labels ("TRAIN", "COACH")
+ * are 5 JetBrains Mono glyphs: 5 * (0.6em * 8.5 + 1.36 tracking) = 32.3pt.
+ * 46 clears that by ~14pt and still fits the 47.6pt a 320dp screen affords,
+ * so the labels survive both the narrowest Android (360dp) and small iPhones.
+ */
+const LABEL_SLOT = 46;
+
 // 16 + 64 + 16 clearance = 96 = TAB_BAR_SPACE. Referenced (not just noted) so
 // the two drift apart loudly at build time rather than silently on screen.
 const _GEOMETRY_MATCHES_KIT: 96 = TAB_BAR_SPACE;
@@ -119,6 +127,7 @@ export default function TabsLayout() {
         // A pill floating over a raised keyboard reads as a bug, not a design.
         tabBarHideOnKeyboard: true,
         tabBarItemStyle: styles.tabItem,
+        tabBarIconStyle: styles.iconWrap,
         tabBarBackground: () => (
           <BlurView
             // Android's blur is opt-in and costs frames on a bar that is always
@@ -225,6 +234,15 @@ const styles = StyleSheet.create({
     height: BAR_HEIGHT,
     paddingVertical: 0,
   },
+  // react-navigation renders whatever `tabBarIcon` returns inside a slot hard-
+  // coded to 31pt wide (TabBarIcon's `wrapperUikit`, sized for a bare UIKit
+  // glyph). Our icon carries a label, and "TRAIN"/"COACH" measure 32.3pt — so
+  // they ellipsised at that ceiling while the shorter three did not. The slot
+  // is the clip, not the tab: each tab gets (360 - 2*16)/5 - 10pt of pressable
+  // padding = 55.6pt at Android's narrowest common width, so widening the slot
+  // to LABEL_SLOT still leaves air on both sides. Overriding here rather than
+  // inside TabIcon keeps the badge, which anchors to this slot, correctly placed.
+  iconWrap: { width: LABEL_SLOT },
   item: {
     alignItems: 'center',
     justifyContent: 'center',

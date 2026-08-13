@@ -10,17 +10,98 @@
  * safe area, so content would otherwise sit under it on gesture-nav devices.
  */
 
-import { type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   ScrollView,
+  StatusBar,
   StyleSheet,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
   type ScrollViewProps,
   type StyleProp,
   type ViewStyle,
 } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/lib/theme';
+
+/**
+ * A <Crown> rendered INSIDE a scroller registers here, which hands the status
+ * bar to that scroller: only it knows whether the dark crown is still under the
+ * bar. A crown pinned OUTSIDE a scroller (onboarding, workout-session) reads
+ * null and keeps the bar itself — it never moves.
+ */
+const CrownSlotContext = createContext<((height: number) => void) | null>(null);
+
+/** Wrap a hand-rolled scroller in this to opt into `useCrownStatusBar`. */
+export const CrownSlot = CrownSlotContext.Provider;
+
+export function useCrownSlot() {
+  return useContext(CrownSlotContext);
+}
+
+/**
+ * Keeps the status-bar icons legible over a crown that scrolls.
+ *
+ * The crown paints its own ink under the bar and needs light icons while it is
+ * up there — but once it scrolls away the LIGHT body is what sits behind the
+ * bar, and white-on-white leaves the clock and battery invisible.
+ *
+ * One owner on purpose: two components pushing entries onto RN's StatusBar
+ * stack resolve by mount order, and refocusing a scrolled-down tab remounts the
+ * crown's entry on top of the scroller's.
+ */
+export function useCrownStatusBar() {
+  const { scheme } = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const [crownHeight, setCrownHeight] = useState(0);
+  const [crownGone, setCrownGone] = useState(false);
+
+  const registerCrown = useCallback((height: number) => {
+    setCrownHeight((prev) => (prev === height ? prev : height));
+  }, []);
+
+  const onScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (crownHeight <= 0) return;
+      const next = e.nativeEvent.contentOffset.y > crownHeight - insets.top;
+      setCrownGone((prev) => (prev === next ? prev : next));
+    },
+    [crownHeight, insets.top],
+  );
+
+  // Scoped to FOCUS, not mount: a crowned tab stays mounted underneath a pushed
+  // light screen (profile, add-food), and an unconditional entry on the
+  // StatusBar stack would leave that screen with white-on-white icons.
+  //
+  // Gated on a registered crown so an uncrowned screen — which owns no status
+  // bar and has nothing to toggle — is not re-rendered on every focus change.
+  const [focused, setFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (crownHeight <= 0) return;
+      setFocused(true);
+      return () => setFocused(false);
+    }, [crownHeight]),
+  );
+
+  const statusBar =
+    crownHeight > 0 && focused ? (
+      <StatusBar
+        barStyle={crownGone && scheme === 'light' ? 'dark-content' : 'light-content'}
+      />
+    ) : null;
+
+  return { registerCrown, onScroll, statusBar };
+}
 
 /**
  * Room a scrolling screen must leave below its last element so nothing hides
@@ -60,6 +141,7 @@ export function CanvasScreen({
 }: CanvasScreenProps) {
   const { tokens } = useTheme();
   const insets = useSafeAreaInsets();
+  const { registerCrown, onScroll, statusBar } = useCrownStatusBar();
 
   const paddingTop = topInset ? insets.top : 0;
   const paddingBottom =
@@ -77,17 +159,22 @@ export function CanvasScreen({
   }
 
   return (
-    <ScrollView
-      testID={testID}
-      style={[container, style]}
-      contentContainerStyle={[inner, contentStyle]}
-      contentInsetAdjustmentBehavior="never"
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      refreshControl={refreshControl}
-    >
-      {children}
-    </ScrollView>
+    <CrownSlot value={registerCrown}>
+      {statusBar}
+      <ScrollView
+        testID={testID}
+        style={[container, style]}
+        contentContainerStyle={[inner, contentStyle]}
+        contentInsetAdjustmentBehavior="never"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        refreshControl={refreshControl}
+        onScroll={onScroll}
+        scrollEventThrottle={32}
+      >
+        {children}
+      </ScrollView>
+    </CrownSlot>
   );
 }
 

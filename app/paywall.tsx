@@ -1,20 +1,36 @@
 // app/paywall.tsx
 /**
- * /paywall — Full-screen upgrade modal.
+ * /paywall — Full-screen upgrade modal, Bold Canvas.
  *
  * Shows PRO and LEGEND tier cards with monthly/yearly toggle.
  * Yearly is pre-selected with SAVE badges (15% PRO, 20% LEGEND).
  * Optional ?feature= param customizes the header to "Unlock [Feature]".
+ *
+ * Layout: the dark <Crown> carries the value proposition AND the billing-period
+ * switch (a decision made before any price is read), so the light body below can
+ * be nothing but the two offers. Price is the hero numeral on both plans —
+ * Legend's is the largest thing on the screen.
+ *
+ * The accent is spent exactly once, on the recommended plan: the RECOMMENDED
+ * chip and the Legend CTA. Pro's CTA is outlined so the eye has one obvious
+ * target. Neither plan is a bordered card — Legend sits in a full-bleed
+ * surfaceAlt band (radius 0, edge to edge) and Pro sits on the bare page, which
+ * is what separates them.
+ *
+ * Pricing, product ids, purchase/restore handlers and the "coming soon" Alert
+ * are untouched — this file is presentation only.
  */
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
+  View, Text, StyleSheet,
   Alert, ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { X as XIcon, Check } from 'lucide-react-native';
+import { BigStat, CanvasScreen, Crown, Hairline } from '@/components/ui/canvas';
+import { PressableScale } from '@/components/ui/motion';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { getFeatureLabel, type FeatureKey, getUserTier } from '@/lib/featureGates';
 import {
   purchaseSubscription, restorePurchases, getProductPrices,
@@ -23,6 +39,9 @@ import {
 
 type Period = 'monthly' | 'yearly';
 
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = Spacing.heroPad;
+
 const FALLBACK_PRICES: Record<string, string> = {
   [PRODUCT_IDS.PRO_MONTHLY]:    '$9.99',
   [PRODUCT_IDS.PRO_YEARLY]:     '$101.90',
@@ -30,8 +49,27 @@ const FALLBACK_PRICES: Record<string, string> = {
   [PRODUCT_IDS.LEGEND_YEARLY]:  '$191.90',
 };
 
+const PRO_FEATURES = [
+  '3 Legend Coaches',
+  'AI Form Correction (Live)',
+  'Reward Chests + Leaderboards',
+  'Physique Progress Photos',
+  'Custom Ringtone Picker',
+  'Unlimited Streak Freezes',
+];
+
+const LEGEND_FEATURES = [
+  'All 5 Legend Coaches',
+  'Everything in Pro',
+  '5-Min Snooze Re-Calls',
+  'Advanced Form AI + Video Review',
+  'Coach Voice Customization',
+];
+
 export default function PaywallScreen() {
   const router = useRouter();
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { feature } = useLocalSearchParams<{ feature?: string }>();
   const [period, setPeriod] = useState<Period>('yearly');
   const [prices, setPrices] = useState(FALLBACK_PRICES);
@@ -88,217 +126,318 @@ export default function PaywallScreen() {
     }
   };
 
+  const renderFeature = (label: string, tint: string) => (
+    <View key={label} style={styles.featureRow}>
+      <Check size={15} color={tint} strokeWidth={2.6} />
+      <Text style={styles.featureItem}>{label}</Text>
+    </View>
+  );
+
   return (
-    <SafeAreaView style={s.safe}>
-      <TouchableOpacity style={s.closeBtn} onPress={() => router.back()} hitSlop={10}>
-        <XIcon size={20} color={Colors.textSecondary} />
-      </TouchableOpacity>
-
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        <Text style={s.header}>{header}</Text>
-        <Text style={s.subheader}>Train under legends. Unlock everything.</Text>
-
-        {/* Period Toggle */}
-        <View style={s.toggleRow}>
-          <TouchableOpacity
-            style={[s.toggleBtn, period === 'monthly' && s.toggleActive]}
-            onPress={() => setPeriod('monthly')}
+    <CanvasScreen tabBar={false} bottomSpace={28}>
+      <Crown
+        eyebrow={featureLabel ? 'Locked feature' : 'Choose your plan'}
+        title={header}
+        meta="Train under legends. Unlock everything."
+        right={
+          <PressableScale
+            onPress={() => router.back()}
+            haptic="light"
+            scaleTo={0.92}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            style={styles.closeBtn}
           >
-            <Text style={[s.toggleText, period === 'monthly' && s.toggleTextActive]}>
-              Monthly
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[s.toggleBtn, period === 'yearly' && s.toggleActive]}
-            onPress={() => setPeriod('yearly')}
-          >
-            <Text style={[s.toggleText, period === 'yearly' && s.toggleTextActive]}>
-              Yearly
-            </Text>
-            <View style={s.saveBadge}>
-              <Text style={s.saveBadgeText}>Save 20%</Text>
-            </View>
-          </TouchableOpacity>
+            <XIcon size={19} color={tokens.crownText} />
+          </PressableScale>
+        }
+      >
+        {/* Billing period — a segmented switch on the crown, deliberately
+            monochrome: the accent belongs to the recommended plan below. */}
+        <View style={styles.toggleRow}>
+          {(['monthly', 'yearly'] as Period[]).map((p) => {
+            const active = period === p;
+            return (
+              <PressableScale
+                key={p}
+                onPress={() => setPeriod(p)}
+                haptic="light"
+                scaleTo={0.97}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={p === 'yearly' ? 'Bill yearly, save 20%' : 'Bill monthly'}
+                style={[styles.toggleBtn, active && styles.toggleActive]}
+              >
+                <Text style={[styles.toggleText, active && styles.toggleTextActive]}>
+                  {p === 'yearly' ? 'Yearly' : 'Monthly'}
+                </Text>
+                {p === 'yearly' ? (
+                  <Text style={[styles.toggleSave, active && styles.toggleSaveActive]}>
+                    Save 20%
+                  </Text>
+                ) : null}
+              </PressableScale>
+            );
+          })}
+        </View>
+      </Crown>
+
+      {/* ── PRO ── on the bare page: the quieter of the two offers. */}
+      <View style={styles.plan}>
+        <View style={styles.planHead}>
+          <Text style={styles.tierName}>Pro</Text>
+        </View>
+        <BigStat
+          value={prices[proId]}
+          unit={period === 'yearly' ? '/yr' : '/mo'}
+          label={period === 'yearly' ? 'Billed yearly · $8.49 per month' : 'Billed monthly'}
+          size={40}
+        />
+        {period === 'yearly' && (
+          <Text style={styles.saveNote}>Save 15%</Text>
+        )}
+
+        <Hairline style={styles.planRule} />
+
+        <View style={styles.featureList}>
+          {PRO_FEATURES.map((f) => renderFeature(f, tokens.textTertiary))}
         </View>
 
-        {/* PRO Card */}
-        <View style={s.card}>
-          <Text style={s.tierName}>Pro</Text>
-          <Text style={s.price}>{prices[proId]}</Text>
-          <Text style={s.pricePeriod}>
-            {period === 'yearly' ? '/year ($8.49/mo)' : '/month'}
-          </Text>
-          {period === 'yearly' && (
-            <View style={[s.saveBadgeInline, { backgroundColor: 'rgba(224,90,38,0.15)' }]}>
-              <Text style={[s.saveBadgeText, { color: '#e05a26' }]}>Save 15%</Text>
-            </View>
+        <PressableScale
+          onPress={() => handlePurchase(proId)}
+          haptic="medium"
+          scaleTo={0.97}
+          disabled={!!loading}
+          accessibilityRole="button"
+          accessibilityLabel="Subscribe to Pro"
+          style={[styles.cta, styles.ctaGhost]}
+        >
+          {loading === proId ? (
+            <ActivityIndicator color={tokens.text} />
+          ) : (
+            <Text style={[styles.ctaText, styles.ctaGhostText]}>Subscribe to Pro</Text>
           )}
-          <View style={s.featureList}>
-            {[
-              '3 Legend Coaches',
-              'AI Form Correction (Live)',
-              'Reward Chests + Leaderboards',
-              'Physique Progress Photos',
-              'Custom Ringtone Picker',
-              'Unlimited Streak Freezes',
-            ].map((f) => (
-              <View key={f} style={s.featureRow}>
-                <Check size={14} color={Colors.primary} strokeWidth={2.5} />
-                <Text style={s.featureItem}>{f}</Text>
-              </View>
-            ))}
+        </PressableScale>
+      </View>
+
+      {/* ── LEGEND ── the recommended plan: a full-bleed tonal band, and the one
+          place the accent is spent. */}
+      <View style={styles.planBand}>
+        <View style={styles.planHead}>
+          <Text style={styles.tierName}>Legend</Text>
+          <View style={styles.recommendedBadge}>
+            <Text style={styles.recommendedText}>Recommended</Text>
           </View>
-          <TouchableOpacity
-            style={s.subscribeBtn}
-            onPress={() => handlePurchase(proId)}
-            disabled={!!loading}
-          >
-            {loading === proId ? (
-              <ActivityIndicator color={Colors.bg} />
-            ) : (
-              <Text style={s.subscribeBtnText}>Subscribe to Pro</Text>
-            )}
-          </TouchableOpacity>
+        </View>
+        <BigStat
+          value={prices[legendId]}
+          unit={period === 'yearly' ? '/yr' : '/mo'}
+          label={period === 'yearly' ? 'Billed yearly · $15.99 per month' : 'Billed monthly'}
+          size={52}
+        />
+        {period === 'yearly' && (
+          <Text style={[styles.saveNote, styles.saveNoteAccent]}>Save 20%</Text>
+        )}
+
+        <Hairline style={styles.planRule} />
+
+        <View style={styles.featureList}>
+          {LEGEND_FEATURES.map((f) => renderFeature(f, tokens.accentText))}
         </View>
 
-        {/* LEGEND Card */}
-        <View style={[s.card, s.cardLegend]}>
-          <View style={s.recommendedBadge}>
-            <Text style={s.recommendedText}>Recommended</Text>
-          </View>
-          <Text style={s.tierName}>Legend</Text>
-          <Text style={s.price}>{prices[legendId]}</Text>
-          <Text style={s.pricePeriod}>
-            {period === 'yearly' ? '/year ($15.99/mo)' : '/month'}
-          </Text>
-          {period === 'yearly' && (
-            <View style={[s.saveBadgeInline, { backgroundColor: 'rgba(174,219,69,0.15)' }]}>
-              <Text style={[s.saveBadgeText, { color: Colors.primaryDeep }]}>Save 20%</Text>
-            </View>
+        <PressableScale
+          onPress={() => handlePurchase(legendId)}
+          haptic="heavy"
+          scaleTo={0.97}
+          disabled={!!loading}
+          accessibilityRole="button"
+          accessibilityLabel="Subscribe to Legend"
+          style={[styles.cta, styles.ctaSolid]}
+        >
+          {loading === legendId ? (
+            <ActivityIndicator color={tokens.accentInk} />
+          ) : (
+            <Text style={[styles.ctaText, styles.ctaSolidText]}>Subscribe to Legend</Text>
           )}
-          <View style={s.featureList}>
-            {[
-              'All 5 Legend Coaches',
-              'Everything in Pro',
-              '5-Min Snooze Re-Calls',
-              'Advanced Form AI + Video Review',
-              'Coach Voice Customization',
-            ].map((f) => (
-              <View key={f} style={s.featureRow}>
-                <Check size={14} color={Colors.primary} strokeWidth={2.5} />
-                <Text style={s.featureItem}>{f}</Text>
-              </View>
-            ))}
-          </View>
-          <TouchableOpacity
-            style={[s.subscribeBtn, s.subscribeBtnLegend]}
-            onPress={() => handlePurchase(legendId)}
-            disabled={!!loading}
-          >
-            {loading === legendId ? (
-              <ActivityIndicator color={Colors.bg} />
-            ) : (
-              <Text style={s.subscribeBtnText}>Subscribe to Legend</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        </PressableScale>
+      </View>
 
-        {/* Restore */}
-        <TouchableOpacity style={s.restoreBtn} onPress={handleRestore} disabled={restoring}>
-          <Text style={s.restoreText}>
+      {/* Restore */}
+      <View style={styles.footer}>
+        <PressableScale
+          onPress={handleRestore}
+          haptic="light"
+          scaleTo={0.97}
+          disabled={restoring}
+          accessibilityRole="button"
+          accessibilityLabel="Restore purchases"
+          style={styles.restoreBtn}
+        >
+          <Text style={styles.restoreText}>
             {restoring ? 'Restoring...' : 'Restore Purchases'}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
 
-        <Text style={s.legal}>
+        <Text style={styles.legal}>
           Payment will be charged to your Google Play account. Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period.
         </Text>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+    </CanvasScreen>
   );
 }
 
-const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { padding: Spacing.lg, paddingBottom: 60 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
   closeBtn: {
-    position: 'absolute', top: 52, right: 20, zIndex: 10,
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: Colors.raised, alignItems: 'center', justifyContent: 'center',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: t.crownLine,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  header: {
-    fontFamily: Fonts.display, fontSize: 28, color: Colors.text,
-    marginTop: 20, marginBottom: 6,
-  },
-  subheader: {
-    fontSize: 15, color: Colors.textSecondary, marginBottom: 28,
-  },
+
+  // Period switch — lives on the crown, so every colour here is a crown token.
   toggleRow: {
-    flexDirection: 'row', gap: 10, marginBottom: 24,
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 22,
+    padding: 5,
+    borderRadius: 26,
+    borderWidth: 1,
+    borderColor: t.crownLine,
   },
   toggleBtn: {
-    flex: 1, paddingVertical: 12, borderRadius: 10,
-    borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
+    flex: 1,
+    paddingVertical: 11,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
   },
-  toggleActive: {
-    borderColor: Colors.primary, backgroundColor: 'rgba(224,90,38,0.08)',
+  toggleActive: { backgroundColor: t.crownText },
+  toggleText: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 13.5,
+    letterSpacing: -0.1,
+    color: t.crownTextDim,
   },
-  toggleText: { fontFamily: Fonts.bodyMedium, fontSize: 14, color: Colors.textSecondary },
-  toggleTextActive: { color: Colors.primary },
-  saveBadge: {
-    position: 'absolute', top: -8, right: -4,
-    backgroundColor: Colors.primary, borderRadius: 8,
-    paddingHorizontal: 6, paddingVertical: 2,
+  toggleTextActive: { color: t.crown },
+  toggleSave: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.crownTextDim,
   },
-  saveBadgeText: {
-    fontFamily: Fonts.bodyBold, fontSize: 10, letterSpacing: 0.2,
-    color: Colors.bg,
+  toggleSaveActive: { color: t.crown, opacity: 0.62 },
+
+  // Plans — no borders. Pro sits on the page, Legend on a full-bleed band.
+  plan: {
+    paddingHorizontal: BODY_PAD,
+    paddingTop: 34,
+    paddingBottom: 36,
   },
-  saveBadgeInline: {
-    alignSelf: 'flex-start', borderRadius: 8,
-    paddingHorizontal: 8, paddingVertical: 3, marginTop: 8,
+  planBand: {
+    backgroundColor: t.surfaceAlt,
+    paddingHorizontal: BODY_PAD,
+    paddingTop: 34,
+    paddingBottom: 38,
   },
-  card: {
-    borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 16, padding: 24, marginBottom: 16,
-    backgroundColor: Colors.surface,
-  },
-  cardLegend: {
-    borderColor: 'rgba(174,219,69,0.35)',
-    backgroundColor: 'rgba(174,219,69,0.03)',
-  },
-  recommendedBadge: {
-    position: 'absolute', top: -11, alignSelf: 'center',
-    backgroundColor: Colors.primary, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 4, left: '30%',
-  },
-  recommendedText: {
-    fontFamily: Fonts.bodyBold, fontSize: 11, letterSpacing: 0.2,
-    color: Colors.bg,
+  planHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
   },
   tierName: {
-    fontFamily: Fonts.display, fontSize: 22, color: Colors.text,
-    letterSpacing: -0.4, marginBottom: 8,
+    fontFamily: Fonts.legacyMono,
+    fontSize: 10,
+    letterSpacing: 2.2,
+    textTransform: 'uppercase',
+    color: t.text,
   },
-  price: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text },
-  pricePeriod: { fontSize: 13, color: Colors.textTertiary, marginBottom: 4 },
-  featureList: { marginTop: 18, gap: 10 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  featureItem: { fontSize: 14, color: Colors.textSecondary },
-  subscribeBtn: {
-    marginTop: 20, backgroundColor: Colors.primary, borderRadius: 100,
-    paddingVertical: 16, alignItems: 'center',
+  recommendedBadge: {
+    backgroundColor: t.accent,
+    // Brand emerald is 2.54:1 on a light page — the deep-tone hairline is what
+    // gives the chip an identifiable boundary (SC 1.4.11).
+    borderWidth: 1,
+    borderColor: t.accentLine,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 4,
   },
-  subscribeBtnLegend: { backgroundColor: Colors.primary },
-  subscribeBtnText: {
-    fontFamily: Fonts.displayMedium, fontSize: 14, letterSpacing: 0.2,
-    color: Colors.bg,
+  recommendedText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: t.accentInk,
   },
-  restoreBtn: { alignItems: 'center', paddingVertical: 16 },
-  restoreText: { fontSize: 14, color: Colors.textTertiary, textDecorationLine: 'underline' },
+  saveNote: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    marginTop: 10,
+  },
+  saveNoteAccent: { color: t.accentText },
+
+  planRule: { marginTop: 26 },
+
+  featureList: { marginTop: 22, gap: 13 },
+  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 11 },
+  featureItem: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: 14.5,
+    lineHeight: 20,
+    letterSpacing: -0.1,
+    color: t.text,
+  },
+
+  cta: {
+    marginTop: 30,
+    borderRadius: 28,
+    paddingVertical: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaGhost: {
+    borderWidth: 1,
+    borderColor: t.borderStrong,
+  },
+  ctaGhostText: { color: t.text },
+  ctaSolid: {
+    backgroundColor: t.accent,
+    borderWidth: 1,
+    borderColor: t.accentLine,
+  },
+  ctaSolidText: { color: t.accentInk },
+  ctaText: {
+    fontFamily: Fonts.displayMedium,
+    fontSize: 15,
+    letterSpacing: 0.1,
+  },
+
+  footer: { paddingHorizontal: BODY_PAD, paddingTop: 34 },
+  restoreBtn: { alignSelf: 'center', paddingVertical: 12, paddingHorizontal: 16 },
+  restoreText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: t.textSecondary,
+  },
   legal: {
-    fontSize: 11, color: Colors.textTertiary, textAlign: 'center',
-    lineHeight: 16, marginTop: 8,
+    fontFamily: Fonts.body,
+    fontSize: 11,
+    color: t.textTertiary,
+    textAlign: 'center',
+    lineHeight: 17,
+    marginTop: 18,
   },
 });

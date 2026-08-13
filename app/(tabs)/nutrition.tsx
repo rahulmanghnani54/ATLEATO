@@ -12,7 +12,7 @@
  * v0 backup at nutrition-v0.tsx.bak.
  */
 import { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, type LayoutChangeEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { format } from 'date-fns';
@@ -36,6 +36,9 @@ const MEALS: { key: MealType; label: string; time: string }[] = [
   { key: 'snack',     label: 'Snack',     time: '15:30' },
   { key: 'dinner',    label: 'Dinner',    time: '19:00' },
 ];
+
+/** Breathing room between the last scroll row and the top of the anchored CTA. */
+const CTA_GAP = 16;
 
 /**
  * Slim progress rail. Bold Canvas has no gauge widgets — the ratio rides as a
@@ -63,6 +66,20 @@ export default function Nutrition() {
   const insets = useSafeAreaInsets();
   const { tokens, scheme } = useTheme();
   const styles = useThemedStyles(themed);
+
+  // The anchored CTA is absolutely positioned, so it reserves nothing in the
+  // scroll content, and its height grows with the OS font scale — measure it
+  // rather than pay a guessed constant that goes wrong at large text sizes.
+  const [ctaBlockHeight, setCtaBlockHeight] = useState(0);
+  const onCtaLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    setCtaBlockHeight((prev) => (prev === h ? prev : h));
+  }, []);
+  // The measured block is button + its own bottom padding, and that padding is
+  // the same TAB_BAR_SPACE + inset CanvasScreen already reserves — so only the
+  // overhang above it, plus a gap, is new.
+  const bottomSpace =
+    Math.max(0, ctaBlockHeight - (TAB_BAR_SPACE + insets.bottom)) + CTA_GAP;
 
   const [date] = useState(new Date());
   const profile = useAuthStore((s) => s.profile);
@@ -114,7 +131,7 @@ export default function Nutrition() {
       {/* The tab bar is a FLOATING pill — it insets nothing, so the kit's
           reserve is required, not a double-count. bottomSpace is the extra room
           for the anchored CTA that sits above it. */}
-      <CanvasScreen bottomSpace={72}>
+      <CanvasScreen bottomSpace={bottomSpace}>
         {/* ── 1. CROWN — calories remaining is the hero ──────────────── */}
         <Crown
           eyebrow={`${weekday} · ${persona.shortName} protocol`}
@@ -232,9 +249,12 @@ export default function Nutrition() {
       {/* ── 6. ANCHOR CTA ─────────────────────────────────────────── */}
       {/* Clears the floating tab pill, which draws over anything pinned to the
           safe-area edge alone. */}
+      {/* Padded rather than offset, so onLayout reports the whole occupied
+          block (button + clearance) in one number. */}
       <View
-        style={[styles.ctaWrap, { bottom: insets.bottom + TAB_BAR_SPACE }]}
+        style={[styles.ctaWrap, { paddingBottom: insets.bottom + TAB_BAR_SPACE }]}
         pointerEvents="box-none"
+        onLayout={onCtaLayout}
       >
         <PressableScale
           onPress={openBuildMeal}
@@ -288,7 +308,7 @@ const themed = (t: SemanticTokens) => StyleSheet.create({
     color: t.text,
   },
 
-  ctaWrap: { position: 'absolute', left: 22, right: 22 },
+  ctaWrap: { position: 'absolute', left: 22, right: 22, bottom: 0 },
   cta: {
     borderRadius: 26,
     borderWidth: 1,

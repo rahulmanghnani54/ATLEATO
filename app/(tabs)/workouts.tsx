@@ -13,8 +13,8 @@
  *
  * Direction-C version at workouts-v0.tsx.bak / git history.
  */
-import { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -53,6 +53,9 @@ function weekOfYear(): number {
 
 // Monday-first, matching getTodayWorkoutIndex's 0=Mon mapping.
 const WEEKDAYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'] as const;
+
+/** Breathing room between the last scroll row and the top of the anchored CTA. */
+const CTA_GAP = 16;
 
 // ─── Muscle-group accordion ──────────────────────────────────────────────────
 function MuscleGroupRow({
@@ -122,6 +125,21 @@ export default function Workouts() {
   const router = useRouter();
   const { tokens, scheme } = useTheme();
   const insets = useSafeAreaInsets();
+
+  // The anchor is absolutely positioned and reserves nothing in the scroll
+  // content, and its height is not fixed — paddingVertical plus a font-scaled
+  // label means the only honest number is the measured one.
+  const [anchorHeight, setAnchorHeight] = useState(0);
+  const onAnchorLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    setAnchorHeight((prev) => (prev === h ? prev : h));
+  }, []);
+  // The measured block is button + its own bottom padding, and that padding is
+  // the same TAB_BAR_SPACE + inset CanvasScreen already reserves — so only the
+  // overhang above it, plus a gap, is new.
+  const bottomSpace =
+    Math.max(0, anchorHeight - (TAB_BAR_SPACE + insets.bottom)) + CTA_GAP;
+
   const profile = useAuthStore((s) => s.profile);
   // Section can be deep-linked: /(tabs)/workouts?section=library lands directly
   // on the exercise library (workout-picker's "Pick exercises yourself" uses
@@ -162,7 +180,7 @@ export default function Workouts() {
   return (
     <View style={[styles.root, { backgroundColor: tokens.bg }]}>
       {/* Room for the anchored CTA, which sits a further TAB_BAR_SPACE up. */}
-      <CanvasScreen bottomSpace={80}>
+      <CanvasScreen bottomSpace={bottomSpace}>
         {/* ── 1. CROWN — today's session is the hero ──────────── */}
         <Crown
           eyebrow={`${weekday.toUpperCase()} · WEEK ${weekOfYear()}`}
@@ -336,6 +354,7 @@ export default function Workouts() {
       <View
         pointerEvents="box-none"
         style={[styles.anchor, { paddingBottom: insets.bottom + TAB_BAR_SPACE }]}
+        onLayout={onAnchorLayout}
       >
         <LinearGradient
           pointerEvents="none"

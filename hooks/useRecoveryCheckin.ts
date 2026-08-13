@@ -3,6 +3,17 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { calculateRecovery, type RecoveryInputs } from '@/lib/recoveryEngine';
 
+// Time-limit any Supabase call so a stalled request can't leave a dashboard
+// stat spinning forever (same pattern as useDashboardStats / useProgressStats).
+async function withTimeout<T>(p: PromiseLike<T>, label: string): Promise<T> {
+  return Promise.race([
+    p as Promise<T>,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out — check your connection.`)), 8000),
+    ),
+  ]);
+}
+
 export function useTodayRecovery() {
   const user = useAuthStore((s) => s.user);
 
@@ -11,17 +22,23 @@ export function useTodayRecovery() {
     queryFn: async () => {
       if (!user) return null;
       const today = new Date().toISOString().slice(0, 10);
-      const { data, error } = await supabase
-        .from('recovery_checkins')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .maybeSingle();
+      // The workout lobby hides its recovery block while this is pending, so a
+      // stall must resolve to "no check-in" instead of hiding it forever.
+      const { data, error } = await withTimeout(
+        supabase
+          .from('recovery_checkins')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('date', today)
+          .maybeSingle(),
+        'Recovery check-in',
+      ).catch(() => ({ data: null, error: null }));
       if (error) throw error;
       return data;
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 }
 

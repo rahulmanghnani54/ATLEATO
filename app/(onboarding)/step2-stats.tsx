@@ -1,13 +1,36 @@
-import { useState, useMemo } from 'react';
+/**
+ * Onboarding Step 2 — the numbers. Bold Canvas.
+ *
+ * Height, weight and age are the screen's type: an oversized numeral over a
+ * tiny mono unit, scrubbed on a full-bleed ruler instead of poked into a small
+ * bordered field. The ruler's own bounds ARE the old picker's option lists, so
+ * the validation below can only ever pass — it is kept verbatim anyway because
+ * it is the contract the next steps rely on.
+ *
+ * Every bound, the DOB min/max, the metric↔imperial conversions and the push
+ * into step 3 are carried over unchanged.
+ */
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform, Modal,
+  FlatList,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import { OnboardingProgress } from '@/components/ui/OnboardingProgress';
-import { PickerModal, type PickerOption } from '@/components/ui/PickerModal';
-import { Colors, Spacing, Radius, Typography, Fonts } from '@/constants/theme';
+
+import { CanvasScreen, Crown, Section } from '@/components/ui/canvas';
+import { PressableScale } from '@/components/ui/motion';
+import { Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 type Gender = 'male' | 'female';
 type Unit = 'metric' | 'imperial';
@@ -18,11 +41,12 @@ function range(from: number, to: number, step = 1): number[] {
   return arr;
 }
 
-const metricHeights: PickerOption[] = range(100, 250).map((v) => ({ label: `${v} cm`, value: String(v) }));
-const metricWeights: PickerOption[] = range(30, 300, 0.5).map((v) => ({ label: `${v} kg`, value: String(v) }));
-const imperialFt: PickerOption[] = range(4, 7).map((v) => ({ label: `${v} ft`, value: String(v) }));
-const imperialIn: PickerOption[] = range(0, 11).map((v) => ({ label: `${v} in`, value: String(v) }));
-const imperialWeights: PickerOption[] = range(66, 660).map((v) => ({ label: `${v} lbs`, value: String(v) }));
+// Same option sets the wheel pickers offered, as scrub tracks. Module-level so
+// their identity is stable — the ruler is memoised on it.
+const METRIC_HEIGHTS = range(100, 250);          // cm
+const METRIC_WEIGHTS = range(30, 300, 0.5);      // kg
+const IMPERIAL_HEIGHTS = range(4 * 12, 7 * 12 + 11); // total inches: 4'0" – 7'11"
+const IMPERIAL_WEIGHTS = range(66, 660);         // lbs
 
 const MIN_AGE = 13;
 const MAX_AGE = 100;
@@ -33,29 +57,211 @@ minDob.setFullYear(minDob.getFullYear() - MAX_AGE);
 const defaultDob = new Date(maxDob);
 defaultDob.setFullYear(defaultDob.getFullYear() - 7); // default ~20 years old
 
+const DEFAULT_HEIGHT_CM = 170;
+const DEFAULT_HEIGHT_IN = 5 * 12 + 9; // 5'9"
+const DEFAULT_WEIGHT_KG = 70;
+const DEFAULT_WEIGHT_LB = 154;
+
+const idxOf = (values: number[], v: number) => {
+  const i = values.indexOf(v);
+  return i < 0 ? 0 : i;
+};
+
+// The ruler is re-keyed (and therefore remounted) on a unit switch, and a unit
+// switch also resets both measures to their defaults — so its starting tick is
+// always the default one. Keeping it a CONSTANT is what lets the memo hold
+// while the numeral above it re-renders on every tick of the scrub.
+const START_HEIGHT: Record<Unit, number> = {
+  metric: idxOf(METRIC_HEIGHTS, DEFAULT_HEIGHT_CM),
+  imperial: idxOf(IMPERIAL_HEIGHTS, DEFAULT_HEIGHT_IN),
+};
+const START_WEIGHT: Record<Unit, number> = {
+  metric: idxOf(METRIC_WEIGHTS, DEFAULT_WEIGHT_KG),
+  imperial: idxOf(IMPERIAL_WEIGHTS, DEFAULT_WEIGHT_LB),
+};
+
+const fmtCm = (v: number) => String(v);
+const fmtFtIn = (v: number) => `${Math.floor(v / 12)}'${v % 12}`;
+const fmtKg = (v: number) => (v % 1 ? v.toFixed(1) : String(v));
+const fmtLb = (v: number) => String(v);
+
+function ageFromDate(d: Date): number {
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
+  return age;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// The shared spine. Duplicated verbatim across the five step files: the kit has
+// no onboarding primitive and the steps are the only owners of this flow.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STEP_TOTAL = 5;
+
+function StepRail({ step }: { step: number }) {
+  const { tokens } = useTheme();
+  return (
+    <View
+      style={railStyles.row}
+      accessibilityRole="progressbar"
+      accessibilityLabel={`Step ${step} of ${STEP_TOTAL}`}
+    >
+      {Array.from({ length: STEP_TOTAL }, (_, i) => {
+        const n = i + 1;
+        const now = n === step;
+        return (
+          <View
+            key={n}
+            style={[
+              railStyles.seg,
+              now && railStyles.segNow,
+              {
+                backgroundColor: now
+                  ? tokens.crownAccent
+                  : n < step
+                    ? tokens.crownText
+                    : tokens.crownLine,
+              },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+}
+
+const railStyles = StyleSheet.create({
+  row: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  seg: { width: 12, height: 3, borderRadius: 999 },
+  segNow: { width: 24 },
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Scrub ruler
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TICK = 14;
+
+interface RulerProps {
+  values: number[];
+  initialIndex: number;
+  onIndex: (i: number) => void;
+  /** Every Nth tick gets a full-height stroke and a label. */
+  majorEvery: number;
+  format: (v: number) => string;
+  label: string;
+}
+
+/**
+ * Memoised on purpose: the numeral above re-renders on every tick crossing, and
+ * without this the whole virtualised track would reconcile with it mid-gesture.
+ * `onIndex` must therefore stay referentially stable in the parent.
+ */
+const Ruler = memo(function Ruler({
+  values,
+  initialIndex,
+  onIndex,
+  majorEvery,
+  format,
+  label,
+}: RulerProps) {
+  const styles = useThemedStyles(makeStyles);
+  const { width } = useWindowDimensions();
+  const pad = Math.max(0, (width - TICK) / 2);
+  // A ref, not state: the track must not re-render as it is dragged — only the
+  // numeral above it does.
+  const last = useRef(initialIndex);
+
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const raw = Math.round(e.nativeEvent.contentOffset.x / TICK);
+      const i = Math.max(0, Math.min(values.length - 1, raw));
+      if (i === last.current) return;
+      last.current = i;
+      onIndex(i);
+    },
+    [values.length, onIndex],
+  );
+
+  return (
+    <View style={styles.ruler} accessibilityLabel={label}>
+      <FlatList
+        data={values}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        keyExtractor={(v) => String(v)}
+        getItemLayout={(_, i) => ({ length: TICK, offset: TICK * i, index: i })}
+        initialScrollIndex={initialIndex}
+        snapToInterval={TICK}
+        decelerationRate="fast"
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        contentContainerStyle={{ paddingHorizontal: pad }}
+        renderItem={({ item, index }) => {
+          const major = index % majorEvery === 0;
+          return (
+            <View style={styles.tickCell}>
+              <View style={[styles.tick, major && styles.tickMajor]} />
+              {major ? <Text style={styles.tickLabel}>{format(item)}</Text> : null}
+            </View>
+          );
+        }}
+      />
+      <View pointerEvents="none" style={styles.needle} />
+    </View>
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Screen
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function Step2Stats() {
   const router = useRouter();
   const { goal } = useLocalSearchParams<{ goal: string }>();
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
 
   const [gender, setGender] = useState<Gender>('male');
   const [dob, setDob] = useState<Date>(defaultDob);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
   const [unit, setUnit] = useState<Unit>('metric');
-  const [heightCmVal, setHeightCmVal] = useState('170');
-  const [heightFtVal, setHeightFtVal] = useState('5');
-  const [heightInVal, setHeightInVal] = useState('9');
-  const [weightVal, setWeightVal] = useState(unit === 'metric' ? '70' : '154');
-
-  const [openPicker, setOpenPicker] = useState<'heightCm' | 'heightFt' | 'heightIn' | 'weight' | null>(null);
+  const [heightCmVal, setHeightCmVal] = useState(DEFAULT_HEIGHT_CM);
+  const [heightInVal, setHeightInVal] = useState(DEFAULT_HEIGHT_IN);
+  const [weightKgVal, setWeightKgVal] = useState(DEFAULT_WEIGHT_KG);
+  const [weightLbVal, setWeightLbVal] = useState(DEFAULT_WEIGHT_LB);
 
   const [error, setError] = useState('');
 
   const dobLabel = useMemo(() => {
     return dob.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   }, [dob]);
+  const age = useMemo(() => ageFromDate(dob), [dob]);
 
-  const weightOptions = unit === 'metric' ? metricWeights : imperialWeights;
+  const metric = unit === 'metric';
+  const heightValues = metric ? METRIC_HEIGHTS : IMPERIAL_HEIGHTS;
+  const weightValues = metric ? METRIC_WEIGHTS : IMPERIAL_WEIGHTS;
+
+  // Stable per unit — the ruler is memoised on these, and it remounts on a unit
+  // switch anyway (keyed), so a new identity here costs nothing.
+  const onHeightIndex = useCallback(
+    (i: number) => {
+      if (metric) setHeightCmVal(METRIC_HEIGHTS[i]);
+      else setHeightInVal(IMPERIAL_HEIGHTS[i]);
+    },
+    [metric],
+  );
+  const onWeightIndex = useCallback(
+    (i: number) => {
+      if (metric) setWeightKgVal(METRIC_WEIGHTS[i]);
+      else setWeightLbVal(IMPERIAL_WEIGHTS[i]);
+    },
+    [metric],
+  );
 
   const handleDateChange = (_: DateTimePickerEvent, date?: Date) => {
     if (Platform.OS === 'android') setShowDatePicker(false);
@@ -64,19 +270,21 @@ export default function Step2Stats() {
 
   const switchUnit = (u: Unit) => {
     setUnit(u);
-    setWeightVal(u === 'metric' ? '70' : '154');
-    setHeightCmVal('170');
-    setHeightFtVal('5');
-    setHeightInVal('9');
+    // Same reset the old unit toggle performed — both systems return to their
+    // defaults rather than converting, so the ruler never lands off-tick.
+    setWeightKgVal(DEFAULT_WEIGHT_KG);
+    setWeightLbVal(DEFAULT_WEIGHT_LB);
+    setHeightCmVal(DEFAULT_HEIGHT_CM);
+    setHeightInVal(DEFAULT_HEIGHT_IN);
   };
 
   const handleContinue = () => {
     const heightCm = unit === 'metric'
-      ? parseFloat(heightCmVal)
-      : (parseFloat(heightFtVal) * 12 + parseFloat(heightInVal)) * 2.54;
+      ? heightCmVal
+      : heightInVal * 2.54;
     const weightKg = unit === 'metric'
-      ? parseFloat(weightVal)
-      : parseFloat(weightVal) * 0.453592;
+      ? weightKgVal
+      : weightLbVal * 0.453592;
 
     if (heightCm < 100 || heightCm > 250 || weightKg < 30 || weightKg > 300) {
       setError('Please enter realistic height and weight values.');
@@ -92,243 +300,323 @@ export default function Step2Stats() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <OnboardingProgress current={2} total={5} />
-        <Text style={styles.eyebrow}>STEP 2 OF 5</Text>
-        <Text style={styles.headline}>TELL US{'\n'}ABOUT YOU.</Text>
-        <Text style={styles.sub}>Calorie targets, training load, recovery — all calibrated from these numbers.</Text>
+    <View style={styles.root}>
+      <Crown
+        eyebrow={`Step 2 of ${STEP_TOTAL}`}
+        title="Tell us your"
+        accentLine="numbers."
+        meta="Calorie targets, training load and recovery are all calibrated from these."
+        right={<StepRail step={2} />}
+        onBack={router.canGoBack() ? () => router.back() : undefined}
+      />
 
-        {error ? <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View> : null}
+      <CanvasScreen tabBar={false} contentStyle={styles.body}>
+        {error ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
 
-        {/* Gender */}
-        <Text style={styles.label}>Gender</Text>
-        <View style={styles.toggle}>
-          {(['male', 'female'] as Gender[]).map((g) => (
-            <TouchableOpacity
-              key={g}
-              style={[styles.toggleBtn, gender === g && styles.toggleBtnActive]}
-              onPress={() => setGender(g)}
-            >
-              <Text style={[styles.toggleText, gender === g && styles.toggleTextActive]}>
-                {g === 'male' ? '♂ Male' : '♀ Female'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Section label="Sex" style={styles.firstSection}>
+          <View style={styles.pillRow}>
+            {(['male', 'female'] as Gender[]).map((g) => {
+              const active = gender === g;
+              return (
+                <PressableScale
+                  key={g}
+                  onPress={() => setGender(g)}
+                  haptic="light"
+                  scaleTo={0.97}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={g === 'male' ? 'Male' : 'Female'}
+                  style={[styles.pill, active && styles.pillOn]}
+                >
+                  <Text style={[styles.pillText, active && styles.pillTextOn]}>
+                    {g === 'male' ? 'Male' : 'Female'}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+        </Section>
 
-        {/* Date of birth */}
-        <Text style={styles.label}>Date of Birth</Text>
-        <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowDatePicker(true)}>
-          <Text style={styles.pickerBtnIcon}>📅</Text>
-          <Text style={styles.pickerBtnText}>{dobLabel}</Text>
-          <Text style={styles.pickerChevron}>›</Text>
-        </TouchableOpacity>
-
-        {/* iOS inline calendar */}
-        {showDatePicker && Platform.OS === 'ios' && (
-          <Modal transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
-            <TouchableOpacity style={styles.dateBackdrop} activeOpacity={1} onPress={() => setShowDatePicker(false)} />
-            <View style={styles.dateSheet}>
-              <View style={styles.dateHeader}>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.dateCancel}>Cancel</Text>
-                </TouchableOpacity>
-                <Text style={styles.dateTitle}>Date of Birth</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={styles.dateDone}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={dob}
-                mode="date"
-                display="spinner"
-                maximumDate={maxDob}
-                minimumDate={minDob}
-                onChange={handleDateChange}
-                textColor={Colors.text}
-              />
+        <Section label="Date of birth">
+          <PressableScale
+            onPress={() => setShowDatePicker(true)}
+            haptic="light"
+            scaleTo={0.98}
+            accessibilityRole="button"
+            accessibilityLabel={`Date of birth ${dobLabel}, age ${age}`}
+            style={styles.dobBlock}
+          >
+            <View style={styles.numeralRow}>
+              <Text style={styles.numeral}>{age}</Text>
+              <Text style={styles.numeralUnit}>YRS</Text>
             </View>
-          </Modal>
-        )}
+            <Text style={styles.dobLine}>{dobLabel}  ·  TAP TO CHANGE</Text>
+          </PressableScale>
+        </Section>
 
-        {/* Android date picker (shows native dialog) */}
-        {showDatePicker && Platform.OS === 'android' && (
-          <DateTimePicker
-            value={dob}
-            mode="date"
-            display="calendar"
-            maximumDate={maxDob}
-            minimumDate={minDob}
-            onChange={handleDateChange}
+        <Section
+          label="Height"
+          right={
+            <View style={styles.unitRow}>
+              {(['metric', 'imperial'] as Unit[]).map((u) => {
+                const active = unit === u;
+                return (
+                  <PressableScale
+                    key={u}
+                    onPress={() => switchUnit(u)}
+                    haptic="light"
+                    scaleTo={0.94}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: active }}
+                    accessibilityLabel={u === 'metric' ? 'Metric units' : 'Imperial units'}
+                    style={styles.unitBtn}
+                  >
+                    <Text style={[styles.unitText, active && styles.unitTextOn]}>
+                      {u === 'metric' ? 'CM / KG' : 'FT / LB'}
+                    </Text>
+                  </PressableScale>
+                );
+              })}
+            </View>
+          }
+        >
+          <View style={styles.numeralRow}>
+            <Text style={styles.numeral}>
+              {metric ? fmtCm(heightCmVal) : fmtFtIn(heightInVal)}
+            </Text>
+            <Text style={styles.numeralUnit}>{metric ? 'CM' : 'FT · IN'}</Text>
+          </View>
+          <Ruler
+            key={`h-${unit}`}
+            values={heightValues}
+            initialIndex={START_HEIGHT[unit]}
+            onIndex={onHeightIndex}
+            majorEvery={metric ? 10 : 12}
+            format={metric ? fmtCm : fmtFtIn}
+            label="Height"
           />
-        )}
+        </Section>
 
-        {/* Unit toggle */}
-        <View style={styles.unitRow}>
-          <Text style={styles.label}>Height & Weight</Text>
-          <View style={styles.unitToggle}>
-            {(['metric', 'imperial'] as Unit[]).map((u) => (
-              <TouchableOpacity
-                key={u}
-                style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-                onPress={() => switchUnit(u)}
-              >
-                <Text style={[styles.unitText, unit === u && styles.unitTextActive]}>
-                  {u === 'metric' ? 'kg/cm' : 'lb/in'}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        <Section label="Weight">
+          <View style={styles.numeralRow}>
+            <Text style={styles.numeral}>
+              {metric ? fmtKg(weightKgVal) : fmtLb(weightLbVal)}
+            </Text>
+            <Text style={styles.numeralUnit}>{metric ? 'KG' : 'LBS'}</Text>
           </View>
-        </View>
+          <Ruler
+            key={`w-${unit}`}
+            values={weightValues}
+            initialIndex={START_WEIGHT[unit]}
+            onIndex={onWeightIndex}
+            majorEvery={metric ? 20 : 10}
+            format={metric ? fmtKg : fmtLb}
+            label="Weight"
+          />
+        </Section>
+      </CanvasScreen>
 
-        {/* Height pickers */}
-        <View style={styles.row}>
-          {unit === 'metric' ? (
-            <View style={styles.halfField}>
-              <Text style={styles.sublabel}>Height</Text>
-              <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('heightCm')}>
-                <Text style={styles.pickerBtnText}>{heightCmVal} cm</Text>
-                <Text style={styles.pickerChevron}>›</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <>
-              <View style={styles.halfField}>
-                <Text style={styles.sublabel}>Feet</Text>
-                <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('heightFt')}>
-                  <Text style={styles.pickerBtnText}>{heightFtVal} ft</Text>
-                  <Text style={styles.pickerChevron}>›</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.halfField}>
-                <Text style={styles.sublabel}>Inches</Text>
-                <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('heightIn')}>
-                  <Text style={styles.pickerBtnText}>{heightInVal} in</Text>
-                  <Text style={styles.pickerChevron}>›</Text>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-          <View style={styles.halfField}>
-            <Text style={styles.sublabel}>Weight</Text>
-            <TouchableOpacity style={styles.pickerBtn} onPress={() => setOpenPicker('weight')}>
-              <Text style={styles.pickerBtnText}>{weightVal} {unit === 'metric' ? 'kg' : 'lbs'}</Text>
-              <Text style={styles.pickerChevron}>›</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.continueBtn} onPress={handleContinue} activeOpacity={0.85}>
-          <Text style={styles.continueBtnText}>CONTINUE  →</Text>
-        </TouchableOpacity>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
+        <PressableScale
+          onPress={handleContinue}
+          haptic="heavy"
+          scaleTo={0.97}
+          accessibilityRole="button"
+          accessibilityLabel="Continue"
+          style={styles.cta}
+        >
+          <Text style={styles.ctaText}>Continue</Text>
+        </PressableScale>
       </View>
 
-      {/* Height cm picker */}
-      <PickerModal
-        visible={openPicker === 'heightCm'}
-        title="Height (cm)"
-        options={metricHeights}
-        selectedValue={heightCmVal}
-        onSelect={setHeightCmVal}
-        onClose={() => setOpenPicker(null)}
-      />
+      {/* iOS inline calendar */}
+      {showDatePicker && Platform.OS === 'ios' && (
+        <Modal transparent animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
+          <Pressable
+            onPress={() => setShowDatePicker(false)}
+            accessibilityRole="button"
+            accessibilityLabel="Close date picker"
+            style={styles.dateBackdrop}
+          />
+          <View style={styles.dateSheet}>
+            <View style={styles.dateHeader}>
+              <Text style={styles.dateTitle}>DATE OF BIRTH</Text>
+              <PressableScale
+                haptic="light"
+                scaleTo={0.94}
+                onPress={() => setShowDatePicker(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Done"
+              >
+                <Text style={styles.dateDone}>Done</Text>
+              </PressableScale>
+            </View>
+            <DateTimePicker
+              value={dob}
+              mode="date"
+              display="spinner"
+              maximumDate={maxDob}
+              minimumDate={minDob}
+              onChange={handleDateChange}
+              textColor={tokens.text}
+            />
+          </View>
+        </Modal>
+      )}
 
-      {/* Height ft picker */}
-      <PickerModal
-        visible={openPicker === 'heightFt'}
-        title="Feet"
-        options={imperialFt}
-        selectedValue={heightFtVal}
-        onSelect={setHeightFtVal}
-        onClose={() => setOpenPicker(null)}
-      />
-
-      {/* Height in picker */}
-      <PickerModal
-        visible={openPicker === 'heightIn'}
-        title="Inches"
-        options={imperialIn}
-        selectedValue={heightInVal}
-        onSelect={setHeightInVal}
-        onClose={() => setOpenPicker(null)}
-      />
-
-      {/* Weight picker */}
-      <PickerModal
-        visible={openPicker === 'weight'}
-        title={`Weight (${unit === 'metric' ? 'kg' : 'lbs'})`}
-        options={weightOptions}
-        selectedValue={weightVal}
-        onSelect={setWeightVal}
-        onClose={() => setOpenPicker(null)}
-      />
-    </SafeAreaView>
+      {/* Android date picker (shows native dialog) */}
+      {showDatePicker && Platform.OS === 'android' && (
+        <DateTimePicker
+          value={dob}
+          mode="date"
+          display="calendar"
+          maximumDate={maxDob}
+          minimumDate={minDob}
+          onChange={handleDateChange}
+        />
+      )}
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  content: { flexGrow: 1, padding: 20, paddingTop: 14, paddingBottom: 24 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
+    body: { paddingHorizontal: 22, paddingBottom: 12 },
+    // Section's own 34px top margin is right between blocks, too much directly
+    // under the crown.
+    firstSection: { marginTop: 24 },
 
-  eyebrow:  { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6, marginTop: 4 },
-  headline: { fontFamily: Fonts.display, fontSize: 42, color: Colors.text, lineHeight: 42, letterSpacing: -1.4, marginTop: 8, marginBottom: 10 },
-  sub:      { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, lineHeight: 20, marginBottom: 22 },
+    errorBox: {
+      marginTop: 20,
+      borderRadius: 20,
+      paddingVertical: 14,
+      paddingHorizontal: 18,
+      backgroundColor: t.surfaceAlt,
+    },
+    errorText: { fontFamily: Fonts.bodySemi, fontSize: 13, color: t.danger },
 
-  errorBox: { backgroundColor: 'rgba(239,68,68,0.10)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)', borderRadius: Radius.sm, padding: Spacing.md, marginBottom: Spacing.md },
-  errorText: { color: Colors.error, fontSize: 13, fontFamily: Fonts.body },
-  label: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4, marginBottom: 8, marginTop: 16 },
-  sublabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginBottom: 6 },
+    // ── Sex ──
+    pillRow: { flexDirection: 'row', gap: 10 },
+    pill: {
+      flex: 1,
+      minHeight: 54,
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: t.surfaceAlt,
+      paddingHorizontal: 18,
+    },
+    pillOn: { backgroundColor: t.accentSoft },
+    pillText: { fontFamily: Fonts.displayMedium, fontSize: 15, color: t.textSecondary },
+    pillTextOn: { fontFamily: Fonts.displayBold, color: t.accentText },
 
-  continueBtn: {
-    backgroundColor: Colors.primary, borderRadius: 6,
-    paddingVertical: 16, alignItems: 'center',
-  },
-  continueBtnText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 1.2 },
-  toggle: { flexDirection: 'row', gap: 8 },
-  toggleBtn: {
-    flex: 1, height: 52, borderRadius: 8, borderWidth: 1.5,
-    borderColor: Colors.border, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.surface,
-  },
-  toggleBtnActive: { borderColor: Colors.primary, backgroundColor: 'rgba(18,185,129,0.08)' },
-  toggleText: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.textSecondary, letterSpacing: 0.2 },
-  toggleTextActive: { color: Colors.primary },
-  pickerBtn: {
-    height: 52, backgroundColor: Colors.surface, borderRadius: 8,
-    borderWidth: 1, borderColor: Colors.border, flexDirection: 'row',
-    alignItems: 'center', paddingHorizontal: 14,
-  },
-  pickerBtnIcon: { fontSize: 18, marginRight: 8 },
-  pickerBtnText: { flex: 1, fontSize: 15, fontFamily: Fonts.bodySemi, color: Colors.text },
-  pickerChevron: { fontSize: 22, color: Colors.textTertiary, fontFamily: Fonts.body },
-  unitRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16 },
-  unitToggle: {
-    flexDirection: 'row', backgroundColor: Colors.background, borderRadius: 6, padding: 3,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  unitBtn: { paddingHorizontal: 14, paddingVertical: 6, borderRadius: 4 },
-  unitBtnActive: { backgroundColor: Colors.primary },
-  unitText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1 },
-  unitTextActive: { color: Colors.accentInk },
-  row: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  halfField: { flex: 1 },
-  footer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 28 },
-  dateBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  dateSheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-  },
-  dateHeader: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg, paddingVertical: 14,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  dateTitle: { ...Typography.bodyMedium },
-  dateCancel: { fontSize: 16, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
-  dateDone: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: Colors.primary },
-});
+    // ── Oversized numerals ──
+    numeralRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+    numeral: {
+      fontFamily: Fonts.displayBold,
+      fontSize: 56,
+      lineHeight: 58,
+      // -0.045em at 56px.
+      letterSpacing: -2.52,
+      color: t.text,
+      fontVariant: ['tabular-nums'],
+    },
+    numeralUnit: {
+      fontFamily: Fonts.legacyMono,
+      fontSize: 10,
+      letterSpacing: 1.6,
+      textTransform: 'uppercase',
+      color: t.textTertiary,
+      paddingBottom: 12,
+    },
+
+    dobBlock: { gap: 6 },
+    dobLine: {
+      fontFamily: Fonts.legacyMono,
+      fontSize: 9,
+      letterSpacing: 1.5,
+      textTransform: 'uppercase',
+      color: t.textTertiary,
+    },
+
+    // ── Unit toggle ──
+    unitRow: { flexDirection: 'row', gap: 14 },
+    unitBtn: { paddingVertical: 2 },
+    unitText: {
+      fontFamily: Fonts.legacyMono,
+      fontSize: 9,
+      letterSpacing: 1.5,
+      color: t.textTertiary,
+    },
+    unitTextOn: { color: t.accentText },
+
+    // ── Ruler ──
+    ruler: {
+      height: 62,
+      marginTop: 14,
+      // Full-bleed past the body's 22px gutter — the track should run off both
+      // edges so it reads as a dial, not a slider in a box.
+      marginHorizontal: -22,
+      justifyContent: 'flex-start',
+    },
+    tickCell: { width: TICK, alignItems: 'center' },
+    tick: { width: 1.5, height: 16, borderRadius: 999, backgroundColor: t.border },
+    tickMajor: { height: 28, backgroundColor: t.borderStrong },
+    tickLabel: {
+      marginTop: 6,
+      fontFamily: Fonts.legacyMono,
+      fontSize: 9,
+      letterSpacing: 0.4,
+      color: t.textTertiary,
+    },
+    needle: {
+      position: 'absolute',
+      left: '50%',
+      marginLeft: -1,
+      top: 0,
+      width: 2,
+      height: 34,
+      borderRadius: 999,
+      backgroundColor: t.accentText,
+    },
+
+    // ── Date sheet ──
+    dateBackdrop: { flex: 1, backgroundColor: t.overlay },
+    dateSheet: {
+      backgroundColor: t.bg,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
+      paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    },
+    dateHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 22,
+      paddingVertical: 18,
+    },
+    dateTitle: {
+      fontFamily: Fonts.legacyMono,
+      fontSize: 9,
+      letterSpacing: 1.7,
+      color: t.textTertiary,
+    },
+    dateDone: { fontFamily: Fonts.displayBold, fontSize: 15, color: t.accentText },
+
+    // ── Footer ──
+    footer: { paddingHorizontal: 22, paddingTop: 10 },
+    cta: {
+      minHeight: 58,
+      borderRadius: 999,
+      backgroundColor: t.text,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 24,
+    },
+    ctaText: { fontFamily: Fonts.displayBold, fontSize: 16, letterSpacing: -0.3, color: t.bg },
+  });

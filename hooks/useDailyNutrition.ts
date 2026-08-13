@@ -4,6 +4,17 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Database } from '@/types/database';
 
+// Time-limit any Supabase call so a stalled request can't leave a dashboard
+// stat spinning forever (same pattern as useDashboardStats / useProgressStats).
+async function withTimeout<T>(p: PromiseLike<T>, label: string): Promise<T> {
+  return Promise.race([
+    p as Promise<T>,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out — check your connection.`)), 8000),
+    ),
+  ]);
+}
+
 type NutritionLogRow = Database['public']['Tables']['nutrition_logs']['Row'];
 type NutritionLogPartial = Pick<
   NutritionLogRow,
@@ -40,11 +51,19 @@ export function useDailyNutrition(date: Date) {
     queryFn: async (): Promise<DailyTotals> => {
       if (!user) return EMPTY;
 
-      const { data: rawData, error } = await supabase
-        .from('nutrition_logs')
-        .select('calories, protein_g, carbs_g, fat_g, meal_type')
-        .eq('user_id', user.id)
-        .eq('date', dateStr);
+      // Home renders Skeletons off this query's pending state, so a timeout must
+      // RESOLVE (as no rows → EMPTY, i.e. zeros) rather than reject: an unsettled
+      // promise is an eternal skeleton, and a rejection here would only be
+      // re-thrown as an unhandled query error. A genuine Postgrest `error` still
+      // throws below so `retry: 1` gets its second attempt.
+      const { data: rawData, error } = await withTimeout(
+        supabase
+          .from('nutrition_logs')
+          .select('calories, protein_g, carbs_g, fat_g, meal_type')
+          .eq('user_id', user.id)
+          .eq('date', dateStr),
+        'Nutrition',
+      ).catch(() => ({ data: null, error: null }));
 
       if (error) throw error;
       const data = rawData as NutritionLogPartial[] | null;
@@ -70,5 +89,6 @@ export function useDailyNutrition(date: Date) {
     },
     enabled: !!user,
     staleTime: 60_000,
+    retry: 1,
   });
 }

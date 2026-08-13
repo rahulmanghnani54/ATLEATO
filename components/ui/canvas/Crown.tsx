@@ -9,7 +9,14 @@
  */
 
 import { useCallback, useState, type ReactNode } from 'react';
-import { StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import {
+  StatusBar,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
@@ -17,6 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '@/components/ui/motion';
 import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/lib/theme';
+import { useCrownSlot } from './CanvasScreen';
 
 export interface CrownProps {
   /** Tiny mono uppercase line above the title. */
@@ -53,6 +61,16 @@ export function Crown({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
 
+  // Inside a CanvasScreen scroller the crown can be scrolled out from under the
+  // status bar, so the scroller owns the bar and this reports its height to it.
+  // Pinned outside one (onboarding, workout-session) the crown never moves and
+  // keeps the bar itself.
+  const registerCrown = useCrownSlot();
+  const onLayout = useCallback(
+    (e: LayoutChangeEvent) => registerCrown?.(Math.round(e.nativeEvent.layout.height)),
+    [registerCrown],
+  );
+
   // Scoped to FOCUS, not to mount: a crowned tab stays mounted underneath a
   // pushed light screen (profile, add-food), and an unconditional entry on RN's
   // StatusBar stack would leave that screen with white-on-white icons.
@@ -72,6 +90,7 @@ export function Crown({
 
   return (
     <View
+      onLayout={onLayout}
       style={[
         styles.root,
         { backgroundColor: tokens.crown, paddingTop: insets.top + (hasTopRow ? 8 : 22) },
@@ -81,7 +100,7 @@ export function Crown({
           so the clock/battery must go light — the app shell asks for
           dark-content in the light scheme, which is invisible against ink. RN
           stacks StatusBar props, so unmounting restores the shell's setting. */}
-      {focused ? <StatusBar barStyle="light-content" /> : null}
+      {focused && !registerCrown ? <StatusBar barStyle="light-content" /> : null}
 
       <View
         pointerEvents="none"

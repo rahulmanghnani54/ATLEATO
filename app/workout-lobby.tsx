@@ -1,20 +1,35 @@
+/**
+ * Workout Lobby — the launch pad.
+ *
+ * Bold Canvas: the dark <Crown> carries the session name with duration and
+ * exercise-count pills, the light body below holds readiness + the exercise
+ * manifest as borderless ListRows, and the single accent moment on the screen
+ * is the begin button at the bottom.
+ */
+
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, StyleSheet, Linking } from 'react-native';
 import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTodayRecovery } from '@/hooks/useRecoveryCheckin';
 import { useExerciseHistory } from '@/hooks/useProgression';
 import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
 import { scoreLabel } from '@/lib/recoveryEngine';
 import { getTodayWorkoutModifier } from '@/lib/healthIntegration';
-import { personaFromProgramId } from '@/lib/personaTheme';
-import { ArrowLeft, AlertTriangle, HeartPulse, Play } from 'lucide-react-native';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { BigStat, CanvasScreen, Crown, Hairline, ListRow, Section } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
+import { AlertTriangle, HeartPulse, Play } from 'lucide-react-native';
+
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = Spacing.heroPad;
 
 // ─── Weight suggestion for a single exercise ────────────────────────────────
 function WeightSuggestion({ exerciseName, reps }: { exerciseName: string; reps: string }) {
+  const styles = useThemedStyles(makeStyles);
   const { data: history } = useExerciseHistory(exerciseName);
   if (!history || history.sessions.length === 0) return null;
   const [low, high] = parseRepsRange(reps);
@@ -23,13 +38,13 @@ function WeightSuggestion({ exerciseName, reps }: { exerciseName: string; reps: 
   return (
     <Text style={styles.weightSuggestion}>
       Current: {suggestion.currentWeightKg}kg → Target:{' '}
-      <Text style={{ color: Colors.primary }}>{suggestion.suggestedWeightKg}kg</Text>
+      <Text style={styles.weightTarget}>{suggestion.suggestedWeightKg}kg</Text>
       {' '}({suggestion.suggestedReps} reps)
     </Text>
   );
 }
 
-// ─── Recovery card ───────────────────────────────────────────────────────────
+// ─── Recovery block ──────────────────────────────────────────────────────────
 function RecoveryCard({
   score,
   volumeModifier,
@@ -37,35 +52,39 @@ function RecoveryCard({
   score: number;
   volumeModifier: number;
 }) {
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+
   const pctDelta = Math.round((volumeModifier - 1) * 100);
   const pillLabel =
     pctDelta > 0 ? `+${pctDelta}% volume` : pctDelta < 0 ? `${pctDelta}% volume` : 'Normal volume';
   const pillColor =
-    pctDelta > 0 ? Colors.success : pctDelta < 0 ? Colors.warning : Colors.textSecondary;
+    pctDelta > 0 ? tokens.success : pctDelta < 0 ? tokens.warning : tokens.textSecondary;
 
+  // The five score bands collapse to three token colours because `good`/`warn`
+  // in the legacy palette were already aliases of success/warning.
   const scoreColor =
     score >= 85
-      ? Colors.success
+      ? tokens.success
       : score >= 70
-      ? Colors.good
+      ? tokens.success
       : score >= 50
-      ? Colors.warning
+      ? tokens.warning
       : score >= 35
-      ? Colors.warn
-      : Colors.error;
+      ? tokens.warning
+      : tokens.danger;
 
   const label = scoreLabel(score);
 
   return (
-    <View style={[styles.recoveryCard, { borderColor: scoreColor + '44' }]}>
-      <View style={styles.recoveryCardRow}>
-        <View>
-          <Text style={styles.monoLabel}>Recovery score</Text>
-          <Text style={[styles.recoveryScore, { color: scoreColor }]}>{score}</Text>
-          <Text style={[styles.recoveryLabel, { color: scoreColor }]}>{label}</Text>
+    <View style={styles.recoveryRow}>
+      <BigStat value={score} label="Recovery score" size={52} />
+      <View style={styles.recoveryChips}>
+        <View style={[styles.chip, { borderColor: scoreColor }]}>
+          <Text style={[styles.chipText, { color: scoreColor }]}>{label}</Text>
         </View>
-        <View style={[styles.volumePill, { borderColor: pillColor + '88' }]}>
-          <Text style={[styles.volumePillText, { color: pillColor }]}>{pillLabel}</Text>
+        <View style={[styles.chip, { borderColor: pillColor }]}>
+          <Text style={[styles.chipText, { color: pillColor }]}>{pillLabel}</Text>
         </View>
       </View>
     </View>
@@ -75,6 +94,8 @@ function RecoveryCard({
 // ─── Main screen ─────────────────────────────────────────────────────────────
 export default function WorkoutLobby() {
   const router = useRouter();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { programId, dayIndex } = useLocalSearchParams<{ programId: string; dayIndex: string }>();
   const { data: recovery, isLoading } = useTodayRecovery();
 
@@ -82,6 +103,11 @@ export default function WorkoutLobby() {
   const persona = personaFromProgramId(programId);
   const idx = parseInt(dayIndex ?? '0');
   const workout = program.schedule[idx % program.schedule.length];
+
+  // Body sits on the light page; the crown is dark in BOTH schemes, so it takes
+  // the dark-tuned persona triplet regardless of the active scheme.
+  const pa = personaAccent(persona, scheme);
+  const pc = personaAccent(persona, 'dark');
 
   // volumeModifier from today's recovery check-in (default 1.0 if no check-in)
   const volumeModifier: number = (recovery as any)?.volume_modifier ?? 1.0;
@@ -101,84 +127,109 @@ export default function WorkoutLobby() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
-            <ArrowLeft size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-          <Text style={styles.headline}>{workout.name}</Text>
-          <Text style={styles.monoLabel}>{workout.muscleGroups.join(' · ')}</Text>
-        </View>
+    <CanvasScreen tabBar={false} bottomSpace={32}>
+      <Crown
+        eyebrow={persona.shortName}
+        title={workout.name}
+        meta={workout.muscleGroups.join(' · ')}
+        pills={[`${workout.estimatedMinutes} min`, `${workout.exercises.length} exercises`]}
+        accent={pc.accent}
+        onBack={() => router.back()}
+      />
 
-        {/* Recovery card or missing check-in warning */}
-        {isLoading ? null : hasCheckin && recovery ? (
-          <RecoveryCard
-            score={(recovery as any).recovery_score}
-            volumeModifier={volumeModifier}
-          />
-        ) : (
-          <TouchableOpacity
-            style={styles.noCheckinCard}
-            onPress={() =>
-              router.push({
-                pathname: '/recovery-checkin',
-                params: { returnTo: `/workout-lobby?${new URLSearchParams({ programId: programId ?? 'cbum_evolved', dayIndex: String(idx) }).toString()}` },
-              } as any)
-            }
-          >
-            <View style={styles.noCheckinTitleRow}>
-              <AlertTriangle size={14} color={Colors.warning} />
-              <Text style={styles.noCheckinTitle}>No morning check-in</Text>
+      <View style={styles.body}>
+        {/* Recovery block or missing check-in warning */}
+        <Section label="Readiness">
+          {isLoading ? (
+            <View style={styles.recoveryRow}>
+              <View style={styles.recoverySkeleton}>
+                <Skeleton width={116} height={56} radius={6} />
+                <Skeleton width={88} height={9} radius={3} />
+              </View>
+              <Skeleton width={104} height={26} radius={999} />
             </View>
-            <Text style={styles.noCheckinSub}>
-              Tap to check in — your volume will default to 100% if you skip.
-            </Text>
-          </TouchableOpacity>
-        )}
+          ) : hasCheckin && recovery ? (
+            <RecoveryCard
+              score={(recovery as any).recovery_score}
+              volumeModifier={volumeModifier}
+            />
+          ) : (
+            <PressableScale
+              haptic="light"
+              scaleTo={0.98}
+              accessibilityRole="button"
+              accessibilityLabel="No morning check-in. Tap to check in."
+              style={styles.noCheckinCard}
+              onPress={() =>
+                router.push({
+                  pathname: '/recovery-checkin',
+                  params: { returnTo: `/workout-lobby?${new URLSearchParams({ programId: programId ?? 'cbum_evolved', dayIndex: String(idx) }).toString()}` },
+                } as any)
+              }
+            >
+              <View style={styles.noCheckinTitleRow}>
+                <AlertTriangle size={13} color={tokens.warning} />
+                <Text style={styles.noCheckinTitle}>No morning check-in</Text>
+              </View>
+              <Text style={styles.noCheckinValue}>100%</Text>
+              <Text style={styles.noCheckinSub}>
+                Tap to check in — your volume will default to 100% if you skip.
+              </Text>
+            </PressableScale>
+          )}
+        </Section>
 
         {/* Health integration modifier badge */}
         {healthModifier !== null && (
-          <View style={[
-            styles.healthModifierCard,
-            {
-              borderColor: healthModifier >= 1
-                ? `${Colors.success}44`
-                : `${Colors.warning}44`,
-            },
-          ]}>
-            <View style={styles.healthModifierLabelRow}>
-              <HeartPulse size={14} color={Colors.textTertiary} />
-              <Text style={styles.healthModifierLabel}>Health recovery modifier</Text>
-            </View>
-            <Text style={[
-              styles.healthModifierValue,
-              { color: healthModifier >= 1 ? Colors.success : Colors.warning },
-            ]}>
-              {healthModifier > 1
-                ? `+${Math.round((healthModifier - 1) * 100)}% volume`
-                : healthModifier < 1
-                ? `${Math.round((healthModifier - 1) * 100)}% volume`
-                : 'Normal volume'}
-            </Text>
-            <Text style={styles.healthModifierSub}>Applied from Health Dashboard</Text>
-          </View>
+          <Section
+            label="Health sync"
+            right={<HeartPulse size={13} color={tokens.textTertiary} />}
+          >
+            <Hairline />
+            <ListRow
+              title="Health recovery modifier"
+              subtitle="Applied from Health Dashboard"
+              last
+              right={
+                <Text
+                  style={[
+                    styles.healthModifierValue,
+                    { color: healthModifier >= 1 ? tokens.success : tokens.warning },
+                  ]}
+                >
+                  {healthModifier > 1
+                    ? `+${Math.round((healthModifier - 1) * 100)}% volume`
+                    : healthModifier < 1
+                    ? `${Math.round((healthModifier - 1) * 100)}% volume`
+                    : 'Normal volume'}
+                </Text>
+              }
+            />
+            <Hairline />
+          </Section>
         )}
 
         {/* Today's workout with adjusted set counts */}
-        <Text style={styles.sectionLabel}>Today's workout</Text>
-        <View style={styles.exerciseList}>
+        <Section
+          label="Today's workout"
+          right={<Text style={styles.sectionCount}>{`${workout.exercises.length}`}</Text>}
+        >
+          <Hairline />
           {workout.exercises.map((ex) => {
             const adjustedSets = Math.max(1, Math.round(ex.sets * volumeModifier));
             const delta = adjustedSets - ex.sets;
             const deltaColor =
-              delta > 0 ? Colors.success : delta < 0 ? Colors.warning : Colors.textSecondary;
+              delta > 0 ? tokens.success : delta < 0 ? tokens.warning : tokens.textSecondary;
 
             return (
-              <View key={ex.name} style={styles.exerciseRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exerciseName}>{ex.name}</Text>
+              <View key={ex.name}>
+                <ListRow
+                  title={ex.name}
+                  value={ex.reps}
+                  divider={false}
+                  style={styles.exerciseRow}
+                />
+                <View style={styles.exerciseUnder}>
                   <Text style={styles.exerciseMeta}>
                     <Text style={styles.exerciseSetsBase}>{ex.sets} sets</Text>
                     {delta !== 0 && (
@@ -188,109 +239,188 @@ export default function WorkoutLobby() {
                     )}
                   </Text>
                   <WeightSuggestion exerciseName={ex.name} reps={ex.reps} />
-                  <TouchableOpacity
+                  <PressableScale
+                    haptic="light"
+                    scaleTo={0.96}
+                    accessibilityRole="button"
+                    accessibilityLabel={getProDemoLabel(programIdToPersona(programId))}
                     style={styles.demoLink}
                     onPress={() => {
                       const personaSlug = programIdToPersona(programId);
                       Linking.openURL(getProDemoUrl(ex.name, personaSlug));
                     }}
-                    activeOpacity={0.7}
                   >
-                    <Play size={11} color="#fff" fill="#fff" />
+                    <Play size={9} color={tokens.danger} fill={tokens.danger} />
                     <Text style={styles.demoLinkText}>
                       {getProDemoLabel(programIdToPersona(programId))}
                     </Text>
-                  </TouchableOpacity>
+                  </PressableScale>
                 </View>
-                <Text style={styles.exerciseRepsRight}>{ex.reps}</Text>
+                <Hairline />
               </View>
             );
           })}
-        </View>
+        </Section>
 
-        {/* BEGIN WORKOUT — persona-themed */}
-        <TouchableOpacity
-          style={[styles.beginBtn, { backgroundColor: persona.accent }]}
+        {/* BEGIN WORKOUT — persona-themed, the one accent moment */}
+        <PressableScale
+          haptic="heavy"
+          scaleTo={0.97}
+          accessibilityRole="button"
+          accessibilityLabel="Begin workout"
           onPress={handleBegin}
-          activeOpacity={0.85}
+          // A persona fill on a light page needs a boundary of its own; the
+          // text-safe tone of the same hue is what makes the control legible.
+          style={[styles.beginBtn, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
         >
-          <Play size={16} color={persona.ink} fill={persona.ink} />
-          <Text style={[styles.beginBtnText, { color: persona.ink }]}>Begin workout</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 24 }} />
-      </ScrollView>
-    </SafeAreaView>
+          <Play size={15} color={pa.ink} fill={pa.ink} />
+          <Text style={[styles.beginBtnText, { color: pa.ink }]}>Begin workout</Text>
+        </PressableScale>
+        {workout.exercises.length > 0 ? (
+          <Text style={styles.beginHint}>{`First up · ${workout.exercises[0].name}`}</Text>
+        ) : null}
+      </View>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingTop: 14 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
 
-  header: { marginBottom: 20 },
-  backBtn: { marginBottom: 12, alignSelf: 'flex-start' },
-  headline: { fontFamily: Fonts.display, fontSize: 28, color: Colors.text, letterSpacing: -0.5 },
-  monoLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 4 },
-
-  recoveryCard: {
-    backgroundColor: Colors.surface, borderWidth: 1,
-    borderRadius: 10, padding: 16, marginBottom: 20,
+  // ── Readiness ──────────────────────────────────────────────────────────────
+  recoveryRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: 16,
   },
-  recoveryCardRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  recoveryScore: { fontFamily: Fonts.display, fontSize: 48, lineHeight: 48 },
-  recoveryLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2, marginTop: 2 },
-  volumePill: {
-    borderWidth: 1, borderRadius: 100, paddingHorizontal: 10, paddingVertical: 6,
-    alignSelf: 'flex-start',
+  recoverySkeleton: { gap: 10 },
+  recoveryChips: { alignItems: 'flex-end', gap: 7, paddingTop: 6 },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
   },
-  volumePillText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
+  chipText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+  },
 
   noCheckinCard: {
-    backgroundColor: 'rgba(255,177,58,0.08)', borderWidth: 1,
-    borderColor: 'rgba(255,177,58,0.3)', borderRadius: 10,
-    padding: 16, marginBottom: 20,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
-  noCheckinTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  noCheckinTitle: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.warning, letterSpacing: 0.1 },
-  noCheckinSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.warning, lineHeight: 18 },
+  noCheckinTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  noCheckinTitle: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: t.warning,
+  },
+  noCheckinValue: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 44,
+    lineHeight: 46,
+    letterSpacing: -1.98,
+    color: t.text,
+    fontVariant: ['tabular-nums'],
+    marginTop: 8,
+  },
+  noCheckinSub: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: t.textSecondary,
+    marginTop: 6,
+  },
 
-  sectionLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, letterSpacing: 0.2, marginBottom: 10 },
+  // ── Health sync ────────────────────────────────────────────────────────────
+  healthModifierValue: {
+    fontFamily: Fonts.displayMedium,
+    fontSize: 15,
+    letterSpacing: -0.2,
+    fontVariant: ['tabular-nums'],
+  },
 
-  exerciseList: {
-    backgroundColor: Colors.surface, borderWidth: 1,
-    borderColor: Colors.border, borderRadius: 10, overflow: 'hidden', marginBottom: 20,
+  // ── Exercise manifest ──────────────────────────────────────────────────────
+  sectionCount: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.3,
+    color: t.textTertiary,
+    fontVariant: ['tabular-nums'],
   },
-  exerciseRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 14, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  // Tightened so the row and its detail block read as one unit.
+  exerciseRow: { paddingBottom: 5 },
+  exerciseUnder: { paddingBottom: 15, gap: 6, alignItems: 'flex-start' },
+  exerciseMeta: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: t.textSecondary,
   },
-  exerciseName: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, marginBottom: 3 },
-  exerciseMeta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.1 },
-  exerciseSetsBase: { color: Colors.textTertiary },
-  exerciseRepsRight: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, marginLeft: 10 },
-  weightSuggestion: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, marginTop: 3 },
+  exerciseSetsBase: { color: t.textTertiary },
+  weightSuggestion: {
+    fontFamily: Fonts.body,
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: t.textTertiary,
+  },
+  // Only the target number earns full contrast inside the muted suggestion line.
+  weightTarget: {
+    fontFamily: Fonts.displayMedium,
+    color: t.text,
+    fontVariant: ['tabular-nums'],
+  },
   demoLink: {
-    marginTop: 6, alignSelf: 'flex-start',
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 10, paddingVertical: 5,
-    backgroundColor: '#cc1f1f', borderRadius: 100,
+    marginTop: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 11,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: t.borderStrong,
   },
-  demoLinkText: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: '#fff', letterSpacing: 0.1 },
+  demoLinkText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8.5,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.text,
+  },
 
+  // ── Launch ─────────────────────────────────────────────────────────────────
   beginBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    borderRadius: 100, paddingVertical: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    borderRadius: 26,
+    borderWidth: 1,
+    paddingVertical: 21,
+    marginTop: 36,
   },
-  beginBtnText: { fontFamily: Fonts.displayMedium, fontSize: 15, letterSpacing: 0.2 },
-
-  healthModifierCard: {
-    backgroundColor: Colors.surface, borderWidth: 1,
-    borderRadius: 10, padding: 14, marginBottom: 16,
+  beginBtnText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 16,
+    letterSpacing: -0.3,
   },
-  healthModifierLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  healthModifierLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2 },
-  healthModifierValue: { fontFamily: Fonts.display, fontSize: 16, marginBottom: 4 },
-  healthModifierSub: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary },
+  beginHint: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8.5,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    textAlign: 'center',
+    marginTop: 12,
+  },
 });

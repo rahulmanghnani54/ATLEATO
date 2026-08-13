@@ -11,7 +11,14 @@
  * from the Direction C version unchanged.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View, type DimensionValue } from 'react-native';
+import {
+  RefreshControl,
+  StyleSheet,
+  Text,
+  View,
+  type DimensionValue,
+  type LayoutChangeEvent,
+} from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { PhoneCall } from 'lucide-react-native';
@@ -34,6 +41,9 @@ import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
+/** Breathing room between the last scroll row and the top of the pinned CTA. */
+const CTA_GAP = 16;
+
 /** Bar width for a macro, clamped so an overshoot can't run past the track. */
 function macroWidth(eaten: number, goal: number): DimensionValue {
   return `${Math.min(100, (eaten / Math.max(goal, 1)) * 100)}%`;
@@ -45,6 +55,20 @@ export default function Dashboard() {
   const styles = useThemedStyles(makeStyles);
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion();
+
+  // The CTA is absolutely positioned, so it reserves nothing in the scroll
+  // content — the room it needs has to be MEASURED, not guessed: its height
+  // moves with the OS font scale and with how long the persona's label is.
+  const [ctaBlockHeight, setCtaBlockHeight] = useState(0);
+  const onCtaLayout = useCallback((e: LayoutChangeEvent) => {
+    const h = Math.round(e.nativeEvent.layout.height);
+    setCtaBlockHeight((prev) => (prev === h ? prev : h));
+  }, []);
+  // The measured block is button + its own bottom padding, and that padding is
+  // the same TAB_BAR_SPACE + inset CanvasScreen already reserves — so only the
+  // overhang above it, plus a gap, is new.
+  const bottomSpace =
+    Math.max(0, ctaBlockHeight - (TAB_BAR_SPACE + insets.bottom)) + CTA_GAP;
 
   const profile = useAuthStore((s) => s.profile);
   const persona = personaFromProgramId(profile?.selected_program);
@@ -123,7 +147,7 @@ export default function Dashboard() {
   return (
     <View style={styles.root}>
       <CanvasScreen
-        bottomSpace={72}
+        bottomSpace={bottomSpace}
         refreshControl={
           <RefreshControl
             tintColor={pa.accent}
@@ -309,6 +333,7 @@ export default function Dashboard() {
       <View
         style={[styles.ctaWrap, { paddingBottom: insets.bottom + TAB_BAR_SPACE }]}
         pointerEvents="box-none"
+        onLayout={onCtaLayout}
       >
         <PressableScale
           onPress={() =>
@@ -430,7 +455,12 @@ const makeStyles = (t: SemanticTokens) =>
     // ── Pinned CTA ──
     ctaWrap: { position: 'absolute', left: 22, right: 22, bottom: 0 },
     cta: {
-      height: 58,
+      // minHeight, not height: at a large OS font scale a fixed 58 clipped the
+      // label, and it also lied to the onLayout measurement the scroll reserve
+      // is derived from. At default scale the label is well under 58, so this
+      // renders identically.
+      minHeight: 58,
+      paddingVertical: 10,
       borderRadius: 29,
       borderWidth: 1,
       alignItems: 'center',

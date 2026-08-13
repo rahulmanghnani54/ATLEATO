@@ -293,7 +293,7 @@ export default function Progress() {
                       key={i}
                       height={104}
                       radius={22}
-                      width="31.5%"
+                      width="30%"
                       style={{ backgroundColor: tokens.surfaceAlt }}
                     />
                   ))}
@@ -507,7 +507,10 @@ const makeStyles = (t: SemanticTokens) => StyleSheet.create({
 
   achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   achievementChip: {
-    width: '31.5%',
+    // 30, not 31.5: RN's `gap` eats real width, so three 31.5% chips plus two
+    // 10px gaps need a 408dp screen — below that the third chip wrapped and the
+    // grid silently rendered 2-up on every common phone (360/390/393dp).
+    width: '30%',
     alignItems: 'center',
     backgroundColor: t.surfaceAlt,
     borderRadius: 22,

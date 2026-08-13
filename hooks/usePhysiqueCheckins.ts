@@ -19,6 +19,17 @@ import {
   type PhysiqueCompareResponse,
 } from '@/lib/api/edgeFunctions';
 
+// Time-limit any Supabase call so a stalled request can't leave a dashboard
+// stat spinning forever (same pattern as useDashboardStats / useProgressStats).
+async function withTimeout<T>(p: PromiseLike<T>, label: string): Promise<T> {
+  return Promise.race([
+    p as Promise<T>,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out — check your connection.`)), 8000),
+    ),
+  ]);
+}
+
 const REMINDER_KEY = 'physique_reminder_id';
 
 export type PhysiqueCheckin = {
@@ -58,21 +69,43 @@ export type PhysiqueAnalysis = {
 
 // ─── Fetch all check-ins (newest first) ──────────────────────────────────────
 
+// physique_checkins isn't in the generated Database types yet. Describing just
+// the builder chain we use keeps the row type intact — widening the client
+// erased it and left `data`/`error` as `unknown` at the destructure.
+type CheckinListBuilder = (table: 'physique_checkins') => {
+  select(columns: string): {
+    eq(column: string, value: string): {
+      order(
+        column: string,
+        options: { ascending: boolean },
+      ): PromiseLike<{ data: PhysiqueCheckin[] | null; error: Error | null }>;
+    };
+  };
+};
+
+const fromCheckins = supabase.from as unknown as CheckinListBuilder;
+
 export function usePhysiqueCheckins() {
   const user = useAuthStore((s) => s.user);
   return useQuery({
     queryKey: ['physique_checkins', user?.id],
     queryFn: async (): Promise<PhysiqueCheckin[]> => {
       if (!user) return [];
-      const { data, error } = await (supabase.from('physique_checkins') as any)
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
+      // PhysiqueGallery renders a skeleton off this query's pending state, so a
+      // stall must resolve to an empty gallery rather than skeleton forever.
+      const { data, error } = await withTimeout(
+        fromCheckins('physique_checkins')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('date', { ascending: false }),
+        'Physique check-ins',
+      ).catch(() => ({ data: null, error: null }));
       if (error) throw error;
       return data ?? [];
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
+    retry: 1,
   });
 }
 

@@ -32,7 +32,9 @@ import { supabase } from '@/lib/supabase';
 import {
   personaFromProgramId, personaAccent, quoteOfTheDay, styleText, getPersona, type PersonaId,
 } from '@/lib/personaTheme';
-import { BigStat, Crown, ListRow, Section, StatRow, TAB_BAR_SPACE } from '@/components/ui/canvas';
+import {
+  BigStat, Crown, CrownSlot, ListRow, Section, StatRow, TAB_BAR_SPACE, useCrownStatusBar,
+} from '@/components/ui/canvas';
 import { PressableScale, Skeleton } from '@/components/ui/motion';
 import { Fonts } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/lib/theme';
@@ -114,6 +116,12 @@ export default function CoachHub() {
   const router = useRouter();
   const { tokens, scheme } = useTheme();
   const insets = useSafeAreaInsets();
+
+  // This screen owns its scroller (the composer has to stay pinned under it), so
+  // it also owns the crown's status-bar contract that CanvasScreen would
+  // otherwise handle — without it the bar keeps white icons after the dark crown
+  // has scrolled off and the light body is behind the clock.
+  const crownBar = useCrownStatusBar();
 
   // The tab bar is a floating pill that reserves no layout space, so the input
   // bar has to lift over it — but the bar hides on keyboard, and holding that
@@ -365,277 +373,284 @@ export default function CoachHub() {
   );
 
   return (
-    <View style={styles.root}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <ScrollView
-          ref={chatRef}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}
+    <CrownSlot value={crownBar.registerCrown}>
+      <View style={styles.root}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
-          {/* ── CROWN ── full-bleed coach identity ───────────────────────── */}
-          <Crown
-            eyebrow={styleText(persona, persona.vibe)}
-            title={crownTitle}
-            accentLine={crownAccentLine}
-            pills={eraPills}
-            accent={crownTint}
-            right={
-              <View style={styles.crownAvatar}>
-                <Text style={styles.crownInitials}>{persona.initials}</Text>
-              </View>
-            }
+          {crownBar.statusBar}
+          <ScrollView
+            ref={chatRef}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={styles.scrollContent}
+            onScroll={crownBar.onScroll}
+            scrollEventThrottle={32}
           >
-            <View style={styles.quoteRule} />
-            <Text style={styles.quote}>{`“${todayQuote}”`}</Text>
-          </Crown>
-
-          {/* ── TODAY'S SESSION CTA ───────────────────────────────────── */}
-          {isRest ? (
-            // Rest day is not a tap target — rendered flat so it keeps full
-            // contrast instead of the pressable's disabled dimming.
-            <View style={styles.today}>{todayBody}</View>
-          ) : (
-            <PressableScale
-              style={styles.today}
-              onPress={startTodaysWorkout}
-              haptic="heavy"
-              accessibilityRole="button"
-              accessibilityLabel={`Start ${todayWorkoutName}`}
+            {/* ── CROWN ── full-bleed coach identity ───────────────────────── */}
+            <Crown
+              eyebrow={styleText(persona, persona.vibe)}
+              title={crownTitle}
+              accentLine={crownAccentLine}
+              pills={eraPills}
+              accent={crownTint}
+              right={
+                <View style={styles.crownAvatar}>
+                  <Text style={styles.crownInitials}>{persona.initials}</Text>
+                </View>
+              }
             >
-              {todayBody}
-            </PressableScale>
-          )}
+              <View style={styles.quoteRule} />
+              <Text style={styles.quote}>{`“${todayQuote}”`}</Text>
+            </Crown>
 
-          <View style={styles.gutter}>
-            {/* ── PHILOSOPHY ──────────────────────────────────────────── */}
-            <Section label="Training philosophy">
-              <Text style={styles.statement}>{persona.training.signature}</Text>
+            {/* ── TODAY'S SESSION CTA ───────────────────────────────────── */}
+            {isRest ? (
+              // Rest day is not a tap target — rendered flat so it keeps full
+              // contrast instead of the pressable's disabled dimming.
+              <View style={styles.today}>{todayBody}</View>
+            ) : (
+              <PressableScale
+                style={styles.today}
+                onPress={startTodaysWorkout}
+                haptic="heavy"
+                accessibilityRole="button"
+                accessibilityLabel={`Start ${todayWorkoutName}`}
+              >
+                {todayBody}
+              </PressableScale>
+            )}
 
-              <Text style={[styles.miniLabel, { color: pa.accentText, marginTop: 22 }]}>Focus on</Text>
-              {persona.training.focusOn.map((f, i) => (
-                <View key={i} style={styles.bulletRow}>
-                  <Check size={17} color={pa.accentText} strokeWidth={2.6} />
-                  <Text style={styles.bulletText}>{f}</Text>
-                </View>
-              ))}
+            <View style={styles.gutter}>
+              {/* ── PHILOSOPHY ──────────────────────────────────────────── */}
+              <Section label="Training philosophy">
+                <Text style={styles.statement}>{persona.training.signature}</Text>
 
-              <Text style={[styles.miniLabel, { color: tokens.danger, marginTop: 20 }]}>Never</Text>
-              {persona.training.avoid.map((a, i) => (
-                <View key={i} style={styles.bulletRow}>
-                  <XIcon size={17} color={tokens.danger} strokeWidth={2.6} />
-                  <Text style={styles.bulletText}>{a}</Text>
-                </View>
-              ))}
-            </Section>
-
-            {/* ── SIGNATURE LIFTS ─────────────────────────────────────── */}
-            <Section label="Signature lifts">
-              <Text style={[styles.lede, { marginBottom: 6 }]}>
-                The exercises that define {persona.shortName}'s training.
-              </Text>
-              {persona.training.signatureLifts.map((lift, i, arr) => (
-                <ListRow
-                  key={i}
-                  title={lift}
-                  value={String(i + 1).padStart(2, '0')}
-                  last={i === arr.length - 1}
-                />
-              ))}
-            </Section>
-
-            {/* ── NUTRITION APPROACH ──────────────────────────────────── */}
-            <Section label="Nutrition approach">
-              <Text style={styles.statement}>{styleText(persona, persona.nutrition.headline)}</Text>
-              <Text style={[styles.lede, { marginTop: 10 }]}>{persona.nutrition.style}</Text>
-
-              {/* All three at 27: StatRow's promise is that the mono labels sit on
-                  one baseline across the row, and that only holds while the
-                  numerals share a size. The P/C/F triple sets the ceiling — it is
-                  the widest value and cannot go above 27 in a third-width cell. */}
-              <StatRow style={{ marginTop: 26 }}>
-                <BigStat value={persona.nutrition.mealsPerDay} label="Meals / day" size={27} />
-                <BigStat
-                  value={persona.nutrition.proteinPerKg}
-                  unit="g"
-                  decimals={1}
-                  label="Protein / kg"
-                  size={27}
-                />
-                <BigStat
-                  value={`${persona.nutrition.macroSplit.protein}/${persona.nutrition.macroSplit.carbs}/${persona.nutrition.macroSplit.fat}`}
-                  label="P / C / F"
-                  size={27}
-                />
-              </StatRow>
-
-              <Text style={[styles.miniLabel, { color: tokens.textTertiary, marginTop: 30 }]}>
-                Signature foods
-              </Text>
-              <View style={styles.chipWrap}>
-                {persona.nutrition.signatureFoods.map((food, i) => (
-                  <View key={i} style={styles.chip}>
-                    <Text style={styles.chipText}>{food}</Text>
+                <Text style={[styles.miniLabel, { color: pa.accentText, marginTop: 22 }]}>Focus on</Text>
+                {persona.training.focusOn.map((f, i) => (
+                  <View key={i} style={styles.bulletRow}>
+                    <Check size={17} color={pa.accentText} strokeWidth={2.6} />
+                    <Text style={styles.bulletText}>{f}</Text>
                   </View>
                 ))}
-              </View>
 
-              <Text style={[styles.miniLabel, { color: tokens.textTertiary, marginTop: 26 }]}>
-                Cutting approach
-              </Text>
-              <Text style={styles.lede}>{persona.nutrition.cuttingApproach}</Text>
-            </Section>
-
-            {/* ── COACH SWITCHER ──────────────────────────────────────── */}
-            <Section label="Explore other coaches">
-              <Text style={[styles.lede, { marginBottom: 16 }]}>
-                Tap any coach to switch — the whole app re-themes around their world.
-              </Text>
-              <View style={styles.switchRow}>
-                {PERSONA_ORDER.map((id) => {
-                  const p = getPersona(id);
-                  const pAccent = personaAccent(p, scheme);
-                  const active = id === selectedId;
-                  const isUserId = id === persona.id;
-                  return (
-                    <PressableScale
-                      key={id}
-                      style={[
-                        styles.switchTile,
-                        {
-                          backgroundColor: active ? pAccent.accent : tokens.surfaceAlt,
-                          borderColor: active ? pAccent.accentText : 'transparent',
-                        },
-                      ]}
-                      onPress={() => switchTo(id)}
-                      haptic="light"
-                      scaleTo={0.95}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: active, busy: switching === id }}
-                      accessibilityLabel={`Switch to ${p.fullName}`}
-                    >
-                      {switching === id ? (
-                        // switchTo() already no-ops while a switch is in flight,
-                        // so the tiles stay undimmed and only the target shows work.
-                        <Skeleton width="100%" height={62} radius={21} />
-                      ) : (
-                        <>
-                          <Text style={[
-                            styles.switchInitials,
-                            { color: active ? pAccent.ink : pAccent.accentText },
-                          ]}>
-                            {p.initials}
-                          </Text>
-                          {isUserId && (
-                            <View style={[styles.switchMarker, { backgroundColor: pAccent.ink }]} />
-                          )}
-                        </>
-                      )}
-                    </PressableScale>
-                  );
-                })}
-              </View>
-            </Section>
-
-            {/* ── CHAT ──────────────────────────────────────────────── */}
-            <Section label={`Chat with ${persona.shortName}`} style={{ paddingBottom: 8 }}>
-              {messages.length === 0 ? (
-                <View>
-                  <Text style={[styles.lede, { marginBottom: 16 }]}>
-                    Ask {persona.shortName} anything — training, nutrition, mindset.
-                  </Text>
-                  <View style={styles.chipWrap}>
-                    {QUICK_PROMPTS.map((q) => (
-                      <PressableScale
-                        key={q}
-                        style={[styles.chip, { backgroundColor: pa.accentSoft }]}
-                        onPress={() => sendMessage(q)}
-                        haptic="light"
-                        scaleTo={0.96}
-                        accessibilityRole="button"
-                        accessibilityLabel={q}
-                      >
-                        <Text style={[styles.chipText, { color: pa.accentText }]}>{q}</Text>
-                      </PressableScale>
-                    ))}
+                <Text style={[styles.miniLabel, { color: tokens.danger, marginTop: 20 }]}>Never</Text>
+                {persona.training.avoid.map((a, i) => (
+                  <View key={i} style={styles.bulletRow}>
+                    <XIcon size={17} color={tokens.danger} strokeWidth={2.6} />
+                    <Text style={styles.bulletText}>{a}</Text>
                   </View>
-                </View>
-              ) : (
-                messages.map((msg) => {
-                  const mine = msg.role === 'user';
-                  return (
-                    <View
-                      key={msg.id}
-                      style={[styles.bubbleWrap, mine ? styles.bubbleWrapUser : styles.bubbleWrapCoach]}
-                    >
-                      {!mine && (
-                        <Text style={[styles.bubbleSender, { color: pa.accentText }]}>
-                          {persona.shortName}
-                        </Text>
-                      )}
-                      <View style={[
-                        styles.bubble,
-                        mine ? styles.bubbleUser : [styles.bubbleCoach, { backgroundColor: pa.accentSoft }],
-                      ]}>
-                        <Text style={styles.bubbleText}>{msg.content}</Text>
-                      </View>
+                ))}
+              </Section>
+
+              {/* ── SIGNATURE LIFTS ─────────────────────────────────────── */}
+              <Section label="Signature lifts">
+                <Text style={[styles.lede, { marginBottom: 6 }]}>
+                  The exercises that define {persona.shortName}'s training.
+                </Text>
+                {persona.training.signatureLifts.map((lift, i, arr) => (
+                  <ListRow
+                    key={i}
+                    title={lift}
+                    value={String(i + 1).padStart(2, '0')}
+                    last={i === arr.length - 1}
+                  />
+                ))}
+              </Section>
+
+              {/* ── NUTRITION APPROACH ──────────────────────────────────── */}
+              <Section label="Nutrition approach">
+                <Text style={styles.statement}>{styleText(persona, persona.nutrition.headline)}</Text>
+                <Text style={[styles.lede, { marginTop: 10 }]}>{persona.nutrition.style}</Text>
+
+                {/* The macro split is NOT a third column. "30/45/25" is eight
+                    glyphs — ~106pt at 27px — and a third-width cell on a 360dp
+                    screen is 96pt, so BigStat's numberOfLines={1} clipped it to
+                    "30/45/2…". It gets the full column width on its own line
+                    instead, which also lets all three numerals share one size. */}
+                <StatRow style={{ marginTop: 26 }}>
+                  <BigStat value={persona.nutrition.mealsPerDay} label="Meals / day" size={30} />
+                  <BigStat
+                    value={persona.nutrition.proteinPerKg}
+                    unit="g"
+                    decimals={1}
+                    label="Protein / kg"
+                    size={30}
+                  />
+                </StatRow>
+                <BigStat
+                  style={{ marginTop: 26 }}
+                  value={`${persona.nutrition.macroSplit.protein}/${persona.nutrition.macroSplit.carbs}/${persona.nutrition.macroSplit.fat}`}
+                  label="Protein / carbs / fat · % of calories"
+                  size={30}
+                />
+
+                <Text style={[styles.miniLabel, { color: tokens.textTertiary, marginTop: 30 }]}>
+                  Signature foods
+                </Text>
+                <View style={styles.chipWrap}>
+                  {persona.nutrition.signatureFoods.map((food, i) => (
+                    <View key={i} style={styles.chip}>
+                      <Text style={styles.chipText}>{food}</Text>
                     </View>
-                  );
-                })
-              )}
-
-              {chatLoading && (
-                <View style={[styles.bubbleWrap, styles.bubbleWrapCoach]}>
-                  <Text style={[styles.bubbleSender, { color: pa.accentText }]}>{persona.shortName}</Text>
-                  <View style={[styles.bubble, styles.bubbleCoach, { backgroundColor: pa.accentSoft }]}>
-                    <TypingDots color={pa.accentText} />
-                  </View>
+                  ))}
                 </View>
-              )}
-            </Section>
-          </View>
-        </ScrollView>
 
-        {/* ── INPUT BAR (always visible) ─────────────────────────────── */}
-        <View style={styles.inputRule} />
-        <View
-          style={[
-            styles.inputBar,
-            // 8px of air between the composer and the top of the floating pill;
-            // with the keyboard up the pill is gone, so the bar sits on the keys.
-            { paddingBottom: keyboardUp ? 14 : insets.bottom + TAB_BAR_SPACE - 8 },
-          ]}
-        >
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder={`Ask ${persona.shortName} anything…`}
-            placeholderTextColor={tokens.textTertiary}
-            multiline
-            maxLength={500}
-            keyboardAppearance={scheme === 'dark' ? 'dark' : 'light'}
-          />
-          <PressableScale
-            // PressableScale dims itself while disabled, so the button needs no
-            // separate disabled style — one source of truth for that state.
-            style={[styles.sendBtn, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
-            onPress={() => sendMessage(input)}
-            disabled={!input.trim() || chatLoading}
-            haptic="medium"
-            accessibilityRole="button"
-            accessibilityLabel={`Send message to ${persona.shortName}`}
+                <Text style={[styles.miniLabel, { color: tokens.textTertiary, marginTop: 26 }]}>
+                  Cutting approach
+                </Text>
+                <Text style={styles.lede}>{persona.nutrition.cuttingApproach}</Text>
+              </Section>
+
+              {/* ── COACH SWITCHER ──────────────────────────────────────── */}
+              <Section label="Explore other coaches">
+                <Text style={[styles.lede, { marginBottom: 16 }]}>
+                  Tap any coach to switch — the whole app re-themes around their world.
+                </Text>
+                <View style={styles.switchRow}>
+                  {PERSONA_ORDER.map((id) => {
+                    const p = getPersona(id);
+                    const pAccent = personaAccent(p, scheme);
+                    const active = id === selectedId;
+                    const isUserId = id === persona.id;
+                    return (
+                      <PressableScale
+                        key={id}
+                        style={[
+                          styles.switchTile,
+                          {
+                            backgroundColor: active ? pAccent.accent : tokens.surfaceAlt,
+                            borderColor: active ? pAccent.accentText : 'transparent',
+                          },
+                        ]}
+                        onPress={() => switchTo(id)}
+                        haptic="light"
+                        scaleTo={0.95}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: active, busy: switching === id }}
+                        accessibilityLabel={`Switch to ${p.fullName}`}
+                      >
+                        {switching === id ? (
+                          // switchTo() already no-ops while a switch is in flight,
+                          // so the tiles stay undimmed and only the target shows work.
+                          <Skeleton width="100%" height={62} radius={21} />
+                        ) : (
+                          <>
+                            <Text style={[
+                              styles.switchInitials,
+                              { color: active ? pAccent.ink : pAccent.accentText },
+                            ]}>
+                              {p.initials}
+                            </Text>
+                            {isUserId && (
+                              <View style={[styles.switchMarker, { backgroundColor: pAccent.ink }]} />
+                            )}
+                          </>
+                        )}
+                      </PressableScale>
+                    );
+                  })}
+                </View>
+              </Section>
+
+              {/* ── CHAT ──────────────────────────────────────────────── */}
+              <Section label={`Chat with ${persona.shortName}`} style={{ paddingBottom: 8 }}>
+                {messages.length === 0 ? (
+                  <View>
+                    <Text style={[styles.lede, { marginBottom: 16 }]}>
+                      Ask {persona.shortName} anything — training, nutrition, mindset.
+                    </Text>
+                    <View style={styles.chipWrap}>
+                      {QUICK_PROMPTS.map((q) => (
+                        <PressableScale
+                          key={q}
+                          style={[styles.chip, { backgroundColor: pa.accentSoft }]}
+                          onPress={() => sendMessage(q)}
+                          haptic="light"
+                          scaleTo={0.96}
+                          accessibilityRole="button"
+                          accessibilityLabel={q}
+                        >
+                          <Text style={[styles.chipText, { color: pa.accentText }]}>{q}</Text>
+                        </PressableScale>
+                      ))}
+                    </View>
+                  </View>
+                ) : (
+                  messages.map((msg) => {
+                    const mine = msg.role === 'user';
+                    return (
+                      <View
+                        key={msg.id}
+                        style={[styles.bubbleWrap, mine ? styles.bubbleWrapUser : styles.bubbleWrapCoach]}
+                      >
+                        {!mine && (
+                          <Text style={[styles.bubbleSender, { color: pa.accentText }]}>
+                            {persona.shortName}
+                          </Text>
+                        )}
+                        <View style={[
+                          styles.bubble,
+                          mine ? styles.bubbleUser : [styles.bubbleCoach, { backgroundColor: pa.accentSoft }],
+                        ]}>
+                          <Text style={styles.bubbleText}>{msg.content}</Text>
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+
+                {chatLoading && (
+                  <View style={[styles.bubbleWrap, styles.bubbleWrapCoach]}>
+                    <Text style={[styles.bubbleSender, { color: pa.accentText }]}>{persona.shortName}</Text>
+                    <View style={[styles.bubble, styles.bubbleCoach, { backgroundColor: pa.accentSoft }]}>
+                      <TypingDots color={pa.accentText} />
+                    </View>
+                  </View>
+                )}
+              </Section>
+            </View>
+          </ScrollView>
+
+          {/* ── INPUT BAR (always visible) ─────────────────────────────── */}
+          <View style={styles.inputRule} />
+          <View
+            style={[
+              styles.inputBar,
+              // 8px of air between the composer and the top of the floating pill;
+              // with the keyboard up the pill is gone, so the bar sits on the keys.
+              { paddingBottom: keyboardUp ? 14 : insets.bottom + TAB_BAR_SPACE - 8 },
+            ]}
           >
-            {chatLoading
-              ? <TypingDots color={pa.ink} />
-              : <ArrowUp size={21} color={pa.ink} strokeWidth={2.6} />
-            }
-          </PressableScale>
-        </View>
-      </KeyboardAvoidingView>
-    </View>
+            <TextInput
+              style={styles.input}
+              value={input}
+              onChangeText={setInput}
+              placeholder={`Ask ${persona.shortName} anything…`}
+              placeholderTextColor={tokens.textTertiary}
+              multiline
+              maxLength={500}
+              keyboardAppearance={scheme === 'dark' ? 'dark' : 'light'}
+            />
+            <PressableScale
+              // PressableScale dims itself while disabled, so the button needs no
+              // separate disabled style — one source of truth for that state.
+              style={[styles.sendBtn, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
+              onPress={() => sendMessage(input)}
+              disabled={!input.trim() || chatLoading}
+              haptic="medium"
+              accessibilityRole="button"
+              accessibilityLabel={`Send message to ${persona.shortName}`}
+            >
+              {chatLoading
+                ? <TypingDots color={pa.ink} />
+                : <ArrowUp size={21} color={pa.ink} strokeWidth={2.6} />
+              }
+            </PressableScale>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </CrownSlot>
   );
 }
