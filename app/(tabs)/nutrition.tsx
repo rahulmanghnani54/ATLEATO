@@ -1,65 +1,78 @@
 /**
- * Nutrition Tab — Direction C (migrated 2026-06-13)
+ * Nutrition Tab — Bold Canvas (migrated 2026-08-13, was Direction C)
  *
  * Structure:
- *   HeroBlock — persona gradient + day + "kcal eaten / goal"
- *   3-up Stat row — protein / carbs / fat (with target/eaten ratio)
- *   MacroRing card — single big radial ring (kept, persona-tinted)
- *   RowCard list — Search foods, Photo scan, Water, then 4 meals, then AI gap analysis
- *   AnchorCTA — "LOG A MEAL →"
+ *   Crown      — dark full-bleed hero: calories remaining as the hero numeral,
+ *                persona radial tint, intake pills, calorie rail
+ *   StatRow    — protein / carbs / fat, each over a slim macro-token rail
+ *   Section    — quick log + today's meals as borderless ListRows
+ *   Section    — the coach's tip + gap analysis
+ *   Anchor CTA — "BUILD A MEAL →" in the persona accent
  *
  * v0 backup at nutrition-v0.tsx.bak.
  */
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { format } from 'date-fns';
-import Svg, { Circle } from 'react-native-svg';
-import {
-  Search, Camera, Droplets, UtensilsCrossed,
-  Sun, Pizza, Cookie, Moon, Sparkles,
-} from 'lucide-react-native';
+import { Sparkles } from 'lucide-react-native';
 
 import { useDailyNutrition } from '@/hooks/useDailyNutrition';
 import { useWaterLog } from '@/hooks/useWaterLog';
 import { useAuthStore } from '@/stores/authStore';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
-import { personaFromProgramId, nutritionTipOfTheDay } from '@/lib/personaTheme';
-import { HeroBlock, Stat, RowCard, AnchorCTA } from '@/components/ui/c';
+import { Fonts } from '@/constants/theme';
+import { personaAccent, personaFromProgramId, nutritionTipOfTheDay } from '@/lib/personaTheme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
+import {
+  BigStat, CanvasScreen, Crown, Hairline, ListRow, Section, StatRow, TAB_BAR_SPACE,
+} from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
 import type { MealType } from '@/types/index';
 
-const MEALS: { key: MealType; label: string; time: string; Icon: any }[] = [
-  { key: 'breakfast', label: 'Breakfast', time: '07:00', Icon: Sun },
-  { key: 'lunch',     label: 'Lunch',     time: '12:30', Icon: Pizza },
-  { key: 'snack',     label: 'Snack',     time: '15:30', Icon: Cookie },
-  { key: 'dinner',    label: 'Dinner',    time: '19:00', Icon: Moon },
+const MEALS: { key: MealType; label: string; time: string }[] = [
+  { key: 'breakfast', label: 'Breakfast', time: '07:00' },
+  { key: 'lunch',     label: 'Lunch',     time: '12:30' },
+  { key: 'snack',     label: 'Snack',     time: '15:30' },
+  { key: 'dinner',    label: 'Dinner',    time: '19:00' },
 ];
 
-// ─── Macro ring (kept — persona-tinted) ──────────────────────────────────────
-function MacroRing({ eaten, goal, color }: { eaten: number; goal: number; color: string }) {
-  const r = 58, cx = 70, cy = 70;
-  const circ = 2 * Math.PI * r;
-  const pct = Math.min(eaten / Math.max(goal, 1), 1);
+/**
+ * Slim progress rail. Bold Canvas has no gauge widgets — the ratio rides as a
+ * 4px pill directly under the numeral it belongs to, so the numeral stays the
+ * only thing the eye lands on.
+ */
+function Track({
+  value, goal, color, rail,
+}: { value: number; goal: number; color: string; rail: string }) {
+  const pct = Math.min(Math.max(value / Math.max(goal, 1), 0), 1);
   return (
-    <Svg width={140} height={140} viewBox="0 0 140 140" style={{ transform: [{ rotate: '-90deg' }] }}>
-      <Circle cx={cx} cy={cy} r={r} stroke={Colors.border} strokeWidth={11} fill="none" />
-      <Circle
-        cx={cx} cy={cy} r={r}
-        stroke={color} strokeWidth={11} fill="none"
-        strokeDasharray={`${circ * pct} ${circ}`} strokeLinecap="round"
-      />
-    </Svg>
+    <View style={[rails.rail, { backgroundColor: rail }]}>
+      <View style={[rails.fill, { width: `${pct * 100}%`, backgroundColor: color }]} />
+    </View>
   );
 }
 
+const rails = StyleSheet.create({
+  rail: { height: 4, borderRadius: 999, overflow: 'hidden' },
+  fill: { height: 4, borderRadius: 999 },
+});
+
 export default function Nutrition() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(themed);
+
   const [date] = useState(new Date());
   const profile = useAuthStore((s) => s.profile);
   const persona = personaFromProgramId(profile?.selected_program);
+  const pa = personaAccent(persona, scheme);
+  // The crown is dark in BOTH schemes, so its tint always takes the dark-tuned
+  // persona accent — the light one disappears against ink.
+  const crownTint = personaAccent(persona, 'dark').accent;
 
-  const { data: nutrition, refetch } = useDailyNutrition(date);
+  const { data: nutrition, isLoading, refetch } = useDailyNutrition(date);
   const { glasses, goalGlasses, addGlass, addGlassIsPending } = useWaterLog(date);
   const handleAddWater = () => {
     if (addGlassIsPending) return;
@@ -88,196 +101,204 @@ export default function Nutrition() {
     ? `Protein at ${Math.round((protein / Math.max(proteinGoal, 1)) * 100)}%. Eat ${proteinGoal - protein}g more.`
     : `Protein on track. Keep eating clean.`;
 
+  const hitTarget = consumed >= goal;
+  const pctOfGoal = Math.round((consumed / Math.max(goal, 1)) * 100);
+
+  const openBuildMeal = () => router.push({
+    pathname: '/build-meal',
+    params: { mealType: 'lunch', date: dateStr },
+  } as any);
+
   return (
     <View style={styles.root}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── 1. HERO ─────────────────────────────────────────── */}
-        <HeroBlock
-          accent={persona.accent}
-          day={`${weekday} · ${persona.shortName} Protocol`}
-          name={consumed >= goal
-            ? `Done.\n${consumed} kcal.`
-            : `${remaining}\nkcal to go.`}
-        />
+      {/* The tab bar is a FLOATING pill — it insets nothing, so the kit's
+          reserve is required, not a double-count. bottomSpace is the extra room
+          for the anchored CTA that sits above it. */}
+      <CanvasScreen bottomSpace={72}>
+        {/* ── 1. CROWN — calories remaining is the hero ──────────────── */}
+        <Crown
+          eyebrow={`${weekday} · ${persona.shortName} protocol`}
+          title={hitTarget ? 'Done.' : remaining.toLocaleString('en-US')}
+          accentLine={hitTarget ? `${consumed.toLocaleString('en-US')} kcal.` : 'kcal to go.'}
+          meta={hitTarget
+            ? 'Target reached for today.'
+            : `${consumed.toLocaleString('en-US')} of ${goal.toLocaleString('en-US')} kcal logged today.`}
+          pills={[`${pctOfGoal}% of target`, `${glasses}/${goalGlasses} glasses`, persona.vibe]}
+          accent={crownTint}
+        >
+          <View style={styles.crownRail}>
+            <Track value={consumed} goal={goal} color={crownTint} rail={tokens.crownLine} />
+          </View>
+        </Crown>
 
-        {/* ── 2. STATS ────────────────────────────────────────── */}
-        <View style={styles.statsRow}>
-          <Stat
-            value={`${protein}`}
-            label={`Protein / ${proteinGoal}g`}
-            accent
-            accentColor={persona.accent}
-          />
-          <Stat value={`${carbs}`} label={`Carbs / ${carbsGoal}g`} />
-          <Stat value={`${fat}`} label={`Fat / ${fatGoal}g`} />
-        </View>
-
-        {/* ── 3. MACRO RING ───────────────────────────────────── */}
-        <SafeAreaView edges={['left', 'right']} style={styles.body}>
-          <View style={styles.ringCard}>
-            <View style={styles.ringWrap}>
-              <MacroRing eaten={consumed} goal={goal} color={persona.accent} />
-              <View style={styles.ringCenter}>
-                <Text style={styles.ringNum}>{consumed}</Text>
-                <Text style={styles.ringMeta}>of {goal}</Text>
+        <View style={styles.body}>
+          {/* ── 2. MACROS ───────────────────────────────────────────── */}
+          <Section label="Macros today" style={styles.firstSection}>
+            {isLoading ? (
+              <View style={styles.macroRow}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={styles.macroCell}>
+                    <Skeleton height={30} width="70%" radius={6} />
+                    <Skeleton height={8} width="88%" radius={4} />
+                    <Skeleton height={4} width="100%" radius={999} />
+                  </View>
+                ))}
               </View>
+            ) : (
+              <StatRow>
+                <View style={styles.macro}>
+                  <BigStat value={protein} unit="g" label={`Protein / ${proteinGoal}`} size={30} />
+                  <Track value={protein} goal={proteinGoal} color={tokens.macroProtein} rail={tokens.border} />
+                </View>
+                <View style={styles.macro}>
+                  <BigStat value={carbs} unit="g" label={`Carbs / ${carbsGoal}`} size={30} />
+                  <Track value={carbs} goal={carbsGoal} color={tokens.macroCarbs} rail={tokens.border} />
+                </View>
+                <View style={styles.macro}>
+                  <BigStat value={fat} unit="g" label={`Fat / ${fatGoal}`} size={30} />
+                  <Track value={fat} goal={fatGoal} color={tokens.macroFat} rail={tokens.border} />
+                </View>
+              </StatRow>
+            )}
+          </Section>
+
+          {/* ── 3. QUICK LOG ────────────────────────────────────────── */}
+          <Section label="Quick log">
+            <ListRow
+              title="Search foods"
+              subtitle="Type a food name to log it"
+              onPress={() => router.push({ pathname: '/add-food', params: { mealType: 'lunch', date: dateStr } } as any)}
+            />
+            <ListRow
+              title="Photo scan"
+              subtitle="Snap a plate · AI estimates macros"
+              onPress={() => router.push('/food-photo-scan' as any)}
+            />
+            <ListRow
+              title="Build a meal"
+              subtitle="Add several ingredients · log as one meal"
+              onPress={openBuildMeal}
+            />
+            <ListRow
+              title="Water"
+              subtitle="Tap to add a glass · 250 ml each"
+              value={`${glasses} / ${goalGlasses}`}
+              onPress={handleAddWater}
+              last
+            />
+          </Section>
+
+          {/* ── 4. MEALS ────────────────────────────────────────────── */}
+          <Section label="Today's meals">
+            {MEALS.map((meal, i) => {
+              const mealKcal = Math.round(nutrition?.byMeal[meal.key] ?? 0);
+              return (
+                <ListRow
+                  key={meal.key}
+                  title={meal.label}
+                  subtitle={mealKcal > 0 ? `${meal.time} · logged` : `${meal.time} · tap to log`}
+                  value={mealKcal > 0 ? `${mealKcal} kcal` : '—'}
+                  onPress={() => router.push({
+                    pathname: '/add-food',
+                    params: { mealType: meal.key, date: dateStr },
+                  } as any)}
+                  last={i === MEALS.length - 1}
+                />
+              );
+            })}
+          </Section>
+
+          {/* ── 5. AI COACH ─────────────────────────────────────────── */}
+          <Section label={`${persona.shortName} says`}>
+            <View style={styles.coach}>
+              <View style={styles.coachHead}>
+                <Sparkles size={14} color={pa.accentText} />
+                <Text style={[styles.kicker, { color: pa.accentText }]}>Tip</Text>
+              </View>
+              <Text style={styles.coachText}>{tip}</Text>
+
+              <Hairline style={styles.coachRule} />
+
+              <View style={styles.coachHead}>
+                <Sparkles size={14} color={pa.accentText} />
+                <Text style={[styles.kicker, { color: pa.accentText }]}>Gap analysis</Text>
+              </View>
+              <Text style={styles.coachText}>{gap}</Text>
             </View>
-            <View style={styles.ringRight}>
-              <Text style={styles.ringTitle}>Today's intake</Text>
-              <Text style={styles.ringSub}>
-                {consumed >= goal ? 'Target reached.' : `${remaining} kcal remaining for today.`}
-              </Text>
-            </View>
-          </View>
+          </Section>
+        </View>
+      </CanvasScreen>
 
-          {/* ── 4. QUICK ADD ROWS ─────────────────────────────── */}
-          <RowCard
-            icon={<Search size={22} color={persona.accent} />}
-            iconTintColor={persona.accent}
-            title="Search foods"
-            meta="Type a food name to log it"
-            onPress={() => router.push({ pathname: '/add-food', params: { mealType: 'lunch', date: dateStr } } as any)}
-          />
-          <RowCard
-            icon={<Camera size={22} color={persona.accent} />}
-            iconTintColor={persona.accent}
-            title="Photo scan"
-            meta="Snap a plate · AI estimates macros"
-            onPress={() => router.push('/food-photo-scan' as any)}
-          />
-          <RowCard
-            icon={<UtensilsCrossed size={22} color={persona.accent} />}
-            iconTintColor={persona.accent}
-            title="Build a meal"
-            meta="Add several ingredients · log as one meal"
-            onPress={() => router.push({ pathname: '/build-meal', params: { mealType: 'lunch', date: dateStr } } as any)}
-          />
-
-          {/* ── 5. WATER ─────────────────────────────────────── */}
-          <RowCard
-            icon={<Droplets size={22} color="#5DD3FA" />}
-            iconTintColor="#5DD3FA"
-            title="Water"
-            meta={`${glasses} / ${goalGlasses} glasses today · tap to add a glass`}
-            onPress={handleAddWater}
-          />
-
-          {/* ── 6. MEALS ─────────────────────────────────────── */}
-          <Text style={styles.groupHead}>Meals</Text>
-          {MEALS.map((meal) => {
-            const mealKcal = Math.round(nutrition?.byMeal[meal.key] ?? 0);
-            const meta = mealKcal > 0
-              ? `${meal.time} · ${mealKcal} kcal logged`
-              : `${meal.time} · tap to log`;
-            return (
-              <RowCard
-                key={meal.key}
-                icon={<meal.Icon size={22} color={mealKcal > 0 ? persona.accent : Colors.textSecondary} />}
-                iconTintColor={mealKcal > 0 ? persona.accent : Colors.textSecondary}
-                title={meal.label}
-                meta={meta}
-                onPress={() => router.push({
-                  pathname: '/add-food',
-                  params: { mealType: meal.key, date: dateStr },
-                } as any)}
-              />
-            );
-          })}
-
-          {/* ── 7. AI COACH ──────────────────────────────────── */}
-          <Text style={styles.groupHead}>{persona.shortName} says</Text>
-          <View style={styles.tipCard}>
-            <View style={styles.tipHead}>
-              <Sparkles size={16} color={persona.accent} />
-              <Text style={[styles.tipKicker, { color: persona.accent }]}>Tip</Text>
-            </View>
-            <Text style={styles.tipText}>{tip}</Text>
-          </View>
-
-          <View style={styles.tipCard}>
-            <View style={styles.tipHead}>
-              <Sparkles size={16} color={persona.accent} />
-              <Text style={[styles.tipKicker, { color: persona.accent }]}>Gap analysis</Text>
-            </View>
-            <Text style={styles.tipText}>{gap}</Text>
-          </View>
-        </SafeAreaView>
-
-        <View style={{ height: 110 }} />
-      </ScrollView>
-
-      {/* ── 8. ANCHOR CTA ───────────────────────────────────── */}
-      <AnchorCTA
-        label="BUILD A MEAL →"
-        accent={persona.accent}
-        accentInk={persona.ink}
-        onPress={() => router.push({
-          pathname: '/build-meal',
-          params: { mealType: 'lunch', date: dateStr },
-        } as any)}
-      />
+      {/* ── 6. ANCHOR CTA ─────────────────────────────────────────── */}
+      {/* Clears the floating tab pill, which draws over anything pinned to the
+          safe-area edge alone. */}
+      <View
+        style={[styles.ctaWrap, { bottom: insets.bottom + TAB_BAR_SPACE }]}
+        pointerEvents="box-none"
+      >
+        <PressableScale
+          onPress={openBuildMeal}
+          haptic="heavy"
+          scaleTo={0.97}
+          accessibilityRole="button"
+          accessibilityLabel="Build a meal"
+          // The fill is the coach's colour, so the boundary hairline takes the
+          // persona's text-safe tone rather than tokens.accentLine — same job
+          // (a legible edge on a light page), matching hue.
+          style={[styles.cta, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
+        >
+          <Text style={[styles.ctaLabel, { color: pa.ink }]}>BUILD A MEAL →</Text>
+        </PressableScale>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 0 },
+const themed = (t: SemanticTokens) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: t.bg },
 
-  statsRow: {
-    flexDirection: 'row',
-    gap: Spacing.sm + 2,
-    paddingHorizontal: Spacing.md + 2,
-    paddingTop: Spacing.md - 2,
-    marginBottom: Spacing.sm + 2,
+  crownRail: { marginTop: 20 },
+
+  // Matches the Crown's own 22px gutter so the body reads as one column.
+  body: { paddingHorizontal: 22 },
+  firstSection: { marginTop: 26 },
+
+  macro: { gap: 10 },
+  // Skeleton stand-in for <StatRow> — same three columns, same rhythm.
+  macroRow: { flexDirection: 'row', gap: 14 },
+  macroCell: { flex: 1, gap: 9 },
+
+  coach: {
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 24,
+    padding: 20,
+  },
+  coachHead: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 9 },
+  coachRule: { marginVertical: 18 },
+  kicker: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  coachText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    lineHeight: 21,
+    color: t.text,
   },
 
-  body: {
-    paddingHorizontal: Spacing.md + 2,
-    paddingTop: Spacing.xs,
-  },
-
-  // Macro ring card — bigger visual centerpiece
-  ringCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.xl,
-    padding: Spacing.md,
-    marginBottom: Spacing.md,
-  },
-  ringWrap: { width: 140, height: 140, alignItems: 'center', justifyContent: 'center' },
-  ringCenter: { position: 'absolute', alignItems: 'center' },
-  ringNum: { ...Typography.statNum, fontSize: 32 },
-  ringMeta: { ...Typography.statLabel, marginTop: 2 },
-  ringRight: { flex: 1 },
-  ringTitle: { ...Typography.sectionTitle, marginBottom: 4 },
-  ringSub: { ...Typography.cardMeta, lineHeight: 19 },
-
-  // Group section heads (between RowCards)
-  groupHead: {
-    ...Typography.sectionTitle,
-    fontSize: 16,
-    marginTop: Spacing.md,
-    marginBottom: Spacing.sm,
-  },
-
-  // AI tip cards
-  tipCard: {
-    backgroundColor: Colors.surface,
+  ctaWrap: { position: 'absolute', left: 22, right: 22 },
+  cta: {
+    borderRadius: 26,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    padding: Spacing.md - 2,
-    marginBottom: Spacing.sm + 2,
+    paddingVertical: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  tipHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  tipKicker: { ...Typography.cardMeta, fontSize: 11, letterSpacing: 0.3 },
-  tipText: { ...Typography.cardMeta, color: Colors.text, lineHeight: 19 },
+  ctaLabel: {
+    fontFamily: Fonts.displayMedium,
+    fontSize: 13,
+    letterSpacing: 1.4,
+  },
 });

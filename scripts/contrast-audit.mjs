@@ -206,7 +206,10 @@ const PERSONAS = loadPersonas();
 const PAIRS = [
   ['text', 'bg', 4.5],
   ['textSecondary', 'bg', 4.5],
-  ['textTertiary', 'bg', 3.0], // large-text allowance: tertiary is metadata only
+  // Full 4.5:1 — NOT the large-text allowance. Bold Canvas spends this token on
+  // 8-9px mono labels (BigStat captions, Section headers, Crown eyebrows), and
+  // those are the smallest type in the app, not metadata that can afford to be faint.
+  ['textTertiary', 'bg', 4.5],
   ['accentText', 'bg', 4.5],
   ['accentInk', 'accent', 4.5],
   ['crownText', 'crown', 4.5],

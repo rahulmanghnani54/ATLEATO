@@ -1,22 +1,51 @@
-import { useState, useEffect, useRef } from 'react';
-import { Linking ,
-  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet,
-  Alert, Vibration, KeyboardAvoidingView, Platform,
+/**
+ * Active workout session — Bold Canvas.
+ *
+ * Read mid-set, at arm's length, with sweat in your eyes. The crown carries the
+ * exercise you are ON right now at hero size; the rest countdown takes the hero
+ * slot the moment rest starts. Everything below it recedes into borderless cards.
+ *
+ * The crown is a DARK block in BOTH schemes, so anything coloured inside it
+ * resolves against TOKENS.dark and the persona's dark accent — the light-scheme
+ * accents are tuned against a white page and go muddy on ink.
+ *
+ * Timer, logging, progression and persistence are untouched: this file changed
+ * presentation only.
+ */
+
+import { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  Vibration,
+  View,
+  type DimensionValue,
+  type TextStyle,
 } from 'react-native';
-import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
-import { useVoiceCues } from '@/hooks/useVoiceCues';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/stores/authStore';
-import { EXPERT_PROGRAMS } from '@/constants/experts';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Camera, Check, Play } from 'lucide-react-native';
+
+import { Crown, Hairline, Section } from '@/components/ui/canvas';
+import { PressableScale } from '@/components/ui/motion';
 import { ProgressionBadge } from '@/components/workout/ProgressionBadge';
+import { EXPERT_PROGRAMS } from '@/constants/experts';
+import { Fonts } from '@/constants/theme';
 import { useExerciseHistory } from '@/hooks/useProgression';
-import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
-import { Colors, Fonts } from '@/constants/theme';
+import { useVoiceCues } from '@/hooks/useVoiceCues';
+import { getProDemoLabel, getProDemoUrl, programIdToPersona } from '@/lib/exerciseDemoUrls';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { detectAndSavePRs } from '@/lib/prDetector';
-import { personaFromProgramId } from '@/lib/personaTheme';
-import { X as XIcon, Camera, Play, Check } from 'lucide-react-native';
+import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
+import { supabase } from '@/lib/supabase';
+import { TOKENS, useTheme, useThemedStyles } from '@/lib/theme';
+import { useAuthStore } from '@/stores/authStore';
 
 interface SetEntry {
   weight: string;
@@ -24,6 +53,9 @@ interface SetEntry {
   rpe: string;
   done: boolean;
 }
+
+// Clock and set numerals must not jitter as they tick/change width.
+const TABULAR: Pick<TextStyle, 'fontVariant'> = { fontVariant: ['tabular-nums'] };
 
 function ExerciseProgression({ exerciseName, reps }: { exerciseName: string; reps: string }) {
   const { data: history } = useExerciseHistory(exerciseName);
@@ -47,6 +79,14 @@ export default function WorkoutSession() {
   const program = EXPERT_PROGRAMS[programId ?? 'cbum_evolved'] ?? EXPERT_PROGRAMS.cbum_evolved;
   const persona = personaFromProgramId(programId);
   const workout = program.schedule[parseInt(dayIndex ?? '0') % program.schedule.length];
+
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
+  // Body accents follow the scheme; crown accents never do — the crown is ink in
+  // light and black in dark, so it always needs the dark-tuned triplet.
+  const pa = personaAccent(persona, scheme);
+  const pc = personaAccent(persona, 'dark');
 
   // Voice cues — coach speaks set-complete, rest-over, last-set, workout-done
   const voice = useVoiceCues();
@@ -266,248 +306,462 @@ export default function WorkoutSession() {
   };
 
   const restPct = restTimer !== null ? restTimer / restTotal : 0;
+  // The bar GROWS as rest burns down — same direction as the old banner fill.
+  const restFillWidth: DimensionValue = `${(1 - restPct) * 100}%`;
+
+  // Display-only derivation: the exercise the lifter is on = the first one with
+  // an unlogged set. Nothing reads this back into state.
+  const flatSets = sets.flat();
+  const doneSetCount = flatSets.filter((s) => s.done).length;
+  const totalSetCount = flatSets.length;
+  const pendingIdx = sets.findIndex((exSets) => exSets.some((s) => !s.done));
+  const currentIdx = pendingIdx === -1 ? Math.max(0, sets.length - 1) : pendingIdx;
+  const currentEx = workout.exercises[currentIdx] ?? workout.exercises[0];
+  const currentSets = sets[currentIdx] ?? [];
+  const pendingSetIdx = currentSets.findIndex((s) => !s.done);
+  const currentSetNo = (pendingSetIdx === -1 ? currentSets.length - 1 : pendingSetIdx) + 1;
+
+  const volPct = Math.round((volumeModifier - 1) * 100);
+  const volColor = volPct > 0 ? TOKENS.dark.success : TOKENS.dark.warning;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} style={styles.closeBtn} hitSlop={10}>
-          <XIcon size={20} color={Colors.textSecondary} />
-        </TouchableOpacity>
-        <View style={styles.headerCenter}>
-          <Text style={styles.workoutName}>{workout.name}</Text>
-          <View style={styles.timerRow}>
-            <Text style={[styles.timer, { color: persona.accent }]}>{formatTime(elapsed)}</Text>
-            {(() => {
-              const volPct = Math.round((volumeModifier - 1) * 100);
-              return volPct !== 0 ? (
-                <View style={[
-                  styles.recoveryPill,
-                  {
-                    backgroundColor: volPct > 0 ? 'rgba(57,224,138,0.15)' : 'rgba(255,177,58,0.15)',
-                    borderColor: volPct > 0 ? 'rgba(57,224,138,0.3)' : 'rgba(255,177,58,0.3)',
-                  },
-                ]}>
-                  <Text style={[
-                    styles.recoveryPillText,
-                    { color: volPct > 0 ? Colors.success : Colors.warning },
-                  ]}>
-                    {`Vol ${volPct > 0 ? '+' : ''}${volPct}%`}
-                  </Text>
-                </View>
-              ) : null;
-            })()}
-          </View>
-        </View>
-        <TouchableOpacity
-          style={[styles.finishBtn, { backgroundColor: persona.accent }, isSaving && { opacity: 0.6 }]}
-          onPress={handleFinish}
-          disabled={isSaving}
-        >
-          <Text style={[styles.finishBtnText, { color: persona.ink }]}>{isSaving ? '…' : 'Finish'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Rest timer banner */}
-      {restTimer !== null && (
-        <View style={styles.restBanner}>
-          <View style={[styles.restProgress, { width: `${(1 - restPct) * 100}%` as any, backgroundColor: persona.accent + '22' }]} />
-          <View style={styles.restContent}>
-            <Text style={[styles.restLabel, { color: persona.accent }]}>Rest  {formatTime(restTimer)}</Text>
-            <TouchableOpacity onPress={() => setRestTimer(null)} hitSlop={10}>
-              <Text style={styles.skipRest}>Skip</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          {workout.exercises.map((ex, exIdx) => (
-            <View key={ex.name} style={styles.exerciseCard}>
-              {/* Exercise header */}
-              <View style={styles.exerciseHeader}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.exerciseName}>{ex.name}</Text>
-                  {ex.tips.length > 0 && (
-                    <Text style={styles.exerciseTip}>{ex.tips[0]}</Text>
-                  )}
-                </View>
-                <TouchableOpacity
-                  style={[styles.formBtn, { backgroundColor: persona.accent + '22' }]}
-                  onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved' } } as any)}
-                >
-                  <Camera size={12} color={persona.accent} />
-                  <Text style={[styles.formBtnText, { color: persona.accent }]}>Form</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Watch pro demo on YouTube — persona-accented so it doesn't
-                  clash (a hardcoded red read as The Commander on every coach). */}
-              <TouchableOpacity
-                style={[styles.demoBtn, { backgroundColor: persona.accent }]}
-                onPress={() => {
-                  const personaSlug = programIdToPersona(programId);
-                  Linking.openURL(getProDemoUrl(ex.name, personaSlug));
-                }}
-                activeOpacity={0.75}
+    <View style={[styles.screen, { backgroundColor: tokens.bg }]}>
+      <Crown
+        eyebrow={workout.name}
+        title={currentEx.name}
+        meta={`Set ${currentSetNo} of ${currentSets.length} · target ${currentEx.reps} reps`}
+        pills={[
+          `EX ${currentIdx + 1}/${workout.exercises.length}`,
+          `${currentEx.restSeconds}s rest`,
+        ]}
+        accent={pc.accent}
+        onBack={handleClose}
+        right={
+          <PressableScale
+            onPress={handleFinish}
+            disabled={isSaving}
+            haptic="heavy"
+            accessibilityRole="button"
+            accessibilityLabel="Finish workout"
+            style={[styles.finishBtn, { backgroundColor: pc.accent }]}
+          >
+            <Text style={[styles.finishBtnText, { color: pc.ink }]}>
+              {isSaving ? 'SAVING' : 'FINISH'}
+            </Text>
+          </PressableScale>
+        }
+      >
+        {restTimer !== null ? (
+          /* Resting: the countdown is the hero — it outranks the exercise title. */
+          <View style={styles.restHero}>
+            <View style={styles.restTop}>
+              <Text style={styles.restLabel}>Resting</Text>
+              <PressableScale
+                onPress={() => setRestTimer(null)}
+                haptic="light"
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Skip rest"
+                style={styles.skipBtn}
               >
-                <Play size={12} color="#fff" fill="#fff" />
-                <Text style={styles.demoBtnText}>
-                  {getProDemoLabel(programIdToPersona(programId))}
-                </Text>
-              </TouchableOpacity>
-
-              <ExerciseProgression exerciseName={ex.name} reps={ex.reps} />
-
-              {/* Set table header */}
-              <View style={styles.setHeader}>
-                <Text style={[styles.setHeaderCol, { flex: 1 }]}>Set</Text>
-                <Text style={[styles.setHeaderCol, { flex: 2 }]}>Kg</Text>
-                <Text style={[styles.setHeaderCol, { flex: 2 }]}>Reps</Text>
-                <Text style={[styles.setHeaderCol, { flex: 1 }]}>RPE</Text>
-                <Text style={[styles.setHeaderCol, { width: 44, textAlign: 'center' }]}>✓</Text>
-              </View>
-
-              {sets[exIdx].map((s, setIdx) => (
-                <View key={setIdx} style={[styles.setRow, s.done && styles.setRowDone]}>
-                  <Text style={[styles.setNum, { flex: 1 }]}>{setIdx + 1}</Text>
-                  <TextInput
-                    style={[styles.setInput, { flex: 2 }]}
-                    value={s.weight}
-                    onChangeText={(v) => updateSet(exIdx, setIdx, 'weight', v)}
-                    keyboardType="decimal-pad"
-                    placeholder="0"
-                    placeholderTextColor={Colors.textTertiary}
-                    editable={!s.done}
-                  />
-                  <TextInput
-                    style={[styles.setInput, { flex: 2 }]}
-                    value={s.reps}
-                    onChangeText={(v) => updateSet(exIdx, setIdx, 'reps', v)}
-                    keyboardType="number-pad"
-                    placeholder={ex.reps}
-                    placeholderTextColor={Colors.textTertiary}
-                    editable={!s.done}
-                  />
-                  <TextInput
-                    style={[styles.setInput, { flex: 1 }]}
-                    value={s.rpe}
-                    onChangeText={(v) => updateSet(exIdx, setIdx, 'rpe', v)}
-                    keyboardType="decimal-pad"
-                    placeholder="7"
-                    placeholderTextColor={Colors.textTertiary}
-                    editable={!s.done}
-                  />
-                  <TouchableOpacity
-                    style={[
-                      styles.doneBtn,
-                      s.done && { backgroundColor: persona.accent, borderColor: persona.accent },
-                      { width: 44 },
-                    ]}
-                    onPress={() => !s.done && completeSet(exIdx, setIdx, ex.restSeconds)}
-                    disabled={s.done}
-                  >
-                    {s.done
-                      ? <Check size={16} color={persona.ink} strokeWidth={3} />
-                      : <Text style={styles.doneBtnText}>○</Text>
-                    }
-                  </TouchableOpacity>
-                </View>
-              ))}
+                <Text style={styles.skipBtnText}>Skip</Text>
+              </PressableScale>
             </View>
-          ))}
-          <View style={{ height: 40 }} />
+            <Text style={[styles.restValue, { color: pc.accent }]}>{formatTime(restTimer)}</Text>
+            <View style={styles.restTrack}>
+              <View style={[styles.restFill, { width: restFillWidth, backgroundColor: pc.accent }]} />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.crownStats}>
+            <View>
+              <Text style={styles.crownStatLabel}>Elapsed</Text>
+              <Text style={styles.crownStatValue}>{formatTime(elapsed)}</Text>
+            </View>
+            <View>
+              <Text style={styles.crownStatLabel}>Sets done</Text>
+              <Text style={styles.crownStatValue}>{`${doneSetCount}/${totalSetCount}`}</Text>
+            </View>
+            {volPct !== 0 ? (
+              <View style={[styles.volChip, { borderColor: volColor }]}>
+                <Text style={[styles.volChipText, { color: volColor }]}>
+                  {`Vol ${volPct > 0 ? '+' : ''}${volPct}%`}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        )}
+      </Crown>
+
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 48 }]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Section
+            label={`${workout.exercises.length} exercises · ${totalSetCount} sets`}
+            style={styles.list}
+            contentStyle={styles.listContent}
+          >
+            {workout.exercises.map((ex, exIdx) => {
+              const exSets = sets[exIdx] ?? [];
+              const exDone = exSets.length > 0 && exSets.every((s) => s.done);
+              const isCurrent = exIdx === currentIdx && !exDone;
+              return (
+                <View key={ex.name} style={styles.card}>
+                  <View style={styles.cardHead}>
+                    <Text
+                      style={[
+                        styles.exIndex,
+                        (isCurrent || exDone) && { color: pa.accentText },
+                      ]}
+                    >
+                      {String(exIdx + 1).padStart(2, '0')}
+                    </Text>
+                    <View style={styles.flex}>
+                      <Text style={styles.exName}>{ex.name}</Text>
+                      <Text style={styles.exMeta}>
+                        {isCurrent
+                          ? `Now · ${exSets.length} × ${ex.reps}`
+                          : exDone
+                            ? `Complete · ${exSets.length} × ${ex.reps}`
+                            : `${exSets.length} × ${ex.reps}`}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {ex.tips.length > 0 && (
+                    <Text style={styles.exTip}>{ex.tips[0]}</Text>
+                  )}
+
+                  <View style={styles.chipRow}>
+                    <PressableScale
+                      haptic="light"
+                      accessibilityRole="button"
+                      accessibilityLabel={`Form coach for ${ex.name}`}
+                      style={styles.chip}
+                      onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved' } } as any)}
+                    >
+                      <Camera size={13} color={tokens.textSecondary} />
+                      <Text style={[styles.chipText, { color: tokens.textSecondary }]}>Form</Text>
+                    </PressableScale>
+
+                    {/* Watch pro demo on YouTube. Neutral, not persona-accented:
+                        these two chips repeat on every exercise card, so tinting
+                        them spent the emerald a dozen times over and left the
+                        completion state — the one thing that must read at a
+                        glance mid-set — competing with navigation furniture. */}
+                    <PressableScale
+                      haptic="light"
+                      accessibilityRole="link"
+                      accessibilityLabel={getProDemoLabel(programIdToPersona(programId))}
+                      style={styles.chip}
+                      onPress={() => {
+                        const personaSlug = programIdToPersona(programId);
+                        Linking.openURL(getProDemoUrl(ex.name, personaSlug));
+                      }}
+                    >
+                      <Play size={11} color={tokens.textSecondary} fill={tokens.textSecondary} />
+                      <Text style={[styles.chipText, { color: tokens.textSecondary }]} numberOfLines={1}>
+                        {getProDemoLabel(programIdToPersona(programId))}
+                      </Text>
+                    </PressableScale>
+                  </View>
+
+                  <ExerciseProgression exerciseName={ex.name} reps={ex.reps} />
+
+                  <Hairline style={styles.cardRule} />
+
+                  <View style={styles.setHead}>
+                    <Text style={[styles.setHeadCol, styles.colSet]}>Set</Text>
+                    <Text style={[styles.setHeadCol, styles.colField]}>Kg</Text>
+                    <Text style={[styles.setHeadCol, styles.colField]}>Reps</Text>
+                    <Text style={[styles.setHeadCol, styles.colRpe]}>RPE</Text>
+                    <View style={styles.colDone} />
+                  </View>
+
+                  {exSets.map((s, setIdx) => (
+                    <View key={setIdx} style={styles.setRow}>
+                      <Text style={[styles.setNum, s.done && { color: pa.accentText }]}>
+                        {setIdx + 1}
+                      </Text>
+                      <TextInput
+                        style={[styles.input, styles.colField, s.done && styles.inputDone]}
+                        value={s.weight}
+                        onChangeText={(v) => updateSet(exIdx, setIdx, 'weight', v)}
+                        keyboardType="decimal-pad"
+                        placeholder="0"
+                        placeholderTextColor={tokens.textTertiary}
+                        editable={!s.done}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.colField, s.done && styles.inputDone]}
+                        value={s.reps}
+                        onChangeText={(v) => updateSet(exIdx, setIdx, 'reps', v)}
+                        keyboardType="number-pad"
+                        placeholder={ex.reps}
+                        placeholderTextColor={tokens.textTertiary}
+                        editable={!s.done}
+                      />
+                      <TextInput
+                        style={[styles.input, styles.colRpe, s.done && styles.inputDone]}
+                        value={s.rpe}
+                        onChangeText={(v) => updateSet(exIdx, setIdx, 'rpe', v)}
+                        keyboardType="decimal-pad"
+                        placeholder="7"
+                        placeholderTextColor={tokens.textTertiary}
+                        editable={!s.done}
+                      />
+                      {/* Not `disabled` — that washes the completed fill to 50%.
+                          The press is a no-op instead, and the haptic goes quiet. */}
+                      <PressableScale
+                        haptic={s.done ? null : 'heavy'}
+                        accessibilityRole="button"
+                        accessibilityState={{ disabled: s.done, checked: s.done }}
+                        accessibilityLabel={`Complete set ${setIdx + 1} of ${ex.name}`}
+                        style={[
+                          styles.doneBtn,
+                          styles.colDone,
+                          // Emerald fill on a light page needs its hairline to be legible.
+                          s.done && { backgroundColor: pa.accent, borderColor: pa.accentText, borderWidth: 1 },
+                        ]}
+                        onPress={() => !s.done && completeSet(exIdx, setIdx, ex.restSeconds)}
+                      >
+                        {s.done
+                          ? <Check size={22} color={pa.ink} strokeWidth={3} />
+                          : <View style={styles.doneRing} />
+                        }
+                      </PressableScale>
+                    </View>
+                  ))}
+                </View>
+              );
+            })}
+          </Section>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (t: typeof TOKENS.light, scheme: 'light' | 'dark') => StyleSheet.create({
+  screen: { flex: 1 },
+  flex: { flex: 1 },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  closeBtn: { padding: 4 },
-  headerCenter: { flex: 1, alignItems: 'center' },
-  workoutName: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, letterSpacing: -0.2 },
-  timer: { fontFamily: Fonts.display, fontWeight: '700', fontSize: 18, letterSpacing: -0.3 },
-  timerRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
-  recoveryPill: {
-    borderRadius: 100, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1,
-  },
-  recoveryPillText: { fontFamily: Fonts.bodyMedium, fontSize: 10, letterSpacing: 0.1 },
+  // ── Crown ──────────────────────────────────────────────────────────────────
   finishBtn: {
-    borderRadius: 100,
-    paddingHorizontal: 16, paddingVertical: 8,
+    borderRadius: 999,
+    paddingHorizontal: 18,
+    paddingVertical: 10,
   },
-  finishBtnText: { fontFamily: Fonts.displayMedium, fontSize: 12, letterSpacing: 0.2 },
+  finishBtnText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+  },
 
-  restBanner: {
-    backgroundColor: Colors.raised, height: 44,
-    borderBottomWidth: 1, borderBottomColor: Colors.border, overflow: 'hidden',
+  crownStats: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 30,
+    marginTop: 22,
   },
-  restProgress: {
-    position: 'absolute', left: 0, top: 0, bottom: 0,
+  crownStatLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: t.crownTextDim,
   },
-  restContent: {
-    flex: 1, height: 44, flexDirection: 'row',
-    justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16,
+  crownStatValue: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 30,
+    letterSpacing: -1.35,
+    color: t.crownText,
+    ...TABULAR,
+    marginTop: 4,
   },
-  restLabel: { fontFamily: Fonts.bodyBold, fontSize: 13, letterSpacing: 0.2 },
-  skipRest: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.1 },
+  volChip: {
+    marginLeft: 'auto',
+    marginBottom: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+  },
+  volChipText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
 
-  content: { padding: 16, gap: 12 },
+  restHero: { marginTop: 20 },
+  restTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  restLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: t.crownTextDim,
+  },
+  skipBtn: {
+    borderWidth: 1,
+    borderColor: t.crownLine,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  skipBtnText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: t.crownText,
+  },
+  restValue: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 66,
+    lineHeight: 72,
+    // -0.045em at 66px.
+    letterSpacing: -2.97,
+    ...TABULAR,
+    marginTop: 2,
+  },
+  restTrack: {
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: t.crownLine,
+    overflow: 'hidden',
+    marginTop: 10,
+  },
+  restFill: { height: 3, borderRadius: 2 },
 
-  exerciseCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 6, overflow: 'hidden',
-  },
-  exerciseHeader: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    padding: 14, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  exerciseName: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text, marginBottom: 4 },
-  exerciseTip: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, lineHeight: 16, fontStyle: 'italic' },
-  formBtn: {
-    borderRadius: 100,
-    flexDirection: 'row', alignItems: 'center', gap: 5,
-    paddingHorizontal: 10, paddingVertical: 6,
-  },
-  formBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
+  // ── Body ───────────────────────────────────────────────────────────────────
+  content: { paddingHorizontal: 20 },
+  list: { marginTop: 24 },
+  listContent: { gap: 16 },
 
-  demoBtn: {
-    marginHorizontal: 14, marginTop: 4, marginBottom: 8,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 9, paddingHorizontal: 12,
-    backgroundColor: '#cc1f1f',
-    borderRadius: 100,
+  card: {
+    backgroundColor: t.surface,
+    borderRadius: 26,
+    padding: 16,
+    // Bold Canvas cards carry no border: on a white page this soft shadow is the
+    // only thing separating the card from the ground.
+    shadowColor: t.crown,
+    shadowOpacity: scheme === 'light' ? 0.07 : 0.4,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
-  demoBtnText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#fff', letterSpacing: 0.1 },
+  cardHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+  exIndex: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 10,
+    letterSpacing: 1.4,
+    color: t.textTertiary,
+    marginTop: 7,
+    width: 22,
+  },
+  exName: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 23,
+    lineHeight: 27,
+    letterSpacing: -1.04,
+    color: t.text,
+  },
+  exMeta: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    marginTop: 7,
+  },
+  exTip: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 19,
+    color: t.textSecondary,
+    marginTop: 12,
+  },
 
-  setHeader: {
-    flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 8,
-    backgroundColor: Colors.background,
+  chipRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 4 },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
   },
-  setHeaderCol: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, textAlign: 'center' },
+  chipText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
 
-  setRow: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 14, paddingVertical: 6 },
-  setRowDone: { opacity: 0.45 },
-  setNum: { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
-  setInput: {
-    height: 40, backgroundColor: Colors.background, borderRadius: 8,
-    borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: 8, fontFamily: Fonts.bodyMedium, fontSize: 14,
-    color: Colors.text, textAlign: 'center',
+  cardRule: { marginTop: 14 },
+
+  setHead: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 14, marginBottom: 2 },
+  setHeadCol: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    // 0.16em at 8px.
+    letterSpacing: 1.28,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    textAlign: 'center',
   },
+  colSet: { width: 24 },
+  colField: { flex: 1 },
+  colRpe: { flex: 0.85 },
+  colDone: { width: 54 },
+
+  setRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 4 },
+  setNum: {
+    width: 24,
+    textAlign: 'center',
+    fontFamily: Fonts.displayBold,
+    fontSize: 19,
+    letterSpacing: -0.6,
+    color: t.textTertiary,
+    ...TABULAR,
+  },
+  input: {
+    height: 54,
+    borderRadius: 19,
+    backgroundColor: t.surfaceAlt,
+    paddingHorizontal: 4,
+    fontFamily: Fonts.displayBold,
+    fontSize: 21,
+    letterSpacing: -0.7,
+    color: t.text,
+    textAlign: 'center',
+  },
+  // A logged set recedes instead of dimming the whole row — the numbers stay
+  // readable and the emerald check keeps its punch.
+  inputDone: { backgroundColor: 'transparent', color: t.textSecondary },
   doneBtn: {
-    height: 40, borderRadius: 8,
-    backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border,
-    alignItems: 'center', justifyContent: 'center',
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: t.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  doneBtnText: { fontSize: 16, color: Colors.textSecondary },
+  doneRing: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: t.borderStrong,
+  },
 });

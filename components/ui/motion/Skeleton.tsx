@@ -7,9 +7,13 @@
  *   {isLoading ? <Skeleton height={80} radius={12} /> : <RealContent/>}
  *
  * A soft highlight sweeps left→right on a loop (Reanimated, UI thread).
+ *
+ * The plate is a TOKEN, not a fixed tint: a dark ink at 7% is invisible on the
+ * dark page, which used to leave every dark-scheme loading state blank.
  */
 import React, { useEffect } from 'react';
 import { View, StyleSheet, type DimensionValue, type ViewStyle, type StyleProp } from 'react-native';
+import { useTheme } from '@/lib/theme';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -30,6 +34,7 @@ export interface SkeletonProps {
 }
 
 export function Skeleton({ width = '100%', height = 20, radius = 8, style }: SkeletonProps) {
+  const { tokens } = useTheme();
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -47,12 +52,12 @@ export function Skeleton({ width = '100%', height = 20, radius = 8, style }: Ske
   return (
     <View
       style={[
-        { width, height, borderRadius: radius, backgroundColor: 'rgba(10,31,25,0.07)', overflow: 'hidden' },
+        { width, height, borderRadius: radius, backgroundColor: tokens.border, overflow: 'hidden' },
         style,
       ]}
     >
       <AnimatedGradient
-        colors={['transparent', 'rgba(18,185,129,0.14)', 'transparent']}
+        colors={['transparent', tokens.accentSoft, 'transparent']}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
         style={[StyleSheet.absoluteFill, sweep]}

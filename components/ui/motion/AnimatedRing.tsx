@@ -13,6 +13,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
+import { useTheme } from '@/lib/theme';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -41,10 +42,15 @@ export function AnimatedRing({
   size = 160,
   stroke = 12,
   color,
-  trackColor = 'rgba(10,31,25,0.10)',
+  trackColor,
   children,
   style,
 }: AnimatedRingProps) {
+  // The track used to default to a fixed dark-ink tint, which disappeared
+  // completely on a dark page. Falling back to the border token keeps the unfilled
+  // arc visible in both schemes.
+  const { tokens } = useTheme();
+  const track = trackColor ?? tokens.border;
   const r = (size - stroke) / 2;
   const circumference = 2 * Math.PI * r;
   const anim = useSharedValue(0);
@@ -62,7 +68,7 @@ export function AnimatedRing({
       <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
         <Circle
           cx={size / 2} cy={size / 2} r={r}
-          stroke={trackColor} strokeWidth={stroke} fill="none"
+          stroke={track} strokeWidth={stroke} fill="none"
         />
         <AnimatedCircle
           cx={size / 2} cy={size / 2} r={r}

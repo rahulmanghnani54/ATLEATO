@@ -1,31 +1,47 @@
 /**
- * Progress Tab — Direction C (migrated 2026-06-13)
+ * Progress Tab — Bold Canvas (migrated from Direction C, 2026-08-13)
  *
- * Last tab of Phase 1. Structure:
- *   HeroBlock — persona gradient, "Week N · YYYY", "Your gains."
- *   3-up Stat row — total volume / PR count / achievements
- *   Toggle: STATS | PHYSIQUE
- *     STATS:    VolumeChart, AI weekly review card, PR list, Achievements grid
- *     PHYSIQUE: PhysiquePrivacyCard + PhysiqueGallery
- *   AnchorCTA — "OPEN SETTINGS →" (replaces the gear glyph)
+ * Editorial treatment for a screen that is pure data:
+ *   Crown      — the headline achievement (8-week volume) as the hero numeral,
+ *                the coach's colour living in the accent line + radial tint.
+ *   StatRow    — sessions / PRs / badges, receding under the crown.
+ *   Toggle     — STATS | PHYSIQUE (mono, hairline-ruled — no pill chrome).
+ *   Sections   — volume chart, AI weekly review, PR list, achievements.
+ *
+ * The volume chart is drawn here rather than via components/progress/VolumeChart
+ * because that component paints from the light-locked legacy `Colors` shim and
+ * cannot follow the scheme. Same data source, same empty copy, token colours.
+ *
+ * Settings moved from the bottom AnchorCTA into the crown's top-right slot: a
+ * floating pill would have fought the floating tab bar for the same edge.
  *
  * v0 backup at progress-v0.tsx.bak.
  */
 import { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Sparkles, Trophy, Award } from 'lucide-react-native';
+import Svg, { Line, Rect } from 'react-native-svg';
+import { Award, Settings, Sparkles, Trophy } from 'lucide-react-native';
 
-import { VolumeChart } from '@/components/progress/VolumeChart';
 import { PhysiqueGallery } from '@/components/progress/PhysiqueGallery';
 import { PhysiquePrivacyCard } from '@/components/progress/PhysiquePrivacyCard';
-import { useWeeklyVolume, usePersonalRecords, useAchievements } from '@/hooks/useProgressStats';
+import { BigStat, CanvasScreen, Crown, Hairline, ListRow, Section, StatRow } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import {
+  useAchievements,
+  usePersonalRecords,
+  useWeeklyVolume,
+  type WeeklyVolume,
+} from '@/hooks/useProgressStats';
 import { getWeeklySummary, type WeeklySummaryResponse } from '@/lib/api/edgeFunctions';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { useAuthStore } from '@/stores/authStore';
-import { personaFromProgramId } from '@/lib/personaTheme';
-import { HeroBlock, Stat, AnchorCTA } from '@/components/ui/c';
-import { Colors, Spacing, Radius, Typography, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+
+const CHART_HEIGHT = 132;
+const BODY_PAD = 22; // matches Crown's own horizontal padding
 
 function Epley1RM(weightKg: number, reps: number): number {
   if (reps === 1) return weightKg;
@@ -40,8 +56,16 @@ function getWeekOfYear() {
 
 export default function Progress() {
   const router = useRouter();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const { width } = useWindowDimensions();
   const profile = useAuthStore((s) => s.profile);
   const persona = personaFromProgramId(profile?.selected_program);
+  const pa = personaAccent(persona, scheme);
+  // The crown is a dark block in BOTH schemes, so its tint always takes the
+  // persona's dark-tuned accent — the light triplet is tuned against white and
+  // both the glow and the accent line go muddy on near-black.
+  const crownTint = personaAccent(persona, 'dark').accent;
   const { data: weeklyVolume = [], isLoading: volumeLoading } = useWeeklyVolume(8);
   const { data: prs = [], isLoading: prsLoading } = usePersonalRecords();
   const { data: achievements = [], isLoading: achievementsLoading } = useAchievements();
@@ -57,6 +81,7 @@ export default function Progress() {
   const dayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek];
   const tooEarlyInWeek = dayOfWeek >= 1 && dayOfWeek <= 2 && thisWeekVolume < 1000;
   const canGenerateSummary = hasAnyWorkoutThisWeek && !tooEarlyInWeek;
+  const summaryBlocked = summaryLoading || !canGenerateSummary;
 
   const handleGetSummary = async () => {
     if (!canGenerateSummary) return;
@@ -71,151 +96,208 @@ export default function Progress() {
     }
   };
 
-  // Headline volume value for the stat row
+  // Headline volume value — now the crown's hero numeral
   const totalVolumeKg = weeklyVolume.reduce((n, w) => n + (w.totalVolumeKg ?? 0), 0);
   const totalDisplay = totalVolumeKg >= 1000
     ? `${(totalVolumeKg / 1000).toFixed(1)}k`
     : String(Math.round(totalVolumeKg));
+  const sessions = weeklyVolume.reduce((n, w) => n + (w.workoutCount ?? 0), 0);
+
+  const lastWeek = weeklyVolume[weeklyVolume.length - 1];
+  const crownMeta = volumeLoading
+    ? 'Reading the last eight weeks…'
+    : lastWeek
+      ? `${lastWeek.weekLabel} · ${Math.round(lastWeek.totalVolumeKg).toLocaleString()}kg across ${lastWeek.workoutCount} session${lastWeek.workoutCount !== 1 ? 's' : ''}`
+      : 'Nothing logged yet. Your first session starts the chart.';
 
   return (
-    <View style={styles.root}>
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── 1. HERO ─────────────────────────────────────────── */}
-        <HeroBlock
-          accent={persona.accent}
-          day={`WEEK ${getWeekOfYear()} · ${new Date().getFullYear()}`}
-          name={'Your\ngains.'}
-        />
+    <CanvasScreen>
+      {/* ── 1. CROWN — the headline achievement ─────────────── */}
+      <Crown
+        eyebrow={`WEEK ${getWeekOfYear()} · ${new Date().getFullYear()}`}
+        title={`${totalDisplay} kg`}
+        accentLine="lifted in 8 weeks."
+        meta={crownMeta}
+        pills={[
+          `${prs.length} PR${prs.length === 1 ? '' : 's'}`,
+          `${achievements.length} badge${achievements.length === 1 ? '' : 's'}`,
+          persona.shortName,
+        ]}
+        accent={crownTint}
+        right={
+          <PressableScale
+            onPress={() => router.push('/profile' as any)}
+            haptic="light"
+            scaleTo={0.96}
+            accessibilityRole="button"
+            accessibilityLabel="Open settings"
+            style={[styles.crownPill, { borderColor: tokens.crownLine }]}
+          >
+            <Settings size={13} color={tokens.crownText} />
+            <Text style={[styles.crownPillText, { color: tokens.crownText }]}>Settings</Text>
+          </PressableScale>
+        }
+      />
 
-        {/* ── 2. STATS ────────────────────────────────────────── */}
-        <View style={styles.statsRow}>
-          <Stat
-            value={totalDisplay}
-            label="8-wk kg"
-            accent
-            accentColor={persona.accent}
-          />
-          <Stat value={String(prs.length)} label="PRs" />
-          <Stat value={String(achievements.length)} label="Badges" />
-        </View>
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        {/* ── 2. STATS ──────────────────────────────────────── */}
+        {/* 30, not 34: at 34 these three sat within 4px of the crown's 38px hero
+            and read as four equal headlines instead of one hero plus support. */}
+        <StatRow style={styles.statRow}>
+          <BigStat value={sessions} label="Sessions · 8 wk" size={30} />
+          <BigStat value={prs.length} label="Personal records" size={30} />
+          <BigStat value={achievements.length} label="Badges" size={30} />
+        </StatRow>
 
-        {/* ── 3. TOGGLE ───────────────────────────────────────── */}
+        {/* ── 3. TOGGLE ─────────────────────────────────────── */}
         <View style={styles.toggle}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'stats' && { borderBottomColor: persona.accent }]}
-            onPress={() => setActiveTab('stats')}
-          >
-            <Text style={[styles.tabText, activeTab === 'stats' && { color: persona.accent }]}>Stats</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === 'physique' && { borderBottomColor: persona.accent }]}
-            onPress={() => setActiveTab('physique')}
-          >
-            <Text style={[styles.tabText, activeTab === 'physique' && { color: persona.accent }]}>Physique</Text>
-          </TouchableOpacity>
+          {(['stats', 'physique'] as const).map((tab) => (
+            <PressableScale
+              key={tab}
+              onPress={() => setActiveTab(tab)}
+              haptic="light"
+              scaleTo={0.97}
+              accessibilityRole="button"
+              accessibilityState={{ selected: activeTab === tab }}
+              style={[
+                styles.tab,
+                activeTab === tab && { borderBottomColor: tokens.text },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabText,
+                  { color: activeTab === tab ? tokens.text : tokens.textTertiary },
+                ]}
+              >
+                {tab}
+              </Text>
+            </PressableScale>
+          ))}
         </View>
+        <Hairline />
 
-        {/* ── 4a. STATS VIEW ──────────────────────────────────── */}
+        {/* ── 4a. STATS VIEW ────────────────────────────────── */}
         {activeTab === 'stats' && (
-          <SafeAreaView edges={['left', 'right']} style={styles.body}>
+          <View>
             {/* Volume chart */}
-            <View style={styles.card}>
-              <Text style={styles.cardLabel}>Weekly volume</Text>
+            <Section label="Weekly volume">
               {volumeLoading ? (
-                <ActivityIndicator color={persona.accent} style={{ marginVertical: 24 }} />
+                <Skeleton
+                  height={CHART_HEIGHT + 26}
+                  radius={22}
+                  style={{ backgroundColor: tokens.surfaceAlt }}
+                />
               ) : (
-                <VolumeChart data={weeklyVolume} />
+                <VolumeBars data={weeklyVolume} width={width - BODY_PAD * 2} />
               )}
-            </View>
+            </Section>
 
             {/* AI Weekly Summary */}
-            <View style={[styles.aiCard, { borderColor: persona.accent + '33' }]}>
-              <View style={styles.aiCardHeader}>
-                <Sparkles size={16} color={persona.accent} />
-                <Text style={[styles.aiLabel, { color: persona.accent }]}>AI weekly review</Text>
-              </View>
-              {summary ? (
-                <Text style={styles.summaryText}>{summary}</Text>
-              ) : !hasAnyWorkoutThisWeek ? (
-                <Text style={styles.summaryPrompt}>
-                  No workouts logged this week yet. Train at least once to unlock your AI review.
-                </Text>
-              ) : tooEarlyInWeek ? (
-                <Text style={styles.summaryPrompt}>
-                  It&apos;s only {dayLabel} — too early for a meaningful weekly review.
-                  Come back from Wednesday onwards, or after 2+ workouts.
-                </Text>
-              ) : (
-                <Text style={styles.summaryPrompt}>
-                  Get a personalised AI analysis of your training week.
-                </Text>
-              )}
-              <TouchableOpacity
-                style={[
-                  styles.summaryBtn,
-                  { backgroundColor: persona.accent },
-                  (summaryLoading || !canGenerateSummary) && { opacity: 0.4 },
-                ]}
-                onPress={handleGetSummary}
-                disabled={summaryLoading || !canGenerateSummary}
-                activeOpacity={0.8}
-              >
-                {summaryLoading ? (
-                  <ActivityIndicator size="small" color={persona.ink} />
+            <Section
+              label="AI weekly review"
+              right={<Sparkles size={13} color={tokens.textTertiary} />}
+            >
+              <View style={styles.aiBlock}>
+                {summary ? (
+                  <Text style={styles.summaryText}>{summary}</Text>
+                ) : !hasAnyWorkoutThisWeek ? (
+                  <Text style={styles.summaryPrompt}>
+                    No workouts logged this week yet. Train at least once to unlock your AI review.
+                  </Text>
+                ) : tooEarlyInWeek ? (
+                  <Text style={styles.summaryPrompt}>
+                    It&apos;s only {dayLabel} — too early for a meaningful weekly review.
+                    Come back from Wednesday onwards, or after 2+ workouts.
+                  </Text>
                 ) : (
-                  <Text style={[styles.summaryBtnText, { color: persona.ink }]}>
-                    {!canGenerateSummary
-                      ? 'Locked — train more'
-                      : summary ? 'Refresh summary' : 'Generate summary'}
+                  <Text style={styles.summaryPrompt}>
+                    Get a personalised AI analysis of your training week.
                   </Text>
                 )}
-              </TouchableOpacity>
-            </View>
+                <PressableScale
+                  onPress={handleGetSummary}
+                  disabled={summaryBlocked}
+                  haptic="medium"
+                  scaleTo={0.97}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: summaryBlocked }}
+                  // The accent fill needs a hairline of its own text-safe tone —
+                  // the brand green is under 3:1 on a light page without it.
+                  style={[styles.cta, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
+                >
+                  {summaryLoading ? (
+                    // A button spinner, not a content-loading state — a skeleton
+                    // here would read as a missing control.
+                    <ActivityIndicator size="small" color={pa.ink} />
+                  ) : (
+                    <Text style={[styles.ctaText, { color: pa.ink }]}>
+                      {!canGenerateSummary
+                        ? 'Locked — train more'
+                        : summary ? 'Refresh summary' : 'Generate summary'}
+                    </Text>
+                  )}
+                </PressableScale>
+              </View>
+            </Section>
 
             {/* Personal Records */}
-            <View style={styles.card}>
-              <View style={styles.cardHead}>
-                <Trophy size={16} color={persona.accent} />
-                <Text style={styles.cardLabel}>Personal records</Text>
-              </View>
+            <Section
+              label="Personal records"
+              right={<Trophy size={13} color={tokens.textTertiary} />}
+            >
               {prsLoading ? (
-                <ActivityIndicator color={persona.accent} style={{ marginVertical: 16 }} />
+                <View style={styles.skeletonStack}>
+                  {[0, 1, 2].map((i) => (
+                    <Skeleton
+                      key={i}
+                      height={54}
+                      radius={20}
+                      style={{ backgroundColor: tokens.surfaceAlt }}
+                    />
+                  ))}
+                </View>
               ) : prs.length === 0 ? (
                 <Text style={styles.emptyText}>Complete workouts to set personal records.</Text>
               ) : (
-                prs.slice(0, 10).map((pr, i) => (
-                  <View key={pr.id} style={[styles.prRow, i === 0 && styles.prRowFirst]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.prName}>{pr.exerciseName}</Text>
-                      <Text style={styles.prDate}>
-                        {new Date(pr.achievedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                      </Text>
-                    </View>
-                    <View style={styles.prStats}>
-                      <Text style={[styles.prWeight, { color: persona.accent }]}>
-                        {pr.weightKg}kg × {pr.reps}
-                      </Text>
-                      <Text style={styles.prEstimate}>
-                        ~{pr.oneRepMaxKg ?? Epley1RM(pr.weightKg, pr.reps)}kg e1RM
-                      </Text>
-                    </View>
-                  </View>
+                prs.slice(0, 10).map((pr, i, arr) => (
+                  <ListRow
+                    key={pr.id}
+                    title={pr.exerciseName}
+                    subtitle={new Date(pr.achievedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    last={i === arr.length - 1}
+                    right={
+                      <View style={styles.prStats}>
+                        <Text style={styles.prWeight}>
+                          {pr.weightKg}kg × {pr.reps}
+                        </Text>
+                        <Text style={styles.prEstimate}>
+                          ~{pr.oneRepMaxKg ?? Epley1RM(pr.weightKg, pr.reps)}kg e1RM
+                        </Text>
+                      </View>
+                    }
+                  />
                 ))
               )}
-            </View>
+            </Section>
 
             {/* Achievements */}
-            <View style={styles.card}>
-              <View style={styles.cardHead}>
-                <Award size={16} color={persona.accent} />
-                <Text style={styles.cardLabel}>Achievements</Text>
-              </View>
+            <Section
+              label="Achievements"
+              right={<Award size={13} color={tokens.textTertiary} />}
+            >
               {achievementsLoading ? (
-                <ActivityIndicator color={persona.accent} style={{ marginVertical: 16 }} />
+                <View style={styles.achievementsGrid}>
+                  {[0, 1, 2].map((i) => (
+                    <Skeleton
+                      key={i}
+                      height={104}
+                      radius={22}
+                      width="31.5%"
+                      style={{ backgroundColor: tokens.surfaceAlt }}
+                    />
+                  ))}
+                </View>
               ) : achievements.length === 0 ? (
                 <Text style={styles.emptyText}>Start training to unlock achievements!</Text>
               ) : (
@@ -231,114 +313,221 @@ export default function Progress() {
                   ))}
                 </View>
               )}
-            </View>
-          </SafeAreaView>
+            </Section>
+          </View>
         )}
 
-        {/* ── 4b. PHYSIQUE VIEW ───────────────────────────────── */}
+        {/* ── 4b. PHYSIQUE VIEW ─────────────────────────────── */}
         {activeTab === 'physique' && (
-          <SafeAreaView edges={['left', 'right']} style={styles.body}>
+          <Section label="Physique">
             <PhysiquePrivacyCard />
             <PhysiqueGallery />
-          </SafeAreaView>
+          </Section>
         )}
+      </SafeAreaView>
+    </CanvasScreen>
+  );
+}
 
-        <View style={{ height: 110 }} />
-      </ScrollView>
+/**
+ * VolumeBars — the same weekly-volume data, drawn Bold Canvas: no gridlines, no
+ * per-bar labels, the current week emphasised in full ink while the history sits
+ * back at the border tone.
+ */
+function VolumeBars({ data, width }: { data: WeeklyVolume[]; width: number }) {
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
-      {/* ── 5. ANCHOR CTA ───────────────────────────────────── */}
-      <AnchorCTA
-        label="OPEN SETTINGS →"
-        accent={persona.accent}
-        accentInk={persona.ink}
-        onPress={() => router.push('/profile' as any)}
-      />
+  if (data.length === 0) {
+    return (
+      <View style={styles.chartEmpty}>
+        <Text style={styles.emptyText}>Complete workouts to see your volume chart</Text>
+      </View>
+    );
+  }
+
+  const gap = 7;
+  const maxVolume = Math.max(...data.map((d) => d.totalVolumeKg), 1);
+  const barWidth = (width - gap * (data.length - 1)) / Math.max(data.length, 1);
+  const last = data[data.length - 1];
+
+  return (
+    <View>
+      <Svg width={width} height={CHART_HEIGHT + 1}>
+        {data.map((d, i) => {
+          const barHeight = Math.max((d.totalVolumeKg / maxVolume) * CHART_HEIGHT, 3);
+          const isLast = i === data.length - 1;
+          return (
+            <Rect
+              key={d.weekStart}
+              x={i * (barWidth + gap)}
+              y={CHART_HEIGHT - barHeight}
+              width={barWidth}
+              height={barHeight}
+              rx={4}
+              fill={isLast ? tokens.text : tokens.borderStrong}
+            />
+          );
+        })}
+        <Line
+          x1={0} y1={CHART_HEIGHT}
+          x2={width} y2={CHART_HEIGHT}
+          stroke={tokens.border} strokeWidth={1}
+        />
+      </Svg>
+      <View style={styles.chartLegend}>
+        <Text style={styles.chartAxis}>
+          {data[0]?.weekLabel} — {last?.weekLabel}
+        </Text>
+        <Text style={styles.chartValue}>
+          {Math.round(last?.totalVolumeKg ?? 0).toLocaleString()}kg · {last?.workoutCount} session
+          {last?.workoutCount !== 1 ? 's' : ''}
+        </Text>
+      </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.bg },
-  scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 0 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
 
-  statsRow: {
+  crownPill: {
     flexDirection: 'row',
-    gap: Spacing.sm + 2,
-    paddingHorizontal: Spacing.md + 2,
-    paddingTop: Spacing.md - 2,
-    marginBottom: Spacing.sm + 2,
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  crownPillText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
   },
 
-  toggle: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.md + 2,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    marginBottom: Spacing.sm + 2,
-  },
+  statRow: { marginTop: 26, marginBottom: 30 },
+
+  toggle: { flexDirection: 'row', gap: 26 },
   tab: {
-    paddingVertical: Spacing.sm + 2,
-    marginRight: Spacing.lg,
+    paddingBottom: 10,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  tabText: { ...Typography.cardTitle, color: Colors.textSecondary },
-
-  body: {
-    paddingHorizontal: Spacing.md + 2,
-    paddingTop: Spacing.xs,
+  tabText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
   },
 
-  card: {
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.lg,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm + 2,
+  // No border: the AI review is the one filled block on the page.
+  aiBlock: {
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 26,
+    padding: 20,
   },
-  cardHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  cardLabel: { ...Typography.sectionTitle, fontSize: 15 },
-
-  // AI weekly review card — same surface as card but with persona-tinted border
-  aiCard: {
-    backgroundColor: Colors.surfaceWarm,
-    borderRadius: Radius.lg,
+  summaryText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    lineHeight: 21,
+    color: t.text,
+    marginBottom: 18,
+  },
+  summaryPrompt: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    lineHeight: 21,
+    color: t.textSecondary,
+    marginBottom: 18,
+  },
+  cta: {
+    borderRadius: 22,
     borderWidth: 1,
-    padding: Spacing.md,
-    marginBottom: Spacing.sm + 2,
-  },
-  aiCardHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  aiLabel: { ...Typography.sectionTitle, fontSize: 15 },
-  summaryText: { ...Typography.cardMeta, color: Colors.text, lineHeight: 20, marginBottom: 14 },
-  summaryPrompt: { ...Typography.cardMeta, lineHeight: 20, marginBottom: 14 },
-  summaryBtn: {
-    borderRadius: Radius.md,
-    paddingVertical: 12,
+    paddingVertical: 15,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  summaryBtnText: { fontFamily: Fonts.displayMedium, fontSize: 13, letterSpacing: 0.2 },
-
-  emptyText: { ...Typography.cardMeta, textAlign: 'center', paddingVertical: 16 },
-
-  prRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 11,
-    borderTopWidth: 1, borderTopColor: Colors.border,
+  ctaText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 10,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
   },
-  prRowFirst: { borderTopWidth: 0 },
-  prName: { ...Typography.cardTitle, fontSize: 13 },
-  prDate: { ...Typography.cardMeta, fontSize: 11, marginTop: 3 },
-  prStats: { alignItems: 'flex-end' },
-  prWeight: { fontFamily: Fonts.display, fontSize: 14 },
-  prEstimate: { ...Typography.cardMeta, fontSize: 11, marginTop: 3 },
 
-  achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  emptyText: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: t.textTertiary,
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
+
+  skeletonStack: { gap: 10 },
+
+  prStats: { alignItems: 'flex-end', gap: 3 },
+  prWeight: {
+    fontFamily: Fonts.displayMedium,
+    fontSize: 15,
+    letterSpacing: -0.2,
+    color: t.text,
+    fontVariant: ['tabular-nums'],
+  },
+  prEstimate: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+
+  chartEmpty: { height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  chartLegend: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  chartAxis: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+  chartValue: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textSecondary,
+  },
+
+  achievementsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   achievementChip: {
-    alignItems: 'center', backgroundColor: Colors.bg,
-    borderWidth: 1, borderColor: Colors.border,
-    borderRadius: Radius.md, padding: Spacing.sm, width: '30%',
+    width: '31.5%',
+    alignItems: 'center',
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 22,
+    paddingVertical: 16,
+    paddingHorizontal: 10,
   },
-  achievementEmoji: { fontSize: 26, marginBottom: 4 },
-  achievementLabel: { ...Typography.cardMeta, color: Colors.text, fontSize: 11, textAlign: 'center' },
-  achievementDate: { ...Typography.cardMeta, fontSize: 10, marginTop: 2 },
+  achievementEmoji: { fontSize: 28, marginBottom: 8 },
+  achievementLabel: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 11,
+    lineHeight: 15,
+    color: t.text,
+    textAlign: 'center',
+  },
+  achievementDate: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    marginTop: 5,
+  },
 });

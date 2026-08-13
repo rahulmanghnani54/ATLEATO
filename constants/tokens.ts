@@ -77,7 +77,7 @@ const LIGHT: SemanticTokens = {
 
   text: INK,
   textSecondary: 'rgba(11,20,16,0.66)',
-  textTertiary: 'rgba(11,20,16,0.48)',
+  textTertiary: 'rgba(11,20,16,0.58)',
 
   accent: EMERALD,
   accentText: EMERALD_DEEP,
@@ -125,7 +125,7 @@ const DARK: SemanticTokens = {
 
   text: BONE,
   textSecondary: 'rgba(239,243,238,0.66)',
-  textTertiary: 'rgba(239,243,238,0.42)',
+  textTertiary: 'rgba(239,243,238,0.50)',
 
   accent: EMERALD_LIFT,
   accentText: EMERALD_BRIGHT,

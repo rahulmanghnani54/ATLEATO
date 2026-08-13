@@ -19,22 +19,25 @@
  * width/height from the worklet and cover-fit them onto the camera view.
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  ActivityIndicator, useWindowDimensions,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { StatusBar, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useReducedMotion } from 'react-native-reanimated';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Camera, useCameraDevice, useCameraPermission, useFrameProcessor, VisionCameraProxy, runAtTargetFps } from 'react-native-vision-camera';
 import Svg, { Circle, Line } from 'react-native-svg';
 import { useRunOnJS } from 'react-native-worklets-core';
-import { Colors, Spacing, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { BigStat, CanvasScreen, Hairline, Section, StatRow } from '@/components/ui/canvas';
+import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
 import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
 import { getExerciseForm, getCoachCue, type ExerciseForm } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { canAccess } from '@/lib/featureGates';
 import {
-  X as XIcon, RefreshCw, AlertTriangle, Check, Pause, Loader, Video, Sparkles,
+  X as XIcon, RefreshCw, AlertTriangle, Check, Pause, Video, Sparkles,
   Camera as CameraIcon,
 } from 'lucide-react-native';
 
@@ -782,6 +785,34 @@ function poseLog(msg: string) {
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
 
+/**
+ * A hero numeral that actually ticks. CountUp only animates on a CHANGE, so a
+ * value that mounts at its final number would sit still; we render 0 for one
+ * frame first — except under reduce-motion, where it mounts settled.
+ */
+function HeroNumber({ value, color, size = 74 }: { value: number; color: string; size?: number }) {
+  const reduced = useReducedMotion();
+  const [settled, setSettled] = useState(reduced);
+  useEffect(() => {
+    if (reduced) return;
+    const id = requestAnimationFrame(() => setSettled(true));
+    return () => cancelAnimationFrame(id);
+  }, [reduced]);
+  return (
+    <CountUp
+      value={settled ? value : 0}
+      style={{
+        fontFamily: Fonts.displayBold,
+        fontVariant: ['tabular-nums'],
+        fontSize: size,
+        lineHeight: size * 1.02,
+        letterSpacing: size * -0.045,
+        color,
+      }}
+    />
+  );
+}
+
 export default function FormCoach() {
   const router = useRouter();
   const { exerciseName, persona: personaParam } = useLocalSearchParams<{
@@ -793,6 +824,26 @@ export default function FormCoach() {
 
   const persona            = programIdToPersona(personaParam ?? 'cbum_evolved');
   const claudePersonaLabel = PERSONA_LABELS[persona] ?? 'COACH SAYS';
+
+  const { tokens, scheme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const styles = useThemedStyles(makeStyles);
+  // Focus-scoped so the light-content status bar this screen needs does not
+  // follow the user onto a light screen pushed on top of it (see the <Crown>).
+  const [screenFocused, setScreenFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setScreenFocused(true);
+      return () => setScreenFocused(false);
+    }, []),
+  );
+  // The camera feed is a dark ground in BOTH schemes, so everything floating on
+  // the stage reads the DARK token set — the light values are tuned against
+  // white and go muddy over video.
+  const stage = TOKENS.dark;
+  const personaTheme = personaFromProgramId(personaParam ?? 'cbum_evolved');
+  const stageAccent  = personaAccent(personaTheme, 'dark').accent;   // over video
+  const pageAccent   = personaAccent(personaTheme, scheme);           // on the page
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const [facing, setFacing] = useState<'front' | 'back'>('back');
@@ -1258,80 +1309,114 @@ export default function FormCoach() {
   };
   const lineColor = (a: number, b: number): string => {
     const an = jointNameByIdx[a]; const bn = jointNameByIdx[b];
-    if ((an && formAnalysis.badJoints.has(an)) || (bn && formAnalysis.badJoints.has(bn))) return '#ef4444';
-    if (formAnalysis.status === 'WARNING') return '#facc15';
-    return Colors.primary;
+    if ((an && formAnalysis.badJoints.has(an)) || (bn && formAnalysis.badJoints.has(bn))) return stage.danger;
+    if (formAnalysis.status === 'WARNING') return stage.warning;
+    return stageAccent;
   };
   const jointColor = (idx: number): string => {
     const name = jointNameByIdx[idx];
-    if (name && formAnalysis.badJoints.has(name)) return '#ef4444';
-    return Colors.primary;
+    if (name && formAnalysis.badJoints.has(name)) return stage.danger;
+    return stageAccent;
   };
 
   if (!hasPermission) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <Text style={styles.permissionText}>Camera access is required for live form coaching.</Text>
-          <TouchableOpacity style={styles.permissionBtn} onPress={requestPermission}>
-            <Text style={styles.permissionBtnText}>GRANT CAMERA ACCESS</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <CanvasScreen scroll={false} tabBar={false} topInset contentStyle={styles.gateBody}>
+        <Text style={styles.gateEyebrow}>Form check</Text>
+        <Text style={styles.gateTitle}>Point the{'\n'}camera at{'\n'}yourself.</Text>
+        <Text style={styles.gateText}>
+          Camera access is required for live form coaching.
+        </Text>
+        <PressableScale
+          style={styles.gateBtn}
+          onPress={requestPermission}
+          haptic="heavy"
+          accessibilityRole="button"
+        >
+          <CameraIcon size={15} color={tokens.accentInk} />
+          <Text style={styles.gateBtnText}>Grant camera access</Text>
+        </PressableScale>
+      </CanvasScreen>
     );
   }
   if (!device) {
+    // Skeleton shaped like the screen that is coming: a tall camera stage with
+    // its floating readouts, not a bare spinner.
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <ActivityIndicator color={Colors.primary} />
-          <Text style={[styles.permissionText, { marginTop: 12 }]}>Loading camera…</Text>
+      <CanvasScreen scroll={false} tabBar={false} topInset contentStyle={styles.gateLoading}>
+        <Text style={styles.gateEyebrow}>Form check</Text>
+        <Skeleton height={Math.round(screenHeight * 0.46)} radius={26} />
+        <View style={styles.gateLoadingRow}>
+          <Skeleton width={96} height={44} radius={22} />
+          <Skeleton width={64} height={44} radius={22} />
         </View>
-      </SafeAreaView>
+        <Text style={styles.gateText}>Loading camera…</Text>
+      </CanvasScreen>
     );
   }
 
   const isTracking   = displayKpts !== null;
   const modelLoading = modelState === 'loading';
   const modelError   = modelState === 'error';
+  // The ⬤ glyph is now a real dot view, so the label carries text only.
   const statusLabel  =
-    modelError                            ? '⬤ MODEL ERROR' :
-    modelLoading                          ? '⬤ LOADING AI…' :
-    isTracking && formAnalysis.status === 'NO_VIEW' ? '⬤ CAN\'T SEE YOU' :
-    isTracking && formAnalysis.status === 'UNSAFE'  ? '⬤ SPOTTER NEEDED' :
-    isTracking && formAnalysis.status === 'STANDBY' ? '⬤ STANDBY · WAITING' :
-    isTracking                            ? '⬤ LIVE · 60FPS SMOOTH' :
-                                            '⬤ STEP INTO FRAME';
+    modelError                            ? 'MODEL ERROR' :
+    modelLoading                          ? 'LOADING AI…' :
+    isTracking && formAnalysis.status === 'NO_VIEW' ? 'CAN\'T SEE YOU' :
+    isTracking && formAnalysis.status === 'UNSAFE'  ? 'SPOTTER NEEDED' :
+    isTracking && formAnalysis.status === 'STANDBY' ? 'STANDBY · WAITING' :
+    isTracking                            ? 'LIVE · 60FPS SMOOTH' :
+                                            'STEP INTO FRAME';
   const statusColor =
-    modelError                            ? '#ef4444' :
-    isTracking && (formAnalysis.status === 'NO_VIEW' || formAnalysis.status === 'UNSAFE') ? '#facc15' :
-    isTracking && formAnalysis.status === 'STANDBY' ? '#facc15' :
-    isTracking                            ? Colors.primary :
-                                            '#9ca3af';
+    modelError                            ? stage.danger :
+    isTracking && (formAnalysis.status === 'NO_VIEW' || formAnalysis.status === 'UNSAFE') ? stage.warning :
+    isTracking && formAnalysis.status === 'STANDBY' ? stage.warning :
+    isTracking                            ? stage.crownText :
+                                            stage.crownTextDim;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn} hitSlop={10}>
-          <XIcon size={20} color={Colors.text} />
-        </TouchableOpacity>
-        <Text
-          style={styles.title}
-          onLongPress={() => setShowAlign((s) => !s)}
-          suppressHighlighting
+    <View style={styles.root}>
+      {/* This screen has no <Crown>, so it owes the same status-bar contract: the
+          dark head runs under the bar and the shell's light-scheme dark-content
+          icons would vanish against it. */}
+      {screenFocused ? <StatusBar barStyle="light-content" /> : null}
+
+      {/* Dark head block — reads as one surface with the camera stage below it. */}
+      <View style={[styles.head, { paddingTop: insets.top + 8 }]}>
+        <PressableScale
+          onPress={() => router.back()}
+          haptic="light"
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close form coach"
+          style={styles.headBtn}
         >
-          {exerciseName ?? 'Form Coach'}
-        </Text>
-        <TouchableOpacity
+          <XIcon size={19} color={stage.crownText} />
+        </PressableScale>
+        <View style={styles.headTitleWrap}>
+          <Text style={styles.headEyebrow}>Live form check</Text>
+          <Text
+            style={styles.headTitle}
+            numberOfLines={1}
+            onLongPress={() => setShowAlign((s) => !s)}
+            suppressHighlighting
+          >
+            {exerciseName ?? 'Form Coach'}
+          </Text>
+        </View>
+        <PressableScale
           onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))}
-          style={styles.iconBtn}
-          hitSlop={10}
+          haptic="light"
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Flip camera"
+          style={styles.headBtn}
         >
-          <RefreshCw size={18} color={Colors.text} />
-        </TouchableOpacity>
+          <RefreshCw size={17} color={stage.crownText} />
+        </PressableScale>
       </View>
 
-      <View style={[styles.cameraContainer, { height: cameraHeight }]}>
+      <View style={[styles.stage, { height: cameraHeight }]}>
         <Camera
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
@@ -1339,6 +1424,21 @@ export default function FormCoach() {
           isActive={true}
           frameProcessor={frameProcessor}
           pixelFormat="yuv"
+        />
+
+        {/* Legibility scrims — the overlays are borderless, so the stage itself
+            carries their contrast instead of a box around each one. They sit
+            UNDER the Svg: painted on top they would dim the tracked legs, which
+            is exactly the part of the skeleton a squat depends on. */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={[stage.overlay, 'transparent']}
+          style={styles.scrimTop}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={['transparent', stage.scrim]}
+          style={styles.scrimBottom}
         />
 
         <Svg
@@ -1376,7 +1476,7 @@ export default function FormCoach() {
                     key={`k-${i}`}
                     cx={cx} cy={cy} r={isFace ? 4 : 6}
                     fill={jointColor(i)} fillOpacity={isFace ? 0.85 : 0.95}
-                    stroke="#000" strokeWidth={1.5}
+                    stroke={stage.crown} strokeWidth={1.5}
                   />
                 );
               })}
@@ -1391,152 +1491,174 @@ export default function FormCoach() {
           </View>
         )}
 
-        <View style={[styles.statusPill, { borderColor: statusColor }]}>
-          <Text style={[styles.statusText, { color: statusColor }]}>{statusLabel}</Text>
+        <View style={styles.statusPill}>
+          <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
+          <Text style={styles.statusText}>{statusLabel}</Text>
         </View>
 
-        {/* Rep counter + live primary angle (long-press to reset the set).
-            Reads refs; refreshed by the ~8Hz analysis re-renders. */}
-        {(repRef.current.count > 0 || (isTracking && liveAngleRef.current.deg != null)) && (
-          <TouchableOpacity
-            style={styles.repPill}
-            onLongPress={() => { repRef.current.reset(); setAnalysisTick((t) => t + 1); }}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.repPillCount}>
-              {repRef.current.count} REP{repRef.current.count === 1 ? '' : 'S'}
-            </Text>
-            {isTracking && liveAngleRef.current.deg != null && (
-              <Text style={styles.repPillAngle}>
-                {liveAngleRef.current.label} {Math.round(liveAngleRef.current.deg)}°
+        <View style={styles.stageBottom} pointerEvents="box-none">
+          {isTracking && formAnalysis.issues.length > 0 && (
+            <View style={styles.sheet}>
+              <View style={[styles.sheetBar, { backgroundColor: stage.danger }]} />
+              <AlertTriangle size={14} color={stage.danger} />
+              <Text style={styles.sheetText} numberOfLines={2}>{formAnalysis.issues[0]}</Text>
+            </View>
+          )}
+          {isTracking && formAnalysis.issues.length === 0 && formAnalysis.status === 'GOOD' && (
+            <View style={styles.sheet}>
+              <View style={[styles.sheetBar, { backgroundColor: stageAccent }]} />
+              <Check size={14} color={stageAccent} strokeWidth={3} />
+              <Text style={styles.sheetText}>Form looks solid — keep going</Text>
+            </View>
+          )}
+          {isTracking && formAnalysis.status === 'STANDBY' && (
+            <View style={styles.sheet}>
+              <View style={[styles.sheetBar, { backgroundColor: stage.crownTextDim }]} />
+              <Pause size={14} color={stage.crownTextDim} />
+              <Text style={styles.sheetText}>Standby — start your set to begin form check</Text>
+            </View>
+          )}
+          {!isTracking && !modelLoading && !modelError && (
+            <View style={styles.sheet}>
+              <View style={[styles.sheetBar, { backgroundColor: stage.crownTextDim }]} />
+              <CameraIcon size={14} color={stage.crownTextDim} />
+              <Text style={styles.sheetText}>Step into frame — full body visible</Text>
+            </View>
+          )}
+          {modelLoading && (
+            <View style={styles.sheet}>
+              <View style={[styles.sheetBar, { backgroundColor: stage.crownTextDim }]} />
+              <Skeleton width={40} height={8} radius={4} />
+              <Text style={styles.sheetText}>Loading pose model…</Text>
+            </View>
+          )}
+          {modelError && (
+            <View style={styles.sheet}>
+              <View style={[styles.sheetBar, { backgroundColor: stage.danger }]} />
+              <AlertTriangle size={14} color={stage.danger} />
+              <Text style={styles.sheetText} numberOfLines={3}>
+                {modelErrorMsg ?? 'Pose model failed to load.'}
               </Text>
-            )}
-          </TouchableOpacity>
-        )}
+            </View>
+          )}
 
-        {isTracking && formAnalysis.issues.length > 0 && (
-          <View style={[styles.formBanner, styles.formBannerBad]}>
-            <AlertTriangle size={14} color="#fff" />
-            <Text style={styles.formBannerText}>{formAnalysis.issues[0]}</Text>
-          </View>
-        )}
-        {isTracking && formAnalysis.issues.length === 0 && formAnalysis.status === 'GOOD' && (
-          <View style={[styles.formBanner, styles.formBannerGood]}>
-            <Check size={14} color="#fff" strokeWidth={3} />
-            <Text style={styles.formBannerText}>Form looks solid — keep going</Text>
-          </View>
-        )}
-        {isTracking && formAnalysis.status === 'STANDBY' && (
-          <View style={[styles.formBanner, styles.formBannerNeutral]}>
-            <Pause size={14} color="#fff" />
-            <Text style={styles.formBannerText}>Standby — start your set to begin form check</Text>
-          </View>
-        )}
-        {!isTracking && !modelLoading && !modelError && (
-          <View style={[styles.formBanner, styles.formBannerNeutral]}>
-            <CameraIcon size={14} color="#fff" />
-            <Text style={styles.formBannerText}>Step into frame — full body visible</Text>
-          </View>
-        )}
-        {modelLoading && (
-          <View style={[styles.formBanner, styles.formBannerNeutral]}>
-            <Loader size={14} color="#fff" />
-            <Text style={styles.formBannerText}>Loading pose model…</Text>
-          </View>
-        )}
-        {modelError && (
-          <View style={[styles.formBanner, styles.formBannerBad, { maxWidth: '85%' }]}>
-            <AlertTriangle size={14} color="#fff" />
-            <Text style={styles.formBannerText} numberOfLines={3}>
-              {modelErrorMsg ?? 'Pose model failed to load.'}
-            </Text>
-          </View>
-        )}
+          {/* Rep counter + live primary angle (long-press to reset the set).
+              Reads refs; refreshed by the ~8Hz analysis re-renders. */}
+          {(repRef.current.count > 0 || (isTracking && liveAngleRef.current.deg != null)) && (
+            <PressableScale
+              style={styles.repRow}
+              onLongPress={() => { repRef.current.reset(); setAnalysisTick((t) => t + 1); }}
+              haptic="light"
+              scaleTo={0.98}
+              accessibilityRole="button"
+              accessibilityLabel={`${repRef.current.count} reps counted. Long press to reset the set.`}
+            >
+              <View>
+                <CountUp
+                  value={repRef.current.count}
+                  duration={420}
+                  style={styles.repValue}
+                />
+                <Text style={styles.repLabel}>
+                  REP{repRef.current.count === 1 ? '' : 'S'} counted
+                </Text>
+              </View>
+              {isTracking && liveAngleRef.current.deg != null && (
+                <View style={styles.repAngleCol}>
+                  <Text style={styles.repAngleValue}>
+                    {Math.round(liveAngleRef.current.deg)}°
+                  </Text>
+                  <Text style={styles.repLabel}>{liveAngleRef.current.label}</Text>
+                </View>
+              )}
+            </PressableScale>
+          )}
+        </View>
       </View>
 
-      <ScrollView style={styles.feedbackPanel} contentContainerStyle={styles.feedbackContent}>
-        {/* Finish set → grade the reps and show the report card. */}
-        <TouchableOpacity
-          style={{
-            backgroundColor: Colors.primary, borderRadius: 100,
-            flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-            paddingHorizontal: 14, paddingVertical: 11,
-          }}
+      <ScrollView
+        style={styles.panel}
+        contentContainerStyle={[styles.panelContent, { paddingBottom: insets.bottom + 44 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Finish set → grade the reps and show the report card.
+            The one emerald moment on the light body. */}
+        <PressableScale
+          style={styles.ctaPrimary}
           onPress={finishSet}
-          activeOpacity={0.85}
+          haptic="heavy"
+          accessibilityRole="button"
         >
-          <Check size={15} color={Colors.accentInk} strokeWidth={3} />
-          <Text style={{ fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 0.3 }}>
-            FINISH SET &amp; GRADE
-          </Text>
-        </TouchableOpacity>
+          <Check size={15} color={tokens.accentInk} strokeWidth={3} />
+          <Text style={styles.ctaPrimaryText}>Finish set &amp; grade</Text>
+        </PressableScale>
 
         {canAccess('video_review') && (
-          <TouchableOpacity
-            style={{
-              backgroundColor: Colors.primary, borderRadius: 100,
-              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-              paddingHorizontal: 14, paddingVertical: 10,
-            }}
+          <PressableScale
+            style={styles.ctaGhost}
             onPress={() => router.push('/video-review' as any)}
+            haptic="light"
+            accessibilityRole="button"
           >
-            <Video size={14} color={Colors.bg} />
-            <Text style={{ fontFamily: Fonts.displayMedium, fontSize: 13, color: Colors.bg, letterSpacing: 0.2 }}>
-              Record & review
-            </Text>
-          </TouchableOpacity>
+            <Video size={14} color={tokens.text} />
+            <Text style={styles.ctaGhostText}>Record &amp; review</Text>
+          </PressableScale>
         )}
 
-        <TouchableOpacity
-          style={[styles.cueBtn, !canCallCue && styles.cueBtnDisabled]}
+        <PressableScale
+          style={styles.cueBtn}
           onPress={handleGetCoachCue}
           disabled={!canCallCue}
-          activeOpacity={0.85}
+          haptic="light"
+          accessibilityRole="button"
         >
-          <Sparkles size={14} color={Colors.primary} />
+          <Sparkles size={14} color={tokens.textSecondary} />
           <Text style={styles.cueBtnText}>
             {cooldownLeft > 0
               ? `Ask ${claudePersonaLabel.split(' ')[0]} again (${cooldownLeft}s)`
               : `Ask ${claudePersonaLabel.split(' ')[0]} for a cue`}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
 
         {aiFeedback && (
           <View style={styles.cueCard}>
-            <View style={styles.cueLabelRow}>
-              <Sparkles size={12} color={Colors.primary} />
-              <Text style={styles.cueLabel}>{claudePersonaLabel}</Text>
-            </View>
+            <Text style={[styles.cueLabel, { color: pageAccent.accentText }]}>{claudePersonaLabel}</Text>
             <Text style={styles.cueText}>{aiFeedback}</Text>
           </View>
         )}
 
-        <Text style={styles.sectionLabel}>Form cues — {exerciseName ?? ''}</Text>
-        {libraryCheckpoints.length > 0
-          ? libraryCheckpoints.map((cp, i) => (
-              <View key={i} style={styles.tipRow}>
-                <Text style={styles.tipPhase}>{cp.phase.slice(0, 3)}</Text>
-                <Text style={styles.tipText}>{cp.description}</Text>
-              </View>
-            ))
-          : tips.map((tip, i) => (
-              <View key={i} style={styles.tipRow}>
-                <Text style={styles.tipBullet}>—</Text>
-                <Text style={styles.tipText}>{tip}</Text>
-              </View>
-            ))
-        }
+        <Section label={`Form cues · ${exerciseName ?? ''}`}>
+          {libraryCheckpoints.length > 0
+            ? libraryCheckpoints.map((cp, i) => (
+                <View key={i}>
+                  {i > 0 && <Hairline />}
+                  <View style={styles.tipRow}>
+                    <Text style={styles.tipPhase}>{cp.phase.slice(0, 3)}</Text>
+                    <Text style={styles.tipText}>{cp.description}</Text>
+                  </View>
+                </View>
+              ))
+            : tips.map((tip, i) => (
+                <View key={i}>
+                  {i > 0 && <Hairline />}
+                  <View style={styles.tipRow}>
+                    <Text style={styles.tipPhase}>—</Text>
+                    <Text style={styles.tipText}>{tip}</Text>
+                  </View>
+                </View>
+              ))
+          }
+        </Section>
 
         {libraryMistakes.length > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { marginTop: 14 }]}>Common mistakes</Text>
+          <Section label="Common mistakes">
             {libraryMistakes.map((m, i) => (
-              <View key={i} style={styles.tipRow}>
-                <XIcon size={14} color="#ef4444" strokeWidth={3} style={{ marginTop: 2 }} />
+              <View key={i} style={styles.mistakeRow}>
+                <XIcon size={14} color={tokens.danger} strokeWidth={3} style={styles.mistakeIcon} />
                 <Text style={styles.tipText}>{m}</Text>
               </View>
             ))}
-          </>
+          </Section>
         )}
 
         {libraryBreathing && (
@@ -1557,45 +1679,44 @@ export default function FormCoach() {
           <View style={styles.reportCard}>
             <Text style={styles.reportEyebrow}>{claudePersonaLabel} · SET REPORT</Text>
 
-            <View style={styles.reportScoreRow}>
-              <Text style={[styles.reportScore, { color: Colors.primary }]}>{setReport.avgScore}</Text>
-              <View>
-                <Text style={styles.reportScoreLabel}>QUALITY</Text>
-                <Text style={styles.reportGrade}>
-                  {setReport.avgScore >= 90 ? 'A · Excellent'
-                    : setReport.avgScore >= 80 ? 'B · Strong'
-                    : setReport.avgScore >= 70 ? 'C · Solid'
-                    : setReport.avgScore >= 55 ? 'D · Work on it'
-                    : 'Keep grinding'}
-                </Text>
-              </View>
+            <View style={styles.reportHero}>
+              <HeroNumber value={setReport.avgScore} color={pageAccent.accentText} size={74} />
+              <Text style={styles.reportHeroUnit}>/100</Text>
             </View>
+            <Text style={styles.reportScoreLabel}>Average quality</Text>
+            <Text style={styles.reportGrade}>
+              {setReport.avgScore >= 90 ? 'A · Excellent'
+                : setReport.avgScore >= 80 ? 'B · Strong'
+                : setReport.avgScore >= 70 ? 'C · Solid'
+                : setReport.avgScore >= 55 ? 'D · Work on it'
+                : 'Keep grinding'}
+            </Text>
 
-            <View style={styles.reportStatsRow}>
-              <View style={styles.reportStat}>
-                <Text style={[styles.reportStatVal, { color: Colors.primary }]}>{setReport.reps}</Text>
-                <Text style={styles.reportStatLabel}>REPS</Text>
-              </View>
-              <View style={styles.reportStat}>
-                <Text style={[styles.reportStatVal, { color: Colors.primary }]}>{(setReport.avgTempoMs / 1000).toFixed(1)}s</Text>
-                <Text style={styles.reportStatLabel}>AVG TEMPO</Text>
-              </View>
-              <View style={styles.reportStat}>
-                <Text style={[styles.reportStatVal, { color: Colors.primary }]}>
-                  {setReport.bestRep ? Math.round(setReport.bestRep.bottomDeg) : '—'}°
-                </Text>
-                <Text style={styles.reportStatLabel}>BEST DEPTH</Text>
-              </View>
-            </View>
+            <StatRow style={styles.reportStats}>
+              <BigStat value={setReport.reps} label="Reps" size={30} />
+              <BigStat
+                value={Number((setReport.avgTempoMs / 1000).toFixed(1))}
+                unit="s"
+                decimals={1}
+                label="Avg tempo"
+                size={30}
+              />
+              <BigStat
+                value={setReport.bestRep ? Math.round(setReport.bestRep.bottomDeg) : '—'}
+                unit="°"
+                label="Best depth"
+                size={30}
+              />
+            </StatRow>
 
-            {/* Per-rep dots — green = clean, amber = flawed, tap-free glance */}
+            {/* Per-rep bars — one per rep, clean / flawed / poor at a glance */}
             <View style={styles.reportDots}>
               {setReport.data.map((r) => (
                 <View
                   key={r.index}
                   style={[
                     styles.reportDot,
-                    { backgroundColor: r.score >= 80 ? Colors.primary : r.score >= 60 ? '#E0A81E' : '#DC4A3D' },
+                    { backgroundColor: r.score >= 80 ? tokens.success : r.score >= 60 ? tokens.warning : tokens.danger },
                   ]}
                 />
               ))}
@@ -1611,140 +1732,240 @@ export default function FormCoach() {
               <Text style={styles.reportFlaws}>Every rep clean — nothing to fix.</Text>
             )}
 
-            <TouchableOpacity
-              style={[styles.reportDone, { backgroundColor: Colors.primary }]}
+            <PressableScale
+              style={styles.reportDone}
               onPress={() => setSetReport(null)}
-              activeOpacity={0.85}
+              haptic="medium"
+              accessibilityRole="button"
             >
-              <Text style={[styles.reportDoneText, { color: Colors.accentInk }]}>DONE</Text>
-            </TouchableOpacity>
+              <Text style={styles.reportDoneText}>Done</Text>
+            </PressableScale>
           </View>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#000' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+/**
+ * Bold Canvas presentation layer.
+ *
+ * Two grounds live on this screen. The head + camera stage are DARK in both
+ * schemes (a camera feed always is), so everything floating there reads the
+ * dark token set; the body below is the themed page. `useThemedStyles` keys on
+ * the scheme, so this factory must stay a stable module-level function.
+ */
+function makeStyles(t: SemanticTokens) {
+  // See the component: the video is a dark ground regardless of app scheme.
+  const stage = TOKENS.dark;
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12, backgroundColor: '#000',
-  },
-  iconBtn: { padding: 6, minWidth: 32, alignItems: 'center' },
-  title: { fontSize: 15, fontFamily: Fonts.display, color: '#fff', flex: 1, textAlign: 'center' },
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
 
-  cameraContainer: { width: '100%', overflow: 'hidden', backgroundColor: '#0d0f11' },
+    // ── Permission / no-device gates ─────────────────────────────────────────
+    gateBody: { justifyContent: 'center', paddingHorizontal: 24, gap: 18 },
+    gateLoading: { justifyContent: 'center', paddingHorizontal: 24, gap: 16 },
+    gateLoadingRow: { flexDirection: 'row', gap: 10 },
+    gateEyebrow: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: t.textTertiary,
+    },
+    gateTitle: {
+      fontFamily: Fonts.displayBold, fontSize: 44, lineHeight: 46,
+      letterSpacing: -1.98, color: t.text,
+    },
+    gateText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 23, color: t.textSecondary },
+    gateBtn: {
+      marginTop: 6, alignSelf: 'flex-start',
+      flexDirection: 'row', alignItems: 'center', gap: 9,
+      paddingHorizontal: 24, paddingVertical: 16, borderRadius: 26,
+      // Brand emerald is 2.54:1 on white — the deep hairline is what gives the
+      // control a legible edge on a light page.
+      backgroundColor: t.accent, borderWidth: 1, borderColor: t.accentLine,
+    },
+    gateBtnText: {
+      fontFamily: Fonts.legacyMono, fontSize: 11, letterSpacing: 2,
+      textTransform: 'uppercase', color: t.accentInk,
+    },
 
-  statusPill: {
-    position: 'absolute', top: 10, left: 10,
-    paddingHorizontal: 10, paddingVertical: 5,
-    backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 100, borderWidth: 1,
-  },
-  statusText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
-  repPill: {
-    position: 'absolute', bottom: 12, right: 10,   // top-right is the form banner's spot
-    alignItems: 'flex-end',
-    paddingHorizontal: 12, paddingVertical: 6,
-    backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 12,
-    borderWidth: 1, borderColor: 'rgba(18,185,129,0.7)',
-  },
-  repPillCount: { fontFamily: Fonts.display, fontSize: 18, letterSpacing: 0.5, color: '#7DEBC4' },
-  repPillAngle: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1, color: '#CFE8DD', marginTop: 1 },
+    // ── Dark head, continuous with the stage ─────────────────────────────────
+    head: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      paddingHorizontal: 16, paddingBottom: 14, backgroundColor: t.crown,
+    },
+    headBtn: {
+      width: 38, height: 38, borderRadius: 19,
+      alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: stage.crownLine,
+    },
+    headTitleWrap: { flex: 1, alignItems: 'center' },
+    headEyebrow: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: stage.crownTextDim,
+    },
+    headTitle: {
+      fontFamily: Fonts.displayBold, fontSize: 20, letterSpacing: -0.9,
+      color: stage.crownText, textAlign: 'center', marginTop: 5,
+    },
 
-  // ── End-of-set report card ──
-  reportOverlay: {
-    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(6,15,12,0.72)', alignItems: 'center', justifyContent: 'center', padding: 24,
-  },
-  reportCard: {
-    width: '100%', maxWidth: 380, backgroundColor: Colors.surface, borderRadius: 20, padding: 22,
-  },
-  reportEyebrow: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, color: Colors.textTertiary, marginBottom: 14 },
-  reportScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 20 },
-  reportScore: { fontFamily: Fonts.display, fontSize: 64, letterSpacing: -2 },
-  reportScoreLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4, color: Colors.textTertiary },
-  reportGrade: { fontFamily: Fonts.displayMedium, fontSize: 18, color: Colors.text, marginTop: 2 },
-  reportStatsRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
-  reportStat: {
-    flex: 1, backgroundColor: Colors.raised ?? 'rgba(10,31,25,0.04)', borderRadius: 12,
-    paddingVertical: 12, alignItems: 'center',
-  },
-  reportStatVal: { fontFamily: Fonts.display, fontSize: 22, letterSpacing: -0.5 },
-  reportStatLabel: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1, color: Colors.textTertiary, marginTop: 3 },
-  reportDots: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 },
-  reportDot: { width: 14, height: 14, borderRadius: 4 },
-  reportFlaws: { fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary, textTransform: 'capitalize', marginBottom: 20 },
-  reportDone: { borderRadius: 100, paddingVertical: 14, alignItems: 'center' },
-  reportDoneText: { fontFamily: Fonts.display, fontSize: 14, letterSpacing: 1 },
-  alignDebug: {
-    position: 'absolute', bottom: 8, left: 8, right: 8,
-    backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 6, padding: 6,
-  },
-  alignDebugText: { fontFamily: Fonts.mono, fontSize: 10, color: '#7DEBC4', textAlign: 'center' },
+    // ── Camera stage — the hero; every overlay floats, none is boxed ─────────
+    stage: { width: '100%', overflow: 'hidden', backgroundColor: t.crown },
+    scrimTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 104 },
+    scrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 262 },
 
-  formBanner: {
-    position: 'absolute', top: 10, right: 10, maxWidth: '70%',
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: 12, paddingVertical: 8, borderRadius: 100, borderWidth: 1,
-  },
-  formBannerGood:    { backgroundColor: 'rgba(0,224,164,0.18)', borderColor: '#00e0a4' },
-  formBannerBad:     { backgroundColor: 'rgba(239,68,68,0.22)', borderColor: '#ef4444' },
-  formBannerNeutral: { backgroundColor: 'rgba(0,0,0,0.65)',     borderColor: 'rgba(255,255,255,0.15)' },
-  formBannerText:    { fontFamily: Fonts.bodyMedium, fontSize: 12, color: '#fff', letterSpacing: 0.1, flexShrink: 1 },
+    statusPill: {
+      position: 'absolute', top: 14, left: 14,
+      flexDirection: 'row', alignItems: 'center', gap: 7,
+      paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999,
+      backgroundColor: stage.overlay,
+    },
+    statusDot: { width: 6, height: 6, borderRadius: 3 },
+    statusText: {
+      fontFamily: Fonts.legacyMono, fontSize: 8.5, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: stage.crownText,
+    },
 
-  permissionText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, textAlign: 'center' },
-  permissionBtn: {
-    marginTop: 18, backgroundColor: Colors.primary,
-    paddingHorizontal: 24, paddingVertical: 14, borderRadius: 100,
-  },
-  permissionBtnText: { fontFamily: Fonts.displayMedium, fontSize: 13, color: Colors.accentInk, letterSpacing: 0.2 },
+    alignDebug: {
+      position: 'absolute', top: 52, left: 14, right: 14,
+      borderRadius: 10, padding: 8, backgroundColor: stage.scrim,
+    },
+    alignDebugText: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, lineHeight: 13,
+      color: stage.crownAccent, textAlign: 'center',
+    },
 
-  feedbackPanel: { flex: 1, backgroundColor: '#111' },
-  feedbackContent: { padding: Spacing.md, gap: Spacing.sm, paddingBottom: 40 },
+    stageBottom: { position: 'absolute', left: 14, right: 14, bottom: 14, gap: 16 },
 
-  cueBtn: {
-    backgroundColor: 'rgba(255,107,53,0.12)', borderRadius: 100,
-    borderWidth: 1, borderColor: 'rgba(255,107,53,0.3)',
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    paddingVertical: 14,
-  },
-  cueBtnDisabled: { opacity: 0.45 },
-  cueBtnText: { fontFamily: Fonts.displayMedium, fontSize: 13, color: Colors.primary, letterSpacing: 0.2 },
+    // Borderless floating sheet: a soft dark plate + a 3px state bar, no outline.
+    sheet: {
+      flexDirection: 'row', alignItems: 'center', gap: 11,
+      paddingLeft: 16, paddingRight: 16, paddingVertical: 14,
+      borderRadius: 22, backgroundColor: stage.overlay, overflow: 'hidden',
+    },
+    sheetBar: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 3 },
+    sheetText: {
+      flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, lineHeight: 18,
+      color: stage.crownText,
+    },
 
-  cueCard: {
-    backgroundColor: 'rgba(255,107,53,0.08)',
-    borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: 'rgba(255,107,53,0.2)', borderRadius: 10, padding: 14,
-  },
-  cueLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-  cueLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.primary, letterSpacing: 0.2 },
-  cueText:  { fontFamily: Fonts.body, fontSize: 13, color: '#e5e7eb', lineHeight: 20, fontStyle: 'italic' },
+    // The dramatic pairing: a 68px numeral straight onto an 8px mono label.
+    repRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    repValue: {
+      fontFamily: Fonts.displayBold, fontVariant: ['tabular-nums'],
+      fontSize: 68, lineHeight: 69, letterSpacing: -3.06, color: stage.crownText,
+    },
+    repLabel: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: stage.crownTextDim, marginTop: 3,
+    },
+    repAngleCol: { alignItems: 'flex-end', paddingBottom: 7 },
+    repAngleValue: {
+      fontFamily: Fonts.legacyMono, fontSize: 20, letterSpacing: 0.4,
+      fontVariant: ['tabular-nums'], color: stage.crownText,
+    },
 
-  sectionLabel: {
-    fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary,
-    letterSpacing: 0.2, marginTop: 8,
-  },
-  tipRow: { flexDirection: 'row', gap: 8, paddingVertical: 4, alignItems: 'flex-start' },
-  tipBullet: { fontFamily: Fonts.body, fontSize: 13, color: Colors.primary, marginTop: 1 },
-  tipPhase: {
-    fontFamily: Fonts.bodyBold, fontSize: 10, color: Colors.primary,
-    letterSpacing: 0.2, marginTop: 4, minWidth: 28, textTransform: 'capitalize',
-  },
-  tipText: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: '#e5e7eb', lineHeight: 20 },
+    // ── Light body ───────────────────────────────────────────────────────────
+    panel: { flex: 1, backgroundColor: t.bg },
+    panelContent: { paddingHorizontal: 20, paddingTop: 24 },
 
-  breathCard: {
-    backgroundColor: 'rgba(255,107,53,0.06)',
-    borderLeftWidth: 2, borderLeftColor: Colors.primary,
-    borderRadius: 8, padding: 12, marginTop: 10,
-  },
-  breathLabel: { fontFamily: Fonts.bodyBold, fontSize: 11, color: Colors.primary, letterSpacing: 0.2, marginBottom: 5 },
-  breathText:  { fontFamily: Fonts.body, fontSize: 12, color: '#e5e7eb', lineHeight: 18, fontStyle: 'italic' },
+    ctaPrimary: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+      paddingVertical: 17, borderRadius: 26,
+      backgroundColor: t.accent, borderWidth: 1, borderColor: t.accentLine,
+    },
+    ctaPrimaryText: {
+      fontFamily: Fonts.legacyMono, fontSize: 11, letterSpacing: 2,
+      textTransform: 'uppercase', color: t.accentInk,
+    },
 
-  disclaimer: {
-    fontFamily: Fonts.body, fontSize: 11, color: '#6b7280',
-    textAlign: 'center', marginTop: 16, letterSpacing: 0.1, fontStyle: 'italic',
-  },
-});
+    ctaGhost: {
+      marginTop: 10,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+      paddingVertical: 16, borderRadius: 26, backgroundColor: t.surfaceAlt,
+    },
+    ctaGhostText: {
+      fontFamily: Fonts.legacyMono, fontSize: 10, letterSpacing: 1.8,
+      textTransform: 'uppercase', color: t.text,
+    },
+
+    cueBtn: {
+      marginTop: 4,
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+      paddingVertical: 16,
+    },
+    cueBtnText: {
+      fontFamily: Fonts.legacyMono, fontSize: 10, letterSpacing: 1.8,
+      textTransform: 'uppercase', color: t.textSecondary,
+    },
+
+    cueCard: { marginTop: 6, borderRadius: 24, padding: 20, backgroundColor: t.surfaceAlt },
+    cueLabel: { fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9, textTransform: 'uppercase' },
+    cueText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 24, color: t.text, marginTop: 10 },
+
+    tipRow: { flexDirection: 'row', gap: 14, paddingVertical: 13, alignItems: 'flex-start' },
+    tipPhase: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.5,
+      textTransform: 'uppercase', color: t.textTertiary, minWidth: 30, marginTop: 5,
+    },
+    tipText: { flex: 1, fontFamily: Fonts.body, fontSize: 14.5, lineHeight: 22, color: t.text },
+
+    mistakeRow: { flexDirection: 'row', gap: 12, paddingVertical: 9, alignItems: 'flex-start' },
+    mistakeIcon: { marginTop: 4 },
+
+    breathCard: { marginTop: 30, borderRadius: 24, padding: 20, backgroundColor: t.surfaceAlt },
+    breathLabel: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: t.textTertiary,
+    },
+    breathText: { fontFamily: Fonts.body, fontSize: 14.5, lineHeight: 22, color: t.text, marginTop: 9 },
+
+    disclaimer: {
+      fontFamily: Fonts.body, fontSize: 11.5, lineHeight: 18,
+      color: t.textTertiary, textAlign: 'center', marginTop: 34,
+    },
+
+    // ── End-of-set report card ───────────────────────────────────────────────
+    reportOverlay: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      alignItems: 'center', justifyContent: 'center', padding: 22,
+      backgroundColor: t.scrim,
+    },
+    reportCard: {
+      width: '100%', maxWidth: 380, borderRadius: 30, padding: 26,
+      backgroundColor: t.surface,
+      // Depth from shadow, never an outline.
+      shadowColor: t.crown, shadowOpacity: 0.24, shadowRadius: 34,
+      shadowOffset: { width: 0, height: 18 }, elevation: 16,
+    },
+    reportEyebrow: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: t.textTertiary,
+    },
+    reportHero: { flexDirection: 'row', alignItems: 'flex-end', gap: 5, marginTop: 18 },
+    reportHeroUnit: { fontFamily: Fonts.bodySemi, fontSize: 13, color: t.textTertiary, paddingBottom: 11 },
+    reportScoreLabel: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: t.textTertiary, marginTop: 7,
+    },
+    reportGrade: {
+      fontFamily: Fonts.displayBold, fontSize: 21, letterSpacing: -0.75,
+      color: t.text, marginTop: 14,
+    },
+    reportStats: { marginTop: 26 },
+    reportDots: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 28 },
+    reportDot: { width: 6, height: 24, borderRadius: 3 },
+    reportFlaws: {
+      fontFamily: Fonts.body, fontSize: 14, lineHeight: 21, color: t.textSecondary,
+      textTransform: 'capitalize', marginTop: 18,
+    },
+    // Neutral ink fill — the emerald is already spent on the hero numeral.
+    reportDone: {
+      marginTop: 26, paddingVertical: 17, borderRadius: 26,
+      alignItems: 'center', backgroundColor: t.text,
+    },
+    reportDoneText: {
+      fontFamily: Fonts.legacyMono, fontSize: 11, letterSpacing: 2,
+      textTransform: 'uppercase', color: t.bg,
+    },
+  });
+}
