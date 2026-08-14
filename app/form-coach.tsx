@@ -272,12 +272,15 @@ function isImplausibleBody(raw: Kpt[]): boolean {
   const shHip = shoulderW / hipW;
   if (shHip < 0.35 || shHip > 3.6) votes += 1;
 
-  // 2.5) Head-size sanity: human eye-to-eye span is a small fraction of torso
-  //      length. Hand-hallucinations scatter "face" points across fingertips,
-  //      producing a face wider than half the torso — instant tell.
+  // 2.5) Head-size sanity — a HARD reject, not a vote. Real eye separation is
+  //      ~12% of torso length; even a face filling the lens can't reach 55%
+  //      while the torso is still confidently visible. Hand-hallucinations
+  //      scatter "face" points across the fingertips and blow straight past it.
+  //      This was previously one vote of two, so it could fire on an obvious
+  //      hand and still be outvoted into "human".
   const le = pt(KP.l_eye), re = pt(KP.r_eye);
   const eyeSpan = dist(le, re);
-  if (isFinite(eyeSpan) && eyeSpan > 0.55 * torso) votes += 1;
+  if (isFinite(eyeSpan) && eyeSpan > 0.55 * torso) return true;
 
   // 3) Left/right limb asymmetry (4.0x — 3.0x tripped on single-limb-toward-
   //    camera foreshortening in real lifts).
@@ -643,7 +646,9 @@ export interface SetReport {
 //   LOCKED    → render + reps + cues enabled. Brief mid-rep projection swings
 //               don't revoke; only SUSTAINED instability (~1s) or a gate
 //               reject drops the lock.
-// Hands never lock (no real structure → lengths never stabilise).
+// A MOVING hand never locks (lengths never stabilise). A hand held STILL does
+// stabilise, so stability is paired with hasHumanProportions() — steady bones
+// that can't belong to a body are rejected.
 // ─────────────────────────────────────────────────────────────────────────────
 const STABILITY_BONES: [number, number][] = [
   [KP.l_shoulder, KP.l_elbow], [KP.r_shoulder, KP.r_elbow],
@@ -655,6 +660,74 @@ const STAB_WINDOW = 8;        // frames (~0.5s at 15fps detection)
 const STAB_MAX_CV = 0.22;     // per-bone length coefficient of variation
 const STAB_MIN_READY = 5;     // frames before a verdict is possible
 const UNLOCK_AFTER = 15;      // consecutive unstable frames to revoke a lock
+
+/**
+ * Are these bone lengths anatomically possible for a human?
+ *
+ * Stability alone is NOT enough. The premise "a hand never stabilises" only
+ * holds for a MOVING hand; a hand held STILL in front of the lens produces
+ * perfectly steady bone lengths and locks on — which is exactly how a palm
+ * ended up wearing a full skeleton with live form cues.
+ *
+ * So the lock also has to ask whether the proportions could belong to a body.
+ * Bounds are deliberately loose because foreshortening legitimately shortens a
+ * limb pointed at the camera; a bone that is degenerate or low-confidence is
+ * skipped rather than guessed at. Two independent violations are required, so a
+ * single oddly-projected limb never rejects a real lifter.
+ */
+function hasHumanProportions(raw: Kpt[]): boolean {
+  const len = (a: number, b: number): number => {
+    const A = raw[a], B = raw[b];
+    if (!A || !B || A[2] < 0.5 || B[2] < 0.5) return NaN;
+    const d = Math.hypot(A[0] - B[0], A[1] - B[1]);
+    return d >= 8 ? d : NaN;   // degenerate/foreshortened — no verdict
+  };
+  // Ratio of two bones that are near-equal on every human, with wide slack.
+  const ratioBad = (x: number, y: number, lo: number, hi: number): boolean => {
+    if (!isFinite(x) || !isFinite(y)) return false;
+    const r = x / y;
+    return r < lo || r > hi;
+  };
+
+  let bad = 0;
+  // Upper arm vs forearm — near 1:1 on a human, chaotic on a mapped hand.
+  if (ratioBad(len(KP.l_shoulder, KP.l_elbow), len(KP.l_elbow, KP.l_wrist), 0.45, 2.2)) bad += 1;
+  if (ratioBad(len(KP.r_shoulder, KP.r_elbow), len(KP.r_elbow, KP.r_wrist), 0.45, 2.2)) bad += 1;
+  // Thigh vs shin — likewise near 1:1.
+  if (ratioBad(len(KP.l_hip, KP.l_knee), len(KP.l_knee, KP.l_ankle), 0.45, 2.2)) bad += 1;
+  if (ratioBad(len(KP.r_hip, KP.r_knee), len(KP.r_knee, KP.r_ankle), 0.45, 2.2)) bad += 1;
+  // Torso side vs upper arm — a torso is never a small fraction of an upper arm.
+  if (ratioBad(len(KP.l_shoulder, KP.l_hip), len(KP.l_shoulder, KP.l_elbow), 0.5, 4.5)) bad += 1;
+  if (ratioBad(len(KP.r_shoulder, KP.r_hip), len(KP.r_shoulder, KP.r_elbow), 0.5, 4.5)) bad += 1;
+
+  return bad < 2;
+}
+
+/**
+ * Why did this detection pass or fail? One compact line per sample, so a single
+ * real reproduction (hold the offending object up for ~5s) replaces guesswork
+ * about which gate a false positive slips through. Read with:
+ *   adb logcat -s ReactNativeJS | grep GATE
+ */
+function gateDiag(raw: Kpt[]): string {
+  const pt = (i: number) => (raw[i] && raw[i][2] >= 0.4 ? [raw[i][0], raw[i][1]] as [number, number] : null);
+  const d = (a: [number, number] | null, b: [number, number] | null) =>
+    a && b ? Math.hypot(a[0] - b[0], a[1] - b[1]) : NaN;
+  const mid = (a: [number, number] | null, b: [number, number] | null) =>
+    a && b ? [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as [number, number] : null;
+  const lsh = pt(KP.l_shoulder), rsh = pt(KP.r_shoulder);
+  const lhip = pt(KP.l_hip), rhip = pt(KP.r_hip);
+  const shW = d(lsh, rsh), hipW = d(lhip, rhip);
+  const torso = d(mid(lsh, rsh), mid(lhip, rhip));
+  const eye = d(pt(KP.l_eye), pt(KP.r_eye));
+  const r = (v: number) => (isFinite(v) ? Math.round(v) : -1);
+  const f = (v: number) => (isFinite(v) ? v.toFixed(2) : 'na');
+  return 'GATE torso=' + r(torso) + ' shW=' + r(shW) + ' hipW=' + r(hipW) +
+    ' torso/shW=' + f(torso / shW) + ' sh/hip=' + f(shW / hipW) +
+    ' eye/torso=' + f(eye / torso) +
+    ' prop=' + (hasHumanProportions(raw) ? 'human' : 'NOT') +
+    ' impl=' + (isImplausibleBody(raw) ? 'Y' : 'n');
+}
 
 class SkeletonLock {
   locked = false;
@@ -670,7 +743,9 @@ class SkeletonLock {
     this.hist.push(lens);
     if (this.hist.length > STAB_WINDOW) this.hist.shift();
 
-    const stable = this.computeStable();
+    // Steady AND anatomically possible. A still hand satisfies the first and
+    // fails the second, which is the case that let a palm lock on.
+    const stable = this.computeStable() && hasHumanProportions(raw);
     if (!this.locked) {
       if (stable) { this.locked = true; this.unstableStreak = 0; }
     } else if (stable) {
@@ -1175,6 +1250,7 @@ export default function FormCoach() {
     const minSpan = viewH * 0.30;
     const implausible = isImplausibleBody(raw);
     poseLog('strong=' + strong + '/33 span=' + Math.round(span) + ' need>' + Math.round(minSpan) + (implausible ? ' IMPLAUSIBLE' : ''));
+    poseLog(gateDiag(raw));
 
     // Reject (with hysteresis) unless enough HIGH-CONFIDENCE joints span a
     // large-enough box AND the proportions could be a real human.
