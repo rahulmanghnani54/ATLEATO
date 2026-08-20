@@ -656,6 +656,31 @@ const STABILITY_BONES: [number, number][] = [
   [KP.l_hip, KP.l_knee],       [KP.r_hip, KP.r_knee],
   [KP.l_shoulder, KP.l_hip],   [KP.r_shoulder, KP.r_hip],
 ];
+
+// ── The two measurements that catch a hand ────────────────────────────────────
+// Device capture of a palm held to the lens: shoulder span swung 11→83px and hip
+// span 2→57px frame to frame (CV 0.42 / 0.48), while every bone above held steady
+// (torso CV 0.06). MLKit fits a body template onto fingers, so the LIMBS look
+// plausible but the two structural SPANS thrash. The lock only measured limbs,
+// which is why a still hand locked on.
+//
+// These are checked as a HARD gate, not part of the 75% vote — two failures out
+// of ten bones would still clear that vote. A real shoulder span is a rigid
+// distance; it does not vary 42% while the body holds still.
+const SPAN_BONES: [number, number][] = [
+  [KP.l_shoulder, KP.r_shoulder],
+  [KP.l_hip, KP.r_hip],
+];
+// Anatomical bounds — shoulder/hip span as a fraction of TORSO length.
+// A real human: shoulder span ≈ 0.35 to 1.2 × torso length; hip span narrower
+// but still in the same order. A hand held still and small in the frame produces
+// spans well below 0.30 × torso; a hand held far away produces even tinier ratios.
+// SIDE-ON lifts legitimately collapse ONE span (the one perpendicular to the
+// camera) toward zero, so the check needs at least one span to be plausibly sized
+// — that is enough to distinguish a hand (BOTH tiny) from a real body seen side-on
+// (one collapsed, one still visible via depth/perspective).
+const SPAN_MIN_PLAUSIBLE_FRAC = 0.28;
+
 const STAB_WINDOW = 8;        // frames (~0.5s at 15fps detection)
 const STAB_MAX_CV = 0.22;     // per-bone length coefficient of variation
 const STAB_MIN_READY = 5;     // frames before a verdict is possible
@@ -734,18 +759,36 @@ class SkeletonLock {
   private hist: number[][] = [];
   private unstableStreak = 0;
 
+  private spanHist: number[][] = [];
+  private torsoHist: number[] = [];
+
   push(raw: Kpt[]): void {
-    const lens = STABILITY_BONES.map(([a, b]) => {
+    const measure = ([a, b]: [number, number]) => {
       const A = raw[a], B = raw[b];
       if (!A || !B || A[2] < 0.5 || B[2] < 0.5) return NaN;
       return Math.hypot(A[0] - B[0], A[1] - B[1]);
-    });
+    };
+    const lens = STABILITY_BONES.map(measure);
     this.hist.push(lens);
     if (this.hist.length > STAB_WINDOW) this.hist.shift();
 
+    this.spanHist.push(SPAN_BONES.map(measure));
+    if (this.spanHist.length > STAB_WINDOW) this.spanHist.shift();
+
+    // Torso length is the scale reference the spans are judged against — it stays
+    // stable even on a hand, which is exactly why it works as a denominator.
+    const mid = (a: number, b: number): [number, number] | null => {
+      const A = raw[a], B = raw[b];
+      return A && B && A[2] >= 0.5 && B[2] >= 0.5 ? [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2] : null;
+    };
+    const sh = mid(KP.l_shoulder, KP.r_shoulder);
+    const hp = mid(KP.l_hip, KP.r_hip);
+    this.torsoHist.push(sh && hp ? Math.hypot(sh[0] - hp[0], sh[1] - hp[1]) : NaN);
+    if (this.torsoHist.length > STAB_WINDOW) this.torsoHist.shift();
+
     // Steady AND anatomically possible. A still hand satisfies the first and
     // fails the second, which is the case that let a palm lock on.
-    const stable = this.computeStable() && hasHumanProportions(raw);
+    const stable = this.computeStable() && this.spansRigid() && hasHumanProportions(raw);
     if (!this.locked) {
       if (stable) { this.locked = true; this.unstableStreak = 0; }
     } else if (stable) {
@@ -772,7 +815,49 @@ class SkeletonLock {
     return checked >= 4 && ok / checked >= 0.75;
   }
 
-  reset(): void { this.locked = false; this.hist = []; this.unstableStreak = 0; }
+  /**
+   * HARD gate: every span that is actually measurable must be rigid.
+   * Unlike computeStable()'s 75% vote, a single failure here is disqualifying —
+   * a human's shoulder and hip spans are fixed distances, so thrashing spans mean
+   * the pose is fitted to something that is not a body.
+   * A span too small relative to the torso (side-on) is skipped, not failed.
+   */
+  private spansRigid(): boolean {
+    if (this.spanHist.length < STAB_MIN_READY) return false;
+    const torsoVals = this.torsoHist.filter(isFinite);
+    if (torsoVals.length < STAB_MIN_READY) return false;  // no scale reference — refuse to lock (was: return true, which was the hole)
+    const torso = torsoVals.reduce((s, v) => s + v, 0) / torsoVals.length;
+
+    // Two axes: RIGIDITY (spans shouldn't jitter) AND PLAUSIBLE SIZE (at least
+    // one span must be human-proportioned). Both must pass. A hand small in the
+    // frame has steady BUT tiny spans — rigidity alone lets it through, size
+    // alone rejects side-on lifts, and the AND handles both.
+    let anyPlausible = false;
+    for (let s = 0; s < SPAN_BONES.length; s++) {
+      const vals: number[] = [];
+      for (const f of this.spanHist) { if (isFinite(f[s])) vals.push(f[s]); }
+      if (vals.length < STAB_MIN_READY) continue;         // not consistently visible
+      const mean = vals.reduce((a, v) => a + v, 0) / vals.length;
+      if (mean >= SPAN_MIN_PLAUSIBLE_FRAC * torso) anyPlausible = true;
+      // A visible span must be RIGID regardless of size — a real distance never
+      // varies 42% frame to frame. Applied whenever we can measure it.
+      if (mean > 2) {   // guard against divide-by-tiny noise, not a size filter
+        const sd = Math.sqrt(vals.reduce((a, v) => a + (v - mean) ** 2, 0) / vals.length);
+        if (sd / mean > STAB_MAX_CV) return false;
+      }
+    }
+    // At least one span in the human range. Real side-on: one span collapses,
+    // the other still reads through perspective. Hand: both spans are tiny.
+    return anyPlausible;
+  }
+
+  reset(): void {
+    this.locked = false;
+    this.hist = [];
+    this.spanHist = [];
+    this.torsoHist = [];
+    this.unstableStreak = 0;
+  }
 }
 
 /** The joint chain this exercise NEEDS visible before coaching is credible. */
