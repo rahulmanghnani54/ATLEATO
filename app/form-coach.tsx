@@ -21,6 +21,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { StatusBar, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeepAwake } from 'expo-keep-awake';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
@@ -905,9 +906,21 @@ class RepCounter {
         this.lastScore = score;
         this.reps.push({ index: this.count, bottomDeg: this.bottomDeg, tempoMs: dur, symmetry: this.bottomSym, score, flaw });
         if (this.bottomDeg < this.bestBottomDeg) this.bestBottomDeg = this.bottomDeg;
+        repLog('REP #' + this.count + ' bottom=' + Math.round(this.bottomDeg) +
+               ' dur=' + dur + 'ms score=' + score + (flaw ? ' flaw=' + flaw : ''));
+      } else {
+        // The rep completed the angle cycle but was faster than MIN_REP_MS, so it
+        // was discarded as tracking noise. If real reps land here the floor is wrong.
+        repLog('REP REJECTED (too fast) bottom=' + Math.round(this.bottomDeg) +
+               ' dur=' + dur + 'ms < ' + MIN_REP_MS + 'ms');
       }
       this.bottomDeg = 180; this.bottomSym = 0;
     }
+  }
+
+  /** Live state for the diagnostic line — tells us why a rep did or didn't fire. */
+  debugState(): string {
+    return this.phase + ' bottom=' + Math.round(this.bottomDeg) + ' n=' + this.count;
   }
 
   /** Summarize the set for the end-of-set report card. */
@@ -939,6 +952,11 @@ class RepCounter {
 let _poseLogN = 0;
 function poseLog(msg: string) {
   if (_poseLogN++ % 4 === 0) console.log('[pose]', msg);
+}
+
+/** Rep events are rare and diagnostic — never throttled. */
+function repLog(msg: string) {
+  console.log('[rep]', msg);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -974,6 +992,11 @@ function HeroNumber({ value, color, size = 74 }: { value: number; color: string;
 }
 
 export default function FormCoach() {
+  // The phone sits propped up across the gym while the user lifts — nobody is
+  // touching the screen, so Android's display timeout fired mid-set and killed
+  // the camera. Released automatically when this screen unmounts.
+  useKeepAwake();
+
   const router = useRouter();
   const { exerciseName, persona: personaParam } = useLocalSearchParams<{
     exerciseName: string;
@@ -1369,6 +1392,18 @@ export default function FormCoach() {
     liveAngleRef.current = pa;
     const symNow = (pa.left != null && pa.right != null) ? Math.abs(pa.left - pa.right) : 0;
     repRef.current.update(pa.deg, tMs, categoryRef.current, symNow);
+
+    // ROM diagnostic: is the user's real range of motion even crossing the
+    // thresholds a rep requires? Throttled via poseLog's 1-in-4 sampling.
+    {
+      const th = (categoryRef.current && REP_THRESHOLDS[categoryRef.current]) || REP_DEFAULT_TH;
+      poseLog('ANGLE ' + pa.label + '=' + (pa.deg == null ? 'null' : Math.round(pa.deg)) +
+              ' L=' + (pa.left == null ? '-' : Math.round(pa.left)) +
+              ' R=' + (pa.right == null ? '-' : Math.round(pa.right)) +
+              ' need<' + th.low + ' then>' + th.high +
+              ' | ' + repRef.current.debugState() +
+              ' cat=' + (categoryRef.current ?? 'none'));
+    }
 
     tickAnalysis();
   }, [screenWidth, cameraHeight]);

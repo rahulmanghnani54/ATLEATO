@@ -29,6 +29,7 @@ import {
   type TextStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Camera, Check, Play } from 'lucide-react-native';
 
@@ -67,6 +68,10 @@ function ExerciseProgression({ exerciseName, reps }: { exerciseName: string; rep
 }
 
 export default function WorkoutSession() {
+  // Long rest gaps between sets mean the screen would otherwise sleep and the
+  // user has to unlock the phone with chalky hands to log the next set.
+  useKeepAwake();
+
   const router = useRouter();
   const { programId, dayIndex, volumeModifier: volumeModifierParam } = useLocalSearchParams<{
     programId: string;
