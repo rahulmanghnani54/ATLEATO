@@ -907,6 +907,49 @@ class SkeletonLock {
   }
 }
 
+/**
+ * Does the pose actually LOOK like this exercise at the top of the rep?
+ *
+ * Angle thresholds alone cannot tell a press from reaching for a desk — both are
+ * "bend the elbow past 100, straighten past 150". Device video of a seated press
+ * showed the counter ticking up while the user sat with his hands resting on a
+ * desk, because that is a valid angle cycle. Geometry settles it: in a real
+ * overhead press the wrist finishes ABOVE the shoulder; in desk fidgeting it
+ * never does. (Screen y grows downward, so "above" means a SMALLER y.)
+ *
+ * Returns true when we cannot judge — a missing landmark must not silently
+ * cancel a legitimate rep.
+ */
+function repShapeValid(kpts: Kpt[], category?: string): boolean {
+  const pt = (i: number): Kpt | null =>
+    kpts[i] && kpts[i][2] >= CONFIDENCE_THRESHOLD ? kpts[i] : null;
+
+  if (category === 'press') {
+    const ls = pt(KP.l_shoulder), rs = pt(KP.r_shoulder);
+    const lw = pt(KP.l_wrist),    rw = pt(KP.r_wrist);
+    // Judge each side only when BOTH its shoulder and wrist are visible.
+    const leftOk  = ls && lw ? lw[1] < ls[1] : null;
+    const rightOk = rs && rw ? rw[1] < rs[1] : null;
+    if (leftOk === null && rightOk === null) return true;   // can't judge
+    return Boolean(leftOk || rightOk);                      // one arm overhead is enough
+  }
+
+  if (category === 'curl') {
+    // A curl finishes with the wrist HIGHER than the elbow — the forearm has
+    // rotated up. Lowering a hand to a desk does the opposite.
+    const le = pt(KP.l_elbow), re = pt(KP.r_elbow);
+    const lw = pt(KP.l_wrist), rw = pt(KP.r_wrist);
+    const leftOk  = le && lw ? lw[1] < le[1] : null;
+    const rightOk = re && rw ? rw[1] < re[1] : null;
+    if (leftOk === null && rightOk === null) return true;
+    return Boolean(leftOk || rightOk);
+  }
+
+  // squat / deadlift / lunge / pull: the angle cycle plus the joint-chain gate
+  // is already specific enough — no extra geometry needed.
+  return true;
+}
+
 /** The joint chain this exercise NEEDS visible before coaching is credible. */
 function hasRequiredChain(kpts: Kpt[], category?: string): boolean {
   const ok = (i: number) => !!kpts[i] && kpts[i][2] >= 0.5;
@@ -931,7 +974,7 @@ class RepCounter {
   private bottomDeg = 180;
   private bottomSym = 0;   // |L−R| captured AT the deepest point of this rep
 
-  update(deg: number | null, tMs: number, category?: string, symNow = 0): void {
+  update(deg: number | null, tMs: number, category?: string, symNow = 0, shapeOk = true): void {
     if (deg == null) return;
     const th = (category && REP_THRESHOLDS[category]) || REP_DEFAULT_TH;
     if (this.phase === 'top') {
@@ -945,6 +988,15 @@ class RepCounter {
     if (deg > th.high) {
       this.phase = 'top';
       const dur = tMs - this.cycleStart;
+      if (!shapeOk) {
+        // Completed the angle cycle but the pose does not look like this lift —
+        // the wrist never finished above the shoulder, so this was an arm moving,
+        // not a rep. This is what stopped desk fidgeting from being counted.
+        repLog('REP REJECTED (wrong shape for ' + (category ?? 'exercise') +
+               ') bottom=' + Math.round(this.bottomDeg) + ' dur=' + dur + 'ms');
+        this.bottomDeg = 180; this.bottomSym = 0;
+        return;
+      }
       if (dur >= MIN_REP_MS) {
         const { score, flaw } = scoreRep(this.bottomDeg, dur, this.bottomSym, category);
         this.count += 1;
@@ -1456,7 +1508,10 @@ export default function FormCoach() {
     const pa = primaryAngle(smoothed, categoryRef.current, liveAngleRef.current.deg);
     liveAngleRef.current = pa;
     const symNow = (pa.left != null && pa.right != null) ? Math.abs(pa.left - pa.right) : 0;
-    repRef.current.update(pa.deg, tMs, categoryRef.current, symNow);
+    // Geometry check runs on the SMOOTHED pose at this instant — the rep only
+    // counts if the body actually finished in the exercise's end position.
+    const shapeOk = repShapeValid(smoothed, categoryRef.current);
+    repRef.current.update(pa.deg, tMs, categoryRef.current, symNow, shapeOk);
 
     // ROM diagnostic: is the user's real range of motion even crossing the
     // thresholds a rep requires? Throttled via poseLog's 1-in-4 sampling.
@@ -1783,7 +1838,14 @@ export default function FormCoach() {
             <View style={styles.sheet}>
               <View style={[styles.sheetBar, { backgroundColor: stage.crownTextDim }]} />
               <CameraIcon size={14} color={stage.crownTextDim} />
-              <Text style={styles.sheetText}>Step into frame — full body visible</Text>
+              {/* Category-aware: a SEATED press cannot show a full body, so asking
+                  for one is impossible advice. Upper-body lifts only need the
+                  torso and arms in shot. */}
+              <Text style={styles.sheetText}>
+                {categoryRef.current === 'press' || categoryRef.current === 'curl' || categoryRef.current === 'pull'
+                  ? 'Move back — head, torso and both arms in frame'
+                  : 'Step into frame — full body visible'}
+              </Text>
             </View>
           )}
           {modelLoading && (
