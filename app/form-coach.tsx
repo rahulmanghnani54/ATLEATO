@@ -563,11 +563,28 @@ const MIN_REP_MS = 900;   // full cycles faster than this are tracking noise
 
 /** The angle that defines the rep for this exercise category. `deg` = worst
  *  side (drives rep counting); `left`/`right` feed the per-rep symmetry score. */
-function primaryAngle(kpts: Kpt[], category?: string): {
+// A joint can only bend so far with a limb's own bulk in the way. Device video of
+// a seated press showed the ELBOW readout hitting 7 degrees — impossible under
+// load, and the giveaway that MLKit had thrown one arm's landmarks across the
+// frame. Angles outside these bounds are mis-tracking, not motion.
+const ANGLE_PLAUSIBLE: Record<string, { min: number; max: number }> = {
+  ELBOW: { min: 22, max: 186 },
+  KNEE:  { min: 28, max: 186 },
+};
+// When the two sides disagree, one of them may simply be the resting limb of a
+// UNILATERAL lift (one-arm curl, Bulgarian split squat) — legitimately 70+ deg
+// apart. So disagreement alone cannot mean "reject". Real movement is CONTINUOUS
+// frame to frame; a mis-tracked limb teleports. Beyond this gap we therefore pick
+// the side that continues the previous reading rather than blindly taking the min.
+const SIDE_DISAGREE_MAX = 55;
+// How far the chosen angle may jump in one detection step (~15fps). A real joint
+// cannot swing further than this between frames; anything larger is a landmark
+// jumping, not a limb moving.
+const MAX_ANGLE_JUMP = 70;
+
+function primaryAngle(kpts: Kpt[], category?: string, prevDeg?: number | null): {
   label: string; deg: number | null; left: number | null; right: number | null;
 } {
-  const min2 = (a: number | null, b: number | null) =>
-    a == null ? b : b == null ? a : Math.min(a, b);
   let label: string, l: number | null, r: number | null;
   if (category === 'squat' || category === 'lunge' || category === 'deadlift') {
     label = 'KNEE';
@@ -578,7 +595,36 @@ function primaryAngle(kpts: Kpt[], category?: string): {
     l = jointAngle(kpts, KP.l_shoulder, KP.l_elbow, KP.l_wrist);
     r = jointAngle(kpts, KP.r_shoulder, KP.r_elbow, KP.r_wrist);
   }
-  return { label, deg: min2(l, r), left: l, right: r };
+
+  // Drop anatomically impossible readings before they can drive anything.
+  const b = ANGLE_PLAUSIBLE[label];
+  const sane = (v: number | null) => (v != null && v >= b.min && v <= b.max ? v : null);
+  const ls = sane(l), rs = sane(r);
+
+  // Rep-driving angle. This was min(left, right) — "the worst side" — so a single
+  // mis-tracked arm reading 7 deg became the rep signal and racked up phantom reps.
+  let deg: number | null;
+  if (ls != null && rs != null) {
+    if (Math.abs(ls - rs) <= SIDE_DISAGREE_MAX) {
+      deg = Math.min(ls, rs);                 // bilateral and agreeing — worst side
+    } else if (prevDeg != null) {
+      // Disagreement: either a unilateral lift or a mis-tracked limb. Continuity
+      // decides — take whichever side follows on from the last good reading.
+      deg = Math.abs(ls - prevDeg) <= Math.abs(rs - prevDeg) ? ls : rs;
+    } else {
+      // No history yet (first frames of a set). Trust the more extended side:
+      // a hallucinated limb collapses toward 0, it does not over-extend.
+      deg = Math.max(ls, rs);
+    }
+  } else {
+    deg = ls ?? rs;   // one side occluded is normal (side-on, one arm behind)
+  }
+
+  // Final continuity check — a real joint cannot teleport between frames.
+  if (deg != null && prevDeg != null && Math.abs(deg - prevDeg) > MAX_ANGLE_JUMP) deg = null;
+
+  // left/right stay as measured so the symmetry score still sees the real gap.
+  return { label, deg, left: ls, right: rs };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -916,6 +962,21 @@ class RepCounter {
       }
       this.bottomDeg = 180; this.bottomSym = 0;
     }
+  }
+
+  /**
+   * Abandon the rep in progress WITHOUT touching the count.
+   * Call whenever tracking drops. Otherwise the counter stays parked in the
+   * 'bottom' phase across the gap, and the first extended-arm frame after
+   * tracking returns completes a rep that never happened — which is how a set
+   * showed 7 reps before the user had even stepped into frame.
+   */
+  abandonRep(): void {
+    if (this.phase === 'top') return;
+    repLog('REP ABANDONED (tracking lost mid-rep) bottom=' + Math.round(this.bottomDeg));
+    this.phase = 'top';
+    this.bottomDeg = 180;
+    this.bottomSym = 0;
   }
 
   /** Live state for the diagnostic line — tells us why a rep did or didn't fire. */
@@ -1282,6 +1343,7 @@ export default function FormCoach() {
         kptsHistoryRef.current = [];
         smootherRef.current = new KeypointSmoother();
         lockRef.current.reset();   // person gone → re-acquire from scratch
+        repRef.current.abandonRep();  // drop the half-rep; the COUNT still survives
         liveAngleRef.current = { ...liveAngleRef.current, deg: null }; // rep count survives
         tickAnalysis(true);
       }
@@ -1378,6 +1440,7 @@ export default function FormCoach() {
     if (!lockRef.current.locked || !chainOk) {
       targetKptsRef.current = null;         // soft-hide (no smoother/history wipe)
       liveAngleRef.current = { ...liveAngleRef.current, deg: null };
+      repRef.current.abandonRep();          // never complete a rep across a tracking gap
       tickAnalysis();
       return;
     }
@@ -1388,7 +1451,9 @@ export default function FormCoach() {
     if (kptsHistoryRef.current.length > MOTION_HISTORY_LEN) kptsHistoryRef.current.shift();
 
     // Rep counting + live angle — on the smoothed pose, camera-clock timed.
-    const pa = primaryAngle(smoothed, categoryRef.current);
+    // Previous good reading feeds the continuity test that separates a unilateral
+    // lift's resting limb from a landmark that has jumped across the frame.
+    const pa = primaryAngle(smoothed, categoryRef.current, liveAngleRef.current.deg);
     liveAngleRef.current = pa;
     const symNow = (pa.left != null && pa.right != null) ? Math.abs(pa.left - pa.right) : 0;
     repRef.current.update(pa.deg, tMs, categoryRef.current, symNow);
