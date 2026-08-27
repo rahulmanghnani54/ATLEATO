@@ -1,17 +1,36 @@
+/**
+ * Physique Check-in — progress photos, Bold Canvas.
+ *
+ * A four-step wizard where the CAMERA is the hero: each photo step gives the
+ * frame the whole light body while the dark crown carries the step count and
+ * the title. The cadence step, the processing wait and the result screen all
+ * share that crown so the flow reads as one object moving forward.
+ *
+ * Encryption, the upload mutation, every permission prompt, every Alert and the
+ * paywall gate are untouched — this file changed shape, not behaviour.
+ */
+
 import { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ActivityIndicator,
-  Alert, Image,
-} from 'react-native';
+import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { Camera, Check } from 'lucide-react-native';
 import { useSubmitCheckin } from '@/hooks/usePhysiqueCheckins';
-import { PhysiqueScoreCard } from '@/components/progress/PhysiqueScoreCard';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { canAccess } from '@/lib/featureGates';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import {
+  CanvasScreen,
+  Crown,
+  Section,
+  BigStat,
+  StatRow,
+} from '@/components/ui/canvas';
+import { PressableScale, Skeleton, SkeletonLines } from '@/components/ui/motion';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 type Step = 'cadence' | 'front' | 'side' | 'back' | 'processing' | 'done';
 type Cadence = 'weekly' | 'biweekly' | 'monthly';
@@ -22,10 +41,15 @@ const CADENCE_DAYS: Record<Cadence, string> = {
   monthly: 'Every 30 days',
 };
 
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = 22;
+
 export default function PhysiqueCheckin() {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const { mutateAsync: submitCheckin } = useSubmitCheckin();
+  const { scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   useEffect(() => {
     if (!canAccess('physique_photos')) {
@@ -39,12 +63,24 @@ export default function PhysiqueCheckin() {
   const [sideUri, setSideUri] = useState<string | null>(null);
   const [backUri, setBackUri] = useState<string | null>(null);
   const [result, setResult] = useState<{ fullness: number; leanness: number; symmetry: number; narrative: string } | null>(null);
+  // The photo frame fills whatever the crown and the button row leave behind.
+  // It cannot simply be flex:1 — PressableScale's animated wrapper is
+  // content-sized, so a flexing child inside it collapses to nothing. Measure
+  // the slot instead and hand the frame an explicit height.
+  const [frameH, setFrameH] = useState(0);
 
   const selectedProgram = (profile as any)?.selected_program as string | undefined;
   const persona = (profile as any)?.selected_program
     ? (EXPERT_PROGRAMS[(profile as any).selected_program]?.id ?? 'cbum_evolved')
         .replace(/_(?:evolved|blueprint|fundamentals|strength|mav)$/, '')
     : 'cbum';
+
+  // Purely for colour: the persona STRING above is what the API receives and is
+  // never derived from this.
+  const personaTheme = personaFromProgramId(selectedProgram);
+  const pa = personaAccent(personaTheme, scheme);
+  // The crown is dark in both schemes, so its tint always comes from the dark triplet.
+  const crownPa = personaAccent(personaTheme, 'dark');
 
   const pickPhoto = async (): Promise<string | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -103,36 +139,77 @@ export default function PhysiqueCheckin() {
     }
   };
 
+  // The one accent spend on each light body.
+  const renderCta = (label: string, onPress: () => void, disabled = false) => (
+    <PressableScale
+      onPress={onPress}
+      disabled={disabled}
+      haptic="heavy"
+      scaleTo={0.97}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      style={[styles.cta, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
+    >
+      <Text style={[styles.ctaText, { color: pa.ink }]}>{label}</Text>
+    </PressableScale>
+  );
+
   // Cadence step
   if (step === 'cadence') {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.container}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backText}>✕</Text>
-          </TouchableOpacity>
-          <Text style={styles.stepLabel}>STEP 1 OF 4</Text>
-          <Text style={styles.headline}>HOW OFTEN?</Text>
-          <Text style={styles.sub}>Choose your check-in cadence. You can change this later.</Text>
-          <View style={styles.optionList}>
-            {(['weekly', 'biweekly', 'monthly'] as Cadence[]).map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[styles.option, cadence === c && styles.optionSelected]}
-                onPress={() => setCadence(c)}
-              >
-                <Text style={[styles.optionTitle, cadence === c && styles.optionTitleSelected]}>
-                  {c.charAt(0).toUpperCase() + c.slice(1)}
-                </Text>
-                <Text style={styles.optionSub}>{CADENCE_DAYS[c]}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setStep('front')}>
-            <Text style={styles.primaryBtnText}>CONTINUE →</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <CanvasScreen tabBar={false} bottomSpace={32}>
+        <Crown
+          eyebrow="Step 1 of 4"
+          title="HOW"
+          accentLine="OFTEN?"
+          meta="Choose your check-in cadence. You can change this later."
+          accent={crownPa.accent}
+          onBack={() => router.back()}
+        />
+
+        <SafeAreaView edges={['left', 'right']} style={styles.body}>
+          <Section label="Cadence">
+            <View style={styles.optionList}>
+              {(['weekly', 'biweekly', 'monthly'] as Cadence[]).map((c) => {
+                const on = cadence === c;
+                return (
+                  <PressableScale
+                    key={c}
+                    onPress={() => setCadence(c)}
+                    haptic="light"
+                    scaleTo={0.98}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={`${c}, ${CADENCE_DAYS[c]}`}
+                    style={[
+                      styles.option,
+                      on && { backgroundColor: pa.accentSoft },
+                    ]}
+                  >
+                    <View style={styles.optionText}>
+                      <Text
+                        style={[styles.optionTitle, on && { color: pa.accentText }]}
+                        numberOfLines={1}
+                      >
+                        {c.charAt(0).toUpperCase() + c.slice(1)}
+                      </Text>
+                      <Text style={styles.optionSub} numberOfLines={1}>
+                        {CADENCE_DAYS[c]}
+                      </Text>
+                    </View>
+                    <View style={[styles.tick, on && { borderColor: pa.accentText }]}>
+                      {on ? <Check size={14} color={pa.accentText} strokeWidth={3} /> : null}
+                    </View>
+                  </PressableScale>
+                );
+              })}
+            </View>
+          </Section>
+
+          <View style={styles.ctaBlock}>{renderCta('CONTINUE →', () => setStep('front'))}</View>
+        </SafeAreaView>
+      </CanvasScreen>
     );
   }
 
@@ -146,40 +223,64 @@ export default function PhysiqueCheckin() {
     onNext: () => void,
     onSkip?: () => void,
   ) => (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>✕</Text>
-        </TouchableOpacity>
-        <Text style={styles.stepLabel}>STEP {stepNum} OF 4</Text>
-        <Text style={styles.headline}>{title}</Text>
-        {!required && <Text style={styles.optionalTag}>OPTIONAL</Text>}
-        <TouchableOpacity style={styles.photoBox} onPress={onAdd}>
-          {uri ? (
-            <Image source={{ uri }} style={styles.photoPreview} resizeMode="cover" />
-          ) : (
-            <View style={styles.photoPlaceholder}>
-              <Text style={styles.photoPlaceholderIcon}>📷</Text>
-              <Text style={styles.photoPlaceholderText}>Tap to add photo</Text>
-            </View>
-          )}
-        </TouchableOpacity>
+    // Not scrollable: the photo frame is the hero and takes every pixel the
+    // crown and the button row leave behind.
+    <CanvasScreen scroll={false} tabBar={false} bottomSpace={18}>
+      <Crown
+        eyebrow={`Step ${stepNum} of 4`}
+        title={title.replace(/ PHOTO$/, '')}
+        accentLine="PHOTO"
+        pills={[required ? 'Required' : 'Optional']}
+        accent={crownPa.accent}
+        onBack={() => router.back()}
+      />
+
+      <SafeAreaView edges={['left', 'right']} style={styles.photoBody}>
+        <View
+          style={styles.frameSlot}
+          onLayout={(e) => {
+            const h = Math.round(e.nativeEvent.layout.height);
+            setFrameH((prev) => (prev === h ? prev : h));
+          }}
+        >
+          {frameH > 0 ? (
+            <PressableScale
+              onPress={onAdd}
+              haptic="medium"
+              scaleTo={0.985}
+              accessibilityRole="button"
+              accessibilityLabel={uri ? `Replace ${title.toLowerCase()}` : `Add ${title.toLowerCase()}`}
+              style={[styles.photoBox, { height: frameH }]}
+            >
+              {uri ? (
+                <Image source={{ uri }} style={styles.photoPreview} resizeMode="cover" />
+              ) : (
+                <View style={styles.photoPlaceholder}>
+                  <Camera size={34} color={pa.accentText} strokeWidth={1.5} />
+                  <Text style={styles.photoPlaceholderText}>Tap to add photo</Text>
+                </View>
+              )}
+            </PressableScale>
+          ) : null}
+        </View>
+
         <View style={styles.btnRow}>
           {onSkip && (
-            <TouchableOpacity style={styles.skipBtn} onPress={onSkip}>
+            <PressableScale
+              onPress={onSkip}
+              haptic="light"
+              scaleTo={0.97}
+              accessibilityRole="button"
+              accessibilityLabel="Skip"
+              style={styles.skipBtn}
+            >
               <Text style={styles.skipBtnText}>SKIP</Text>
-            </TouchableOpacity>
+            </PressableScale>
           )}
-          <TouchableOpacity
-            style={[styles.primaryBtn, styles.primaryBtnFlex, !uri && required && { opacity: 0.5 }]}
-            onPress={onNext}
-            disabled={!uri && required}
-          >
-            <Text style={styles.primaryBtnText}>NEXT →</Text>
-          </TouchableOpacity>
+          <View style={styles.nextSlot}>{renderCta('NEXT →', onNext, !uri && required)}</View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 
   if (step === 'front') return renderPhotoStep(
@@ -202,107 +303,190 @@ export default function PhysiqueCheckin() {
     handleProcess,
   );
 
+  // Processing — skeletons shaped like the scores and the coach read that land
+  // next, so the screen already looks built while the upload runs.
   if (step === 'processing') return (
-    <SafeAreaView style={styles.safe}>
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator color={Colors.primary} size="large" />
-        <Text style={styles.processingText}>Encrypting & uploading…</Text>
-        <Text style={styles.processingSubText}>Getting AI analysis from your coach</Text>
-      </View>
-    </SafeAreaView>
+    <CanvasScreen tabBar={false} bottomSpace={32}>
+      <Crown
+        eyebrow="Physique check-in"
+        title="ENCRYPTING"
+        accentLine="& UPLOADING…"
+        meta="Getting AI analysis from your coach"
+        accent={crownPa.accent}
+      />
+
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        <Section label="Scores">
+          <View style={styles.skelRow}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={styles.skelCell}>
+                <Skeleton height={38} radius={10} />
+                <Skeleton height={8} width="72%" radius={4} />
+              </View>
+            ))}
+          </View>
+        </Section>
+
+        <Section label={`✦ ${persona.toUpperCase()} SAYS`}>
+          <View style={styles.narrativeCard}>
+            <SkeletonLines count={3} height={14} />
+          </View>
+        </Section>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 
   // Done step
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        <Text style={styles.doneTitle}>CHECK-IN SAVED</Text>
+    <CanvasScreen tabBar={false} bottomSpace={32}>
+      <Crown
+        eyebrow="Physique check-in"
+        title="CHECK-IN"
+        accentLine="SAVED"
+        accent={crownPa.accent}
+      />
+
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
         {result && (
           <>
-            <View style={styles.scoreRow}>
-              <PhysiqueScoreCard label="FULLNESS" scoreA={null} scoreB={result.fullness} />
-              <PhysiqueScoreCard label="LEANNESS" scoreA={null} scoreB={result.leanness} />
-              <PhysiqueScoreCard label="SYMMETRY" scoreA={null} scoreB={result.symmetry} />
-            </View>
-            <View style={styles.narrativeCard}>
-              <Text style={styles.narrativeLabel}>✦ {persona.toUpperCase()} SAYS</Text>
-              <Text style={styles.narrativeText}>{result.narrative}</Text>
-            </View>
+            <Section label="Scores">
+              <StatRow>
+                <BigStat value={result.fullness} label="FULLNESS" size={38} />
+                <BigStat value={result.leanness} label="LEANNESS" size={38} />
+                <BigStat value={result.symmetry} label="SYMMETRY" size={38} />
+              </StatRow>
+            </Section>
+
+            <Section label={`✦ ${persona.toUpperCase()} SAYS`}>
+              <View style={styles.narrativeCard}>
+                <Text style={styles.narrativeText}>{result.narrative}</Text>
+              </View>
+            </Section>
           </>
         )}
-        <TouchableOpacity style={styles.primaryBtn} onPress={() => router.back()}>
-          <Text style={styles.primaryBtnText}>VIEW TIMELINE</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+
+        <View style={styles.ctaBlock}>{renderCta('VIEW TIMELINE', () => router.back())}</View>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  container: { flex: 1, padding: 20, paddingTop: 14 },
-  center: { alignItems: 'center', justifyContent: 'center' },
-  backBtn: { marginBottom: 16 },
-  backText: { fontSize: 20, color: Colors.textSecondary },
-  stepLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8, marginBottom: 6 },
-  headline: { fontFamily: Fonts.display, fontSize: 32, color: Colors.text, letterSpacing: -0.5, marginBottom: 8 },
-  sub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginBottom: 24 },
-  optionalTag: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.warning, letterSpacing: 1.2, marginBottom: 16 },
-  optionList: { gap: 10, marginBottom: 24 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
+
+  // ── Cadence ────────────────────────────────────────────────────────────────
+  optionList: { gap: 10 },
   option: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 6,
-    backgroundColor: Colors.surface,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 18,
   },
-  optionSelected: { borderColor: Colors.primary, backgroundColor: 'rgba(223,255,31,0.05)' },
-  optionTitle: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, marginBottom: 3 },
-  optionTitleSelected: { color: Colors.primary },
-  optionSub: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 0.8 },
-  photoBox: {
-    flex: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
-    backgroundColor: Colors.surface,
+  optionText: { flex: 1, gap: 5 },
+  optionTitle: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 21,
+    letterSpacing: -0.9,
+    color: t.text,
+  },
+  optionSub: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+  tick: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 20,
+    borderColor: t.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Photo steps ────────────────────────────────────────────────────────────
+  photoBody: {
+    flex: 1,
+    paddingHorizontal: BODY_PAD,
+    paddingTop: 24,
+  },
+  // The slot carries the plate so nothing flashes on the measuring frame.
+  frameSlot: {
+    flex: 1,
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: t.surfaceAlt,
+    marginBottom: 18,
+  },
+  photoBox: {
+    width: '100%',
+    borderRadius: 28,
+    overflow: 'hidden',
+    backgroundColor: t.surfaceAlt,
   },
   photoPreview: { flex: 1, width: '100%' },
-  photoPlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10 },
-  photoPlaceholderIcon: { fontSize: 40 },
-  photoPlaceholderText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textTertiary },
-  btnRow: { flexDirection: 'row', gap: 10 },
-  skipBtn: {
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 4,
-  },
-  skipBtnText: { fontFamily: Fonts.display, fontSize: 12, color: Colors.textSecondary, letterSpacing: 1 },
-  primaryBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 4,
-    paddingVertical: 16,
+  photoPlaceholder: {
+    flex: 1,
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'center',
+    gap: 14,
   },
-  primaryBtnFlex: { flex: 1, marginTop: 0 },
-  primaryBtnText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 1 },
-  processingText: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginTop: 20 },
-  processingSubText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginTop: 8 },
-  doneTitle: { fontFamily: Fonts.display, fontSize: 28, color: Colors.text, marginBottom: 24, letterSpacing: -0.5 },
-  scoreRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
+  photoPlaceholderText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+  btnRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  nextSlot: { flex: 1 },
+  skipBtn: {
+    paddingVertical: 17,
+    paddingHorizontal: 20,
+    borderRadius: 26,
+  },
+  skipBtnText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.9,
+    textTransform: 'uppercase',
+    color: t.textSecondary,
+  },
+
+  // ── Results ────────────────────────────────────────────────────────────────
+  skelRow: { flexDirection: 'row', gap: 14 },
+  skelCell: { flex: 1, gap: 9 },
   narrativeCard: {
-    backgroundColor: 'rgba(91,140,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(91,140,255,0.2)',
-    borderRadius: 6,
-    padding: 16,
-    marginBottom: 24,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 17,
   },
-  narrativeLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.info, letterSpacing: 1.4, marginBottom: 8 },
-  narrativeText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20, fontStyle: 'italic' },
+  narrativeText: {
+    fontFamily: Fonts.body,
+    fontSize: 15,
+    lineHeight: 23,
+    fontStyle: 'italic',
+    color: t.text,
+  },
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+  ctaBlock: { marginTop: 34 },
+  cta: {
+    borderRadius: 26,
+    borderWidth: 1,
+    paddingVertical: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 13,
+    letterSpacing: 1.4,
+  },
 });

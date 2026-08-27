@@ -3,22 +3,37 @@
  *
  * Shows user's unique referral code, share button, referral count,
  * and reward progress.
+ *
+ * Bold Canvas: the crown carries the whole invite — the code is the hero, set
+ * in tracked mono so it can actually be read aloud or transcribed, with the
+ * share action directly under it. The light body is the ledger: the count as an
+ * oversized numeral, a ten-segment meter that maps 1:1 to the reward target,
+ * and the hairline-ruled steps. The persona accent is the single thread through
+ * all three (share fill · meter · unlocked payoff).
  */
 import { useState, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Share, RefreshControl,
-} from 'react-native';
+import { StyleSheet, Text, View, Share, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { CanvasScreen, Crown, Section, Hairline, BigStat, StatRow } from '@/components/ui/canvas';
+import { PressableScale } from '@/components/ui/motion';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
 import { refreshReferralReward, getReferralProUntil } from '@/lib/subscriptionManager';
 import { createReferralLink } from '@/lib/branchReferral';
-import { Colors, Fonts, Spacing, Radius } from '@/constants/theme';
-import { personaFromProgramId } from '@/lib/personaTheme';
+import { Fonts } from '@/constants/theme';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 const REWARD_TARGET = 10;
+
+const BODY_PAD = 22; // matches Crown's own horizontal padding
+
+const STEPS = [
+  { n: '1', text: 'Share your link with friends' },
+  { n: '2', text: 'They tap it and install Evulto — the install is credited to you automatically' },
+  { n: '3', text: 'Hit 10 active referrals → 1 month of Legend, free. Repeatable — refer more, earn more' },
+];
 
 function generateCode(userId: string): string {
   return userId.replace(/-/g, '').slice(0, 8).toUpperCase();
@@ -26,12 +41,19 @@ function generateCode(userId: string): string {
 
 export default function ReferralScreen() {
   const router = useRouter();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { user, profile } = useAuthStore();
   const [referralCount, setReferralCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [rewardUntil, setRewardUntil] = useState<number | null>(null);
 
-  const accentColor = personaFromProgramId(profile?.selected_program).accent;
+  const persona = personaFromProgramId(profile?.selected_program);
+  const pa = personaAccent(persona, scheme);
+  const accentColor = pa.accent;
+  // The crown is near-black in BOTH schemes, so anything painted on it reads the
+  // DARK triplet — the light accents go muddy on ink.
+  const crownPa = personaAccent(persona, 'dark');
   const code = user ? generateCode(user.id) : 'XXXXXXXX';
 
   // Count = ACTIVE referrals (referred users who opened the app on 3+ distinct
@@ -87,178 +109,221 @@ export default function ReferralScreen() {
   const needed = Math.max(0, REWARD_TARGET - referralCount);
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
-      <View style={styles.topBar}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={12}>
-          <Text style={styles.backBtn}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>REFERRALS</Text>
-        <View style={{ width: 32 }} />
-      </View>
-
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accentColor} colors={[accentColor]} />
-        }
+    <CanvasScreen
+      tabBar={false}
+      bottomSpace={40}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={accentColor} colors={[accentColor]} />
+      }
+    >
+      {/* ── CROWN — the code is the hero, the share is the only action ── */}
+      <Crown
+        eyebrow="Referrals"
+        title="Invite."
+        meta="Share your link · refer 10 active friends → 1 month Legend, free"
+        accent={crownPa.accent}
+        onBack={() => router.back()}
       >
-
-        {/* Hero referral card */}
-        <View style={[styles.heroCard, { borderColor: accentColor }]}>
-          <Text style={styles.heroLabel}>YOUR REFERRAL CODE</Text>
-          <Text style={[styles.heroCode, { color: accentColor }]}>{code}</Text>
-          <Text style={styles.heroSub}>Share your link · refer 10 active friends → 1 month Legend, free</Text>
-          <TouchableOpacity
-            style={[styles.shareBtn, { backgroundColor: accentColor }]}
-            onPress={handleShare}
-            activeOpacity={0.85}
+        <View style={styles.codeBlock}>
+          <Text style={styles.codeLabel}>Your referral code</Text>
+          <Text
+            style={styles.code}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            accessibilityLabel={`Your referral code: ${code.split('').join(' ')}`}
           >
-            <Text style={[styles.shareBtnText, { color: Colors.accentInk }]}>
-              SHARE LINK
-            </Text>
-          </TouchableOpacity>
-          <Text style={styles.sharePreview} numberOfLines={2}>
-            Your link installs the app for friends and credits the install to you.
+            {code}
           </Text>
         </View>
 
-        {/* Progress toward reward */}
-        <View style={styles.rewardCard}>
-          <Text style={styles.rewardLabel}>REWARD PROGRESS</Text>
-          <Text style={styles.rewardTitle}>Refer 10 active friends → 1 month Legend, free (repeatable)</Text>
+        <PressableScale
+          onPress={handleShare}
+          haptic="heavy"
+          accessibilityRole="button"
+          accessibilityLabel="Share your referral link"
+          style={[styles.shareBtn, { backgroundColor: crownPa.accent }]}
+        >
+          <Text style={[styles.shareBtnText, { color: crownPa.ink }]}>SHARE LINK</Text>
+        </PressableScale>
 
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progressPct * 100}%` as any, backgroundColor: accentColor }]} />
-          </View>
+        <Text style={styles.sharePreview} numberOfLines={2}>
+          Your link installs the app for friends and credits the install to you.
+        </Text>
+      </Crown>
 
-          <View style={styles.progressRow}>
-            <Text style={styles.progressCount}>
-              <Text style={[styles.progressNum, { color: accentColor }]}>{referralCount}</Text>
-              <Text style={styles.progressDenom}> / {REWARD_TARGET} active</Text>
-            </Text>
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        {/* ── Progress toward reward ── */}
+        <Section label="Reward progress">
+          <StatRow>
+            <BigStat
+              value={referralCount}
+              unit={`/ ${REWARD_TARGET}`}
+              label="Active referrals"
+              size={38}
+            />
             {needed > 0 ? (
-              <Text style={styles.progressNeeded}>{needed} more to unlock</Text>
+              <BigStat value={needed} label="More to unlock" size={38} />
             ) : (
-              <Text style={[styles.progressUnlocked, { color: accentColor }]}>REWARD UNLOCKED</Text>
+              <BigStat value="✓" label="Reward unlocked" size={38} />
             )}
-          </View>
+          </StatRow>
 
-          {/* Milestone dots */}
-          <View style={styles.milestoneRow}>
+          {/* Segmented meter — one segment per referral, so it reads the exact
+              count as well as the proportion. Filled segments carry the
+              text-safe persona tone, which clears AA on the light page without
+              needing a hairline around an 10px bar. */}
+          <View
+            style={styles.meter}
+            accessibilityRole="progressbar"
+            accessibilityLabel={`${referralCount} of ${REWARD_TARGET} active referrals`}
+            accessibilityValue={{ min: 0, max: 100, now: Math.round(progressPct * 100) }}
+          >
             {Array.from({ length: REWARD_TARGET }).map((_, i) => (
               <View
                 key={i}
                 style={[
-                  styles.milestoneDot,
-                  i < referralCount
-                    ? { backgroundColor: accentColor }
-                    : { backgroundColor: Colors.raised, borderColor: Colors.border, borderWidth: 1 },
+                  styles.meterSeg,
+                  { backgroundColor: i < referralCount ? pa.accentText : tokens.border },
                 ]}
               />
             ))}
           </View>
 
+          <Text style={styles.rewardTitle}>
+            Refer 10 active friends → 1 month Legend, free (repeatable)
+          </Text>
+
           {/* Reward GRANTED banner — server confirmed the free Pro month */}
-          {rewardUntil && (
-            <View style={[styles.grantedBanner, { borderColor: accentColor, backgroundColor: accentColor + '14' }]}>
-              <Text style={[styles.grantedTitle, { color: accentColor }]}>Legend unlocked — Vanguard pass active</Text>
+          {rewardUntil ? (
+            <View style={[styles.granted, { borderLeftColor: pa.accent }]}>
+              <Text style={[styles.grantedTitle, { color: pa.accentText }]}>
+                Legend unlocked — Vanguard pass active
+              </Text>
               <Text style={styles.grantedSub}>
                 Active until {new Date(rewardUntil).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </Text>
             </View>
-          )}
-        </View>
+          ) : null}
+        </Section>
 
-        {/* How it works */}
-        <View style={styles.howCard}>
-          <Text style={styles.howLabel}>HOW IT WORKS</Text>
-          {[
-            { n: '1', text: 'Share your link with friends' },
-            { n: '2', text: 'They tap it and install Evulto — the install is credited to you automatically' },
-            { n: '3', text: 'Hit 10 active referrals → 1 month of Legend, free. Repeatable — refer more, earn more' },
-          ].map((step) => (
-            <View key={step.n} style={styles.howRow}>
-              <View style={[styles.howNum, { borderColor: accentColor }]}>
-                <Text style={[styles.howNumText, { color: accentColor }]}>{step.n}</Text>
+        {/* ── How it works ── */}
+        <Section label="How it works">
+          {STEPS.map((step, i) => (
+            <View key={step.n}>
+              <View style={styles.stepRow}>
+                <Text style={styles.stepNum}>{step.n}</Text>
+                <Text style={styles.stepText}>{step.text}</Text>
               </View>
-              <Text style={styles.howText}>{step.text}</Text>
+              {i < STEPS.length - 1 ? <Hairline /> : null}
             </View>
           ))}
-        </View>
-
-        <View style={{ height: 32 }} />
-      </ScrollView>
-    </SafeAreaView>
+        </Section>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
-  topBar: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn: { fontSize: 22, color: Colors.text, width: 32 },
-  title: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.8 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
 
-  scroll: { padding: Spacing.md, gap: Spacing.md },
-
-  heroCard: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    borderWidth: 1, padding: Spacing.lg, alignItems: 'center', gap: 10,
+  // ── Crown: the code plate ──
+  codeBlock: { marginTop: 26 },
+  codeLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: t.crownTextDim,
+    marginBottom: 12,
   },
-  heroLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8 },
-  heroCode: { fontFamily: Fonts.display, fontSize: 38, letterSpacing: 4 },
-  heroSub: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
+  code: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 40,
+    // The whole point of a code: generous tracking so each glyph is separable.
+    letterSpacing: 7,
+    color: t.crownText,
+  },
+
   shareBtn: {
-    paddingVertical: 14, paddingHorizontal: 40, borderRadius: Radius.sm, marginTop: 6,
+    marginTop: 26,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  shareBtnText: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: 1 },
+  shareBtnText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 11,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+  },
   sharePreview: {
-    fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary,
-    textAlign: 'center', lineHeight: 16, fontStyle: 'italic', marginTop: 4, paddingHorizontal: 8,
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    fontStyle: 'italic',
+    marginTop: 14,
+    color: t.crownTextDim,
   },
 
-  grantedBanner: {
-    marginTop: 14, borderWidth: 1, borderRadius: Radius.md,
-    paddingVertical: 12, paddingHorizontal: 14, gap: 3,
+  // ── Reward progress ──
+  meter: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 22,
   },
-  grantedTitle: { fontFamily: Fonts.bodyBold, fontSize: 13, letterSpacing: 0.2 },
-  grantedSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
+  // Square, not pill — the ledger language the rest of the body is built in.
+  meterSeg: { flex: 1, height: 10, borderRadius: 0 },
+  rewardTitle: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 16,
+    color: t.textSecondary,
+  },
 
-  rewardCard: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, gap: 10,
+  // Left rule instead of a box — Bold Canvas has no visible card borders.
+  granted: {
+    marginTop: 22,
+    borderLeftWidth: 3,
+    paddingLeft: 14,
+    paddingVertical: 2,
+    gap: 4,
   },
-  rewardLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8 },
-  rewardTitle: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text, lineHeight: 20 },
-  progressTrack: {
-    height: 6, backgroundColor: Colors.raised, borderRadius: Radius.full, overflow: 'hidden',
+  grantedTitle: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 15,
+    letterSpacing: -0.2,
   },
-  progressFill: { height: '100%', borderRadius: Radius.full },
-  progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  progressCount: {},
-  progressNum: { fontFamily: Fonts.display, fontSize: 20 },
-  progressDenom: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textSecondary },
-  progressNeeded: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 0.5 },
-  progressUnlocked: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 0.8 },
-  // Segmented bar — scales to any target (10 segments fit where 10 circles wouldn't)
-  milestoneRow: { flexDirection: 'row', gap: 4 },
-  milestoneDot: { flex: 1, height: 8, borderRadius: 4 },
+  grantedSub: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: t.textSecondary,
+  },
 
-  howCard: {
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, gap: 14,
+  // ── How it works ──
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    paddingVertical: 15,
   },
-  howLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8 },
-  howRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  howNum: {
-    width: 28, height: 28, borderRadius: Radius.full, borderWidth: 1,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+  stepNum: {
+    width: 26,
+    fontFamily: Fonts.displayBold,
+    fontSize: 27,
+    lineHeight: 28,
+    // -0.04em at 27px.
+    letterSpacing: -1.08,
+    color: t.textTertiary,
+    fontVariant: ['tabular-nums'],
   },
-  howNumText: { fontFamily: Fonts.display, fontSize: 12 },
-  howText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20, flex: 1 },
+  stepText: {
+    flex: 1,
+    fontFamily: Fonts.body,
+    fontSize: 13.5,
+    lineHeight: 20,
+    color: t.text,
+  },
 });

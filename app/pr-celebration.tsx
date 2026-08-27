@@ -1,44 +1,82 @@
+/**
+ * PR celebration — Bold Canvas.
+ *
+ * The most emotional screen in the app, so the type does the celebrating: the
+ * crown is a full-bleed dark block with the new estimated 1RM as a 76px numeral
+ * in the coach's accent, and the burst rays + confetti now sit on that block
+ * instead of washing over the whole page. The light body holds the detail —
+ * what you lifted, what the coach said, and the two actions.
+ *
+ * Behaviour is untouched: same params and defaults, same Epley delta maths,
+ * same coach lookup and quotes, the same 1200ms/300ms-delay count-up driver,
+ * and the same Share payload.
+ */
+
 import { useEffect, useRef, useState } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated,
-  ViewStyle, Share,
-} from 'react-native';
+import { Animated, Share, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import Svg, { Defs, RadialGradient, Stop, Rect, Line, Circle } from 'react-native-svg';
-import { Colors, Fonts } from '@/constants/theme';
+import Svg, { Defs, RadialGradient, Stop, Rect, Line } from 'react-native-svg';
+import { X } from 'lucide-react-native';
+import { Fonts } from '@/constants/theme';
+import { BigStat, CanvasScreen, Crown, Section, StatRow } from '@/components/ui/canvas';
+import { PressableScale } from '@/components/ui/motion';
+import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
+
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = 22;
+
+/** Which semantic token a coach's accent resolves to. */
+type Tone = 'accent' | 'warning' | 'info' | 'danger' | 'success';
+
+/**
+ * The crown is near-black in BOTH schemes, so anything painted on it resolves
+ * against the dark tokens rather than the active ones. `accent` maps to the
+ * crown's brighter emerald, which is the only emerald that clears that ink.
+ */
+function crownTone(tone: Tone) {
+  return tone === 'accent' ? TOKENS.dark.crownAccent : TOKENS.dark[tone];
+}
 
 // ── Confetti dots ─────────────────────────────────────────────
+// Geometry only — the palette is a token lookup resolved at render.
 const CONFETTI = Array.from({ length: 25 }, (_, i) => ({
   left: `${(i * 73) % 100}%`,
   top: `${(i * 47 + 20) % 90}%`,
   size: 4 + (i % 3) * 2,
   round: i % 2 === 0,
-  color: [Colors.primary, Colors.danger, Colors.info, '#fff'][i % 4],
+  tone: i % 4,
   rotate: `${i * 23}deg`,
 }));
 
-// ── Radial burst rays (18 rays from center) ───────────────────
-function Burst() {
-  const CX = 201, CY = 330;
+// ── Radial burst rays (18 rays from the numeral) ──────────────
+// Square viewBox sliced to the crown so the rays stay radial whatever height
+// the block ends up at; the centre sits low, behind the hero numeral.
+function Burst({ tint }: { tint: string }) {
+  const CX = 200, CY = 200;
   return (
-    <Svg style={StyleSheet.absoluteFill} viewBox="0 0 402 874" pointerEvents="none">
+    <Svg
+      style={StyleSheet.absoluteFill}
+      viewBox="0 0 400 400"
+      preserveAspectRatio="xMidYMid slice"
+      pointerEvents="none"
+    >
       <Defs>
-        <RadialGradient id="burst" cx="50%" cy="38%" r="50%">
-          <Stop offset="0%" stopColor={Colors.primary} stopOpacity="0.4" />
-          <Stop offset="40%" stopColor={Colors.primary} stopOpacity="0.1" />
-          <Stop offset="100%" stopColor={Colors.primary} stopOpacity="0" />
+        <RadialGradient id="burst" cx="50%" cy="50%" r="50%">
+          <Stop offset="0%" stopColor={tint} stopOpacity="0.22" />
+          <Stop offset="40%" stopColor={tint} stopOpacity="0.07" />
+          <Stop offset="100%" stopColor={tint} stopOpacity="0" />
         </RadialGradient>
       </Defs>
-      <Rect width="402" height="874" fill="url(#burst)" />
+      <Rect width="400" height="400" fill="url(#burst)" />
       {Array.from({ length: 18 }, (_, i) => {
         const a = (i * 360 / 18) * Math.PI / 180;
         return (
           <Line
             key={i}
-            x1={CX + Math.cos(a) * 80} y1={CY + Math.sin(a) * 80}
+            x1={CX + Math.cos(a) * 60} y1={CY + Math.sin(a) * 60}
             x2={CX + Math.cos(a) * 420} y2={CY + Math.sin(a) * 420}
-            stroke={Colors.primary} strokeWidth="1.5" opacity="0.18"
+            stroke={tint} strokeWidth="1.5" opacity="0.16"
           />
         );
       })}
@@ -68,16 +106,30 @@ export default function PRCelebration() {
   const delta      = +(newRM - prevRM).toFixed(1);
   const deltaPct   = prevRM > 0 ? ((delta / prevRM) * 100).toFixed(1) : '—';
 
-  const coachLabels: Record<string, { initials: string; hue: string; quote: string }> = {
-    cbum:       { initials: 'TS', hue: Colors.primary,  quote: "That's what showing up looks like. Now eat. Sleep. Repeat Friday." },
-    arnold:     { initials: 'TG', hue: '#f5b942',        quote: "This is what the pump leads to. You are growing!" },
-    nippard:    { initials: 'SC', hue: Colors.info,      quote: `New estimated 1RM via Epley: ${newRM} kg. The data confirms progression.` },
-    ct:         { initials: 'TC', hue: Colors.danger,    quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
-    ct_fletcher:{ initials: 'TC', hue: Colors.danger,    quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
-    dr_mike:    { initials: 'DG', hue: Colors.good,      quote: "Progressive overload achieved. You're above MEV and making gains." },
-    dr:         { initials: 'DG', hue: Colors.good,      quote: "Progressive overload achieved. You're above MEV and making gains." },
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+
+  const coachLabels: Record<string, { initials: string; tone: Tone; quote: string }> = {
+    cbum:       { initials: 'TS', tone: 'accent',  quote: "That's what showing up looks like. Now eat. Sleep. Repeat Friday." },
+    arnold:     { initials: 'TG', tone: 'warning', quote: "This is what the pump leads to. You are growing!" },
+    nippard:    { initials: 'SC', tone: 'info',    quote: `New estimated 1RM via Epley: ${newRM} kg. The data confirms progression.` },
+    ct:         { initials: 'TC', tone: 'danger',  quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
+    ct_fletcher:{ initials: 'TC', tone: 'danger',  quote: "I COMMANDED YOU TO GROW — AND YOU DID. NOW EAT." },
+    dr_mike:    { initials: 'DG', tone: 'success', quote: "Progressive overload achieved. You're above MEV and making gains." },
+    dr:         { initials: 'DG', tone: 'success', quote: "Progressive overload achieved. You're above MEV and making gains." },
   };
   const coach = coachLabels[coachId] ?? coachLabels.cbum;
+
+  // The persona colour only ever lands on ink — the crown, and the avatar chip
+  // in the body — so one crown-tuned value serves both schemes.
+  const tint = crownTone(coach.tone);
+
+  const confettiPalette = [
+    TOKENS.dark.crownAccent,
+    TOKENS.dark.danger,
+    TOKENS.dark.info,
+    TOKENS.dark.crownText,
+  ];
 
   // Animate the number counting up — use state so React re-renders each frame
   const [displayNum, setDisplayNum] = useState(prevRM.toFixed(1));
@@ -97,189 +149,253 @@ export default function PRCelebration() {
   }, []);
 
   return (
-    <View style={styles.root}>
-      {/* Radial burst background */}
-      <Burst />
+    <CanvasScreen tabBar={false} bottomSpace={36}>
+      <Crown
+        eyebrow="Personal record"
+        title="NEW"
+        accentLine="1RM."
+        accent={tint}
+        meta={`${exercise} — your estimated 1RM just jumped.`}
+        right={
+          <PressableScale
+            onPress={() => router.back()}
+            haptic="light"
+            scaleTo={0.9}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            style={styles.close}
+          >
+            <X size={18} color={tokens.crownText} />
+          </PressableScale>
+        }
+      >
+        {/* Decoration first so the hero numeral stays clean on top of it. */}
+        <Burst tint={tint} />
 
-      {/* Confetti */}
-      {CONFETTI.map((c, i) => (
-        <View key={i} style={[
-          styles.confetti,
-          {
-            left: c.left as ViewStyle['left'],
-            top: c.top as ViewStyle['top'],
-            width: c.size, height: c.size,
-            borderRadius: c.round ? c.size / 2 : 1,
-            backgroundColor: c.color,
-            transform: [{ rotate: c.rotate }],
-          } as ViewStyle,
-        ]} />
-      ))}
-
-      <SafeAreaView style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Top bar */}
-          <View style={styles.topBar}>
-            <View style={styles.prTag}>
-              <View style={styles.prDot} />
-              <Text style={styles.prTagText}>PERSONAL RECORD</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text style={styles.closeBtn}>✕</Text>
-            </TouchableOpacity>
+        <View style={styles.hero}>
+          <Text style={styles.heroLabel}>Est. 1RM (Epley)</Text>
+          <View style={styles.heroRow}>
+            <Animated.Text style={[styles.heroNum, { color: tint }]}>
+              {displayNum}
+            </Animated.Text>
+            <Text style={styles.heroUnit}>kg</Text>
           </View>
+        </View>
 
-          {/* Headline */}
-          <View style={styles.headlineWrap}>
-            <Text style={styles.headlineLine1}>NEW</Text>
-            <Text style={[styles.headlineLine2, { color: Colors.primary }]}>1RM.</Text>
-            <Text style={styles.headlineSub}>
-              {exercise} — your estimated 1RM just jumped.
-            </Text>
+        <View style={styles.deltaRow}>
+          <View style={styles.deltaCell}>
+            <Text style={styles.heroLabel}>Prev best</Text>
+            <Text style={styles.prevNum} numberOfLines={1}>{prevRM.toFixed(1)} kg</Text>
           </View>
-
-          {/* The number */}
-          <View style={styles.numSection}>
-            <View>
-              <Text style={styles.numLabel}>EST. 1RM (EPLEY)</Text>
-              <View style={styles.numRow}>
-                <Animated.Text style={styles.bigNum}>
-                  {displayNum}
-                </Animated.Text>
-                <Text style={styles.bigNumUnit}>kg</Text>
-              </View>
-            </View>
-            <View style={styles.numRight}>
-              <Text style={styles.numLabel}>PREV BEST</Text>
-              <Text style={styles.prevNum}>{prevRM.toFixed(1)} kg</Text>
-              <Text style={styles.numDelta}>+{delta} kg ↑ {deltaPct}%</Text>
-            </View>
+          <View style={styles.deltaCell}>
+            <Text style={styles.heroLabel}>Gain</Text>
+            <Text style={styles.deltaNum} numberOfLines={1}>+{delta} kg</Text>
+            <Text style={styles.deltaPct} numberOfLines={1}>↑ {deltaPct}%</Text>
           </View>
+        </View>
 
-          {/* What you did */}
-          <Text style={styles.sectionLabel}>WHAT YOU DID</Text>
-          <View style={styles.whatGrid}>
-            {[
-              { label: 'WEIGHT', value: `${weight}`, unit: 'kg' },
-              { label: 'REPS',   value: `${reps}`,   unit: '' },
-              { label: 'RPE',    value: `@${rpe}`,   unit: '' },
-            ].map((item) => (
-              <View key={item.label} style={styles.whatCard}>
-                <Text style={styles.whatLabel}>{item.label}</Text>
-                <Text style={styles.whatValue}>
-                  {item.value}<Text style={styles.whatUnit}>{item.unit}</Text>
-                </Text>
-              </View>
-            ))}
-          </View>
+        {CONFETTI.map((c, i) => (
+          <View key={i} pointerEvents="none" style={[
+            styles.confetti,
+            {
+              left: c.left as ViewStyle['left'],
+              top: c.top as ViewStyle['top'],
+              width: c.size, height: c.size,
+              borderRadius: c.round ? c.size / 2 : 1,
+              backgroundColor: confettiPalette[c.tone],
+              transform: [{ rotate: c.rotate }],
+            } as ViewStyle,
+          ]} />
+        ))}
+      </Crown>
 
-          {/* Coach quote */}
-          <View style={[styles.coachCard, { borderColor: `${coach.hue}33`, backgroundColor: `${coach.hue}0d` }]}>
-            <View style={[styles.coachAvatar, { backgroundColor: coach.hue }]}>
-              <Text style={styles.coachInitials}>{coach.initials}</Text>
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        <Section label="What you did">
+          <StatRow>
+            <BigStat value={weight} unit="kg" label="Weight" />
+            <BigStat value={reps} label="Reps" />
+            <BigStat value={`@${rpe}`} label="RPE" />
+          </StatRow>
+        </Section>
+
+        <Section label={`${coach.initials} says`}>
+          <View style={styles.coachCard}>
+            <View style={styles.coachAvatar}>
+              <Text style={[styles.coachInitials, { color: tint }]}>{coach.initials}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.coachName, { color: coach.hue }]}>
-                {coach.initials} SAYS
-              </Text>
-              <Text style={styles.coachQuote}>{coach.quote}</Text>
-            </View>
+            <Text style={styles.coachQuote}>{coach.quote}</Text>
           </View>
+        </Section>
 
-          {/* CTAs */}
-          <View style={styles.ctaRow}>
-            <TouchableOpacity
-              style={styles.ctaPrimary}
-              activeOpacity={0.85}
+        {/* PressableScale wraps its target in a shrink-to-fit Animated.View, so
+            an equal split has to come from these cells, not from flex on the
+            button itself. */}
+        <View style={styles.ctaRow}>
+          <View style={styles.ctaCell}>
+            <PressableScale
+              haptic="heavy"
+              scaleTo={0.97}
+              accessibilityRole="button"
+              accessibilityLabel="Share win"
               onPress={() => Share.share({
                 message: `🏆 New PR on ${exercise}: ${newRM} kg estimated 1RM (+${delta} kg). Built with Evulto.`,
               })}
+              style={[styles.cta, styles.ctaPrimary]}
             >
               <Text style={styles.ctaPrimaryText}>SHARE WIN</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.ctaSecondary}
+            </PressableScale>
+          </View>
+          <View style={styles.ctaCell}>
+            <PressableScale
+              haptic="light"
+              scaleTo={0.97}
+              accessibilityRole="button"
+              accessibilityLabel="Close"
               onPress={() => router.back()}
-              activeOpacity={0.85}
+              style={[styles.cta, styles.ctaSecondary]}
             >
               <Text style={styles.ctaSecondaryText}>CLOSE</Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
-        </ScrollView>
+        </View>
       </SafeAreaView>
-    </View>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 24, paddingTop: 12, paddingBottom: 48 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
+
+  close: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: t.crownLine,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ── Crown hero ─────────────────────────────────────────────────────────────
+  hero: { marginTop: 30 },
+  heroLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: t.crownTextDim,
+    marginBottom: 8,
+  },
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 8 },
+  heroNum: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 76,
+    lineHeight: 77,
+    // -0.045em at 76px.
+    letterSpacing: -3.42,
+    fontVariant: ['tabular-nums'],
+  },
+  heroUnit: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 15,
+    color: t.crownTextDim,
+    paddingBottom: 12,
+  },
+
+  deltaRow: { flexDirection: 'row', gap: 14, marginTop: 24 },
+  deltaCell: { flex: 1 },
+  prevNum: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 20,
+    lineHeight: 22,
+    letterSpacing: -0.9,
+    color: t.crownTextDim,
+    fontVariant: ['tabular-nums'],
+    textDecorationLine: 'line-through',
+    textDecorationColor: t.crownTextDim,
+  },
+  deltaNum: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 20,
+    lineHeight: 22,
+    letterSpacing: -0.9,
+    // Sits on the near-black crown in both schemes, so it takes the dark token.
+    color: TOKENS.dark.success,
+    fontVariant: ['tabular-nums'],
+  },
+  deltaPct: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    color: TOKENS.dark.success,
+    marginTop: 5,
+  },
 
   confetti: { position: 'absolute', opacity: 0.7 },
 
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 },
-  prTag: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: `${Colors.primary}1a`, borderRadius: 4, paddingHorizontal: 10, paddingVertical: 5,
-  },
-  prDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: Colors.primary },
-  prTagText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.primary, letterSpacing: 1.4 },
-  closeBtn: { color: Colors.textSecondary, fontSize: 18, lineHeight: 22 },
-
-  headlineWrap: { marginBottom: 36 },
-  headlineLine1: { fontFamily: Fonts.display, fontSize: 96, color: Colors.text, lineHeight: 82, letterSpacing: -3 },
-  headlineLine2: { fontFamily: Fonts.display, fontSize: 96, lineHeight: 82, letterSpacing: -3 },
-  headlineSub: { fontFamily: Fonts.body, fontSize: 15, color: Colors.textSecondary, marginTop: 16, lineHeight: 22 },
-
-  numSection: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
-    paddingVertical: 24, borderTopWidth: 1, borderBottomWidth: 1, borderColor: Colors.border, marginBottom: 24,
-  },
-  numLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6, marginBottom: 4 },
-  numRow: { flexDirection: 'row', alignItems: 'baseline', gap: 8 },
-  bigNum: { fontFamily: Fonts.display, fontSize: 84, color: Colors.primary, letterSpacing: -3, lineHeight: 80 },
-  bigNumUnit: { fontFamily: Fonts.display, fontSize: 24, color: Colors.textSecondary },
-  numRight: { alignItems: 'flex-end' },
-  prevNum: {
-    fontFamily: Fonts.display, fontSize: 24, color: Colors.textSecondary, marginTop: 6,
-    textDecorationLine: 'line-through', textDecorationColor: Colors.textTertiary,
-  },
-  numDelta: { fontFamily: Fonts.display, fontSize: 16, color: Colors.good, marginTop: 4 },
-
-  sectionLabel: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6, marginBottom: 10 },
-
-  whatGrid: { flexDirection: 'row', gap: 8, marginBottom: 20 },
-  whatCard: {
-    flex: 1, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 4, padding: 12,
-  },
-  whatLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2 },
-  whatValue: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, marginTop: 4 },
-  whatUnit: { fontSize: 11, color: Colors.textSecondary },
-
+  // ── Coach ──────────────────────────────────────────────────────────────────
   coachCard: {
-    flexDirection: 'row', gap: 12, padding: 14, borderRadius: 6, borderWidth: 1, marginBottom: 24,
+    flexDirection: 'row',
+    gap: 14,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
   },
   coachAvatar: {
-    width: 32, height: 32, borderRadius: 4,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    // The ink chip reads the same in both schemes, so the persona initials keep
+    // their crown-tuned tone wherever the card lands.
+    backgroundColor: t.crown,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
-  coachInitials: { fontFamily: Fonts.display, fontSize: 11, color: Colors.accentInk },
-  coachName: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
-  coachQuote: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20 },
+  coachInitials: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 13,
+    letterSpacing: -0.4,
+  },
+  coachQuote: {
+    flex: 1,
+    fontFamily: Fonts.bodySemi,
+    fontSize: 15,
+    lineHeight: 22,
+    letterSpacing: -0.2,
+    color: t.text,
+    paddingTop: 2,
+  },
 
-  ctaRow: { flexDirection: 'row', gap: 8 },
+  // ── Actions ────────────────────────────────────────────────────────────────
+  ctaRow: { flexDirection: 'row', gap: 10, marginTop: 34 },
+  ctaCell: { flex: 1 },
+  cta: {
+    borderRadius: 26,
+    paddingVertical: 19,
+    alignItems: 'center',
+  },
   ctaPrimary: {
-    flex: 1, height: 56, backgroundColor: Colors.primary, borderRadius: 4,
-    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: t.accent,
+    // The brand fill is under 3:1 on a light page; the deeper tone at its edge
+    // is what makes the control identifiable (SC 1.4.11).
+    borderWidth: 1,
+    borderColor: t.accentLine,
   },
-  ctaPrimaryText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.accentInk, letterSpacing: 0.6 },
-  ctaSecondary: {
-    flex: 1, height: 56, borderRadius: 4, borderWidth: 1, borderColor: Colors.borderStrong,
-    alignItems: 'center', justifyContent: 'center',
+  ctaPrimaryText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 13,
+    letterSpacing: 1.4,
+    color: t.accentInk,
   },
-  ctaSecondaryText: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, letterSpacing: 0.6 },
+  ctaSecondary: { backgroundColor: t.surfaceAlt },
+  ctaSecondaryText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 13,
+    letterSpacing: 1.4,
+    color: t.text,
+  },
 });

@@ -1,5 +1,5 @@
 /**
- * Coach Reminders screen
+ * Coach Reminders screen — Bold Canvas.
  *
  * Lets the user enable two daily notifications styled as incoming calls
  * from their coach:
@@ -8,12 +8,17 @@
  *
  * Each can be toggled independently and given its own time.
  * Notification text is in the active coach's voice — see coachCallScheduler.ts.
+ *
+ * The crown carries the coach; the light body gives each reminder its clock as
+ * an oversized numeral. Every scheduling call, permission prompt and channel
+ * setup below is byte-for-byte the pre-migration behaviour — this screen drives
+ * real alarms, so only its presentation moved.
  */
 import { useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Alert, Linking,
+  View, Text, StyleSheet, Switch, Platform, Alert, Linking,
 } from 'react-native';
-import { Bell } from 'lucide-react-native';
+import { Bell, ChevronRight } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -22,8 +27,14 @@ import { getCallCopy, getNextFiringDate, type CallKind } from '@/lib/coachCallSc
 import { fireIncomingCall, ensureNotifeePermission } from '@/lib/notifeeCallScheduler';
 import { triggerIncomingCall } from '@/lib/wakeupCalls';
 import { AuthorizationStatus } from '@notifee/react-native';
-import { styleText } from '@/lib/personaTheme';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { personaAccent, styleText } from '@/lib/personaTheme';
+import { Fonts } from '@/constants/theme';
+import { CanvasScreen, Crown, Hairline, ListRow, Section } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
+
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = 22;
 
 function format12h(h: number, m: number): string {
   const ampm = h >= 12 ? 'PM' : 'AM';
@@ -32,10 +43,23 @@ function format12h(h: number, m: number): string {
   return `${hh}:${mm} ${ampm}`;
 }
 
+/** Split "6:30 AM" into the numeral and its meridiem so the two can be typeset apart. */
+function splitClock(time: string): { clock: string; meridiem: string } {
+  const [clock, meridiem = ''] = time.split(' ');
+  return { clock, meridiem };
+}
+
 export default function CoachRemindersScreen() {
   const router = useRouter();
   const { prefs, loading, permission, toggleWakeup, toggleWorkout, setTime, persona } = useCoachReminders();
   const [openPicker, setOpenPicker] = useState<CallKind | null>(null);
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+
+  const pa = personaAccent(persona, scheme);
+  // The crown is near-black in BOTH schemes, so its tint always resolves against
+  // the dark triplet — the light accent would sink into the ink.
+  const crownTint = personaAccent(persona, 'dark').accent;
 
   const wakeupCopy  = getCallCopy(persona, 'wakeup');
   const workoutCopy = getCallCopy(persona, 'workout');
@@ -163,118 +187,125 @@ export default function CoachRemindersScreen() {
     return `Next call: ${dayLabel} at ${timeLabel}`;
   };
 
+  // Held back until the prefs load, so the crown never advertises the defaults
+  // as if they were the user's saved schedule.
+  const pills = loading
+    ? undefined
+    : [
+        `Wake-up ${prefs.wakeupEnabled ? format12h(prefs.wakeupHour, prefs.wakeupMinute) : 'off'}`,
+        `Workout ${prefs.workoutEnabled ? format12h(prefs.workoutHour, prefs.workoutMinute) : 'off'}`,
+      ];
+
   return (
-    <SafeAreaView style={styles.safe}>
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>COACH CALLS</Text>
-        <View style={{ width: 32 }} />
-      </View>
+    <View style={styles.root}>
+      <CanvasScreen tabBar={false} bottomSpace={28}>
+        <Crown
+          eyebrow={styleText(persona, `✦ Coach calls · ${persona.shortName}`)}
+          title={styleText(persona, 'Let your coach')}
+          accentLine={styleText(persona, 'reach out.')}
+          meta={`Schedule daily wake-up and workout reminders that pop up like an incoming call — in ${persona.shortName}'s voice.`}
+          pills={pills}
+          accent={crownTint}
+          onBack={() => router.back()}
+        />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Ringtone shortcut — at the top so it's discoverable */}
-        <TouchableOpacity
-          style={[styles.ringtoneRow, { borderColor: persona.accent }]}
-          onPress={() => router.push('/ringtone-picker' as any)}
-          activeOpacity={0.85}
-        >
-          <Bell size={22} color={persona.accent} />
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.ringtoneLabel, { color: persona.accent }]}>Ringtone</Text>
-            <Text style={styles.ringtoneHint}>
-              Choose what plays when the coach calls — or import your own.
-            </Text>
-          </View>
-          <Text style={[styles.ringtoneArrow, { color: persona.accent }]}>→</Text>
-        </TouchableOpacity>
-
-        {/* Full-screen permission shortcut — needed for true incoming-call UI
-            on Android 14+. Without this toggle, the call shows as a banner
-            even though everything else is wired correctly. */}
-        {Platform.OS === 'android' && (
-          <TouchableOpacity
-            style={[styles.ringtoneRow, { borderColor: Colors.warning + '88', marginTop: 10 }]}
-            onPress={openFullScreenSettings}
-            activeOpacity={0.85}
-          >
-            <Bell size={22} color={Colors.warning} fill={Colors.warning + '40'} />
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.ringtoneLabel, { color: Colors.warning }]}>Enable full-screen calls</Text>
-              <Text style={styles.ringtoneHint}>
-                Required on Android 14+. Without this, calls only show as banners.
-              </Text>
-            </View>
-            <Text style={[styles.ringtoneArrow, { color: Colors.warning }]}>→</Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Persona-aware hero */}
-        <View style={[styles.hero, { backgroundColor: persona.accent }]}>
-          <Text style={[styles.heroEyebrow, { color: persona.ink, opacity: 0.7 }]}>
-            ✦ {styleText(persona, `CALLS FROM ${persona.shortName}`)}
-          </Text>
-          <Text style={[styles.heroTitle, { color: persona.ink }]}>
-            {styleText(persona, "Let your coach\nreach out.")}
-          </Text>
-          <Text style={[styles.heroSub, { color: persona.ink, opacity: 0.75 }]}>
-            Schedule daily wake-up and workout reminders that pop up like an incoming call —
-            in {persona.shortName}&apos;s voice.
-          </Text>
-        </View>
-
-        {loading ? null : (
-          <>
-            {/* ── WAKE-UP CALL ── */}
-            <ReminderCard
-              icon="🌅"
-              title="WAKE-UP CALL"
-              enabled={prefs.wakeupEnabled}
-              onToggle={() => handleEnableWithPermissionCheck('wakeup')}
-              time={format12h(prefs.wakeupHour, prefs.wakeupMinute)}
-              onPressTime={() => setOpenPicker('wakeup')}
-              previewTitle={wakeupCopy.title}
-              previewBody={wakeupCopy.body}
-              accent={persona.accent}
-              nextFireLabel={prefs.wakeupEnabled ? formatNextFire(prefs.wakeupHour, prefs.wakeupMinute) : undefined}
-              onTestPress={() => handleTestCall('wakeup')}
+        <SafeAreaView edges={['left', 'right']} style={styles.body}>
+          {/* Ringtone + full-screen shortcuts stay at the very top of the body so
+              they remain the first thing discovered, as before. */}
+          <Section label="Sound & delivery" style={styles.firstSection}>
+            <ListRow
+              title="Ringtone"
+              subtitle="Choose what plays when the coach calls — or import your own."
+              onPress={() => router.push('/ringtone-picker' as any)}
+              last={Platform.OS !== 'android'}
+              right={
+                <View style={styles.rowTrail}>
+                  <Bell size={18} color={pa.accentText} />
+                  <ChevronRight size={16} color={tokens.textTertiary} />
+                </View>
+              }
             />
 
-            {/* ── WORKOUT REMINDER ── */}
-            <ReminderCard
-              icon="💪"
-              title="WORKOUT REMINDER"
-              enabled={prefs.workoutEnabled}
-              onToggle={() => handleEnableWithPermissionCheck('workout')}
-              time={format12h(prefs.workoutHour, prefs.workoutMinute)}
-              onPressTime={() => setOpenPicker('workout')}
-              previewTitle={workoutCopy.title}
-              previewBody={workoutCopy.body}
-              accent={persona.accent}
-              nextFireLabel={prefs.workoutEnabled ? formatNextFire(prefs.workoutHour, prefs.workoutMinute) : undefined}
-              onTestPress={() => handleTestCall('workout')}
-            />
-
-            {/* Permission hint */}
-            {permission === 'denied' && (
-              <View style={styles.warningCard}>
-                <Text style={styles.warningText}>
-                  ⚠ Notifications are blocked. Open your phone&apos;s Settings → Apps → Evulto →
-                  Notifications to allow them.
-                </Text>
-              </View>
+            {/* Full-screen permission shortcut — needed for true incoming-call UI
+                on Android 14+. Without this toggle, the call shows as a banner
+                even though everything else is wired correctly. */}
+            {Platform.OS === 'android' && (
+              <ListRow
+                title="Enable full-screen calls"
+                subtitle="Required on Android 14+. Without this, calls only show as banners."
+                onPress={openFullScreenSettings}
+                last
+                right={
+                  <View style={styles.rowTrail}>
+                    <Bell size={18} color={tokens.warning} fill={tokens.warning} />
+                    <ChevronRight size={16} color={tokens.textTertiary} />
+                  </View>
+                }
+              />
             )}
+          </Section>
 
-            {/* Footer note */}
-            <Text style={styles.footnote}>
-              Notifications use your phone&apos;s default sound. Times use local time of your device.
-              Switching coaches changes the call text automatically.
-            </Text>
-          </>
-        )}
-      </ScrollView>
+          {loading ? (
+            <Section label="Daily calls" contentStyle={styles.blockStack}>
+              <Skeleton height={238} radius={26} />
+              <Skeleton height={238} radius={26} />
+            </Section>
+          ) : (
+            <>
+              <Section label="Daily calls" contentStyle={styles.blockStack}>
+                {/* ── WAKE-UP CALL ── */}
+                <ReminderBlock
+                  icon="🌅"
+                  title="WAKE-UP CALL"
+                  enabled={prefs.wakeupEnabled}
+                  onToggle={() => handleEnableWithPermissionCheck('wakeup')}
+                  time={format12h(prefs.wakeupHour, prefs.wakeupMinute)}
+                  onPressTime={() => setOpenPicker('wakeup')}
+                  previewTitle={wakeupCopy.title}
+                  previewBody={wakeupCopy.body}
+                  accent={pa.accent}
+                  accentText={pa.accentText}
+                  nextFireLabel={prefs.wakeupEnabled ? formatNextFire(prefs.wakeupHour, prefs.wakeupMinute) : undefined}
+                  onTestPress={() => handleTestCall('wakeup')}
+                />
+
+                <Hairline />
+
+                {/* ── WORKOUT REMINDER ── */}
+                <ReminderBlock
+                  icon="💪"
+                  title="WORKOUT REMINDER"
+                  enabled={prefs.workoutEnabled}
+                  onToggle={() => handleEnableWithPermissionCheck('workout')}
+                  time={format12h(prefs.workoutHour, prefs.workoutMinute)}
+                  onPressTime={() => setOpenPicker('workout')}
+                  previewTitle={workoutCopy.title}
+                  previewBody={workoutCopy.body}
+                  accent={pa.accent}
+                  accentText={pa.accentText}
+                  nextFireLabel={prefs.workoutEnabled ? formatNextFire(prefs.workoutHour, prefs.workoutMinute) : undefined}
+                  onTestPress={() => handleTestCall('workout')}
+                />
+              </Section>
+
+              {/* Permission hint */}
+              {permission === 'denied' && (
+                <View style={styles.notice}>
+                  <Text style={styles.noticeLabel}>Notifications blocked</Text>
+                  <Text style={styles.noticeText}>
+                    {'⚠ Notifications are blocked. Open your phone’s Settings → Apps → Evulto → Notifications to allow them.'}
+                  </Text>
+                </View>
+              )}
+
+              {/* Footer note */}
+              <Text style={styles.footnote}>
+                {'Notifications use your phone’s default sound. Times use local time of your device. Switching coaches changes the call text automatically.'}
+              </Text>
+            </>
+          )}
+        </SafeAreaView>
+      </CanvasScreen>
 
       {/* Time pickers (rendered on top of the screen when open) */}
       {openPicker === 'wakeup' && (
@@ -293,17 +324,17 @@ export default function CoachRemindersScreen() {
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Reminder card sub-component
+// Reminder block sub-component
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ReminderCard({
-  icon, title, enabled, onToggle, time, onPressTime, previewTitle, previewBody, accent,
-  nextFireLabel, onTestPress,
+function ReminderBlock({
+  icon, title, enabled, onToggle, time, onPressTime, previewTitle, previewBody,
+  accent, accentText, nextFireLabel, onTestPress,
 }: {
   icon: string;
   title: string;
@@ -314,63 +345,83 @@ function ReminderCard({
   previewTitle: string;
   previewBody: string;
   accent: string;
+  accentText: string;
   nextFireLabel?: string;
   onTestPress: () => void;
 }) {
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const { clock, meridiem } = splitClock(time);
+  // The clock is the block's hero, so it takes full ink rather than the accent —
+  // that keeps the persona colour spent on the toggle, the next-fire line and
+  // the test CTA. Disabled still reads as disabled via the tertiary ink.
+  const clockInk = enabled ? tokens.text : tokens.textTertiary;
+
   return (
-    <View style={[styles.card, enabled && { borderColor: accent }]}>
+    <View style={styles.block}>
       {/* Top row: icon, title, toggle */}
-      <View style={styles.cardTop}>
-        <View style={styles.cardLeft}>
-          <Text style={styles.cardIcon}>{icon}</Text>
-          <Text style={styles.cardTitle}>{title}</Text>
-        </View>
+      <View style={styles.blockHead}>
+        <Text style={styles.blockLabel} numberOfLines={1}>
+          {icon}  {title}
+        </Text>
         <Switch
           value={enabled}
           onValueChange={onToggle}
-          trackColor={{ false: '#3a3a3a', true: accent }}
-          thumbColor="#fff"
+          trackColor={{ false: tokens.borderStrong, true: accent }}
+          // crownText is pure white in BOTH schemes — the thumb has to stay light
+          // on the coloured track, so it cannot follow the page's surface token.
+          thumbColor={tokens.crownText}
         />
       </View>
 
-      {/* Time row */}
-      <TouchableOpacity
-        style={[styles.timeRow, !enabled && styles.timeRowDisabled]}
+      {/* The hero of the block: the clock itself. */}
+      <PressableScale
         onPress={onPressTime}
         disabled={!enabled}
-        activeOpacity={0.7}
+        haptic="light"
+        scaleTo={0.97}
+        accessibilityRole="button"
+        accessibilityLabel={`${title} time, ${time}. Change time.`}
+        accessibilityState={{ disabled: !enabled }}
+        style={styles.timePress}
       >
-        <Text style={styles.timeRowLabel}>TIME</Text>
-        <Text style={[styles.timeRowValue, { color: enabled ? accent : Colors.textTertiary }]}>
-          {time}
-        </Text>
-        <Text style={[styles.timeRowChevron, !enabled && { color: Colors.textTertiary }]}>›</Text>
-      </TouchableOpacity>
-
-      {/* Preview of the actual notification */}
-      <View style={styles.preview}>
-        <Text style={styles.previewLabel}>NOTIFICATION PREVIEW</Text>
-        <View style={styles.previewBox}>
-          <Text style={styles.previewTitle}>{previewTitle}</Text>
-          <Text style={styles.previewBody}>{previewBody}</Text>
+        <View style={styles.timeRow}>
+          <Text style={[styles.clock, { color: clockInk }]} numberOfLines={1}>
+            {clock}
+          </Text>
+          <Text style={styles.meridiem}>{meridiem}</Text>
         </View>
-      </View>
+        <Text style={styles.timeCaption} numberOfLines={1}>Time · tap to change</Text>
+      </PressableScale>
 
       {/* Next-fire hint */}
       {nextFireLabel && (
-        <Text style={[styles.nextFire, { color: accent }]}>⏰  {nextFireLabel}</Text>
+        <Text style={[styles.nextFire, { color: accentText }]} numberOfLines={1}>
+          ⏰  {nextFireLabel}
+        </Text>
       )}
 
+      {/* Preview of the actual notification */}
+      <Text style={styles.previewLabel} numberOfLines={1}>Notification preview</Text>
+      <View style={styles.previewBox}>
+        <Text style={styles.previewTitle}>{previewTitle}</Text>
+        <Text style={styles.previewBody}>{previewBody}</Text>
+      </View>
+
       {/* TEST NOW button — always available, even when reminder is off */}
-      <TouchableOpacity
-        style={[styles.testBtn, { borderColor: accent }]}
+      <PressableScale
         onPress={onTestPress}
-        activeOpacity={0.7}
+        haptic="heavy"
+        scaleTo={0.97}
+        accessibilityRole="button"
+        accessibilityLabel="Test now, fires in 5 seconds"
+        style={[styles.testBtn, { borderColor: accentText }]}
       >
-        <Text style={[styles.testBtnText, { color: accent }]}>
-          ▶  TEST NOW — fires in 5 seconds
+        <Text style={[styles.testBtnText, { color: accentText }]} numberOfLines={1}>
+          ▶  Test now
         </Text>
-      </TouchableOpacity>
+        <Text style={styles.testBtnHint} numberOfLines={1}>Fires in 5 seconds</Text>
+      </PressableScale>
     </View>
   );
 }
@@ -379,93 +430,151 @@ function ReminderCard({
 // Styles
 // ─────────────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: t.bg },
+  body: { paddingHorizontal: BODY_PAD },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn: { padding: 6, minWidth: 32 },
-  backText: { fontSize: 20, color: Colors.text },
-  headerTitle: { fontFamily: Fonts.display, fontSize: 15, color: Colors.text, letterSpacing: 0.4 },
+  // Section's own top margin is tuned for a mid-page break; the first one sits
+  // right under the crown and needs less.
+  firstSection: { marginTop: 22 },
 
-  scroll: { padding: Spacing.md, paddingBottom: 40 },
+  rowTrail: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
-  // Ringtone shortcut row (top of the screen)
-  ringtoneRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    paddingHorizontal: 14, paddingVertical: 12,
-    borderWidth: 1, borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.02)', marginBottom: 14,
-  },
-  ringtoneEmoji: { fontSize: 22 },
-  ringtoneLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, fontWeight: '700' },
-  ringtoneHint:  { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, marginTop: 3, lineHeight: 15 },
-  ringtoneArrow: { fontFamily: Fonts.display, fontSize: 20 },
+  blockStack: { gap: 22 },
 
-  hero: {
-    borderRadius: 8, padding: 18, marginBottom: 18,
+  // ── Reminder block ─────────────────────────────────────────────────────────
+  block: { paddingVertical: 6 },
+  blockHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
   },
-  heroEyebrow: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginBottom: 6 },
-  heroTitle: { fontFamily: Fonts.display, fontSize: 26, lineHeight: 30, letterSpacing: -0.5 },
-  heroSub: { fontFamily: Fonts.body, fontSize: 13, marginTop: 10, lineHeight: 19 },
+  blockLabel: {
+    flex: 1,
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
 
-  card: {
-    backgroundColor: Colors.surface, borderRadius: 6,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 14, marginBottom: 14,
+  timePress: { alignSelf: 'flex-start' },
+  timeRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 7 },
+  clock: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 58,
+    lineHeight: 60,
+    // -0.045em at 58px.
+    letterSpacing: -2.61,
+    fontVariant: ['tabular-nums'],
   },
-  cardTop: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    marginBottom: 12,
+  meridiem: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 18,
+    letterSpacing: 0.4,
+    color: t.textTertiary,
+    // Lifts the meridiem off the numeral's baseline so it reads as a suffix.
+    paddingBottom: 10,
   },
-  cardLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  cardIcon: { fontSize: 20 },
-  cardTitle: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, letterSpacing: 0.4 },
-
-  timeRow: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingVertical: 12, paddingHorizontal: 12,
-    backgroundColor: Colors.background, borderRadius: 4,
-    borderWidth: 1, borderColor: Colors.border,
+  timeCaption: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    marginTop: 6,
   },
-  timeRowDisabled: { opacity: 0.5 },
-  timeRowLabel: { flex: 1, fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.4 },
-  timeRowValue: { fontFamily: Fonts.display, fontSize: 20, letterSpacing: -0.3 },
-  timeRowChevron: { fontSize: 22, color: Colors.textSecondary, marginLeft: 8 },
-
-  preview: { marginTop: 14 },
-  previewLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4, marginBottom: 6 },
-  previewBox: {
-    backgroundColor: Colors.background, borderRadius: 6,
-    borderWidth: 1, borderColor: Colors.border,
-    padding: 12,
-  },
-  previewTitle: { fontFamily: Fonts.bodySemi, fontSize: 13, color: Colors.text, marginBottom: 4 },
-  previewBody: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, lineHeight: 17 },
 
   nextFire: {
-    fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 0.8,
-    marginTop: 12, textAlign: 'center',
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: 16,
   },
-  testBtn: {
-    marginTop: 10, paddingVertical: 10, borderWidth: 1, borderRadius: 4,
-    alignItems: 'center',
-  },
-  testBtnText: { fontFamily: Fonts.display, fontSize: 11, letterSpacing: 0.6 },
 
-  warningCard: {
-    backgroundColor: 'rgba(239,68,68,0.10)',
-    borderWidth: 1, borderColor: 'rgba(239,68,68,0.35)',
-    borderRadius: 4, padding: 12, marginBottom: 14,
+  previewLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    marginTop: 20,
+    marginBottom: 9,
   },
-  warningText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.error, lineHeight: 17 },
+  previewBox: {
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 22,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+  },
+  previewTitle: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 14,
+    letterSpacing: -0.2,
+    color: t.text,
+    marginBottom: 5,
+  },
+  previewBody: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: t.textSecondary,
+  },
+
+  testBtn: {
+    marginTop: 14,
+    paddingVertical: 13,
+    borderWidth: 1,
+    borderRadius: 24,
+    alignItems: 'center',
+    gap: 3,
+  },
+  testBtnText: {
+    fontFamily: Fonts.displayMedium,
+    fontSize: 12.5,
+    letterSpacing: 0.6,
+  },
+  testBtnHint: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+
+  // ── Permission notice ──────────────────────────────────────────────────────
+  notice: {
+    marginTop: 30,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  noticeLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: t.danger,
+    marginBottom: 7,
+  },
+  noticeText: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: t.textSecondary,
+  },
 
   footnote: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    textAlign: 'center', lineHeight: 14, letterSpacing: 0.4,
-    marginTop: 8, fontStyle: 'italic',
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8.5,
+    lineHeight: 15,
+    letterSpacing: 0.9,
+    color: t.textTertiary,
+    textAlign: 'center',
+    marginTop: 30,
   },
 });

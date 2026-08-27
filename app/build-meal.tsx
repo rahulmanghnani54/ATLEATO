@@ -9,26 +9,46 @@
  *
  * Routed in via:
  *   router.push({ pathname: '/build-meal', params: { mealType, date } })
+ *
+ * Bold Canvas notes — this is a construction utility, so clarity beats drama:
+ *   - No <Crown>. The keyboard is in play the whole time (grams fields + the
+ *     ingredient search), and a full-bleed dark hero would eat the room the
+ *     result list needs. The hero is instead the running kcal total, which is
+ *     the one number that changes as you build.
+ *   - Ingredients and search results are borderless <ListRow>s; every figure is
+ *     a tabular numeral so the column stays still while you edit grams.
+ *   - The accent is spent ONCE, on the pinned "log meal" control. The selected
+ *     meal chip therefore reads as an ink fill, not a second emerald.
  */
 import { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
+  View, Text, TextInput, StyleSheet,
   ActivityIndicator, Alert, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { X as XIcon } from 'lucide-react-native';
+import { ArrowLeft, Search, X as XIcon } from 'lucide-react-native';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
 import { calculateMacrosForServing, type FoodItem } from '@/lib/api/openFoodFacts';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import { Colors, Spacing, Radius, Fonts } from '@/constants/theme';
+import {
+  BigStat, CanvasScreen, Hairline, ListRow, Section, StatRow,
+} from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import { Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import type { MealType } from '@/types/index';
 
 interface MealItem { food: FoodItem; grams: number; }
 
 const MEALS: MealType[] = ['breakfast', 'lunch', 'snack', 'dinner'];
+
+/** Matches Crown's own horizontal inset, so a pushed screen lines up with the tabs. */
+const H_PAD = 22;
+
+/** Placeholder rows while the first page of ingredient results is in flight. */
+const SKELETON_ROWS = [0, 1, 2, 3];
 
 export default function BuildMealScreen() {
   const router = useRouter();
@@ -41,6 +61,9 @@ export default function BuildMealScreen() {
   const [logging, setLogging] = useState(false);
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
+
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const totals = items.reduce(
     (acc, it) => {
@@ -91,207 +114,321 @@ export default function BuildMealScreen() {
   };
 
   const mealLabel = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+  const disabled = items.length === 0 || logging;
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <CanvasScreen scroll={false} topInset tabBar={false} contentStyle={styles.body}>
+      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         {/* Header */}
         <View style={styles.topBar}>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-            <Text style={styles.close}>← cancel</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>BUILD A MEAL</Text>
-          <View style={{ width: 60 }} />
+          <PressableScale
+            onPress={() => router.back()}
+            haptic="light"
+            scaleTo={0.92}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Cancel"
+            style={styles.backBtn}
+          >
+            <ArrowLeft size={19} color={tokens.text} />
+          </PressableScale>
         </View>
 
-        {/* Meal-type chips */}
-        <View style={styles.chipsRow}>
-          {MEALS.map((m) => (
-            <TouchableOpacity
-              key={m}
-              style={[styles.chip, mealType === m && styles.chipActive]}
-              onPress={() => setMealType(m)}
-            >
-              <Text style={[styles.chipText, mealType === m && styles.chipTextActive]}>
-                {m.charAt(0).toUpperCase() + m.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollBody}
+        >
+          {/* Running total — the hero. Ticks as ingredients are added or resized. */}
+          <Text style={styles.eyebrow}>Build a meal</Text>
+          <BigStat value={totals.calories} unit="kcal" label="Running total" size={54} />
 
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          {/* Running total */}
           {items.length > 0 && (
-            <View style={styles.totalCard}>
-              <Text style={styles.totalKcal}>{totals.calories} <Text style={styles.totalKcalUnit}>kcal</Text></Text>
-              <View style={styles.totalMacros}>
-                <Text style={[styles.totalMacro, { color: '#3b82f6' }]}>{totals.proteinG}g P</Text>
-                <Text style={[styles.totalMacro, { color: '#f59e0b' }]}>{totals.carbsG}g C</Text>
-                <Text style={[styles.totalMacro, { color: '#ef4444' }]}>{totals.fatG}g F</Text>
+            <StatRow style={styles.macros}>
+              <View>
+                <BigStat value={totals.proteinG} unit="g" label="Protein" size={27} />
+                {/* A colour KEY, not a progress rail — a built meal has no goal
+                    to fill, so the swatch only names which macro this is. */}
+                <View style={[styles.swatch, { backgroundColor: tokens.macroProtein }]} />
               </View>
-            </View>
+              <View>
+                <BigStat value={totals.carbsG} unit="g" label="Carbs" size={27} />
+                <View style={[styles.swatch, { backgroundColor: tokens.macroCarbs }]} />
+              </View>
+              <View>
+                <BigStat value={totals.fatG} unit="g" label="Fat" size={27} />
+                <View style={[styles.swatch, { backgroundColor: tokens.macroFat }]} />
+              </View>
+            </StatRow>
           )}
+
+          {/* Meal-type chips — wrapped, never a horizontal ScrollView: chip
+              glyphs drop out of a release build inside one. */}
+          <Section label="Log to">
+            <View style={styles.chipsRow}>
+              {MEALS.map((m) => {
+                const on = mealType === m;
+                return (
+                  <PressableScale
+                    key={m}
+                    onPress={() => setMealType(m)}
+                    haptic="light"
+                    scaleTo={0.95}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: on }}
+                    style={[styles.chip, on && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, on && styles.chipTextActive]} numberOfLines={1}>
+                      {m.charAt(0).toUpperCase() + m.slice(1)}
+                    </Text>
+                  </PressableScale>
+                );
+              })}
+            </View>
+          </Section>
 
           {/* Current meal items */}
-          {items.map((it, idx) => {
-            const m = calculateMacrosForServing(it.food, it.grams);
-            return (
-              <View key={`${it.food.name}-${idx}`} style={styles.item}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.itemName} numberOfLines={1}>{it.food.name}</Text>
-                  <Text style={styles.itemMacros}>{m.calories} kcal · {m.proteinG}P {m.carbsG}C {m.fatG}F</Text>
-                </View>
-                <View style={styles.gramsBox}>
-                  <TextInput
-                    style={styles.gramsInput}
-                    value={String(it.grams)}
-                    onChangeText={(t) => setGrams(idx, parseFloat(t) || 0)}
-                    keyboardType="decimal-pad"
-                    selectTextOnFocus
-                  />
-                  <Text style={styles.gramsUnit}>g</Text>
-                </View>
-                <TouchableOpacity onPress={() => removeItem(idx)} hitSlop={10} style={styles.removeBtn}>
-                  <XIcon size={16} color={Colors.textSecondary} />
-                </TouchableOpacity>
-              </View>
-            );
-          })}
+          <Section
+            label="Ingredients"
+            right={
+              items.length > 0 ? (
+                <Text style={styles.sectionCount}>{items.length}</Text>
+              ) : null
+            }
+          >
+            {items.map((it, idx) => {
+              const m = calculateMacrosForServing(it.food, it.grams);
+              return (
+                <ListRow
+                  key={`${it.food.name}-${idx}`}
+                  title={it.food.name}
+                  subtitle={`${m.calories} kcal · ${m.proteinG}P ${m.carbsG}C ${m.fatG}F`}
+                  last={idx === items.length - 1}
+                  right={
+                    <View style={styles.trailing}>
+                      <View style={styles.gramsBox}>
+                        <TextInput
+                          style={styles.gramsInput}
+                          value={String(it.grams)}
+                          onChangeText={(t) => setGrams(idx, parseFloat(t) || 0)}
+                          keyboardType="decimal-pad"
+                          selectionColor={tokens.accent}
+                          selectTextOnFocus
+                          accessibilityLabel={`Grams of ${it.food.name}`}
+                        />
+                        <Text style={styles.gramsUnit}>g</Text>
+                      </View>
+                      <PressableScale
+                        onPress={() => removeItem(idx)}
+                        haptic="light"
+                        scaleTo={0.88}
+                        hitSlop={10}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Remove ${it.food.name}`}
+                        style={styles.removeBtn}
+                      >
+                        <XIcon size={16} color={tokens.textTertiary} />
+                      </PressableScale>
+                    </View>
+                  }
+                />
+              );
+            })}
 
-          {items.length === 0 && (
-            <Text style={styles.emptyHint}>Search below and tap foods to add them to this meal.</Text>
-          )}
+            {items.length === 0 && (
+              <Text style={styles.emptyHint}>
+                Search below and tap foods to add them to this meal.
+              </Text>
+            )}
+          </Section>
 
           {/* Add-ingredient search */}
-          <Text style={styles.sectionLabel}>ADD INGREDIENT</Text>
-          <View style={styles.searchRow}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search a food to add…"
-              placeholderTextColor={Colors.textTertiary}
-              value={query}
-              onChangeText={setQuery}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {query.length > 0 && (
-              <TouchableOpacity onPress={() => setQuery('')} hitSlop={8}>
-                <Text style={styles.clearBtn}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          <Section label="Add ingredient">
+            <View style={styles.searchRow}>
+              <Search size={18} color={tokens.textTertiary} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search a food to add…"
+                placeholderTextColor={tokens.textTertiary}
+                selectionColor={tokens.accent}
+                value={query}
+                onChangeText={setQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {query.length > 0 && (
+                <PressableScale
+                  onPress={() => setQuery('')}
+                  haptic="light"
+                  scaleTo={0.9}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Clear search"
+                  style={styles.clearBtn}
+                >
+                  <XIcon size={15} color={tokens.textSecondary} />
+                </PressableScale>
+              )}
+            </View>
 
-          {isFetching && query.length >= 2 && <ActivityIndicator color={Colors.primary} style={{ marginVertical: 12 }} />}
-
-          {results.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.result} onPress={() => addItem(item)} activeOpacity={0.7}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.resultName} numberOfLines={1}>{item.name}</Text>
-                {item.brand && <Text style={styles.resultBrand} numberOfLines={1}>{item.brand}</Text>}
+            {isFetching && query.length >= 2 && (
+              <View style={styles.loading}>
+                {/* A hairline shimmer always marks the fetch. Full placeholder
+                    rows only when there is nothing cached to keep on screen —
+                    otherwise they'd shove the previous results down mid-typing. */}
+                <Skeleton height={3} radius={999} />
+                {results.length === 0 && (
+                  <View>
+                    {SKELETON_ROWS.map((i) => (
+                      <View key={i}>
+                        <View style={styles.skeletonRow}>
+                          <View style={styles.skeletonText}>
+                            <Skeleton height={14} width={i % 2 === 0 ? '72%' : '54%'} radius={4} />
+                            <Skeleton height={10} width="32%" radius={4} />
+                          </View>
+                          <Skeleton height={22} width={44} radius={4} />
+                        </View>
+                        <Hairline />
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
-              <Text style={styles.resultKcal}>{Math.round(item.calories100g)}<Text style={styles.resultKcalUnit}> kcal/100g</Text></Text>
-            </TouchableOpacity>
-          ))}
+            )}
 
-          <View style={{ height: 120 }} />
+            {results.map((item, idx) => (
+              <ListRow
+                key={item.id}
+                title={item.name}
+                subtitle={item.brand ? item.brand : undefined}
+                onPress={() => addItem(item)}
+                last={idx === results.length - 1}
+                right={
+                  <View style={styles.kcalBadge}>
+                    <Text style={styles.kcalNum}>{Math.round(item.calories100g)}</Text>
+                    <Text style={styles.kcalUnit}>kcal/100g</Text>
+                  </View>
+                }
+              />
+            ))}
+          </Section>
         </ScrollView>
 
-        {/* Log button */}
+        {/* Log button — in flow, so it reserves its own room and nothing can
+            scroll underneath it. */}
+        <Hairline style={styles.footerRule} />
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.logBtn, (items.length === 0 || logging) && { opacity: 0.4 }]}
+          <PressableScale
             onPress={logMeal}
-            disabled={items.length === 0 || logging}
-            activeOpacity={0.85}
+            disabled={disabled}
+            haptic="heavy"
+            scaleTo={0.97}
+            accessibilityRole="button"
+            accessibilityState={{ disabled }}
+            // The hairline is load-bearing: brand emerald is 2.54:1 on white, so
+            // this outline is what gives the control an identifiable edge.
+            style={styles.logBtn}
           >
             {logging ? (
-              <ActivityIndicator color={Colors.accentInk} />
+              <ActivityIndicator color={tokens.accentInk} />
             ) : (
               <Text style={styles.logBtnText}>
                 LOG MEAL TO {mealLabel.toUpperCase()}{items.length > 0 ? `  ·  ${items.length} item${items.length > 1 ? 's' : ''}` : ''}
               </Text>
             )}
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
-  topBar: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: 16, paddingVertical: 12,
-  },
-  close: { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textSecondary },
-  title: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text, letterSpacing: 1.4 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  fill: { flex: 1 },
+  body: { paddingHorizontal: H_PAD },
+  scrollBody: { paddingBottom: 28 },
 
-  chipsRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, marginBottom: Spacing.sm },
+  topBar: { flexDirection: 'row', alignItems: 'center', minHeight: 40, marginBottom: 18 },
+  backBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    borderWidth: 1, borderColor: t.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  eyebrow: {
+    fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.7,
+    textTransform: 'uppercase', color: t.textTertiary, marginBottom: 12,
+  },
+
+  macros: { marginTop: 26 },
+  swatch: { height: 3, width: 20, marginTop: 9 },
+
+  chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: {
-    flex: 1, paddingVertical: 8, borderRadius: Radius.sm, borderWidth: 1,
-    borderColor: Colors.border, alignItems: 'center',
+    backgroundColor: t.surfaceAlt, borderRadius: 999,
+    paddingHorizontal: 15, paddingVertical: 9,
   },
-  chipActive: { borderColor: Colors.primary, backgroundColor: 'rgba(224,90,38,0.10)' },
-  chipText: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textSecondary },
-  chipTextActive: { color: Colors.primary },
+  // Ink, not emerald: the accent is spent once, on the log control.
+  chipActive: { backgroundColor: t.text },
+  chipText: { fontFamily: Fonts.bodySemi, fontSize: 12.5, color: t.textSecondary, letterSpacing: -0.1 },
+  chipTextActive: { color: t.bg },
 
-  totalCard: {
-    marginHorizontal: 16, marginBottom: Spacing.md, padding: Spacing.md,
-    backgroundColor: Colors.surface, borderRadius: Radius.lg,
-    borderWidth: 1, borderColor: Colors.border,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  sectionCount: {
+    fontFamily: Fonts.displayBold, fontSize: 13, color: t.textTertiary,
+    letterSpacing: -0.3, fontVariant: ['tabular-nums'],
   },
-  totalKcal: { fontFamily: Fonts.display, fontSize: 28, color: Colors.text },
-  totalKcalUnit: { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textTertiary },
-  totalMacros: { flexDirection: 'row', gap: 12 },
-  totalMacro: { fontFamily: Fonts.bodyBold, fontSize: 14 },
 
-  item: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    marginHorizontal: 16, paddingVertical: 10,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  itemName: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text },
-  itemMacros: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textTertiary, marginTop: 2 },
-  gramsBox: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  trailing: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  gramsBox: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   gramsInput: {
-    width: 56, height: 38, textAlign: 'center',
-    backgroundColor: Colors.raised, borderRadius: Radius.sm,
-    borderWidth: 1, borderColor: Colors.border,
-    fontFamily: 'Inter_600SemiBold', fontSize: 14, color: Colors.text,
+    width: 58, height: 38, textAlign: 'center',
+    backgroundColor: t.surfaceAlt, borderRadius: 19,
+    fontFamily: Fonts.displayMedium, fontSize: 15, color: t.text,
+    letterSpacing: -0.2, fontVariant: ['tabular-nums'],
   },
-  gramsUnit: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textTertiary },
-  removeBtn: { padding: 4 },
+  gramsUnit: { fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.2, color: t.textTertiary },
+  removeBtn: { padding: 6 },
 
   emptyHint: {
-    fontFamily: Fonts.body, fontSize: 13, color: Colors.textTertiary,
-    textAlign: 'center', marginVertical: Spacing.lg, paddingHorizontal: 24,
+    fontFamily: Fonts.body, fontSize: 13.5, color: t.textTertiary,
+    lineHeight: 20, paddingVertical: 4,
   },
 
-  sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.6, marginTop: Spacing.md, marginBottom: 8, marginHorizontal: 16,
-  },
   searchRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginHorizontal: 16, marginBottom: Spacing.sm,
-    backgroundColor: Colors.surface, borderRadius: Radius.md,
-    borderWidth: 1, borderColor: Colors.border, paddingHorizontal: Spacing.md,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: t.surfaceAlt, borderRadius: 27,
+    paddingHorizontal: 18, height: 54,
   },
-  searchInput: { flex: 1, height: 48, fontFamily: 'Inter_400Regular', fontSize: 15, color: Colors.text },
-  clearBtn: { fontSize: 14, color: Colors.textSecondary, padding: 4 },
-
-  result: {
-    flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  searchInput: {
+    flex: 1, height: 54,
+    fontFamily: Fonts.body, fontSize: 15, color: t.text,
   },
-  resultName: { fontFamily: 'Inter_600SemiBold', fontSize: 14, color: Colors.text },
-  resultBrand: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
-  resultKcal: { fontFamily: 'Inter_700Bold', fontSize: 14, color: Colors.primary },
-  resultKcalUnit: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary },
+  clearBtn: { padding: 4 },
 
-  footer: { padding: 16, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.bg },
-  logBtn: { backgroundColor: Colors.primary, borderRadius: Radius.md, paddingVertical: 16, alignItems: 'center' },
-  logBtnText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 0.6 },
+  loading: { marginTop: 18, gap: 20 },
+  skeletonRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 15 },
+  skeletonText: { flex: 1, gap: 8 },
+
+  kcalBadge: { alignItems: 'flex-end', gap: 2 },
+  kcalNum: {
+    fontFamily: Fonts.displayBold, fontSize: 21, lineHeight: 22,
+    letterSpacing: -0.95, color: t.text, fontVariant: ['tabular-nums'],
+  },
+  kcalUnit: {
+    fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.2, color: t.textTertiary,
+  },
+
+  footerRule: { marginHorizontal: -H_PAD },
+  footer: { paddingTop: 16 },
+  logBtn: {
+    backgroundColor: t.accent,
+    borderWidth: 1, borderColor: t.accentLine,
+    borderRadius: 29, minHeight: 58,
+    alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 10, paddingHorizontal: 16,
+  },
+  logBtnText: {
+    fontFamily: Fonts.bodySemi, fontSize: 12, color: t.accentInk, letterSpacing: 1.2,
+    textAlign: 'center',
+  },
 });

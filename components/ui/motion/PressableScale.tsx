@@ -8,8 +8,8 @@
  * - Fires a haptic on press-in (Medium by default; 'heavy' for big actions,
  *   'light' for list rows). No-ops silently if haptics are unavailable.
  */
-import React, { useCallback } from 'react';
-import { Pressable, type PressableProps, type ViewStyle, type StyleProp } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { Pressable, StyleSheet, type PressableProps, type ViewStyle, type StyleProp } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -27,6 +27,36 @@ const IMPACT: Record<Weight, Haptics.ImpactFeedbackStyle> = {
 
 // Snappy spring — high stiffness, low mass = fast + a touch of bounce (punchy).
 const PRESS_SPRING = { damping: 15, stiffness: 400, mass: 0.5 };
+
+/**
+ * Style keys that size or place the component in its PARENT. These have to live
+ * on the outer animated wrapper: the wrapper is what the parent lays out, so a
+ * `flex: 1` sitting on the inner Pressable is inert and the button silently
+ * shrink-wraps its text instead of filling the row. (That shipped in four
+ * places before it was caught.) Everything else — padding, background, radius,
+ * alignment — stays inside, where it paints the button itself.
+ */
+const LAYOUT_KEYS = [
+  'flex', 'flexGrow', 'flexShrink', 'flexBasis', 'alignSelf',
+  'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight',
+  'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+  'marginHorizontal', 'marginVertical', 'marginStart', 'marginEnd',
+  'position', 'top', 'right', 'bottom', 'left', 'zIndex',
+] as const;
+
+/** Split a flattened style into [outer layout box, inner paint]. */
+function splitStyle(style: StyleProp<ViewStyle>): [ViewStyle | null, ViewStyle | null] {
+  const flat = StyleSheet.flatten(style) as Record<string, unknown> | undefined;
+  if (!flat) return [null, null];
+  const outer: Record<string, unknown> = {};
+  const inner: Record<string, unknown> = {};
+  let hasOuter = false;
+  for (const k of Object.keys(flat)) {
+    if ((LAYOUT_KEYS as readonly string[]).includes(k)) { outer[k] = flat[k]; hasOuter = true; }
+    else inner[k] = flat[k];
+  }
+  return [hasOuter ? (outer as ViewStyle) : null, inner as ViewStyle];
+}
 
 export interface PressableScaleProps extends Omit<PressableProps, 'style'> {
   children: React.ReactNode;
@@ -70,13 +100,18 @@ export function PressableScale({
     [scale, onPressOut],
   );
 
+  const [outerStyle, innerStyle] = useMemo(() => splitStyle(style), [style]);
+
   return (
-    <Animated.View style={[animStyle, disabled && { opacity: 0.5 }]}>
+    // The wrapper carries the layout box. A View defaults to alignItems:'stretch',
+    // so the Pressable fills whatever width the wrapper is given — no extra flex
+    // needed on the inner element.
+    <Animated.View style={[outerStyle, animStyle, disabled && { opacity: 0.5 }]}>
       <Pressable
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         disabled={disabled}
-        style={style}
+        style={innerStyle}
         {...rest}
       >
         {children}

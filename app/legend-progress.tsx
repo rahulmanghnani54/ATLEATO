@@ -1,84 +1,56 @@
-import { useEffect, useState, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-} from 'react-native';
+/**
+ * /legend-progress — the XP ladder for the chosen coach's path.
+ *
+ * Bold Canvas: the crown carries the whole hero — the XP total as the oversized
+ * numeral, the rank name on the accent line, and the run to the next rank as a
+ * slim ledger track instead of a ring. The light body is two hairline-ruled
+ * lists and nothing else: where XP comes from, and where the ladder goes next.
+ *
+ * The RANK colour, not the persona accent, is this screen's one accent — it is
+ * the value that actually moves. The persona accent only stands in while the
+ * rank is still unknown (loading / failed load), exactly as it did before.
+ */
+
+import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Text, View, type DimensionValue } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Svg, { Circle } from 'react-native-svg';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { CanvasScreen, Crown, Hairline, ListRow, Section } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import { Fonts } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
-import { personaFromProgramId } from '@/lib/personaTheme';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import {
   getLevel, getMilestones, XP_AWARDS,
   type LevelInfo, type LevelName,
 } from '@/lib/legendProgression';
 
-// ─── XP Ring (SVG circle) ────────────────────────────────────────────────────
+const BODY_PAD = 22; // matches Crown's own horizontal padding
 
-const RING_SIZE = 180;
-const STROKE = 12;
-const R = (RING_SIZE - STROKE) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * R;
-
-function XPRing({
-  progress, color, xp, levelTitle,
-}: {
-  progress: number; color: string; xp: number; levelTitle: string;
-}) {
-  const strokeDash = CIRCUMFERENCE * (1 - Math.max(0, Math.min(1, progress)));
-  return (
-    <View style={styles.ringWrap}>
-      <Svg width={RING_SIZE} height={RING_SIZE}>
-        {/* Track */}
-        <Circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={R}
-          strokeWidth={STROKE}
-          stroke={Colors.border}
-          fill="none"
-        />
-        {/* Progress */}
-        <Circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={R}
-          strokeWidth={STROKE}
-          stroke={color}
-          fill="none"
-          strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-          strokeDashoffset={strokeDash}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
-        />
-      </Svg>
-      <View style={styles.ringCenter}>
-        <Text style={[styles.ringXP, { color }]}>{xp.toLocaleString()}</Text>
-        <Text style={styles.ringXPLabel}>XP</Text>
-        <Text style={styles.ringLevel}>{levelTitle}</Text>
-      </View>
-    </View>
-  );
+/**
+ * Rank colours resolved against one scheme's tokens. The crown is near-black in
+ * BOTH schemes, so it always reads the DARK set — the light amber/blue tones go
+ * muddy on ink, the same reason the persona tint is resolved dark up there.
+ */
+function levelColors(t: SemanticTokens): Record<LevelName, string> {
+  return {
+    Rookie:  t.textSecondary,
+    Grinder: t.warning,
+    Athlete: t.info,
+    Elite:   t.success,
+    Legend:  t.accent,
+  };
 }
-
-// ─── Level color map ──────────────────────────────────────────────────────────
-
-const LEVEL_COLORS: Record<LevelName, string> = {
-  Rookie:  Colors.textSecondary,
-  Grinder: Colors.warning,
-  Athlete: Colors.info,
-  Elite:   Colors.success,
-  Legend:  Colors.primary,
-};
-
-// ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function LegendProgressScreen() {
   const router = useRouter();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const { profile } = useAuthStore();
   const persona = personaFromProgramId(profile?.selected_program);
-  const accentColor = persona.accent;
+  const pa = personaAccent(persona, scheme);
+  const accentColor = pa.accent;
 
   const [levelInfo, setLevelInfo] = useState<LevelInfo | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'error' | 'done'>('loading');
@@ -95,7 +67,13 @@ export default function LegendProgressScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const xpColor = levelInfo ? LEVEL_COLORS[levelInfo.level] : accentColor;
+  const bodyLevels = levelColors(tokens);
+  const crownColor = levelInfo
+    ? levelColors(TOKENS.dark)[levelInfo.level]
+    : personaAccent(persona, 'dark').accent;
+
+  const pct = levelInfo ? Math.round(levelInfo.progress * 100) : 0;
+  const trackWidth: DimensionValue = `${pct}%`;
 
   // XP breakdown estimates (stored in a simple breakdown key if available, otherwise shown as guide)
   const XP_SOURCE_LABELS = [
@@ -105,205 +83,246 @@ export default function LegendProgressScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>LEGEND PROGRESS</Text>
-        <View style={{ width: 32 }} />
-      </View>
+    <CanvasScreen tabBar={false} bottomSpace={40}>
+      {/* ── CROWN — XP is the one hero numeral on this screen ── */}
+      <Crown
+        eyebrow={`LEGEND PROGRESS · ${persona.shortName} PATH`}
+        title={levelInfo ? levelInfo.xp.toLocaleString() : '—'}
+        accentLine={levelInfo ? `XP · ${levelInfo.level.toUpperCase()}` : undefined}
+        meta={levelInfo ? levelInfo.persona_title.toUpperCase() : undefined}
+        accent={crownColor}
+        onBack={() => router.back()}
+      >
+        {levelInfo && levelInfo.level !== 'Legend' ? (
+          <View style={styles.crownBlock}>
+            <View style={styles.crownRow}>
+              <Text style={styles.crownLabel}>NEXT LEVEL</Text>
+              <Text style={styles.crownPct}>{pct}%</Text>
+            </View>
+            <View style={styles.crownTrack}>
+              <View style={[styles.crownFill, { width: trackWidth, backgroundColor: crownColor }]} />
+            </View>
+            <Text style={styles.crownMeta}>
+              {(levelInfo.nextThreshold - levelInfo.xp).toLocaleString()} XP to go
+            </Text>
+          </View>
+        ) : null}
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {levelInfo && levelInfo.level === 'Legend' ? (
+          <View style={styles.crownBlock}>
+            <Text style={[styles.crownLabel, { color: crownColor }]}>👑 MAX RANK REACHED</Text>
+            <Text style={styles.crownMeta}>You've reached the top. True legend status.</Text>
+          </View>
+        ) : null}
+      </Crown>
 
-        {/* Persona label */}
-        <Text style={[styles.personaLabel, { color: accentColor }]}>
-          {persona.shortName} PATH
-        </Text>
-
-        {loadState === 'loading' && !levelInfo && (
-          <ActivityIndicator color={accentColor} style={{ marginTop: 48 }} />
-        )}
-
-        {loadState === 'error' && !levelInfo && (
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        {/* ── Load failure — the retry is the only action, so it takes the fill ── */}
+        {loadState === 'error' && !levelInfo ? (
           <View style={styles.errorBox}>
             <Text style={styles.errorTitle}>Couldn't load your progress</Text>
             <Text style={styles.errorBody}>Check your connection and try again.</Text>
-            <TouchableOpacity style={[styles.retryBtn, { borderColor: accentColor }]} onPress={load}>
-              <Text style={[styles.retryText, { color: accentColor }]}>RETRY</Text>
-            </TouchableOpacity>
+            <PressableScale
+              onPress={load}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading your progress"
+              // The persona accent is under 3:1 on white, so the fill carries the
+              // persona's deeper tone as its edge — same rule as the day cells.
+              style={[styles.retryBtn, { backgroundColor: accentColor, borderColor: pa.accentText }]}
+            >
+              <Text style={[styles.retryText, { color: pa.ink }]}>RETRY</Text>
+            </PressableScale>
           </View>
-        )}
+        ) : null}
 
-        {/* XP Ring */}
-        {levelInfo && (
-          <>
-            <View style={styles.ringRow}>
-              <XPRing
-                progress={levelInfo.progress}
-                color={xpColor}
-                xp={levelInfo.xp}
-                levelTitle={levelInfo.level}
-              />
-            </View>
-
-            {/* Persona title */}
-            <Text style={[styles.personaTitle, { color: xpColor }]}>
-              {levelInfo.persona_title.toUpperCase()}
-            </Text>
-
-            {/* XP to next level */}
-            {levelInfo.level !== 'Legend' && (
-              <View style={styles.nextLevelCard}>
-                <Text style={styles.nextLevelLabel}>NEXT LEVEL</Text>
-                <Text style={styles.nextLevelXP}>
-                  {(levelInfo.nextThreshold - levelInfo.xp).toLocaleString()} XP to go
-                </Text>
-                <View style={styles.progressBarTrack}>
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      { width: `${Math.round(levelInfo.progress * 100)}%` as any, backgroundColor: xpColor },
-                    ]}
-                  />
-                </View>
-                <Text style={styles.progressPct}>{Math.round(levelInfo.progress * 100)}%</Text>
-              </View>
-            )}
-
-            {levelInfo.level === 'Legend' && (
-              <View style={[styles.nextLevelCard, { borderColor: `${Colors.primary}55` }]}>
-                <Text style={[styles.nextLevelLabel, { color: Colors.primary }]}>👑 MAX RANK REACHED</Text>
-                <Text style={styles.nextLevelXP}>You've reached the top. True legend status.</Text>
-              </View>
-            )}
-          </>
-        )}
-
-        {/* XP Sources */}
-        <Text style={styles.sectionLabel}>HOW TO EARN XP</Text>
-        <View style={styles.card}>
+        <Section label="How to earn XP">
           {XP_SOURCE_LABELS.map((src, i) => (
-            <View key={src.label} style={[styles.xpRow, i < XP_SOURCE_LABELS.length - 1 && styles.rowDivider]}>
-              <Text style={styles.xpIcon}>{src.icon}</Text>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.xpLabel}>{src.label}</Text>
-                <Text style={styles.xpSub}>{src.sub}</Text>
-              </View>
-              <Text style={[styles.xpAmount, { color: xpColor }]}>+{src.xpEach}</Text>
-            </View>
+            <ListRow
+              key={src.label}
+              title={`${src.icon}  ${src.label}`}
+              subtitle={src.sub}
+              last={i === XP_SOURCE_LABELS.length - 1}
+              right={<Text style={styles.xpAmount}>+{src.xpEach}</Text>}
+            />
           ))}
-        </View>
+        </Section>
 
-        {/* Milestones timeline */}
-        <Text style={styles.sectionLabel}>MILESTONES</Text>
-        <View style={styles.card}>
-          {milestones.map((m, i) => (
-            <View key={m.level} style={[styles.milestoneRow, i < milestones.length - 1 && styles.rowDivider]}>
-              <View style={[
-                styles.milestoneDot,
-                { backgroundColor: m.reached ? LEVEL_COLORS[m.level] : Colors.raised },
-                m.reached && { shadowColor: LEVEL_COLORS[m.level], shadowOpacity: 0.6, shadowRadius: 6, elevation: 4 },
-              ]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.milestoneName, m.reached && { color: LEVEL_COLORS[m.level] }]}>
-                  {m.level.toUpperCase()}
-                </Text>
-                <Text style={styles.milestoneXP}>
-                  {m.reached
-                    ? '✓ Reached'
-                    : `${m.xpNeeded.toLocaleString()} XP needed`}
-                </Text>
-              </View>
-              <Text style={[styles.milestoneThreshold, m.reached && { color: LEVEL_COLORS[m.level] }]}>
-                {m.threshold.toLocaleString()} XP
-              </Text>
+        <Section label="Milestones">
+          {milestones.length === 0 && loadState === 'loading' ? (
+            /* Shaped like the four rank rows, so the ladder looks built while
+               getLevel() resolves rather than flashing an empty column. */
+            <View style={styles.loading}>
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} height={46} radius={0} />
+              ))}
             </View>
-          ))}
-        </View>
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
+          ) : (
+            milestones.map((m, i) => {
+              const rank = bodyLevels[m.level];
+              // The Legend marker IS the brand accent, only 2.54:1 on white, so
+              // it takes the accent hairline; the other ranks take a neutral one.
+              const edge = m.level === 'Legend' ? tokens.accentLine : tokens.borderStrong;
+              return (
+                <View key={m.level}>
+                  <View style={styles.milestoneRow}>
+                    <View
+                      style={[
+                        styles.milestoneMark,
+                        m.reached
+                          ? { backgroundColor: rank, borderWidth: 1, borderColor: edge }
+                          : { backgroundColor: tokens.border },
+                      ]}
+                    />
+                    <View style={styles.milestoneText}>
+                      <Text style={[styles.milestoneName, m.reached && { color: rank }]} numberOfLines={1}>
+                        {m.level.toUpperCase()}
+                      </Text>
+                      <Text style={styles.milestoneSub} numberOfLines={1}>
+                        {m.reached
+                          ? '✓ Reached'
+                          : `${m.xpNeeded.toLocaleString()} XP needed`}
+                      </Text>
+                    </View>
+                    <View style={styles.milestoneValue}>
+                      <Text style={[styles.milestoneThreshold, m.reached && { color: rank }]}>
+                        {m.threshold.toLocaleString()}
+                      </Text>
+                      <Text style={styles.milestoneUnit}>XP</Text>
+                    </View>
+                  </View>
+                  {i < milestones.length - 1 ? <Hairline /> : null}
+                </View>
+              );
+            })
+          )}
+        </Section>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: Colors.bg },
-  scroll: { padding: Spacing.md, paddingBottom: 48 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  // ── Crown progress — a slim ledger track, square-cornered like the grids ──
+  crownBlock: { marginTop: 22 },
+  crownRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 10,
   },
-  backBtn:     { width: 32 },
-  backText:    { fontSize: 22, color: Colors.text },
-  headerTitle: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6 },
-
-  personaLabel: {
-    fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 2, textAlign: 'center', marginTop: 20,
+  crownLabel: {
+    flexShrink: 1,
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: t.crownTextDim,
+  },
+  crownPct: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    color: t.crownText,
+    fontVariant: ['tabular-nums'],
+  },
+  crownTrack: {
+    height: 5,
+    borderRadius: 0,
+    overflow: 'hidden',
+    backgroundColor: t.crownLine,
+  },
+  crownFill: { height: '100%' },
+  crownMeta: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    marginTop: 9,
+    color: t.crownTextDim,
   },
 
   // ── Load-failure state ──
-  errorBox: { alignItems: 'center', marginTop: 48, paddingHorizontal: 32, gap: 8 },
-  errorTitle: { fontFamily: Fonts.displayMedium, fontSize: 16, color: Colors.text },
-  errorBody: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, textAlign: 'center' },
+  errorBox: { marginTop: 34 },
+  errorTitle: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 27,
+    lineHeight: 31,
+    // -0.04em at 27px.
+    letterSpacing: -1.08,
+    color: t.text,
+  },
+  errorBody: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+    marginTop: 8,
+    color: t.textSecondary,
+  },
   retryBtn: {
-    marginTop: 10, paddingHorizontal: 26, paddingVertical: 10,
-    borderRadius: 8, borderWidth: 1.5,
+    alignSelf: 'flex-start',
+    marginTop: 20,
+    height: 46,
+    paddingHorizontal: 30,
+    borderRadius: 23,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  retryText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 1.2 },
-
-  ringRow: { alignItems: 'center', marginTop: 12, marginBottom: 8 },
-  ringWrap: {
-    width: 180, height: 180,
-    alignItems: 'center', justifyContent: 'center',
-    position: 'relative',
-  },
-  ringCenter: {
-    position: 'absolute', alignItems: 'center', justifyContent: 'center',
-  },
-  ringXP: { fontFamily: Fonts.display, fontSize: 34, letterSpacing: -1 },
-  ringXPLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4, marginTop: -4 },
-  ringLevel:   { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1.2, marginTop: 4 },
-
-  personaTitle: {
-    fontFamily: Fonts.display, fontSize: 22, textAlign: 'center',
-    letterSpacing: -0.5, marginBottom: 20,
+  retryText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 10,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
   },
 
-  nextLevelCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, padding: 16, marginBottom: 24,
+  // ── XP sources ──
+  xpAmount: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 27,
+    lineHeight: 28,
+    letterSpacing: -1.08,
+    color: t.text,
+    fontVariant: ['tabular-nums'],
   },
-  nextLevelLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4, marginBottom: 4 },
-  nextLevelXP:    { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text, marginBottom: 12 },
-  progressBarTrack: {
-    height: 6, backgroundColor: Colors.raised, borderRadius: 3, overflow: 'hidden', marginBottom: 6,
-  },
-  progressBarFill: { height: '100%', borderRadius: 3 },
-  progressPct: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, textAlign: 'right' },
 
-  sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.8, marginBottom: 10, marginTop: 4,
+  // ── Milestones ──
+  loading: { gap: 12 },
+  milestoneRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    paddingVertical: 15,
   },
-  card: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, overflow: 'hidden', marginBottom: 24,
+  milestoneMark: { width: 11, height: 11, borderRadius: 0 },
+  milestoneText: { flex: 1, gap: 3 },
+  milestoneName: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 14,
+    letterSpacing: 0.6,
+    color: t.textSecondary,
   },
-  rowDivider: { borderBottomWidth: 1, borderBottomColor: Colors.border },
-
-  xpRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  xpIcon:   { fontSize: 20 },
-  xpLabel:  { fontFamily: Fonts.bodyMedium, fontSize: 13, color: Colors.text },
-  xpSub:    { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.4 },
-  xpAmount: { fontFamily: Fonts.display, fontSize: 16 },
-
-  milestoneRow: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  milestoneDot: { width: 12, height: 12, borderRadius: 6 },
-  milestoneName: { fontFamily: Fonts.display, fontSize: 13, color: Colors.textSecondary, letterSpacing: 0.5 },
-  milestoneXP:   { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.4 },
-  milestoneThreshold: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary },
+  milestoneSub: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.4,
+    color: t.textTertiary,
+  },
+  milestoneValue: { flexDirection: 'row', alignItems: 'flex-end', gap: 4 },
+  milestoneThreshold: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 27,
+    lineHeight: 28,
+    letterSpacing: -1.08,
+    color: t.textTertiary,
+    fontVariant: ['tabular-nums'],
+  },
+  milestoneUnit: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    color: t.textTertiary,
+    paddingBottom: 4,
+  },
 });

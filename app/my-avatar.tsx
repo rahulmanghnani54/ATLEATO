@@ -1,21 +1,52 @@
+/**
+ * My Avatar — the identity screen, Bold Canvas.
+ *
+ * The crown carries the whole identity: the state title, its description, the
+ * pulsing avatar orb as the hero, and the motivation line as a pull-quote. The
+ * light body holds the three stats that drive it, each with its milestone bar.
+ *
+ * The avatar engine hands back raw hexes for its energy ladder; those are
+ * remapped onto semantic tokens here so the orb reads correctly on the dark
+ * crown AND the bars read correctly on the light body. Every stat, milestone,
+ * conditional and the share sheet behave exactly as before.
+ */
 import { useEffect, useState, useRef } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Animated, Share, Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, Animated, Share, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { useWorkoutStreak } from '@/hooks/useDashboardStats';
-import { personaFromProgramId } from '@/lib/personaTheme';
-import { getAvatarState, getNextAvatarMilestones, type AvatarState } from '@/lib/avatarEngine';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { getAvatarState, getNextAvatarMilestones, type AvatarState, type EnergyLevel } from '@/lib/avatarEngine';
 import { getLevel, type LevelInfo } from '@/lib/legendProgression';
+import { BigStat, CanvasScreen, Crown, Hairline, Section } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
-// ─── Animated glow ring ───────────────────────────────────────────────────────
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = 22;
 
-function GlowAvatar({ state, accentColor }: { state: AvatarState; accentColor: string }) {
+/**
+ * The engine's ENERGY_COLORS are fixed hexes tuned for a dark-only screen —
+ * the lime and the slate both fail on a white page. The ladder is preserved as
+ * a token key per level instead, so each state keeps a distinct hue and stays
+ * legible on whichever surface it lands on. Warming/legend resolve to the same
+ * emerald in a given scheme, which is harmless: a user is never both.
+ */
+const ENERGY_TONE: Record<EnergyLevel, keyof SemanticTokens> = {
+  dormant: 'textTertiary',
+  warming: 'success',
+  active: 'warning',
+  fire: 'danger',
+  legend: 'accentText',
+};
+
+// ─── Animated glow orb ────────────────────────────────────────────────────────
+
+function GlowAvatar({ emoji, tone }: { emoji: string; tone: string }) {
   const pulse = useRef(new Animated.Value(1)).current;
+  const styles = useThemedStyles(makeStyles);
 
   useEffect(() => {
     const anim = Animated.loop(
@@ -28,33 +59,29 @@ function GlowAvatar({ state, accentColor }: { state: AvatarState; accentColor: s
     return () => anim.stop();
   }, [pulse]);
 
-  const glowColor = state.color;
-
   return (
-    <View style={styles.avatarContainer}>
-      {/* Outer glow ring */}
+    <View style={styles.orbWrap} pointerEvents="none">
+      {/* Outer glow ring — breathes so the identity feels alive, not printed. */}
       <Animated.View
         style={[
-          styles.glowRing,
-          {
-            borderColor: glowColor,
-            shadowColor: glowColor,
-            transform: [{ scale: pulse }],
-          },
+          styles.orbRing,
+          { borderColor: tone, shadowColor: tone, transform: [{ scale: pulse }] },
         ]}
       />
-      {/* Inner circle */}
-      <View style={[styles.avatarCircle, { borderColor: glowColor }]}>
-        <Text style={styles.avatarEmoji}>{state.emoji}</Text>
+      {/* Soft halo behind the disc, so the ring reads as light rather than outline. */}
+      <View style={[styles.orbHalo, { backgroundColor: tone }]} />
+      <View style={[styles.orbDisc, { borderColor: tone }]}>
+        <Text style={styles.orbEmoji}>{emoji}</Text>
       </View>
     </View>
   );
 }
 
-// ─── Progress bar ─────────────────────────────────────────────────────────────
+// ─── Milestone bar ────────────────────────────────────────────────────────────
 
 function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
   const pct = max > 0 ? Math.min(1, value / max) : 1;
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.progressTrack}>
       <View style={[styles.progressFill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: color }]} />
@@ -69,6 +96,11 @@ export default function MyAvatarScreen() {
   const { profile } = useAuthStore();
   const { data: streak = 0 } = useWorkoutStreak();
   const persona = personaFromProgramId(profile?.selected_program);
+  const { scheme, tokens } = useTheme();
+  const pa = personaAccent(persona, scheme);
+  // The crown is near-black in BOTH schemes, so anything on it resolves dark.
+  const crownPa = personaAccent(persona, 'dark');
+  const styles = useThemedStyles(makeStyles);
 
   const [avatarState, setAvatarState] = useState<AvatarState | null>(null);
   const [levelInfo,   setLevelInfo]   = useState<LevelInfo | null>(null);
@@ -109,201 +141,251 @@ export default function MyAvatarScreen() {
     }
   };
 
-  if (!avatarState) return null;
+  // Derived state lands one frame after mount — hold the shape rather than the page.
+  if (!avatarState) {
+    return (
+      <CanvasScreen tabBar={false} topInset bottomSpace={28} contentStyle={styles.body}>
+        <View style={styles.loadingHero}>
+          <Skeleton width={172} height={172} radius={86} />
+        </View>
+        <Skeleton height={30} width="70%" radius={8} style={styles.loadingLine} />
+        <Skeleton height={16} width="90%" radius={8} style={styles.loadingLine} />
+        {/* Radius 20, not the dated 12-14 band — these plates stand in for the
+            stat blocks that follow, so they have to read as the same object. */}
+        <Section label="Stats driving your avatar">
+          <Skeleton height={54} radius={20} />
+          <Skeleton height={54} radius={20} style={styles.loadingLine} />
+          <Skeleton height={54} radius={20} style={styles.loadingLine} />
+        </Section>
+      </CanvasScreen>
+    );
+  }
+
+  const crownTone = TOKENS.dark[ENERGY_TONE[avatarState.energyLevel]];
+  const bodyTone  = tokens[ENERGY_TONE[avatarState.energyLevel]];
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>MY AVATAR</Text>
-        <View style={{ width: 32 }} />
-      </View>
+    <CanvasScreen tabBar={false} bottomSpace={28}>
+      <Crown
+        eyebrow="My avatar"
+        title={avatarState.title.toUpperCase()}
+        meta={avatarState.description}
+        accent={crownPa.accent}
+        onBack={() => router.back()}
+        right={
+          <View style={[styles.energyPill, { borderColor: crownTone }]}>
+            <Text style={[styles.energyPillText, { color: crownTone }]} numberOfLines={1}>
+              {avatarState.energyLevel.toUpperCase()} ENERGY
+            </Text>
+          </View>
+        }
+      >
+        {/* The hero: the avatar itself, large and centred on the dark block. */}
+        <GlowAvatar emoji={avatarState.emoji} tone={crownTone} />
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <Text style={styles.motivation}>"{avatarState.motivationLine}"</Text>
+      </Crown>
 
-        {/* Stage banner */}
-        <Text style={[styles.stageBanner, { color: persona.accent }]}>
-          {avatarState.energyLevel.toUpperCase()} ENERGY
-        </Text>
-
-        {/* Animated avatar */}
-        <GlowAvatar state={avatarState} accentColor={persona.accent} />
-
-        {/* Title + description */}
-        <Text style={styles.avatarTitle}>{avatarState.title.toUpperCase()}</Text>
-        <Text style={styles.avatarDesc}>{avatarState.description}</Text>
-
-        {/* Motivation line */}
-        <View style={[styles.motivationCard, { borderColor: `${avatarState.color}44` }]}>
-          <Text style={[styles.motivationText, { color: avatarState.color }]}>
-            "{avatarState.motivationLine}"
-          </Text>
-        </View>
-
-        {/* Stats driving the avatar */}
-        <Text style={styles.sectionLabel}>STATS DRIVING YOUR AVATAR</Text>
-        <View style={styles.card}>
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        <Section label="Stats driving your avatar">
           {/* Streak */}
-          <View style={styles.statRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.statName}>STREAK</Text>
-              <Text style={styles.statValue}>
-                {streak ?? 0}<Text style={styles.statUnit}> days</Text>
-              </Text>
-              {milestones && milestones.streakNeeded > 0 && (
-                <>
-                  <ProgressBar
-                    value={streak ?? 0}
-                    max={milestones.nextStreakMilestone}
-                    color={avatarState.color}
-                  />
-                  <Text style={styles.statHint}>
-                    {milestones.streakNeeded} more day{milestones.streakNeeded !== 1 ? 's' : ''} → next avatar upgrade
-                  </Text>
-                </>
-              )}
+          <View style={styles.statBlock}>
+            <View style={styles.statHead}>
+              <BigStat value={streak ?? 0} unit="days" label="Streak" size={38} style={styles.statFill} />
+              <Text style={styles.statGlyph}>{avatarState.emoji}</Text>
             </View>
-            <Text style={styles.statEmoji}>{avatarState.emoji}</Text>
+            {milestones && milestones.streakNeeded > 0 && (
+              <>
+                <ProgressBar
+                  value={streak ?? 0}
+                  max={milestones.nextStreakMilestone}
+                  color={bodyTone}
+                />
+                <Text style={styles.statHint}>
+                  {milestones.streakNeeded} more day{milestones.streakNeeded !== 1 ? 's' : ''} → next avatar upgrade
+                </Text>
+              </>
+            )}
           </View>
 
-          <View style={styles.rowDivider} />
+          <Hairline />
 
           {/* Total workouts */}
-          <View style={styles.statRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.statName}>TOTAL WORKOUTS</Text>
-              <Text style={styles.statValue}>
-                {totalWorkouts}<Text style={styles.statUnit}> sessions</Text>
-              </Text>
-              {milestones && milestones.workoutsNeeded > 0 && (
-                <>
-                  <ProgressBar
-                    value={totalWorkouts}
-                    max={milestones.nextWorkoutMilestone}
-                    color={persona.accent}
-                  />
-                  <Text style={styles.statHint}>
-                    {milestones.workoutsNeeded} more → "{
-                      totalWorkouts < 10 ? 'Building Foundation' :
-                      totalWorkouts < 30 ? 'Athletic Build' : 'Elite Physique'
-                    }" stage
-                  </Text>
-                </>
-              )}
+          <View style={styles.statBlock}>
+            <View style={styles.statHead}>
+              <BigStat value={totalWorkouts} unit="sessions" label="Total workouts" size={38} style={styles.statFill} />
+              <Text style={styles.statGlyph}>🏋️</Text>
             </View>
-            <Text style={styles.statEmoji}>🏋️</Text>
+            {milestones && milestones.workoutsNeeded > 0 && (
+              <>
+                <ProgressBar
+                  value={totalWorkouts}
+                  max={milestones.nextWorkoutMilestone}
+                  color={pa.accentText}
+                />
+                <Text style={styles.statHint}>
+                  {milestones.workoutsNeeded} more → "{
+                    totalWorkouts < 10 ? 'Building Foundation' :
+                    totalWorkouts < 30 ? 'Athletic Build' : 'Elite Physique'
+                  }" stage
+                </Text>
+              </>
+            )}
           </View>
 
-          <View style={styles.rowDivider} />
+          <Hairline />
 
           {/* XP Level */}
-          <View style={styles.statRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.statName}>XP LEVEL</Text>
-              <Text style={styles.statValue}>
-                {levelInfo?.xp.toLocaleString() ?? '0'}<Text style={styles.statUnit}> XP · {levelInfo?.level ?? 'Rookie'}</Text>
-              </Text>
-              {levelInfo && levelInfo.level !== 'Legend' && (
-                <>
-                  <ProgressBar value={levelInfo.progress * 100} max={100} color={persona.accent} />
-                  <Text style={styles.statHint}>
-                    {(levelInfo.nextThreshold - levelInfo.xp).toLocaleString()} XP to {
-                      levelInfo.level === 'Rookie'  ? 'Grinder' :
-                      levelInfo.level === 'Grinder' ? 'Athlete' :
-                      levelInfo.level === 'Athlete' ? 'Elite'   : 'Legend'
-                    }
-                  </Text>
-                </>
-              )}
+          <View style={styles.statBlock}>
+            <View style={styles.statHead}>
+              <BigStat
+                value={levelInfo?.xp ?? 0}
+                unit="XP"
+                label={`XP level · ${levelInfo?.level ?? 'Rookie'}`}
+                size={38}
+                style={styles.statFill}
+              />
+              <Text style={styles.statGlyph}>⚡</Text>
             </View>
-            <Text style={styles.statEmoji}>⚡</Text>
+            {levelInfo && levelInfo.level !== 'Legend' && (
+              <>
+                <ProgressBar value={levelInfo.progress * 100} max={100} color={pa.accentText} />
+                <Text style={styles.statHint}>
+                  {(levelInfo.nextThreshold - levelInfo.xp).toLocaleString()} XP to {
+                    levelInfo.level === 'Rookie'  ? 'Grinder' :
+                    levelInfo.level === 'Grinder' ? 'Athlete' :
+                    levelInfo.level === 'Athlete' ? 'Elite'   : 'Legend'
+                  }
+                </Text>
+              </>
+            )}
           </View>
-        </View>
+        </Section>
 
-        {/* Share button */}
-        <TouchableOpacity style={[styles.shareBtn, { borderColor: persona.accent }]} onPress={handleShare} activeOpacity={0.8}>
-          <Text style={[styles.shareBtnText, { color: persona.accent }]}>SHARE MY PROGRESS</Text>
-        </TouchableOpacity>
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
+        {/* The one accent spend on the light body. */}
+        <PressableScale
+          onPress={handleShare}
+          haptic="heavy"
+          scaleTo={0.97}
+          accessibilityRole="button"
+          accessibilityLabel="Share my progress"
+          style={[styles.cta, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
+        >
+          <Text style={[styles.ctaText, { color: pa.ink }]}>Share my progress</Text>
+        </PressableScale>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: Colors.bg },
-  scroll: { padding: Spacing.md, paddingBottom: 48, alignItems: 'center' },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn:     { width: 32 },
-  backText:    { fontSize: 22, color: Colors.text },
-  headerTitle: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6 },
+  // ── Loading shell ──────────────────────────────────────────────────────────
+  loadingHero: { alignItems: 'center', marginTop: 34, marginBottom: 26 },
+  loadingLine: { marginTop: 12 },
 
-  stageBanner: {
-    fontFamily: Fonts.mono, fontSize: 11, letterSpacing: 2.4, marginTop: 20, marginBottom: 12,
+  // ── Crown ──────────────────────────────────────────────────────────────────
+  energyPill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  energyPillText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.5,
   },
 
-  avatarContainer: {
-    width: 180, height: 180, alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+  orbWrap: {
+    width: 200,
+    height: 200,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 26,
   },
-  glowRing: {
-    position: 'absolute', width: 160, height: 160, borderRadius: 80,
-    borderWidth: 2, shadowOpacity: 0.7, shadowRadius: 18, shadowOffset: { width: 0, height: 0 },
+  orbRing: {
+    position: 'absolute',
+    width: 176,
+    height: 176,
+    borderRadius: 88,
+    borderWidth: 1.5,
+    shadowOpacity: 0.7,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 0 },
     elevation: 12,
   },
-  avatarCircle: {
-    width: 120, height: 120, borderRadius: 60, borderWidth: 2,
-    backgroundColor: Colors.surface, alignItems: 'center', justifyContent: 'center',
+  orbHalo: {
+    position: 'absolute',
+    width: 148,
+    height: 148,
+    borderRadius: 74,
+    opacity: 0.14,
   },
-  avatarEmoji: { fontSize: 58 },
+  orbDisc: {
+    width: 132,
+    height: 132,
+    borderRadius: 66,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  orbEmoji: { fontSize: 68 },
 
-  avatarTitle: {
-    fontFamily: Fonts.display, fontSize: 24, color: Colors.text,
-    letterSpacing: -0.5, textAlign: 'center', marginBottom: 8,
-  },
-  avatarDesc: {
-    fontFamily: Fonts.body, fontSize: 14, color: Colors.textSecondary,
-    textAlign: 'center', lineHeight: 21, marginBottom: 16, paddingHorizontal: 16,
+  motivation: {
+    fontFamily: Fonts.body,
+    fontSize: 15,
+    lineHeight: 24,
+    letterSpacing: -0.2,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    color: t.crownText,
+    marginTop: 24,
+    paddingHorizontal: 6,
   },
 
-  motivationCard: {
-    width: '100%', backgroundColor: Colors.surface, borderWidth: 1,
-    borderRadius: 8, padding: 16, marginBottom: 24,
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  statBlock: { paddingVertical: 16 },
+  statHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
-  motivationText: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 22, fontStyle: 'italic', textAlign: 'center' },
+  statFill: { flex: 1 },
+  statGlyph: { fontSize: 26 },
+  statHint: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    lineHeight: 17,
+    color: t.textTertiary,
+    marginTop: 8,
+  },
 
-  sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.8, marginBottom: 10, alignSelf: 'flex-start',
+  progressTrack: {
+    height: 4,
+    backgroundColor: t.border,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginTop: 14,
   },
-  card: {
-    width: '100%', backgroundColor: Colors.surface, borderWidth: 1,
-    borderColor: Colors.border, borderRadius: 8, overflow: 'hidden', marginBottom: 24,
-  },
-  statRow: {
-    flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12,
-  },
-  statName: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginBottom: 4 },
-  statValue: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, marginBottom: 8 },
-  statUnit:  { fontSize: 11, fontFamily: Fonts.body, color: Colors.textSecondary },
-  statEmoji: { fontSize: 28 },
-  statHint:  { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, marginTop: 4, letterSpacing: 0.4 },
+  progressFill: { height: '100%', borderRadius: 2 },
 
-  progressTrack: { height: 5, backgroundColor: Colors.raised, borderRadius: 3, overflow: 'hidden', marginTop: 4 },
-  progressFill:  { height: '100%', borderRadius: 3 },
-
-  rowDivider: { height: 1, backgroundColor: Colors.border, marginHorizontal: 14 },
-
-  shareBtn: {
-    width: '100%', borderWidth: 1, borderRadius: 8,
-    paddingVertical: 14, alignItems: 'center',
+  // ── Action ─────────────────────────────────────────────────────────────────
+  cta: {
+    borderRadius: 26,
+    // The brand fill is under 3:1 on a light page; the deeper tone at its edge
+    // is what makes the control identifiable (SC 1.4.11).
+    borderWidth: 1,
+    paddingVertical: 19,
+    alignItems: 'center',
+    marginTop: 34,
   },
-  shareBtnText: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: 0.8 },
+  ctaText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 13,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
 });

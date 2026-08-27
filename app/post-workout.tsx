@@ -1,18 +1,35 @@
+/**
+ * Post-Workout — the payoff moment right after training.
+ *
+ * Bold Canvas: the dark <Crown> IS the reward. It carries the score headline,
+ * the session summary line and the hero volume numeral that ticks up on
+ * arrival; the XP award lands there too, as a pill on the same dark block. The
+ * light body below holds the detail — intensity + time-under-tension as a
+ * StatRow, the PR banner, the coach breakdown, and the exercise manifest as
+ * borderless rows. The single accent fill on the light page is the chat CTA.
+ */
+
 import { useEffect, useState } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Colors, Fonts } from '@/constants/theme';
-import { X as XIcon, Zap, Trophy, MessageCircle, Send } from 'lucide-react-native';
+import { format } from 'date-fns';
+import { MessageCircle, Send, Trophy, X as XIcon, Zap } from 'lucide-react-native';
+import {
+  BigStat, CanvasScreen, Crown, Hairline, ListRow, Section, StatRow,
+} from '@/components/ui/canvas';
+import { CountUp, PressableScale } from '@/components/ui/motion';
 import { ImplementationIntentionSheet } from '@/components/dashboard/ImplementationIntentionSheet';
 import { RewardChestModal } from '@/components/dashboard/RewardChestModal';
-import { getPersona, type PersonaId } from '@/lib/personaTheme';
+import { Fonts, Spacing } from '@/constants/theme';
+import { getPersona, personaAccent, type PersonaId } from '@/lib/personaTheme';
 import { getTomorrowIntention } from '@/lib/implementationIntention';
-import { format } from 'date-fns';
 import { addXP } from '@/lib/legendProgression';
 import { supabase } from '@/lib/supabase';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
+
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = Spacing.heroPad;
 
 type ExerciseResult = {
   name: string;
@@ -22,8 +39,53 @@ type ExerciseResult = {
   tagColor: string;
 };
 
+/** Route params arrive as strings; a junk value must not render as "NaN". */
+function numOrText(raw: string): number | string {
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : raw;
+}
+
+/**
+ * The crown's hero numeral. CountUp only animates on a CHANGE, so a value that
+ * mounts at its final number would sit still — it renders 0 for one frame
+ * first, except under reduce-motion where it mounts settled.
+ */
+function CrownNumber({
+  value,
+  color,
+  size = 66,
+}: {
+  value: number;
+  color: string;
+  size?: number;
+}) {
+  const reduced = useReducedMotion();
+  const [settled, setSettled] = useState(reduced);
+  useEffect(() => {
+    if (reduced) return;
+    const id = requestAnimationFrame(() => setSettled(true));
+    return () => cancelAnimationFrame(id);
+  }, [reduced]);
+  return (
+    <CountUp
+      value={settled ? value : 0}
+      decimals={Number.isInteger(value) ? 0 : 1}
+      style={{
+        fontFamily: Fonts.displayBold,
+        fontVariant: ['tabular-nums'],
+        fontSize: size,
+        lineHeight: size * 1.02,
+        letterSpacing: size * -0.045,
+        color,
+      }}
+    />
+  );
+}
+
 export default function PostWorkout() {
   const router = useRouter();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const params = useLocalSearchParams<{
     sessionName?: string;
     score?: string;
@@ -59,6 +121,11 @@ export default function PostWorkout() {
   const [chestOpen, setChestOpen] = useState(false);
   const [xpBadge, setXpBadge] = useState<string | null>(null);
   const tomorrowISO  = format(new Date(Date.now() + 86_400_000), 'yyyy-MM-dd');
+
+  // The body sits on the light page; the crown is dark in BOTH schemes, so it
+  // takes the dark-tuned persona triplet regardless of the active scheme.
+  const pa = personaAccent(persona, scheme);
+  const pc = personaAccent(persona, 'dark');
 
   // Post-workout choreography:
   // 1.2s after mount → open Reward Chest (variable-reward Skinner box)
@@ -113,8 +180,8 @@ export default function PostWorkout() {
   // always match the user's current coach (no hard-coded hues to drift).
   const coach = {
     initials: persona.initials,
-    hue: persona.accent,
-    ink: persona.ink,
+    hue: pa.accent,
+    ink: pa.ink,
     name: `${persona.shortName}'s breakdown`,
   };
 
@@ -152,150 +219,201 @@ export default function PostWorkout() {
     if (!params.exercisesJson) return [];
     try {
       const raw = JSON.parse(params.exercisesJson) as Array<{ name: string; sets: string; volume: string; tag: string }>;
+      // A PR wears the coach's own hue; the rest read as plain status.
       const colorFor = (tag: string) =>
-        tag === 'PR'        ? Colors.primary
-      : tag === 'COMPLETED' ? Colors.good
-      : tag === 'PARTIAL'   ? Colors.warning
-      :                       Colors.textSecondary;
+        tag === 'PR'        ? pa.accentText
+      : tag === 'COMPLETED' ? tokens.success
+      : tag === 'PARTIAL'   ? tokens.warning
+      :                       tokens.textSecondary;
       return raw.map((e) => ({ ...e, tagColor: colorFor(e.tag) }));
     } catch {
       return [];
     }
   })();
 
+  const volumeValue = numOrText(volume);
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* Top bar */}
-        <View style={styles.topBar}>
-          <View style={[styles.tag, { backgroundColor: persona.accent + '1a' }]}>
-            <Text style={[styles.tagText, { color: persona.accent }]}>
-              Session complete · {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+    <>
+      <CanvasScreen tabBar={false} bottomSpace={36}>
+        <Crown
+          eyebrow={`Session complete · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+          title="That was"
+          accentLine={`a ${score}/10.`}
+          meta={`${sessionName} — ${durationLabel} · The Sculptor Method, Week 3`}
+          accent={pc.accent}
+          right={
+            <PressableScale
+              onPress={() => router.back()}
+              haptic="light"
+              accessibilityRole="button"
+              accessibilityLabel="Close"
+              hitSlop={12}
+              style={[styles.close, { borderColor: tokens.crownLine }]}
+            >
+              <XIcon size={19} color={tokens.crownText} />
+            </PressableScale>
+          }
+        >
+          {/* The hero: everything you moved, in one numeral. */}
+          <View style={styles.hero}>
+            <Text style={styles.heroLabel}>
+              Total volume
+              <Text style={{ color: pc.accent }}>{'  ·  +12%'}</Text>
             </Text>
+            <View style={styles.heroRow}>
+              {typeof volumeValue === 'number' ? (
+                <CrownNumber value={volumeValue} color={tokens.crownText} />
+              ) : (
+                <Text style={styles.heroFallback} numberOfLines={1}>{volumeValue}</Text>
+              )}
+              <Text style={styles.heroUnit}>k kg</Text>
+            </View>
           </View>
-          <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-            <XIcon size={20} color={Colors.textSecondary} />
-          </TouchableOpacity>
-        </View>
 
-        {/* XP Award Badge */}
-        {xpBadge && (
-          <View style={[styles.xpBadge, { backgroundColor: persona.accent + '1a', borderColor: persona.accent + '44' }]}>
-            <Zap size={14} color={persona.accent} fill={persona.accent} />
-            <Text style={[styles.xpBadgeText, { color: persona.accent }]}>{xpBadge}</Text>
-          </View>
-        )}
-
-        {/* Score headline */}
-        <Text style={styles.headline}>
-          That was{'\n'}a{' '}
-          <Text style={{ color: persona.accent }}>{score}/10</Text>.
-        </Text>
-        <Text style={styles.subline}>
-          {sessionName} — {durationLabel} · The Sculptor Method, Week 3
-        </Text>
-
-        {/* Score grid */}
-        <View style={styles.scoreGrid}>
-          {[
-            { l: 'Volume',             v: volume,  u: 'k kg',     d: '+12%', good: true },
-            { l: 'Intensity',          v: avgRpe,  u: 'avg RPE',  d: 'on tgt', good: true },
-            { l: 'Time under\ntension', v: tut,    u: 'min',      d: '+3m', good: true },
-          ].map((s, i) => (
-            <View key={i} style={styles.scoreCard}>
-              <Text style={styles.scoreCardLabel}>{s.l}</Text>
-              <Text style={styles.scoreCardValue}>
-                {s.v}<Text style={styles.scoreCardUnit}> {s.u}</Text>
-              </Text>
-              <Text style={[styles.scoreCardDelta, { color: s.good ? Colors.good : Colors.warning }]}>{s.d}</Text>
+          {/* XP Award Badge */}
+          {xpBadge && (
+            <View style={[styles.xpPill, { borderColor: tokens.crownLine }]}>
+              <Zap size={11} color={pc.accent} fill={pc.accent} />
+              <Text style={[styles.xpPillText, { color: pc.accent }]} numberOfLines={1}>{xpBadge}</Text>
             </View>
-          ))}
-        </View>
+          )}
+        </Crown>
 
-        {/* PR banner (if applicable) */}
-        {hasPR && (
-          <TouchableOpacity
-            style={[styles.prBanner, { backgroundColor: persona.accent + '0d', borderColor: persona.accent + '33' }]}
-            onPress={() => router.push({
-              pathname: '/pr-celebration',
-              params: {
-                exercise: prExercise, newRM: prNewRM, prevRM: prPrevRM,
-                weight: prWeight, reps: prReps, rpe: prRpe, coachId,
-              },
-            } as any)}
-            activeOpacity={0.85}
-          >
-            <View style={styles.prBannerLeft}>
-              <View style={styles.prBannerLabelRow}>
-                <Trophy size={14} color={persona.accent} />
-                <Text style={[styles.prBannerLabel, { color: persona.accent }]}>Personal record</Text>
-              </View>
-              <Text style={styles.prBannerExercise}>{prExercise}</Text>
-            </View>
-            <View style={styles.prBannerRight}>
-              <Text style={[styles.prBannerNum, { color: persona.accent }]}>
-                {prNewRM}<Text style={styles.prBannerUnit}> kg</Text>
-              </Text>
-              <Text style={styles.prBannerDelta}>
-                +{(parseFloat(prNewRM) - parseFloat(prPrevRM)).toFixed(1)} kg ↑
-              </Text>
-            </View>
-          </TouchableOpacity>
-        )}
-
-        {/* Coach breakdown */}
-        <View style={styles.coachCard}>
-          <View style={styles.coachHeader}>
-            <View style={[styles.coachAvatar, { backgroundColor: coach.hue }]}>
-              <Text style={[styles.coachInitials, { color: coach.ink }]}>{coach.initials}</Text>
+        <View style={styles.body}>
+          {/* Score grid */}
+          <StatRow style={styles.stats}>
+            <View>
+              <BigStat value={numOrText(avgRpe)} unit="avg RPE" label="Intensity" />
+              <Text style={styles.delta}>on tgt</Text>
             </View>
             <View>
-              <Text style={styles.coachTitle}>{coach.name}</Text>
-              <Text style={styles.coachSubtitle}>Powered by AI</Text>
+              <BigStat value={numOrText(tut)} unit="min" label="Time under tension" />
+              <Text style={styles.delta}>+3m</Text>
             </View>
-          </View>
-          <Text style={styles.coachBody}>{breakdown.body}</Text>
-          <View style={styles.coachDivider} />
-          <Text style={[styles.coachTagLabel, { color: persona.accent }]}>Win of the session</Text>
-          <Text style={styles.coachDetail}>{breakdown.win}</Text>
-          <View style={styles.coachDivider} />
-          <Text style={[styles.coachTagLabel, { color: Colors.warning }]}>Fix next week</Text>
-          <Text style={styles.coachDetail}>{breakdown.fix}</Text>
-        </View>
+          </StatRow>
 
-        {/* Per-exercise list */}
-        <Text style={styles.sectionLabel}>Exercises</Text>
-        <View style={styles.exerciseCard}>
-          {exercises.map((e, i) => (
-            <View key={i} style={[styles.exerciseRow, i < exercises.length - 1 && styles.exerciseRowBorder]}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.exerciseName}>{e.name}</Text>
-                <Text style={styles.exerciseMeta}>{e.sets} · {e.volume}</Text>
+          {/* PR banner (if applicable) */}
+          {hasPR && (
+            <PressableScale
+              haptic="medium"
+              scaleTo={0.98}
+              accessibilityRole="button"
+              accessibilityLabel={`Personal record, ${prExercise}, ${prNewRM} kilograms`}
+              style={styles.prBanner}
+              onPress={() => router.push({
+                pathname: '/pr-celebration',
+                params: {
+                  exercise: prExercise, newRM: prNewRM, prevRM: prPrevRM,
+                  weight: prWeight, reps: prReps, rpe: prRpe, coachId,
+                },
+              } as any)}
+            >
+              <View style={styles.prLeft}>
+                <View style={styles.prLabelRow}>
+                  <Trophy size={11} color={pa.accentText} />
+                  <Text style={[styles.prLabel, { color: pa.accentText }]} numberOfLines={1}>
+                    Personal record
+                  </Text>
+                </View>
+                <Text style={styles.prExercise} numberOfLines={2}>{prExercise}</Text>
               </View>
-              <View style={[styles.exerciseTag, { borderColor: `${e.tagColor}33`, backgroundColor: `${e.tagColor}14` }]}>
-                <Text style={[styles.exerciseTagText, { color: e.tagColor }]}>{e.tag}</Text>
+              <View style={styles.prRight}>
+                <Text style={[styles.prNum, { color: pa.accentText }]} numberOfLines={1}>
+                  {prNewRM}<Text style={styles.prUnit}> kg</Text>
+                </Text>
+                <Text style={styles.prDelta} numberOfLines={1}>
+                  +{(parseFloat(prNewRM) - parseFloat(prPrevRM)).toFixed(1)} kg ↑
+                </Text>
               </View>
-            </View>
-          ))}
-        </View>
+            </PressableScale>
+          )}
 
-        {/* CTAs */}
-        <View style={styles.ctaRow}>
-          <TouchableOpacity
-            style={[styles.ctaPrimary, { backgroundColor: persona.accent }]}
-            onPress={() => router.push('/(tabs)/coach' as any)}
-            activeOpacity={0.85}
+          {/* Coach breakdown */}
+          <Section
+            label="Coach breakdown"
+            right={<Text style={styles.poweredBy}>Powered by AI</Text>}
           >
-            <MessageCircle size={16} color={persona.ink} />
-            <Text style={[styles.ctaPrimaryText, { color: persona.ink }]}>Chat with {coach.initials}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.ctaIcon} onPress={() => router.back()} activeOpacity={0.85}>
-            <Send size={18} color={Colors.text} />
-          </TouchableOpacity>
-        </View>
+            <View style={styles.coachHead}>
+              <View style={[styles.coachAvatar, { backgroundColor: coach.hue, borderColor: pa.accentText }]}>
+                <Text style={[styles.coachInitials, { color: coach.ink }]}>{coach.initials}</Text>
+              </View>
+              <Text style={styles.coachName} numberOfLines={2}>{coach.name}</Text>
+            </View>
+            <Text style={styles.coachBody}>{breakdown.body}</Text>
 
-      </ScrollView>
+            <Hairline style={styles.coachRule} />
+            <Text style={[styles.coachTag, { color: tokens.success }]}>Win of the session</Text>
+            <Text style={styles.coachDetail}>{breakdown.win}</Text>
+
+            <Hairline style={styles.coachRule} />
+            <Text style={[styles.coachTag, { color: tokens.warning }]}>Fix next week</Text>
+            <Text style={styles.coachDetail}>{breakdown.fix}</Text>
+          </Section>
+
+          {/* Per-exercise list */}
+          <Section
+            label="Exercises"
+            right={<Text style={styles.count}>{`${exercises.length}`}</Text>}
+          >
+            <Hairline />
+            {exercises.length === 0 ? (
+              <Text style={styles.empty}>No exercise detail recorded</Text>
+            ) : (
+              exercises.map((e, i) => (
+                <ListRow
+                  key={i}
+                  title={e.name}
+                  subtitle={`${e.sets} · ${e.volume}`}
+                  last={i === exercises.length - 1}
+                  right={
+                    <View style={[styles.tag, { borderColor: e.tagColor }]}>
+                      <Text style={[styles.tagText, { color: e.tagColor }]} numberOfLines={1}>
+                        {e.tag}
+                      </Text>
+                    </View>
+                  }
+                />
+              ))
+            )}
+            <Hairline />
+          </Section>
+
+          {/* CTAs */}
+          <View style={styles.ctaRow}>
+            {/* PressableScale wraps its target in a content-sized Animated.View,
+                so the flex that lets the primary claim the row has to live on
+                this cell — on the button itself it is silently inert. */}
+            <View style={styles.ctaFill}>
+              <PressableScale
+                haptic="heavy"
+                scaleTo={0.97}
+                accessibilityRole="button"
+                accessibilityLabel={`Chat with ${coach.initials}`}
+                // A persona fill on a light page needs a boundary of its own; the
+                // text-safe tone of the same hue is what makes the control legible.
+                style={[styles.ctaPrimary, { backgroundColor: coach.hue, borderColor: pa.accentText }]}
+                onPress={() => router.push('/(tabs)/coach' as any)}
+              >
+                <MessageCircle size={16} color={coach.ink} />
+                <Text style={[styles.ctaPrimaryText, { color: coach.ink }]} numberOfLines={1}>
+                  Chat with {coach.initials}
+                </Text>
+              </PressableScale>
+            </View>
+            <PressableScale
+              haptic="light"
+              scaleTo={0.94}
+              accessibilityRole="button"
+              accessibilityLabel="Dismiss"
+              style={styles.ctaIcon}
+              onPress={() => router.back()}
+            >
+              <Send size={18} color={tokens.text} />
+            </PressableScale>
+          </View>
+        </View>
+      </CanvasScreen>
 
       {/* Variable-reward chest (always opens after summary) */}
       <RewardChestModal
@@ -311,103 +429,121 @@ export default function PostWorkout() {
         dateISO={tomorrowISO}
         persona={persona}
       />
-    </SafeAreaView>
+    </>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  scroll: { padding: 20, paddingTop: 14, paddingBottom: 48 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
 
-  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
-  tag: {
-    borderRadius: 100, paddingHorizontal: 12, paddingVertical: 6,
+  // ── Crown ──────────────────────────────────────────────────────────────────
+  close: {
+    width: 38, height: 38, borderRadius: 19, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
   },
-  tagText: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.1 },
-
-  headline: {
-    fontFamily: Fonts.display, fontSize: 38, color: Colors.text,
-    lineHeight: 40, letterSpacing: -1, marginBottom: 10,
+  hero: { marginTop: 26 },
+  heroLabel: {
+    fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.5,
+    textTransform: 'uppercase', color: t.crownTextDim,
   },
-  subline: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginBottom: 20 },
-
-  // Score grid
-  scoreGrid: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  scoreCard: {
-    flex: 1, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 10, padding: 12,
+  heroRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 6, marginTop: 4 },
+  heroFallback: {
+    fontFamily: Fonts.displayBold, fontSize: 66, lineHeight: 67,
+    letterSpacing: -2.97, color: t.crownText,
   },
-  scoreCardLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, lineHeight: 14, minHeight: 28 },
-  scoreCardValue: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, marginTop: 4 },
-  scoreCardUnit: { fontSize: 10, color: Colors.textSecondary, fontFamily: Fonts.body },
-  scoreCardDelta: { fontFamily: Fonts.bodyMedium, fontSize: 11, marginTop: 4 },
+  heroUnit: {
+    fontFamily: Fonts.bodySemi, fontSize: 13, color: t.crownTextDim, paddingBottom: 10,
+  },
+  xpPill: {
+    alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6,
+    marginTop: 20,
+  },
+  xpPillText: {
+    fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.3,
+    textTransform: 'uppercase',
+  },
 
-  // PR banner
+  // ── Stats ──────────────────────────────────────────────────────────────────
+  stats: { marginTop: 30 },
+  delta: {
+    fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.3,
+    textTransform: 'uppercase', color: t.success, marginTop: 7,
+  },
+
+  // ── PR banner ──────────────────────────────────────────────────────────────
   prBanner: {
-    borderWidth: 1,
-    borderRadius: 12, padding: 16, marginBottom: 16,
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 14,
+    backgroundColor: t.surfaceAlt, borderRadius: 24, paddingHorizontal: 20, paddingVertical: 18,
+    marginTop: 30,
   },
-  prBannerLeft: {},
-  prBannerLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  prBannerLabel: { fontFamily: Fonts.bodyMedium, fontSize: 11, letterSpacing: 0.2 },
-  prBannerExercise: { fontFamily: Fonts.display, fontSize: 16, color: Colors.text, marginTop: 4 },
-  prBannerRight: { alignItems: 'flex-end' },
-  prBannerNum: { fontFamily: Fonts.display, fontSize: 28 },
-  prBannerUnit: { fontSize: 14, fontFamily: Fonts.body, color: Colors.textSecondary },
-  prBannerDelta: { fontFamily: Fonts.display, fontSize: 14, color: Colors.good, marginTop: 2 },
+  prLeft: { flex: 1, gap: 6 },
+  prLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  prLabel: {
+    fontFamily: Fonts.legacyMono, fontSize: 8.5, letterSpacing: 1.4,
+    textTransform: 'uppercase', flexShrink: 1,
+  },
+  prExercise: {
+    fontFamily: Fonts.displayBold, fontSize: 17, letterSpacing: -0.5, color: t.text,
+  },
+  prRight: { alignItems: 'flex-end' },
+  prNum: {
+    fontFamily: Fonts.displayBold, fontSize: 34, lineHeight: 35, letterSpacing: -1.53,
+    fontVariant: ['tabular-nums'],
+  },
+  prUnit: { fontFamily: Fonts.bodySemi, fontSize: 13, color: t.textTertiary },
+  prDelta: {
+    fontFamily: Fonts.legacyMono, fontSize: 8.5, letterSpacing: 1.2,
+    textTransform: 'uppercase', color: t.success, marginTop: 5,
+  },
 
-  // Coach card
-  coachCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 12, padding: 16, marginBottom: 20,
+  // ── Coach breakdown ────────────────────────────────────────────────────────
+  poweredBy: {
+    fontFamily: Fonts.legacyMono, fontSize: 8.5, letterSpacing: 1.3,
+    textTransform: 'uppercase', color: t.textTertiary,
   },
-  coachHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
-  coachAvatar: { width: 36, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  coachInitials: { fontFamily: Fonts.display, fontSize: 12 },
-  coachTitle: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text },
-  coachSubtitle: { fontFamily: Fonts.bodyMedium, fontSize: 11, color: Colors.textTertiary, letterSpacing: 0.2, marginTop: 2 },
-  coachBody: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20 },
-  coachDivider: { height: 1, backgroundColor: Colors.border, marginVertical: 12 },
-  coachTagLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, letterSpacing: 0.2, marginBottom: 4 },
-  coachDetail: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20 },
+  coachHead: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
+  coachAvatar: {
+    width: 40, height: 40, borderRadius: 20, borderWidth: 1,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  coachInitials: { fontFamily: Fonts.displayBold, fontSize: 13, letterSpacing: -0.2 },
+  coachName: {
+    flex: 1, fontFamily: Fonts.displayBold, fontSize: 19, letterSpacing: -0.7, color: t.text,
+  },
+  coachBody: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 22, color: t.text },
+  coachRule: { marginVertical: 18 },
+  coachTag: {
+    fontFamily: Fonts.legacyMono, fontSize: 8.5, letterSpacing: 1.4,
+    textTransform: 'uppercase', marginBottom: 7,
+  },
+  coachDetail: { fontFamily: Fonts.body, fontSize: 14, lineHeight: 22, color: t.text },
 
-  sectionLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, color: Colors.textTertiary, letterSpacing: 0.2, marginBottom: 8 },
+  // ── Exercise manifest ──────────────────────────────────────────────────────
+  count: {
+    fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.3,
+    color: t.textTertiary, fontVariant: ['tabular-nums'],
+  },
+  empty: {
+    fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.3,
+    textTransform: 'uppercase', color: t.textTertiary, paddingVertical: 20,
+  },
+  tag: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  tagText: {
+    fontFamily: Fonts.legacyMono, fontSize: 8.5, letterSpacing: 1.3,
+    textTransform: 'uppercase',
+  },
 
-  // Exercise list
-  exerciseCard: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 10, marginBottom: 20,
-  },
-  exerciseRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
-  },
-  exerciseRowBorder: { borderBottomWidth: 1, borderColor: Colors.border },
-  exerciseName: { fontFamily: Fonts.bodySemi, fontSize: 13, color: Colors.text },
-  exerciseMeta: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textTertiary, marginTop: 2, letterSpacing: 0.1 },
-  exerciseTag: {
-    paddingHorizontal: 8, paddingVertical: 3, borderRadius: 100,
-    backgroundColor: 'transparent', borderWidth: 1,
-  },
-  exerciseTagText: { fontFamily: Fonts.bodyBold, fontSize: 10, letterSpacing: 0.1 },
-
-  // XP badge
-  xpBadge: {
-    borderWidth: 1,
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    borderRadius: 100, paddingHorizontal: 14, paddingVertical: 8,
-    alignSelf: 'center', marginBottom: 12,
-  },
-  xpBadgeText: { fontFamily: Fonts.displayMedium, fontSize: 13, letterSpacing: 0.2 },
-
-  // CTAs
-  ctaRow: { flexDirection: 'row', gap: 8 },
+  // ── CTAs ───────────────────────────────────────────────────────────────────
+  ctaRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 38 },
+  ctaFill: { flex: 1 },
   ctaPrimary: {
-    flex: 1, height: 54, borderRadius: 100,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9,
+    borderRadius: 27, borderWidth: 1, paddingVertical: 20,
   },
-  ctaPrimaryText: { fontFamily: Fonts.displayMedium, fontSize: 14, letterSpacing: 0.2 },
+  ctaPrimaryText: { fontFamily: Fonts.displayBold, fontSize: 15, letterSpacing: -0.3 },
   ctaIcon: {
-    width: 56, height: 54, borderRadius: 100, borderWidth: 1, borderColor: Colors.borderStrong,
+    width: 58, height: 58, borderRadius: 29, borderWidth: 1, borderColor: t.borderStrong,
     alignItems: 'center', justifyContent: 'center',
   },
 });

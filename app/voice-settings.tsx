@@ -1,13 +1,18 @@
 /**
- * Voice Settings Screen — LEGEND tier
+ * Voice Settings Screen — LEGEND tier, Bold Canvas.
  *
  * Lets users adjust their active coach's voice pitch and speed.
  * Overrides are persisted to AsyncStorage and applied when previewing.
  * Gate-checked on mount: non-LEGEND users are redirected to paywall.
+ *
+ * The crown carries the coach identity; the light body gives each control its
+ * value as an oversized numeral sitting on a tiny mono label. Every gate check,
+ * storage read/write and Speech call below is byte-for-byte the pre-migration
+ * behaviour — only presentation moved.
  */
 import { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity,
+  View, Text, StyleSheet,
   GestureResponderEvent, LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,9 +21,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
 import { canAccess } from '@/lib/featureGates';
 import { useAuthStore } from '@/stores/authStore';
-import { personaFromProgramId } from '@/lib/personaTheme';
+import { personaAccent, personaFromProgramId, styleText } from '@/lib/personaTheme';
 import type { PersonaId } from '@/lib/personaTheme';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { CanvasScreen, Crown, Section } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 // ─── Storage key ────────────────────────────────────────────────────────────
 
@@ -50,17 +58,27 @@ const PREVIEW_LINES: Record<PersonaId, string> = {
 const SLIDER_MIN = 0.5;
 const SLIDER_MAX = 2.0;
 
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = 22;
+
 // ─── Custom slider component ────────────────────────────────────────────────
 
 function CustomSlider({
   value,
   onValueChange,
   accentColor,
+  edgeColor,
+  label,
 }: {
   value: number;
   onValueChange: (v: number) => void;
   accentColor: string;
+  /** Boundary hairline for the fill — see makeStyles for why a fill needs one. */
+  edgeColor: string;
+  label: string;
 }) {
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
   const trackWidth = useRef(0);
 
   const pct = (value - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN);
@@ -83,38 +101,48 @@ function CustomSlider({
       onStartShouldSetResponder={() => true}
       onResponderGrant={handleTouch}
       onResponderMove={(e: GestureResponderEvent) => handleTouch(e)}
+      // Vertical padding only: locationX is measured on THIS view, so any
+      // horizontal inset here would desync the touch from the track below it.
+      style={styles.sliderHit}
+      // Deliberately NOT role="adjustable": there are no increment/decrement
+      // actions wired, and claiming an operable slider a screen reader cannot
+      // drive is worse than the plain readout this gives.
+      accessibilityLabel={`${label}, ${value.toFixed(2)}`}
     >
-      <View style={sliderStyles.track} onLayout={handleLayout}>
-        <View style={[sliderStyles.fill, { width: `${pct * 100}%`, backgroundColor: accentColor }]} />
-        <View style={[sliderStyles.thumb, { left: `${pct * 100}%`, borderColor: accentColor }]} />
+      <View style={[styles.track, { backgroundColor: tokens.surfaceAlt }]} onLayout={handleLayout}>
+        <View
+          style={[
+            styles.fill,
+            { width: `${pct * 100}%`, backgroundColor: accentColor, borderColor: edgeColor },
+          ]}
+        />
+        <View
+          style={[
+            styles.thumb,
+            { left: `${pct * 100}%`, backgroundColor: accentColor, borderColor: edgeColor },
+          ]}
+        />
       </View>
     </View>
   );
 }
-
-const sliderStyles = StyleSheet.create({
-  track: {
-    height: 4, borderRadius: 2, backgroundColor: Colors.borderStrong,
-    marginTop: 8, marginBottom: 20,
-  },
-  fill: { height: 4, borderRadius: 2, position: 'absolute', top: 0, left: 0 },
-  thumb: {
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: Colors.surface, borderWidth: 2,
-    position: 'absolute', top: -7, marginLeft: -9,
-  },
-});
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
 export default function VoiceSettingsScreen() {
   const router = useRouter();
   const { profile } = useAuthStore();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const persona = personaFromProgramId(profile?.selected_program);
   const personaId = persona.id;
   const defaults = PERSONA_DEFAULTS[personaId] ?? { pitch: 1.0, rate: 1.0 };
-  const accentColor = persona.accent ?? Colors.primary;
+  const pa = personaAccent(persona, scheme);
+  const accentColor = pa.accent;
+  // The crown is near-black in BOTH schemes, so its tint always resolves against
+  // the dark triplet — the light accent would sink into the ink.
+  const crownTint = personaAccent(persona, 'dark').accent;
 
   const [pitch, setPitch] = useState(defaults.pitch);
   const [rate,  setRate]  = useState(defaults.rate);
@@ -202,146 +230,251 @@ export default function VoiceSettingsScreen() {
     saveOverrides(defaults.pitch, defaults.rate);
   };
 
-  if (!loaded) return null;
-
   const pitchLabel = pitch.toFixed(2);
   const rateLabel  = rate.toFixed(2);
 
+  // The persona monogram rides the crown's top-right slot — it is the identity
+  // mark, so it carries the tint the crown's accent line already spends.
+  const monogram = (
+    <View style={[styles.monogram, { borderColor: tokens.crownLine }]}>
+      <Text style={[styles.monogramText, { color: crownTint }]} numberOfLines={1}>
+        {persona.initials}
+      </Text>
+    </View>
+  );
+
+  const crown = (
+    <Crown
+      eyebrow={styleText(persona, `✦ Coach voice · ${persona.shortName}`)}
+      title={styleText(persona, 'Tune how')}
+      accentLine={styleText(persona, 'they sound.')}
+      meta={`${persona.fullName} · ${persona.era}`}
+      // Held back until the overrides load, so the crown never advertises the
+      // defaults as if they were the user's saved settings.
+      pills={loaded ? ['LEGEND', `Pitch ${pitchLabel}`, `Speed ${rateLabel}`] : undefined}
+      accent={crownTint}
+      right={monogram}
+      onBack={() => router.back()}
+    />
+  );
+
+  // Storage read still in flight (or the gate is mid-redirect): the page keeps
+  // its shape instead of flashing blank, and reveals nothing gated.
+  if (!loaded) {
+    return (
+      <View style={styles.root}>
+        <CanvasScreen tabBar={false} bottomSpace={28}>
+          {crown}
+          <SafeAreaView edges={['left', 'right']} style={styles.body}>
+            <View style={styles.loadingStack}>
+              <Skeleton width={72} height={9} radius={2} />
+              <Skeleton width={148} height={46} radius={6} />
+              <Skeleton height={6} radius={3} />
+              <Skeleton width={210} height={8} radius={2} />
+            </View>
+            <View style={styles.loadingStack}>
+              <Skeleton width={72} height={9} radius={2} />
+              <Skeleton width={148} height={46} radius={6} />
+              <Skeleton height={6} radius={3} />
+              <Skeleton width={210} height={8} radius={2} />
+            </View>
+            <Skeleton height={52} radius={26} style={styles.loadingCta} />
+          </SafeAreaView>
+        </CanvasScreen>
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.root}>
+      <CanvasScreen tabBar={false} bottomSpace={28}>
+        {crown}
 
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>COACH VOICE</Text>
-        <View style={{ width: 32 }} />
-      </View>
+        <SafeAreaView edges={['left', 'right']} style={styles.body}>
 
-      <View style={styles.body}>
+          {/* ── PITCH ── */}
+          <Section label="Pitch" style={styles.firstSection}>
+            <Text style={styles.value} numberOfLines={1}>{pitchLabel}</Text>
+            <CustomSlider
+              value={pitch}
+              onValueChange={handlePitchChange}
+              accentColor={accentColor}
+              edgeColor={pa.accentText}
+              label="Voice pitch"
+            />
+            <Text style={styles.hint}>0.5 = deep · 1.0 = natural · 2.0 = high</Text>
+          </Section>
 
-        {/* Persona badge */}
-        <View style={[styles.personaBadge, { borderColor: accentColor }]}>
-          <Text style={[styles.personaInitials, { color: accentColor }]}>
-            {persona.initials}
-          </Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.personaName}>{persona.fullName}</Text>
-            <Text style={styles.personaEra}>{persona.era}</Text>
-          </View>
-          <View style={[styles.legendBadge, { backgroundColor: accentColor }]}>
-            <Text style={[styles.legendBadgeText, { color: persona.ink ?? Colors.bg }]}>
-              LEGEND
+          {/* ── SPEED ── */}
+          <Section label="Speed">
+            <Text style={styles.value} numberOfLines={1}>{rateLabel}</Text>
+            <CustomSlider
+              value={rate}
+              onValueChange={handleRateChange}
+              accentColor={accentColor}
+              edgeColor={pa.accentText}
+              label="Voice speed"
+            />
+            <Text style={styles.hint}>0.5 = slow · 1.0 = natural · 2.0 = fast</Text>
+          </Section>
+
+          {/* Preview button — the one filled control on the page. */}
+          <PressableScale
+            onPress={handlePreview}
+            haptic="heavy"
+            scaleTo={0.97}
+            accessibilityRole="button"
+            accessibilityLabel={speaking ? 'Stop preview' : 'Preview voice'}
+            style={[
+              styles.previewBtn,
+              speaking
+                ? { backgroundColor: tokens.surfaceAlt, borderColor: pa.accentText }
+                : { backgroundColor: accentColor, borderColor: pa.accentText },
+            ]}
+          >
+            <Text
+              style={[styles.previewBtnText, { color: speaking ? pa.accentText : pa.ink }]}
+              numberOfLines={1}
+            >
+              {speaking ? '■  STOP PREVIEW' : '▶  PREVIEW VOICE'}
             </Text>
-          </View>
-        </View>
+          </PressableScale>
 
-        {/* Pitch slider */}
-        <View style={styles.sliderSection}>
-          <View style={styles.sliderHeader}>
-            <Text style={styles.sliderLabel}>PITCH</Text>
-            <Text style={[styles.sliderValue, { color: accentColor }]}>{pitchLabel}</Text>
-          </View>
-          <Text style={styles.sliderHint}>0.5 = deep · 1.0 = natural · 2.0 = high</Text>
-          <CustomSlider
-            value={pitch}
-            onValueChange={handlePitchChange}
-            accentColor={accentColor}
-          />
-        </View>
-
-        {/* Speed slider */}
-        <View style={styles.sliderSection}>
-          <View style={styles.sliderHeader}>
-            <Text style={styles.sliderLabel}>SPEED</Text>
-            <Text style={[styles.sliderValue, { color: accentColor }]}>{rateLabel}</Text>
-          </View>
-          <Text style={styles.sliderHint}>0.5 = slow · 1.0 = natural · 2.0 = fast</Text>
-          <CustomSlider
-            value={rate}
-            onValueChange={handleRateChange}
-            accentColor={accentColor}
-          />
-        </View>
-
-        {/* Preview button */}
-        <TouchableOpacity
-          style={[styles.previewBtn, { backgroundColor: speaking ? Colors.surface : accentColor, borderColor: accentColor }]}
-          onPress={handlePreview}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.previewBtnText, { color: speaking ? accentColor : (persona.ink ?? Colors.bg) }]}>
-            {speaking ? '■  STOP PREVIEW' : '▶  PREVIEW VOICE'}
+          {/* Sample line shown so user knows what will be spoken */}
+          <Text style={styles.previewLine} numberOfLines={2}>
+            "{PREVIEW_LINES[personaId]}"
           </Text>
-        </TouchableOpacity>
 
-        {/* Sample line shown so user knows what will be spoken */}
-        <Text style={styles.previewLine} numberOfLines={2}>
-          "{PREVIEW_LINES[personaId]}"
-        </Text>
+          {/* Reset — borderless, so it stays subordinate to the preview CTA. */}
+          <PressableScale
+            onPress={handleReset}
+            haptic="light"
+            scaleTo={0.97}
+            accessibilityRole="button"
+            accessibilityLabel="Reset to default"
+            style={styles.resetBtn}
+          >
+            <Text style={styles.resetBtnText} numberOfLines={1}>RESET TO DEFAULT</Text>
+          </PressableScale>
 
-        {/* Reset button */}
-        <TouchableOpacity style={styles.resetBtn} onPress={handleReset} activeOpacity={0.7}>
-          <Text style={styles.resetBtnText}>RESET TO DEFAULT</Text>
-        </TouchableOpacity>
-
-      </View>
-    </SafeAreaView>
+        </SafeAreaView>
+      </CanvasScreen>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+// ─────────────────────────────────────────────────────────────────────────────
+// Styles
+// ─────────────────────────────────────────────────────────────────────────────
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: t.bg },
+  body: { paddingHorizontal: BODY_PAD },
+
+  // Section's own top margin is tuned for a mid-page break; the first one sits
+  // right under the crown and needs less.
+  firstSection: { marginTop: 22 },
+
+  loadingStack: { marginTop: 30, gap: 14 },
+  loadingCta: { marginTop: 40 },
+
+  // ── Crown monogram ─────────────────────────────────────────────────────────
+  monogram: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  backBtn: { width: 32 },
-  backText: { fontSize: 22, color: Colors.text },
-  headerTitle: {
-    fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary,
-    letterSpacing: 1.6,
+  monogramText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 15,
+    letterSpacing: -0.4,
   },
 
-  body: { padding: Spacing.md },
-
-  personaBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderWidth: 1, borderRadius: 10,
-    padding: 14, marginBottom: 28,
+  // ── The value numeral: the drama of each control ───────────────────────────
+  // Full ink, not the accent — the persona colour is spent on the slider and the
+  // preview CTA, and a coloured numeral would make three accents on one page.
+  value: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 46,
+    lineHeight: 48,
+    // -0.045em at 46px.
+    letterSpacing: -2.07,
+    fontVariant: ['tabular-nums'],
+    color: t.text,
   },
-  personaInitials: { fontFamily: Fonts.display, fontSize: 28 },
-  personaName: { fontFamily: Fonts.display, fontSize: 16, color: Colors.text, letterSpacing: -0.3 },
-  personaEra:  { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.5, marginTop: 2 },
-  legendBadge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
-  legendBadgeText: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 1.4 },
 
-  sliderSection: { marginBottom: 8 },
-  sliderHeader:  { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  sliderLabel:   { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 1.8 },
-  sliderValue:   { fontFamily: Fonts.display, fontSize: 18 },
-  sliderHint:    { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.4, marginTop: 2 },
+  // ── Slider ─────────────────────────────────────────────────────────────────
+  sliderHit: { paddingVertical: 14 },
+  track: {
+    height: 6,
+    borderRadius: 3,
+  },
+  // The brand fill is only ~2.5:1 against a light page, below the 3:1 SC 1.4.11
+  // owes a control's boundary, so the fill and the thumb both carry a hairline
+  // in the persona's text-safe tone. Hue-matched rather than tokens.accentLine,
+  // which is emerald and would clash with a gold or crimson coach.
+  fill: {
+    height: 6,
+    borderRadius: 3,
+    borderWidth: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  thumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    position: 'absolute',
+    top: -8,
+    marginLeft: -11,
+  },
 
+  hint: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8.5,
+    lineHeight: 14,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+
+  // ── Preview CTA ────────────────────────────────────────────────────────────
   previewBtn: {
-    borderWidth: 1.5, borderRadius: 8,
-    paddingVertical: 14, alignItems: 'center', marginTop: 28,
+    marginTop: 40,
+    paddingVertical: 17,
+    borderWidth: 1,
+    borderRadius: 26,
+    alignItems: 'center',
   },
-  previewBtnText: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: 1 },
+  previewBtnText: {
+    fontFamily: Fonts.displayMedium,
+    fontSize: 13,
+    letterSpacing: 0.8,
+  },
 
   previewLine: {
-    fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary,
-    textAlign: 'center', marginTop: 10, marginBottom: 24,
-    letterSpacing: 0.3, lineHeight: 16,
+    fontFamily: Fonts.body,
+    fontSize: 13,
+    lineHeight: 19,
+    color: t.textSecondary,
+    textAlign: 'center',
+    marginTop: 16,
   },
 
   resetBtn: {
-    alignItems: 'center', paddingVertical: 12,
-    borderWidth: 1, borderColor: Colors.border, borderRadius: 8,
+    marginTop: 34,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
   resetBtnText: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textSecondary, letterSpacing: 1.6,
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    color: t.textSecondary,
   },
 });

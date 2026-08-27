@@ -3,20 +3,29 @@
  *
  * Record a workout clip (10–30 seconds) using expo-camera, then play it back
  * with a simple notes panel. No AI overlay on playback (MVP).
+ *
+ * Bold Canvas: the footage is the hero, so there is no <Crown> — a dark head
+ * runs into a full-bleed stage and every readout FLOATS over it, borderless.
+ * The light body below carries the detail (notes, actions).
  */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, TextInput,
-  Alert, ScrollView, ActivityIndicator, Linking,
+  View, Text, StyleSheet, TextInput, StatusBar,
+  Alert, ScrollView, Linking, useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from 'expo-camera';
 import { Video, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Camera as CameraIcon, Check, RefreshCw, X as XIcon } from 'lucide-react-native';
 import { canAccess } from '@/lib/featureGates';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
+import { BigStat, CanvasScreen, Hairline, Section } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
 
 const MAX_DURATION_SEC = 30;
 const NOTES_KEY_PREFIX = 'video_review_notes_';
@@ -28,6 +37,12 @@ export default function VideoReview() {
   const [permission, requestPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
+  const videoHeight = Math.round(screenHeight * 0.42);
+
   const [mode, setMode] = useState<Mode>('record');
   const [recording, setRecording] = useState(false);
   const [videoUri, setVideoUri] = useState<string | null>(null);
@@ -38,6 +53,16 @@ export default function VideoReview() {
 
   const cameraRef = useRef<CameraView>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Focus-scoped: the dark head runs under the status bar and needs light icons,
+  // but that entry must not follow the user onto a light screen pushed on top.
+  const [screenFocused, setScreenFocused] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      setScreenFocused(true);
+      return () => setScreenFocused(false);
+    }, []),
+  );
 
   // Gate check
   useEffect(() => {
@@ -195,115 +220,173 @@ export default function VideoReview() {
     });
 
   if (!permission) {
+    // Shaped like the screen that is coming — a tall stage with its controls —
+    // rather than a bare spinner.
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <ActivityIndicator color={Colors.primary} />
+      <CanvasScreen scroll={false} tabBar={false} topInset contentStyle={styles.gateLoading}>
+        <Text style={styles.eyebrow}>Form capture</Text>
+        <Skeleton height={Math.round(screenHeight * 0.44)} radius={26} />
+        <View style={styles.gateLoadingRow}>
+          <Skeleton width={76} height={76} radius={38} />
         </View>
-      </SafeAreaView>
+        <Text style={styles.gateText}>Preparing the camera…</Text>
+      </CanvasScreen>
     );
   }
 
   if (!permission.granted || !micPermission?.granted) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <Text style={styles.permText}>Camera and microphone access are required to record workout clips.</Text>
-          <TouchableOpacity style={styles.permBtn} onPress={ensurePermissions}>
-            <Text style={styles.permBtnText}>
-              {permission.canAskAgain === false || micPermission?.canAskAgain === false
-                ? 'OPEN SETTINGS'
-                : 'GRANT ACCESS'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <CanvasScreen scroll={false} tabBar={false} topInset contentStyle={styles.gateBody}>
+        <Text style={styles.eyebrow}>Form capture</Text>
+        <Text style={styles.gateTitle}>Camera{'\n'}and mic{'\n'}access.</Text>
+        <Text style={styles.gateText}>
+          Camera and microphone access are required to record workout clips.
+        </Text>
+        <PressableScale
+          style={styles.gateBtn}
+          onPress={ensurePermissions}
+          haptic="heavy"
+          accessibilityRole="button"
+        >
+          <CameraIcon size={15} color={tokens.accentInk} />
+          <Text style={styles.gateBtnText}>
+            {permission.canAskAgain === false || micPermission?.canAskAgain === false
+              ? 'Open settings'
+              : 'Grant access'}
+          </Text>
+        </PressableScale>
+      </CanvasScreen>
     );
   }
 
   // ── REVIEW MODE ──────────────────────────────────────────────────────────────
   if (mode === 'review' && videoUri) {
     return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-            <Text style={styles.iconText}>✕</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>FORM REVIEW</Text>
-          <View style={styles.iconBtn} />
+      <View style={styles.root}>
+        {screenFocused ? <StatusBar barStyle="light-content" /> : null}
+
+        <View style={[styles.head, { paddingTop: insets.top + 8 }]}>
+          <PressableScale
+            onPress={() => router.back()}
+            haptic="light"
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Close form review"
+            style={styles.headBtn}
+          >
+            <XIcon size={19} color={TOKENS.dark.crownText} />
+          </PressableScale>
+          <View style={styles.headTitleWrap}>
+            <Text style={styles.headEyebrow}>Clip captured</Text>
+            <Text style={styles.headTitle} numberOfLines={1}>Form review</Text>
+          </View>
+          <View style={styles.headSpacer} />
         </View>
 
         <Video
           source={{ uri: videoUri }}
-          style={styles.video}
+          style={[styles.video, { height: videoHeight }]}
           resizeMode={ResizeMode.CONTAIN}
           useNativeControls
           shouldPlay={false}
           isLooping
         />
 
-        <ScrollView style={styles.panel} contentContainerStyle={styles.panelContent}>
-          {/* Meta strip */}
-          <View style={styles.metaRow}>
-            <View style={styles.metaChip}>
-              <Text style={styles.metaLabel}>RECORDED</Text>
-              <Text style={styles.metaValue}>
+        <ScrollView
+          style={styles.panel}
+          contentContainerStyle={[styles.panelContent, { paddingBottom: insets.bottom + 44 }]}
+        >
+          {/* Meta — the clip length is the one big numeral in the light body. */}
+          <View style={styles.heroRow}>
+            <BigStat value={formatTime(duration)} label="Clip length" size={44} />
+            <View style={styles.metaWrap}>
+              <Text style={styles.metaLabel} numberOfLines={1}>Recorded</Text>
+              <Text style={styles.metaValue} numberOfLines={2}>
                 {recordedAt ? formatTimestamp(recordedAt) : '—'}
               </Text>
             </View>
-            <View style={styles.metaChip}>
-              <Text style={styles.metaLabel}>DURATION</Text>
-              <Text style={styles.metaValue}>{formatTime(duration)}</Text>
-            </View>
           </View>
 
-          <Text style={styles.sectionLabel}>COACH&apos;S NOTE</Text>
-          <TextInput
-            style={styles.notesInput}
-            value={notes}
-            onChangeText={setNotes}
-            placeholder="Add your form observations, cues to remember, or coach feedback…"
-            placeholderTextColor={Colors.textTertiary}
-            multiline
-            numberOfLines={5}
-            textAlignVertical="top"
-          />
+          <Hairline style={styles.rule} />
+
+          <Section label="Coach's note">
+            <TextInput
+              style={styles.notes}
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Add your form observations, cues to remember, or coach feedback…"
+              placeholderTextColor={tokens.textTertiary}
+              multiline
+              numberOfLines={5}
+              textAlignVertical="top"
+            />
+          </Section>
 
           <View style={styles.btnRow}>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={handleRecordAgain}>
-              <Text style={styles.secondaryBtnText}>⟳  RECORD AGAIN</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.primaryBtn, saving && styles.btnDisabled]}
-              onPress={handleClose}
-              disabled={saving}
-            >
-              <Text style={styles.primaryBtnText}>
-                {saving ? 'SAVING…' : '✓  SAVE & CLOSE'}
-              </Text>
-            </TouchableOpacity>
+            {/* PressableScale renders its own wrapper, so the flex that splits
+                the row has to live on a cell around it, not on the button. */}
+            <View style={styles.btnCell}>
+              <PressableScale
+                style={styles.secondaryBtn}
+                onPress={handleRecordAgain}
+                haptic="light"
+                accessibilityRole="button"
+              >
+                <RefreshCw size={14} color={tokens.text} />
+                <Text style={styles.secondaryBtnText} numberOfLines={1}>Record again</Text>
+              </PressableScale>
+            </View>
+            <View style={styles.btnCell}>
+              <PressableScale
+                style={styles.primaryBtn}
+                onPress={handleClose}
+                disabled={saving}
+                haptic="heavy"
+                accessibilityRole="button"
+                accessibilityState={{ disabled: saving }}
+              >
+                {saving ? null : <Check size={14} color={tokens.accentInk} />}
+                <Text style={styles.primaryBtnText} numberOfLines={1}>
+                  {saving ? 'Saving…' : 'Save & close'}
+                </Text>
+              </PressableScale>
+            </View>
           </View>
 
           <Text style={styles.hint}>
             Tap the video to play. Use the controls to scrub through your clip.
           </Text>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     );
   }
 
   // ── RECORD MODE ──────────────────────────────────────────────────────────────
+  const progress = Math.min(1, duration / MAX_DURATION_SEC);
+
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
-          <Text style={styles.iconText}>✕</Text>
-        </TouchableOpacity>
-        <Text style={styles.title}>RECORD & REVIEW</Text>
-        <View style={styles.iconBtn} />
+    <View style={styles.root}>
+      {screenFocused ? <StatusBar barStyle="light-content" /> : null}
+
+      <View style={[styles.head, { paddingTop: insets.top + 8 }]}>
+        <PressableScale
+          onPress={() => router.back()}
+          haptic="light"
+          hitSlop={12}
+          accessibilityRole="button"
+          accessibilityLabel="Close recorder"
+          style={styles.headBtn}
+        >
+          <XIcon size={19} color={TOKENS.dark.crownText} />
+        </PressableScale>
+        <View style={styles.headTitleWrap}>
+          <Text style={styles.headEyebrow}>Form capture</Text>
+          <Text style={styles.headTitle} numberOfLines={1}>Record &amp; review</Text>
+        </View>
+        <View style={styles.headSpacer} />
       </View>
 
-      <View style={styles.cameraWrapper}>
+      <View style={styles.stage}>
         <CameraView
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
@@ -311,155 +394,229 @@ export default function VideoReview() {
           mode="video"
         />
 
+        {/* Legibility scrims — the overlays are borderless, so the stage itself
+            carries their contrast instead of a box around each one. */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={[TOKENS.dark.overlay, 'transparent']}
+          style={styles.scrimTop}
+        />
+        <LinearGradient
+          pointerEvents="none"
+          colors={['transparent', TOKENS.dark.scrim]}
+          style={styles.scrimBottom}
+        />
+
         {/* Timer overlay */}
         {recording && (
-          <View style={styles.timerPill}>
-            <View style={styles.recDot} />
-            <Text style={styles.timerText}>{formatTime(duration)}</Text>
-            <Text style={styles.timerMax}> / {formatTime(MAX_DURATION_SEC)}</Text>
-          </View>
+          <>
+            <View style={styles.recPill}>
+              <View style={styles.recDot} />
+              <Text style={styles.recText}>Rec</Text>
+            </View>
+            <View style={styles.stageBottom}>
+              <Text style={styles.timerValue}>{formatTime(duration)}</Text>
+              <Text style={styles.timerLabel}>
+                Elapsed / max {formatTime(MAX_DURATION_SEC)}
+              </Text>
+              <View style={styles.track}>
+                <View style={[styles.trackFill, { width: `${progress * 100}%` }]} />
+              </View>
+            </View>
+          </>
         )}
 
         {/* Instruction overlay when idle */}
         {!recording && (
-          <View style={styles.instructionBanner}>
-            <Text style={styles.instructionText}>
-              Position yourself in frame, then tap Record.
+          <View style={styles.stageBottom}>
+            <Text style={styles.idleTitle}>Position yourself{'\n'}in frame.</Text>
+            <Text style={styles.idleSub}>
+              Max {MAX_DURATION_SEC}s — auto-stops when limit reached.
             </Text>
-            <Text style={styles.instructionSub}>Max {MAX_DURATION_SEC}s — auto-stops when limit reached.</Text>
           </View>
         )}
       </View>
 
       {/* Controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity
+      <View style={[styles.controls, { paddingBottom: insets.bottom + 24 }]}>
+        <PressableScale
           style={[styles.recordBtn, recording && styles.recordBtnActive]}
           onPress={handleToggleRecord}
-          activeOpacity={0.8}
+          haptic="heavy"
+          accessibilityRole="button"
+          accessibilityLabel={recording ? 'Stop recording' : 'Start recording'}
         >
           <View style={recording ? styles.stopIcon : styles.startIcon} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={styles.recordLabel}>
-          {recording ? 'TAP TO STOP' : 'TAP TO RECORD'}
+          {recording ? 'Tap to stop' : 'Tap to record'}
         </Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.bg },
+function makeStyles(t: SemanticTokens) {
+  // Camera and video are a dark ground whatever scheme the app is in, so every
+  // readout floating over them reads the DARK token set.
+  const stage = TOKENS.dark;
 
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  permText: { fontFamily: Fonts.body, fontSize: 14, color: Colors.text, textAlign: 'center', marginBottom: 20 },
-  permBtn: { backgroundColor: Colors.primary, borderRadius: 8, paddingHorizontal: 24, paddingVertical: 14 },
-  permBtnText: { fontFamily: Fonts.display, fontSize: 12, color: Colors.accentInk, letterSpacing: 1 },
+  return StyleSheet.create({
+    root: { flex: 1, backgroundColor: t.bg },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12, backgroundColor: Colors.bg,
-  },
-  iconBtn: { padding: 6, minWidth: 32, alignItems: 'center' },
-  iconText: { fontSize: 18, color: Colors.text },
-  title: {
-    fontSize: 13, fontFamily: Fonts.display, color: Colors.primary,
-    flex: 1, textAlign: 'center', letterSpacing: 1.5,
-  },
+    // ── Gates ────────────────────────────────────────────────────────────────
+    gateBody: { justifyContent: 'center', paddingHorizontal: 24, gap: 18 },
+    gateLoading: { justifyContent: 'center', paddingHorizontal: 24, gap: 18 },
+    gateLoadingRow: { flexDirection: 'row', justifyContent: 'center' },
+    eyebrow: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: t.textTertiary,
+    },
+    gateTitle: {
+      fontFamily: Fonts.displayBold, fontSize: 44, lineHeight: 46,
+      letterSpacing: -1.98, color: t.text,
+    },
+    gateText: { fontFamily: Fonts.body, fontSize: 15, lineHeight: 23, color: t.textSecondary },
+    gateBtn: {
+      marginTop: 6, alignSelf: 'flex-start',
+      flexDirection: 'row', alignItems: 'center', gap: 9,
+      paddingHorizontal: 24, paddingVertical: 16, borderRadius: 26,
+      // Brand emerald is 2.54:1 on white — the deep hairline is what gives the
+      // control a legible edge on a light page.
+      backgroundColor: t.accent, borderWidth: 1, borderColor: t.accentLine,
+    },
+    gateBtnText: {
+      fontFamily: Fonts.legacyMono, fontSize: 11, letterSpacing: 2,
+      textTransform: 'uppercase', color: t.accentInk,
+    },
 
-  // ── Camera ──────────────────────────────────────────────────────────────────
-  cameraWrapper: { flex: 1, backgroundColor: '#000', position: 'relative' },
+    // ── Dark head, continuous with the stage ─────────────────────────────────
+    head: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      paddingHorizontal: 16, paddingBottom: 14, backgroundColor: t.crown,
+    },
+    headBtn: {
+      width: 38, height: 38, borderRadius: 19,
+      alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: stage.crownLine,
+    },
+    headSpacer: { width: 38 },
+    headTitleWrap: { flex: 1, alignItems: 'center' },
+    headEyebrow: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: stage.crownTextDim,
+    },
+    headTitle: {
+      fontFamily: Fonts.displayBold, fontSize: 20, letterSpacing: -0.9,
+      color: stage.crownText, marginTop: 5,
+    },
 
-  timerPill: {
-    position: 'absolute', top: 12, left: 12,
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.72)', borderRadius: 6,
-    paddingHorizontal: 12, paddingVertical: 6,
-    borderWidth: 1, borderColor: 'rgba(255,91,58,0.5)',
-  },
-  recDot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#ff5b3a', marginRight: 8,
-  },
-  timerText: { fontFamily: Fonts.mono, fontSize: 16, color: '#fff' },
-  timerMax:  { fontFamily: Fonts.mono, fontSize: 12, color: 'rgba(255,255,255,0.5)' },
+    // ── Stage — the hero; every overlay floats, none is boxed ────────────────
+    stage: { flex: 1, overflow: 'hidden', backgroundColor: t.crown },
+    scrimTop: { position: 'absolute', top: 0, left: 0, right: 0, height: 96 },
+    scrimBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 250 },
 
-  instructionBanner: {
-    position: 'absolute', bottom: 12, left: 16, right: 16,
-    backgroundColor: 'rgba(0,0,0,0.65)', borderRadius: 8,
-    paddingHorizontal: 16, paddingVertical: 12,
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-  },
-  instructionText: { fontFamily: Fonts.bodySemi, fontSize: 13, color: '#fff', textAlign: 'center' },
-  instructionSub:  { fontFamily: Fonts.mono, fontSize: 9, color: 'rgba(255,255,255,0.45)', marginTop: 4, letterSpacing: 0.6 },
+    recPill: {
+      position: 'absolute', top: 14, left: 14,
+      flexDirection: 'row', alignItems: 'center', gap: 7,
+      paddingHorizontal: 11, paddingVertical: 6, borderRadius: 999,
+      backgroundColor: stage.overlay,
+    },
+    recDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: stage.danger },
+    recText: {
+      fontFamily: Fonts.legacyMono, fontSize: 8.5, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: stage.crownText,
+    },
 
-  // ── Record controls ──────────────────────────────────────────────────────────
-  controls: {
-    alignItems: 'center', justifyContent: 'center',
-    paddingVertical: 28, backgroundColor: Colors.bg, gap: 10,
-  },
-  recordBtn: {
-    width: 72, height: 72, borderRadius: 36,
-    backgroundColor: Colors.surface,
-    borderWidth: 3, borderColor: Colors.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  recordBtnActive: { borderColor: '#ff5b3a' },
-  startIcon: {
-    width: 28, height: 28, borderRadius: 14,
-    backgroundColor: '#ff5b3a',
-  },
-  stopIcon: {
-    width: 22, height: 22, borderRadius: 3,
-    backgroundColor: '#ff5b3a',
-  },
-  recordLabel: {
-    fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.8,
-  },
+    stageBottom: { position: 'absolute', left: 20, right: 20, bottom: 20, gap: 10 },
+    // The dramatic pairing: a 56px numeral straight onto an 8px mono label.
+    timerValue: {
+      fontFamily: Fonts.displayBold, fontVariant: ['tabular-nums'],
+      fontSize: 56, lineHeight: 57, letterSpacing: -2.52, color: stage.crownText,
+    },
+    timerLabel: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: stage.crownTextDim,
+    },
+    track: { height: 3, borderRadius: 2, backgroundColor: stage.crownLine, overflow: 'hidden' },
+    trackFill: { height: 3, borderRadius: 2, backgroundColor: stage.danger },
 
-  // ── Review / video ───────────────────────────────────────────────────────────
-  video: { width: '100%', height: 280, backgroundColor: '#000' },
+    idleTitle: {
+      fontFamily: Fonts.displayBold, fontSize: 27, lineHeight: 30,
+      letterSpacing: -1.22, color: stage.crownText,
+    },
+    idleSub: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: stage.crownTextDim,
+    },
 
-  panel: { flex: 1, backgroundColor: Colors.surface },
-  panelContent: { padding: Spacing.md, gap: Spacing.sm, paddingBottom: 40 },
+    // ── Record controls — light body under the dark stage ────────────────────
+    controls: { alignItems: 'center', paddingTop: 22, gap: 13, backgroundColor: t.bg },
+    recordBtn: {
+      width: 76, height: 76, borderRadius: 38,
+      alignItems: 'center', justifyContent: 'center',
+      borderWidth: 2, borderColor: t.borderStrong,
+    },
+    recordBtnActive: { borderColor: t.danger },
+    startIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: t.danger },
+    stopIcon: { width: 24, height: 24, borderRadius: 5, backgroundColor: t.danger },
+    recordLabel: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 2,
+      textTransform: 'uppercase', color: t.textTertiary,
+    },
 
-  metaRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: 4 },
-  metaChip: {
-    flex: 1, backgroundColor: Colors.bg, borderRadius: 8,
-    padding: 12, borderWidth: 1, borderColor: Colors.border,
-  },
-  metaLabel: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1.6, marginBottom: 4 },
-  metaValue: { fontFamily: Fonts.bodySemi, fontSize: 13, color: Colors.text },
+    // ── Review ───────────────────────────────────────────────────────────────
+    video: { width: '100%', backgroundColor: t.crown },
+    panel: { flex: 1, backgroundColor: t.bg },
+    panelContent: { paddingHorizontal: 22, paddingTop: 26 },
 
-  sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.8, marginTop: 4, marginBottom: 6,
-  },
+    heroRow: {
+      flexDirection: 'row', alignItems: 'flex-end',
+      justifyContent: 'space-between', gap: 16,
+    },
+    metaWrap: { flexShrink: 1, alignItems: 'flex-end', gap: 6, paddingBottom: 3 },
+    metaLabel: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.3,
+      textTransform: 'uppercase', color: t.textTertiary,
+    },
+    metaValue: {
+      fontFamily: Fonts.bodySemi, fontSize: 13, lineHeight: 18,
+      color: t.text, textAlign: 'right',
+    },
+    rule: { marginTop: 22 },
 
-  notesInput: {
-    backgroundColor: Colors.bg, borderRadius: 8, padding: 14,
-    fontFamily: Fonts.body, fontSize: 14, color: Colors.text,
-    borderWidth: 1, borderColor: Colors.border,
-    minHeight: 120, lineHeight: 22,
-  },
+    notes: {
+      backgroundColor: t.surfaceAlt, borderRadius: 22, padding: 18,
+      fontFamily: Fonts.body, fontSize: 15, lineHeight: 23, color: t.text,
+      minHeight: 132,
+    },
 
-  btnRow: { flexDirection: 'row', gap: Spacing.sm, marginTop: 8 },
-  primaryBtn: {
-    flex: 1, backgroundColor: Colors.primary, borderRadius: 8,
-    paddingVertical: 14, alignItems: 'center',
-  },
-  primaryBtnText: { fontFamily: Fonts.display, fontSize: 11, color: Colors.accentInk, letterSpacing: 1 },
-  secondaryBtn: {
-    flex: 1, backgroundColor: 'transparent', borderRadius: 8,
-    paddingVertical: 14, alignItems: 'center',
-    borderWidth: 1, borderColor: Colors.primary,
-  },
-  secondaryBtnText: { fontFamily: Fonts.display, fontSize: 11, color: Colors.primary, letterSpacing: 1 },
-  btnDisabled: { opacity: 0.5 },
+    btnRow: { flexDirection: 'row', gap: 10, marginTop: 26 },
+    btnCell: { flex: 1 },
+    primaryBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 8, paddingVertical: 16, borderRadius: 26,
+      backgroundColor: t.accent, borderWidth: 1, borderColor: t.accentLine,
+    },
+    primaryBtnText: {
+      fontFamily: Fonts.legacyMono, fontSize: 10, letterSpacing: 1.5,
+      textTransform: 'uppercase', color: t.accentInk,
+    },
+    // Same border width as the primary so the two buttons stand exactly as tall.
+    secondaryBtn: {
+      flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+      gap: 8, paddingVertical: 16, borderRadius: 26,
+      backgroundColor: t.surfaceAlt, borderWidth: 1, borderColor: t.surfaceAlt,
+    },
+    secondaryBtnText: {
+      fontFamily: Fonts.legacyMono, fontSize: 10, letterSpacing: 1.5,
+      textTransform: 'uppercase', color: t.text,
+    },
 
-  hint: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    textAlign: 'center', marginTop: 12, letterSpacing: 0.5, fontStyle: 'italic',
-  },
-});
+    hint: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, lineHeight: 15, letterSpacing: 1.2,
+      textTransform: 'uppercase', color: t.textTertiary,
+      textAlign: 'center', marginTop: 22,
+    },
+  });
+}

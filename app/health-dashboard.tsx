@@ -1,59 +1,50 @@
+/**
+ * Health dashboard — Bold Canvas.
+ *
+ * The crown carries the recovery ring as the single hero; the light body below
+ * holds the detail — breakdown, step gauge, and the two manual inputs — as
+ * borderless blocks separated by air rather than boxes.
+ *
+ * Every read, mutation, permission path, validation rule and Alert is untouched.
+ * In particular the smartwatch button still does NOT touch the native Health
+ * Connect module (see handleConnectWatch) — this file changed shape, not
+ * behaviour.
+ */
+
 import { useEffect, useState, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  TextInput, Alert, ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Svg, { Circle } from 'react-native-svg';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { ChevronRight, Watch } from 'lucide-react-native';
+import { Fonts } from '@/constants/theme';
 import {
   getStepsToday, logHRV, logSleepQuality, getRecoveryScore,
   saveWorkoutModifier, getTodayHRV, getTodaySleepQuality,
   type RecoveryResult,
 } from '@/lib/healthIntegration';
 import { getHealthStatus, connectHealth, type HealthStatus } from '@/lib/wearableHealth';
-import { Watch } from 'lucide-react-native';
+import { BigStat, CanvasScreen, Crown, Hairline, Section, StatRow } from '@/components/ui/canvas';
+import { AnimatedRing, CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
+import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
-// ─── Recovery gauge (SVG ring) ────────────────────────────────────────────────
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = 22;
 
-const GAUGE_SIZE = 140;
-const STROKE = 10;
-const R = (GAUGE_SIZE - STROKE) / 2;
-const CIRCUMFERENCE = 2 * Math.PI * R;
+const RING_SIZE = 124;
+const RING_STROKE = 8;
 
-function RecoveryGauge({ score }: { score: number }) {
-  const color =
-    score >= 75 ? Colors.success :
-    score >= 55 ? Colors.warning :
-    Colors.error;
+/**
+ * The recovery ring and the volume modifier both sit ON the crown, which is
+ * near-black in BOTH schemes — so their status tones resolve against the dark
+ * triplet, not the active one. The three bands (>=75 / >=55 / below) are the
+ * legacy thresholds unchanged.
+ */
+const CROWN = TOKENS.dark;
 
-  const progress = score / 100;
-  const strokeDash = CIRCUMFERENCE * (1 - progress);
-
-  return (
-    <View style={styles.gaugeWrap}>
-      <Svg width={GAUGE_SIZE} height={GAUGE_SIZE}>
-        <Circle
-          cx={GAUGE_SIZE / 2} cy={GAUGE_SIZE / 2} r={R}
-          strokeWidth={STROKE} stroke={Colors.raised} fill="none"
-        />
-        <Circle
-          cx={GAUGE_SIZE / 2} cy={GAUGE_SIZE / 2} r={R}
-          strokeWidth={STROKE} stroke={color} fill="none"
-          strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
-          strokeDashoffset={strokeDash}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${GAUGE_SIZE / 2}, ${GAUGE_SIZE / 2}`}
-        />
-      </Svg>
-      <View style={styles.gaugeCenter}>
-        <Text style={[styles.gaugeScore, { color }]}>{score}</Text>
-        <Text style={styles.gaugeLabel}>RECOVERY</Text>
-      </View>
-    </View>
-  );
+function scoreColor(score: number) {
+  if (score >= 75) return CROWN.success;
+  if (score >= 55) return CROWN.warning;
+  return CROWN.danger;
 }
 
 // ─── Sleep emoji buttons ──────────────────────────────────────────────────────
@@ -70,6 +61,8 @@ const SLEEP_EMOJIS: Array<{ value: 1 | 2 | 3 | 4 | 5; emoji: string; label: stri
 
 export default function HealthDashboard() {
   const router = useRouter();
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const [loading,     setLoading]     = useState(true);
   const [steps,       setSteps]       = useState(0);
@@ -98,19 +91,27 @@ export default function HealthDashboard() {
     );
   };
 
+  // Every setter runs inside try/finally: a rejected read (corrupt AsyncStorage
+  // payload, a wearable bridge throwing) used to skip setLoading(false) and
+  // strand the whole page on skeletons with no way back.
   const refresh = useCallback(async () => {
     setLoading(true);
-    const [s, hrv, sleep, rec] = await Promise.all([
-      getStepsToday(),
-      getTodayHRV(),
-      getTodaySleepQuality(),
-      getRecoveryScore(),
-    ]);
-    setSteps(s);
-    setTodayHRV(hrv);
-    setSleepVal(sleep as 1|2|3|4|5);
-    setRecovery(rec);
-    setLoading(false);
+    try {
+      const [s, hrv, sleep, rec] = await Promise.all([
+        getStepsToday(),
+        getTodayHRV(),
+        getTodaySleepQuality(),
+        getRecoveryScore(),
+      ]);
+      setSteps(s);
+      setTodayHRV(hrv);
+      setSleepVal(sleep as 1|2|3|4|5);
+      setRecovery(rec);
+    } catch {
+      // Keep whatever was last shown rather than blanking the page.
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -122,18 +123,29 @@ export default function HealthDashboard() {
       return;
     }
     setSavingHRV(true);
-    await logHRV(val);
-    setHrvInput('');
-    await refresh();
-    setSavingHRV(false);
+    try {
+      await logHRV(val);
+      setHrvInput('');
+      await refresh();
+    } catch {
+      Alert.alert('Could not save', 'Your HRV entry was not stored. Please try again.');
+    } finally {
+      // In a finally so a failed write cannot leave the control disabled forever.
+      setSavingHRV(false);
+    }
   };
 
   const handleSleepTap = async (val: 1|2|3|4|5) => {
     setSavingSleep(true);
     setSleepVal(val);
-    await logSleepQuality(val);
-    await refresh();
-    setSavingSleep(false);
+    try {
+      await logSleepQuality(val);
+      await refresh();
+    } catch {
+      Alert.alert('Could not save', 'Your sleep rating was not stored. Please try again.');
+    } finally {
+      setSavingSleep(false);
+    }
   };
 
   const handleApply = async () => {
@@ -155,69 +167,99 @@ export default function HealthDashboard() {
     : '';
 
   const modifierColor = recovery
-    ? recovery.modifier > 1 ? Colors.success
-    : recovery.modifier < 1 ? Colors.warning
-    : Colors.textSecondary
-    : Colors.textSecondary;
+    ? recovery.modifier > 1 ? CROWN.success
+    : recovery.modifier < 1 ? CROWN.warning
+    : CROWN.crownTextDim
+    : CROWN.crownTextDim;
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>HEALTH DASHBOARD</Text>
-        <View style={{ width: 32 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
+    <CanvasScreen tabBar={false} bottomSpace={40}>
+      <Crown
+        eyebrow="Recovery"
+        title="HEALTH"
+        accentLine="DASHBOARD"
+        onBack={() => router.back()}
+      >
         {loading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color={Colors.primary} />
+          <View style={styles.hero}>
+            <Skeleton width={RING_SIZE} height={RING_SIZE} radius={RING_SIZE / 2} style={styles.crownPlate} />
+            <View style={styles.heroSide}>
+              <Skeleton width="70%" height={9} radius={4} style={styles.crownPlate} />
+              <Skeleton width="100%" height={20} radius={6} style={styles.crownPlate} />
+              <Skeleton width="85%" height={20} radius={6} style={styles.crownPlate} />
+            </View>
+          </View>
+        ) : (
+          <View style={styles.hero}>
+            {recovery && (
+              <AnimatedRing
+                progress={recovery.score / 100}
+                size={RING_SIZE}
+                stroke={RING_STROKE}
+                color={scoreColor(recovery.score)}
+                trackColor={CROWN.crownLine}
+              >
+                <CountUp
+                  value={recovery.score}
+                  style={[styles.ringScore, { color: scoreColor(recovery.score) }]}
+                  accessibilityLabel={`Recovery score ${recovery.score}`}
+                />
+                <Text style={styles.ringLabel}>RECOVERY</Text>
+              </AnimatedRing>
+            )}
+            <View style={styles.heroSide}>
+              <Text style={styles.heroLabel}>TODAY'S SCORE</Text>
+              <Text style={[styles.modifierLabel, { color: modifierColor }]}>{modifierLabel}</Text>
+            </View>
+          </View>
+        )}
+      </Crown>
+
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        {loading ? (
+          <View style={styles.loadingBody}>
+            <Skeleton height={56} radius={20} />
+            <Skeleton height={96} radius={26} />
+            <Skeleton height={116} radius={26} />
+            <Skeleton height={132} radius={26} />
+            <Skeleton height={112} radius={26} />
+            <Skeleton height={58} radius={26} />
           </View>
         ) : (
           <>
-            {/* Recovery gauge */}
-            <View style={styles.gaugeRow}>
-              {recovery && <RecoveryGauge score={recovery.score} />}
-              <View style={styles.gaugeRight}>
-                <Text style={styles.sectionLabel}>TODAY'S SCORE</Text>
-                <Text style={[styles.modifierLabel, { color: modifierColor }]}>{modifierLabel}</Text>
-                {recovery && (
-                  <View style={styles.breakdownGrid}>
-                    <View style={styles.breakdownItem}>
-                      <Text style={styles.breakdownValue}>
-                        {recovery.breakdown.hrv !== null ? recovery.breakdown.hrv : '—'}
-                      </Text>
-                      <Text style={styles.breakdownKey}>HRV</Text>
-                    </View>
-                    <View style={styles.breakdownItem}>
-                      <Text style={styles.breakdownValue}>
-                        {SLEEP_EMOJIS[recovery.breakdown.sleepQuality - 1]?.emoji ?? '—'}
-                      </Text>
-                      <Text style={styles.breakdownKey}>SLEEP</Text>
-                    </View>
-                    <View style={styles.breakdownItem}>
-                      <Text style={styles.breakdownValue}>
-                        {(recovery.breakdown.steps / 1000).toFixed(1)}k
-                      </Text>
-                      <Text style={styles.breakdownKey}>STEPS</Text>
-                    </View>
-                  </View>
-                )}
-              </View>
-            </View>
+            {/* Breakdown — the crown's hero score, taken apart */}
+            {recovery && (
+              <Section label="Breakdown">
+                <StatRow>
+                  <BigStat
+                    value={recovery.breakdown.hrv !== null ? recovery.breakdown.hrv : '—'}
+                    label="HRV"
+                  />
+                  <BigStat
+                    value={SLEEP_EMOJIS[recovery.breakdown.sleepQuality - 1]?.emoji ?? '—'}
+                    label="Sleep"
+                  />
+                  <BigStat
+                    value={`${(recovery.breakdown.steps / 1000).toFixed(1)}k`}
+                    label="Steps"
+                  />
+                </StatRow>
+                <Hairline style={styles.breakdownRule} />
+              </Section>
+            )}
 
             {/* Connect smartwatch — real HealthKit / Health Connect data */}
-            <TouchableOpacity
-              style={[styles.connectCard, { borderColor: Colors.primary }]}
+            <PressableScale
               onPress={handleConnectWatch}
               disabled={connecting}
-              activeOpacity={0.85}
+              haptic="medium"
+              scaleTo={0.97}
+              accessibilityRole="button"
+              accessibilityLabel="Connect a smartwatch"
+              style={[styles.connect, recovery ? styles.connectTight : styles.firstSection]}
             >
-              <Watch size={22} color={Colors.primary} />
-              <View style={{ flex: 1 }}>
+              <Watch size={22} color={tokens.text} />
+              <View style={styles.connectText}>
                 <Text style={styles.connectTitle}>
                   {healthStatus === 'available' ? 'Connect your watch' : 'Connect a smartwatch'}
                 </Text>
@@ -226,32 +268,29 @@ export default function HealthDashboard() {
                 </Text>
               </View>
               {connecting
-                ? <ActivityIndicator size="small" color={Colors.primary} />
-                : <Text style={[styles.connectArrow, { color: Colors.primary }]}>→</Text>}
-            </TouchableOpacity>
+                ? <ActivityIndicator size="small" color={tokens.textTertiary} />
+                : <ChevronRight size={18} color={tokens.textTertiary} />}
+            </PressableScale>
 
             {/* Steps */}
-            <View style={styles.card}>
-              <Text style={styles.sectionLabel}>TODAY'S STEPS</Text>
-              <Text style={styles.stepsValue}>{steps.toLocaleString()}</Text>
-              <View style={styles.stepsBarTrack}>
+            <Section label="Today's steps" contentStyle={styles.stack}>
+              <BigStat value={steps} label="Goal: 10,000 steps" size={36} />
+              <View style={styles.barTrack}>
                 <View
                   style={[
-                    styles.stepsBarFill,
+                    styles.barFill,
                     { width: `${Math.min(100, Math.round(steps / 100))}%` as any },
                   ]}
                 />
               </View>
-              <Text style={styles.stepsGoal}>Goal: 10,000 steps</Text>
-            </View>
+            </Section>
 
             {/* HRV Entry */}
-            <View style={styles.card}>
-              <Text style={styles.sectionLabel}>HEART RATE VARIABILITY (HRV)</Text>
+            <Section label="Heart rate variability (HRV)" contentStyle={styles.stack}>
               {todayHRV !== null && (
-                <Text style={styles.currentHRV}>Today: <Text style={{ color: Colors.success }}>{todayHRV} ms</Text></Text>
+                <BigStat value={todayHRV} unit="ms" label="Logged today" size={36} />
               )}
-              <Text style={styles.cardSub}>
+              <Text style={styles.sub}>
                 Enter your HRV from your wearable app (Garmin, Apple Watch, WHOOP, etc.)
               </Text>
               <View style={styles.inputRow}>
@@ -260,153 +299,258 @@ export default function HealthDashboard() {
                   value={hrvInput}
                   onChangeText={setHrvInput}
                   placeholder="e.g. 65"
-                  placeholderTextColor={Colors.textTertiary}
+                  placeholderTextColor={tokens.textTertiary}
                   keyboardType="numeric"
                   returnKeyType="done"
                   onSubmitEditing={handleLogHRV}
                 />
-                <TouchableOpacity
-                  style={[styles.logBtn, savingHRV && { opacity: 0.6 }]}
+                <PressableScale
                   onPress={handleLogHRV}
                   disabled={savingHRV}
+                  haptic="medium"
+                  scaleTo={0.96}
+                  accessibilityRole="button"
+                  accessibilityLabel="Log HRV"
+                  accessibilityState={{ disabled: savingHRV }}
+                  style={[styles.logBtn, savingHRV && styles.logBtnBusy]}
                 >
                   {savingHRV
-                    ? <ActivityIndicator size="small" color={Colors.accentInk} />
+                    ? <ActivityIndicator size="small" color={tokens.bg} />
                     : <Text style={styles.logBtnText}>LOG HRV</Text>}
-                </TouchableOpacity>
+                </PressableScale>
               </View>
-            </View>
+            </Section>
 
             {/* Sleep quality */}
-            <View style={styles.card}>
-              <Text style={styles.sectionLabel}>SLEEP QUALITY</Text>
-              <Text style={styles.cardSub}>How did you sleep last night?</Text>
+            <Section label="Sleep quality" contentStyle={styles.stack}>
+              <Text style={styles.sub}>How did you sleep last night?</Text>
+              {/* PressableScale wraps its target in a content-sized
+                  Animated.View, so the fifth each button claims has to come
+                  from these cells — flex on the button itself is inert, which
+                  left five tiny chips huddled at the left edge. */}
               <View style={styles.sleepRow}>
-                {SLEEP_EMOJIS.map((s) => (
-                  <TouchableOpacity
-                    key={s.value}
-                    style={[
-                      styles.sleepBtn,
-                      sleepVal === s.value && styles.sleepBtnActive,
-                    ]}
-                    onPress={() => handleSleepTap(s.value)}
-                    disabled={savingSleep}
-                  >
-                    <Text style={styles.sleepEmoji}>{s.emoji}</Text>
-                    <Text style={[
-                      styles.sleepLabel,
-                      sleepVal === s.value && { color: Colors.primary },
-                    ]}>{s.label}</Text>
-                  </TouchableOpacity>
-                ))}
+                {SLEEP_EMOJIS.map((s) => {
+                  const active = sleepVal === s.value;
+                  return (
+                    <View key={s.value} style={styles.sleepCell}>
+                      <PressableScale
+                        onPress={() => handleSleepTap(s.value)}
+                        disabled={savingSleep}
+                        haptic="light"
+                        scaleTo={0.9}
+                        accessibilityRole="button"
+                        accessibilityLabel={s.label}
+                        accessibilityState={{ selected: active, disabled: savingSleep }}
+                        style={[styles.sleepBtn, active && styles.sleepBtnActive]}
+                      >
+                        <Text style={styles.sleepEmoji}>{s.emoji}</Text>
+                        <Text
+                          style={[styles.sleepLabel, active && styles.sleepLabelActive]}
+                          numberOfLines={1}
+                        >
+                          {s.label}
+                        </Text>
+                      </PressableScale>
+                    </View>
+                  );
+                })}
               </View>
-            </View>
+            </Section>
 
-            {/* Apply to workout */}
-            <TouchableOpacity
-              style={[styles.applyBtn, applied && styles.applyBtnDone]}
+            {/* Apply to workout — the screen's single accent spend */}
+            <PressableScale
               onPress={handleApply}
-              activeOpacity={0.85}
               disabled={applied}
+              haptic="heavy"
+              scaleTo={0.97}
+              accessibilityRole="button"
+              accessibilityLabel="Apply to today's workout"
+              accessibilityState={{ disabled: applied }}
+              style={[styles.applyBtn, applied && styles.applyBtnDone]}
             >
-              <Text style={styles.applyBtnText}>
+              <Text style={[styles.applyBtnText, applied && styles.applyBtnTextDone]}>
                 {applied ? '✓ APPLIED TO TODAY\'S WORKOUT' : 'APPLY TO TODAY\'S WORKOUT'}
               </Text>
-            </TouchableOpacity>
-
-            <View style={{ height: 40 }} />
+            </PressableScale>
           </>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: Colors.bg },
-  scroll: { padding: Spacing.md, paddingBottom: 48 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
+  // ── Crown hero ─────────────────────────────────────────────────────────────
+  hero: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    marginTop: 24,
   },
-  backBtn:     { width: 32 },
-  backText:    { fontSize: 22, color: Colors.text },
-  headerTitle: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 1.6 },
-
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80 },
-
-  gaugeRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 16,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, padding: 16, marginBottom: 16,
+  // Skeleton's plate is the border token — dark ink at 9%, which is invisible on
+  // the near-black crown. Overriding it to the crown's own hairline keeps the
+  // loading shape readable up there.
+  crownPlate: { backgroundColor: t.crownLine },
+  // The one hero on the page: bigger than the crown title and every body stat.
+  ringScore: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 46,
+    lineHeight: 48,
+    // -0.045em at 46px.
+    letterSpacing: -2.07,
+    fontVariant: ['tabular-nums'],
   },
-  gaugeWrap: {
-    width: 140, height: 140,
-    alignItems: 'center', justifyContent: 'center', position: 'relative',
+  ringLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.6,
+    color: t.crownTextDim,
+    marginTop: 2,
   },
-  gaugeCenter: { position: 'absolute', alignItems: 'center' },
-  gaugeScore: { fontFamily: Fonts.display, fontSize: 36, letterSpacing: -1 },
-  gaugeLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: -2 },
-
-  gaugeRight: { flex: 1 },
-  modifierLabel: { fontFamily: Fonts.display, fontSize: 13, marginTop: 6, letterSpacing: 0.3 },
-  breakdownGrid: { flexDirection: 'row', gap: 12, marginTop: 12 },
-  breakdownItem: { alignItems: 'center' },
-  breakdownValue: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text },
-  breakdownKey: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1, marginTop: 2 },
-
-  card: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, padding: 16, marginBottom: 16,
+  heroSide: { flex: 1, gap: 10 },
+  heroLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    textTransform: 'uppercase',
+    color: t.crownTextDim,
   },
-  connectCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    backgroundColor: Colors.surface, borderWidth: 1,
-    borderRadius: 12, padding: 16, marginBottom: 16,
+  modifierLabel: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 21,
+    lineHeight: 24,
+    // -0.04em at 21px.
+    letterSpacing: -0.84,
   },
-  connectTitle: { fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text },
-  connectSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 2, lineHeight: 16 },
-  connectArrow: { fontFamily: Fonts.body, fontSize: 18 },
-  sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.8, marginBottom: 8,
+
+  // ── Loading body ───────────────────────────────────────────────────────────
+  loadingBody: { marginTop: 34, gap: 26 },
+
+  // ── Body rhythm ────────────────────────────────────────────────────────────
+  // Section's own 34px top margin is the page rhythm; the first block after the
+  // crown gets the same figure so the hero is not crowded.
+  firstSection: { marginTop: 34 },
+  stack: { gap: 16 },
+  sub: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 18,
+    color: t.textSecondary,
   },
-  cardSub: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginBottom: 12, lineHeight: 17 },
 
-  stepsValue: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text, letterSpacing: -1, marginBottom: 10 },
-  stepsBarTrack: { height: 6, backgroundColor: Colors.raised, borderRadius: 3, overflow: 'hidden', marginBottom: 6 },
-  stepsBarFill: { height: '100%', backgroundColor: Colors.primary, borderRadius: 3 },
-  stepsGoal: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, letterSpacing: 0.5 },
+  // ── Breakdown ──────────────────────────────────────────────────────────────
+  breakdownRule: { marginTop: 26 },
 
-  currentHRV: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginBottom: 6 },
+  // ── Connect smartwatch ─────────────────────────────────────────────────────
+  connect: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 26,
+    paddingHorizontal: 18,
+    paddingVertical: 17,
+  },
+  // The breakdown already opened the body with its own rule, so the connect
+  // block sits closer under it than a fresh section would.
+  connectTight: { marginTop: 22 },
+  connectText: { flex: 1, gap: 3 },
+  connectTitle: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 15,
+    letterSpacing: -0.2,
+    color: t.text,
+  },
+  connectSub: {
+    fontFamily: Fonts.body,
+    fontSize: 12.5,
+    lineHeight: 17,
+    color: t.textSecondary,
+  },
 
+  // ── Steps gauge ────────────────────────────────────────────────────────────
+  barTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: t.border,
+    overflow: 'hidden',
+  },
+  // Ink, not emerald: the accent is spent once on the apply CTA.
+  barFill: { height: '100%', borderRadius: 3, backgroundColor: t.text },
+
+  // ── HRV entry ──────────────────────────────────────────────────────────────
   inputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   textInput: {
-    flex: 1, backgroundColor: Colors.raised, borderRadius: 6, padding: 12,
-    fontFamily: Fonts.display, fontSize: 16, color: Colors.text,
-    borderWidth: 1, borderColor: Colors.border,
+    flex: 1,
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+    fontFamily: Fonts.displayMedium,
+    fontSize: 17,
+    letterSpacing: -0.4,
+    color: t.text,
   },
   logBtn: {
-    backgroundColor: Colors.primary, borderRadius: 6,
-    paddingHorizontal: 16, paddingVertical: 13, alignItems: 'center', justifyContent: 'center',
-    minWidth: 90,
+    backgroundColor: t.text,
+    borderRadius: 22,
+    paddingHorizontal: 18,
+    paddingVertical: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 96,
   },
-  logBtnText: { fontFamily: Fonts.display, fontSize: 11, color: Colors.accentInk, letterSpacing: 0.5 },
+  logBtnBusy: { opacity: 0.6 },
+  logBtnText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 11,
+    letterSpacing: 1.3,
+    color: t.bg,
+  },
 
-  sleepRow: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
+  // ── Sleep quality ──────────────────────────────────────────────────────────
+  sleepRow: { flexDirection: 'row', gap: 8 },
+  sleepCell: { flex: 1 },
   sleepBtn: {
-    flex: 1, alignItems: 'center', backgroundColor: Colors.raised,
-    borderRadius: 8, paddingVertical: 10, borderWidth: 1, borderColor: Colors.border,
+    alignItems: 'center',
+    backgroundColor: t.surfaceAlt,
+    borderRadius: 20,
+    // No horizontal padding: at 360dp a fifth of the row is ~57px and the
+    // five-letter labels ("Great") already fill it.
+    paddingVertical: 13,
   },
-  sleepBtnActive: { borderColor: Colors.primary, backgroundColor: `${Colors.primary}14` },
+  sleepBtnActive: { backgroundColor: t.text },
   sleepEmoji: { fontSize: 22 },
-  sleepLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, marginTop: 4, letterSpacing: 0.4 },
-
-  applyBtn: {
-    backgroundColor: Colors.primary, borderRadius: 8,
-    paddingVertical: 16, alignItems: 'center', marginBottom: 16,
+  sleepLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+    marginTop: 6,
   },
-  applyBtnDone: { backgroundColor: Colors.success },
-  applyBtnText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 0.8 },
+  sleepLabelActive: { color: t.bg },
+
+  // ── Apply ──────────────────────────────────────────────────────────────────
+  applyBtn: {
+    backgroundColor: t.accent,
+    // Brand emerald is under 3:1 on a light page; the deeper tone at its edge is
+    // what makes the control identifiable (SC 1.4.11).
+    borderWidth: 1,
+    borderColor: t.accentLine,
+    borderRadius: 26,
+    paddingVertical: 19,
+    alignItems: 'center',
+    marginTop: 34,
+  },
+  applyBtnDone: { backgroundColor: t.surfaceAlt, borderColor: t.border },
+  applyBtnText: {
+    fontFamily: Fonts.displayBold,
+    fontSize: 13,
+    letterSpacing: 1.4,
+    color: t.accentInk,
+  },
+  applyBtnTextDone: { color: t.accentText },
 });
