@@ -25,10 +25,12 @@ import {
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { hasActiveSession, WORKOUT_SESSION_NOTIF_ID } from '@/lib/activeSession';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 import { useThemeStore } from '@/stores/themeStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
@@ -318,6 +320,24 @@ function RootLayout() {
     hydrateTheme();
   }, [hydrateTheme]);
 
+  // Reconcile the ongoing-workout chip at boot.
+  //
+  // workout-session deliberately LEAVES the chip up when you navigate away, so an
+  // unfinished session stays resumable. But the chip is `ongoing` (non-dismissable)
+  // and outlives a force-kill, while getActiveSession() self-deletes a session older
+  // than SESSION_STALE_MS. Without this, killing the app mid-workout and coming back
+  // the next day leaves a chip the user cannot swipe away pointing at a session that
+  // no longer exists. Only clears when there is genuinely nothing to resume.
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!(await hasActiveSession())) {
+          await notifee.cancelNotification(WORKOUT_SESSION_NOTIF_ID);
+        }
+      } catch { /* a stuck chip must never block startup */ }
+    })();
+  }, []);
+
   // Hold the logo splash for a SHORT minimum (~700ms) so it still reads as a
   // branded intro without feeling like a wait. We hide once BOTH the app is
   // ready AND the min time passed. (Was 1600ms — too long; the app felt slow to
@@ -338,11 +358,21 @@ function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <ThemedShell />
-        </ThemeProvider>
-      </QueryClientProvider>
+      {/* Outermost provider inside the boundary: every useSafeAreaInsets() /
+          SafeAreaView consumer lives under ThemedShell → RootNavigator → Stack,
+          so this is the only place that provably covers all of them. Without it
+          the context default is all-zero insets and the whole app silently
+          renders under the status bar and the gesture bar.
+          initialMetrics seeds the first frame from the native window metrics —
+          otherwise the tree still paints one zero-inset frame before the
+          provider measures, which is the same bug for the length of a frame. */}
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <ThemedShell />
+          </ThemeProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
     </ErrorBoundary>
   );
 }

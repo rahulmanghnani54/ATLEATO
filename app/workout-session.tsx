@@ -32,12 +32,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Camera, Check, Play } from 'lucide-react-native';
+import notifee, { AndroidImportance } from '@notifee/react-native';
 
 import { Crown, Hairline, Section } from '@/components/ui/canvas';
 import { PressableScale } from '@/components/ui/motion';
 import { ProgressionBadge } from '@/components/workout/ProgressionBadge';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { Fonts } from '@/constants/theme';
+import { clearActiveSession, getActiveSession, saveActiveSession, WORKOUT_SESSION_NOTIF_ID, type ActiveSession } from '@/lib/activeSession';
 import { useExerciseHistory } from '@/hooks/useProgression';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { getProDemoLabel, getProDemoUrl, programIdToPersona } from '@/lib/exerciseDemoUrls';
@@ -57,6 +59,65 @@ interface SetEntry {
 
 // Clock and set numerals must not jitter as they tick/change width.
 const TABULAR: Pick<TextStyle, 'fontVariant'> = { fontVariant: ['tabular-nums'] };
+
+// How long the screen may sit on unsaved changes. Long enough that typing a
+// weight doesn't hit storage per keystroke, short enough that a hard kill loses
+// at most one field.
+const PERSIST_THROTTLE_MS = 1500;
+
+// ── Ongoing "workout in progress" notification ──────────────────────────────
+// Silent, sticky status-bar chip for the length of the session, so a lifter who
+// left the screen has a one-tap way back. Its OWN low-importance channel — the
+// call channels (coach-incoming-calls-v3 / coach-on-call) ring and vibrate, and
+// this must never make a sound mid-set. Android only: `ongoing` and the
+// chronometer are Android concepts, and on iOS this would surface as an actual
+// alert banner instead of a passive chip.
+const SESSION_CHANNEL = 'workout-session-ongoing';
+// Shared with app/_layout's boot-time reconciliation — one source of truth.
+const SESSION_NOTIF_ID = WORKOUT_SESSION_NOTIF_ID;
+
+async function showSessionNotification(args: {
+  title: string;
+  body: string;
+  startedAt: number;
+  accent: string;
+}): Promise<void> {
+  if (Platform.OS !== 'android') return;
+  try {
+    await notifee.createChannel({
+      id: SESSION_CHANNEL,
+      name: 'Workout in progress',
+      description: 'Silent reminder while a workout session is open',
+      importance: AndroidImportance.LOW,
+      vibration: false,
+    });
+    await notifee.displayNotification({
+      id: SESSION_NOTIF_ID,
+      title: args.title,
+      body: args.body,
+      android: {
+        channelId: SESSION_CHANNEL,
+        importance: AndroidImportance.LOW,
+        ongoing: true,            // non-dismissable while the session is live
+        autoCancel: false,
+        onlyAlertOnce: true,      // re-displays on exercise change must stay silent
+        color: args.accent,
+        // The OS ticks elapsed time itself — no JS timer writing a notification
+        // once a second while the user is lifting.
+        timestamp: args.startedAt,
+        showTimestamp: true,
+        showChronometer: true,
+        pressAction: { id: 'default', launchActivity: 'default' },
+      },
+    });
+  } catch {
+    // The chip is a convenience; a Notifee failure must never affect the workout.
+  }
+}
+
+async function hideSessionNotification(): Promise<void> {
+  try { await notifee.cancelNotification(SESSION_NOTIF_ID); } catch { /* ignore */ }
+}
 
 function ExerciseProgression({ exerciseName, reps }: { exerciseName: string; reps: string }) {
   const { data: history } = useExerciseHistory(exerciseName);
@@ -79,6 +140,10 @@ export default function WorkoutSession() {
     volumeModifier?: string;
   }>();
   const volumeModifier = parseFloat(volumeModifierParam ?? '1.0') || 1.0;
+  // Identity of this session for the resume checkpoint — a stored session is
+  // only restored onto the SAME program day it was recorded against.
+  const resolvedProgramId = programId ?? 'cbum_evolved';
+  const resolvedDayIndex = parseInt(dayIndex ?? '0', 10) || 0;
   const user = useAuthStore((s) => s.user);
 
   const program = EXPERT_PROGRAMS[programId ?? 'cbum_evolved'] ?? EXPERT_PROGRAMS.cbum_evolved;
@@ -111,9 +176,59 @@ export default function WorkoutSession() {
     )
   );
 
+  // Resume plumbing. Nothing is written until the stored checkpoint has been
+  // read back — an early write would overwrite the very progress we're about to
+  // restore with this screen's empty initial state.
+  const [hydrated, setHydrated] = useState(false);
+  const endedRef = useRef(false);          // finished or explicitly abandoned
+  const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastPersistAt = useRef(0);
+  const snapshotRef = useRef<ActiveSession | null>(null);
+
   useEffect(() => {
     const interval = setInterval(() => setElapsed(Math.floor((Date.now() - startTime.current) / 1000)), 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // Restore silently on mount: same program day → the logged sets and the
+  // original start time come back, so elapsed time keeps counting from when the
+  // lifter actually started rather than from when they walked back in.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const stored = await getActiveSession();
+      if (cancelled) {
+        return;
+      }
+      if (!stored) {
+        // Nothing to come back to — clear any chip left over from a session that
+        // went stale or was killed with the app.
+        void hideSessionNotification();
+      } else if (stored.programId === resolvedProgramId && stored.dayIndex === resolvedDayIndex) {
+        if (stored.startedAt > 0 && stored.startedAt <= Date.now()) startTime.current = stored.startedAt;
+        setSets((prev) =>
+          prev.map((rows, exIdx) => {
+            const saved = stored.setsLogged[workout.exercises[exIdx]?.name ?? ''];
+            if (!Array.isArray(saved)) return rows;
+            // Set COUNT comes from the current volume modifier, not from storage:
+            // extra saved rows are dropped, missing ones stay blank.
+            return rows.map((row, setIdx) => {
+              const s = saved[setIdx] as Partial<SetEntry> | undefined;
+              if (!s || typeof s !== 'object') return row;
+              return {
+                weight: typeof s.weight === 'string' ? s.weight : row.weight,
+                reps: typeof s.reps === 'string' ? s.reps : row.reps,
+                rpe: typeof s.rpe === 'string' ? s.rpe : row.rpe,
+                done: s.done === true,
+              };
+            });
+          }),
+        );
+      }
+      if (!cancelled) setHydrated(true);
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Coach speaks once when the session opens (after voice prefs load)
@@ -237,6 +352,13 @@ export default function WorkoutSession() {
 
     await (supabase.from('workout_logs') as any).update(updatePayload).eq('id', workoutLog.id);
 
+    // Logged to the server — the local checkpoint has done its job. Stop
+    // persisting before the last render so nothing rewrites it on unmount.
+    endedRef.current = true;
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    await clearActiveSession();
+    await hideSessionNotification();
+
     const newPRs = await detectAndSavePRs(user.id, workoutLog.id);
     const topPR = newPRs[0];
 
@@ -298,6 +420,18 @@ export default function WorkoutSession() {
     } as any);
   };
 
+  // Explicit abandon. Distinct from simply backing out of the screen: "End"
+  // means the lifter is done with this session, so the resume checkpoint and the
+  // ongoing chip both go. Backing out any other way keeps them (that's the
+  // "Continue your workout" path).
+  const abandonSession = async () => {
+    endedRef.current = true;
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    await clearActiveSession();
+    await hideSessionNotification();
+    router.back();
+  };
+
   const handleClose = () => {
     const anyDone = sets.flat().some((s) => s.done);
     Alert.alert(
@@ -305,7 +439,7 @@ export default function WorkoutSession() {
       anyDone ? 'Your workout will not be logged.' : 'Progress will not be saved.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'End', style: 'destructive', onPress: () => router.back() },
+        { text: 'End', style: 'destructive', onPress: () => { void abandonSession(); } },
       ]
     );
   };
@@ -328,6 +462,59 @@ export default function WorkoutSession() {
 
   const volPct = Math.round((volumeModifier - 1) * 100);
   const volColor = volPct > 0 ? TOKENS.dark.success : TOKENS.dark.warning;
+
+  // Checkpoint after every meaningful change — a set logged, a field edited, the
+  // lifter moving to the next exercise. Throttled to one write per
+  // PERSIST_THROTTLE_MS with a trailing write, so typing a weight can't turn into
+  // a storage write per keystroke while still landing the final value.
+  useEffect(() => {
+    if (!hydrated || endedRef.current) return;
+    const snapshot: ActiveSession = {
+      programId: resolvedProgramId,
+      dayIndex: resolvedDayIndex,
+      startedAt: startTime.current,
+      exerciseIndex: currentIdx,
+      setsLogged: workout.exercises.reduce<Record<string, unknown>>((acc, ex, i) => {
+        // Keyed by exercise NAME so a restore survives a changed set count.
+        acc[ex.name] = sets[i] ?? [];
+        return acc;
+      }, {}),
+      volumeModifier,
+      lastTouchedAt: Date.now(),
+    };
+    snapshotRef.current = snapshot;
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    const wait = Math.max(0, PERSIST_THROTTLE_MS - (Date.now() - lastPersistAt.current));
+    persistTimer.current = setTimeout(() => {
+      lastPersistAt.current = Date.now();
+      void saveActiveSession(snapshot);
+    }, wait);
+    return () => { if (persistTimer.current) clearTimeout(persistTimer.current); };
+  }, [
+    sets, currentIdx, hydrated, volumeModifier,
+    resolvedProgramId, resolvedDayIndex, workout.exercises,
+  ]);
+
+  // Keep the status-bar chip pointed at the exercise actually in front of the
+  // lifter. onlyAlertOnce means these re-displays stay silent.
+  useEffect(() => {
+    if (!hydrated || endedRef.current) return;
+    void showSessionNotification({
+      title: `${currentEx.name} · set ${currentSetNo}/${currentSets.length}`,
+      body: `${workout.name} — tap to return to your workout`,
+      startedAt: startTime.current,
+      accent: pc.accent,
+    });
+  }, [hydrated, currentEx.name, currentSetNo, currentSets.length, workout.name, pc.accent]);
+
+  // Leaving the screen without finishing is exactly the case this exists for:
+  // flush the last snapshot immediately and LEAVE the chip up so the session can
+  // be resumed. A finished/abandoned session has already cleared both.
+  useEffect(() => () => {
+    if (persistTimer.current) clearTimeout(persistTimer.current);
+    if (endedRef.current) { void hideSessionNotification(); return; }
+    if (snapshotRef.current) void saveActiveSession(snapshotRef.current);
+  }, []);
 
   return (
     <View style={[styles.screen, { backgroundColor: tokens.bg }]}>

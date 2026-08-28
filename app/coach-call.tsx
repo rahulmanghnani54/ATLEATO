@@ -17,6 +17,7 @@ import { getCoachCallToken } from '@/lib/elevenlabsCall';
 import { getPersona, personaFromProgramId, type PersonaId } from '@/lib/personaTheme';
 import { COACH_CALL_PERSONAS, COACH_STYLE } from '@/lib/coachCallPersonas';
 import { scheduleRecall } from '@/lib/notifeeCallScheduler';
+import { buildCallContext, type CallContext } from '@/lib/callContext';
 import { getCallCopy } from '@/lib/coachCallScheduler';
 import { speakAs, silence } from '@/lib/voiceCues';
 import { useAuthStore } from '@/stores/authStore';
@@ -38,6 +39,70 @@ const GOAL_LABEL: Record<string, string> = {
   maintain: 'stay in shape',
   athletic_performance: 'boost athletic performance',
 };
+
+// ── Call context ────────────────────────────────────────────────────────────
+// Hard budget for buildCallContext(). Why cap it at all: the phone is ALREADY
+// ringing on screen by the time we get here, so a call that connects late reads
+// as a dead line and gets hung up on — while a coach who knows less is still a
+// coach having a real conversation. Lateness is the worse failure, every time,
+// so the context is raced against this and simply dropped if it loses.
+const CONTEXT_TIMEOUT_MS = 2500;
+
+// Neutral stand-ins for the knowledge fields when the context build loses that
+// race. Sent EXPLICITLY rather than omitted: ElevenLabs substitutes {{vars}}
+// literally, so a missing variable leaves the raw "{{todays_workout}}" in the
+// coach's mouth mid-call. They say "unknown" rather than "no streak yet" — the
+// coach must never assert a fact about training it did not actually load.
+const UNKNOWN_CONTEXT = {
+  todays_workout: 'not known right now',
+  last_session: 'not known right now',
+  recent_pr: 'not known right now',
+  missed_days: 'not known right now',
+  recovery: 'not known right now',
+  streak: 'not known right now',
+};
+
+// Coarse, real-state label the ElevenLabs agent prompt leans on to open
+// DIFFERENTLY each day. The app deliberately ships NO greeting text — the agent
+// owns the words, we only tell it which situation this call is. The same canned
+// opener every morning is the fastest route to an uninstall.
+type CallFlavour =
+  | 'returning_after_miss'
+  | 'streak_milestone'
+  | 'rest_day'
+  | 'first_session_of_week'
+  | 'normal';
+
+const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 200, 365];
+
+function callFlavour(ctx: CallContext | null): CallFlavour {
+  // No context (timed out, or the build failed) — stay neutral rather than
+  // assert a situation we cannot back up; the agent has a plain opener.
+  if (!ctx) return 'normal';
+
+  // A gap outranks everything: coming back after missing days is the thing the
+  // coach has to acknowledge first, and a streak that already broke must never
+  // be celebrated over it. buildMissedDays() emits these exact phrasings.
+  const missed = ctx.missed_days.toLowerCase();
+  if (missed.includes('has not trained') || missed.includes('missed yesterday')) {
+    return 'returning_after_miss';
+  }
+
+  // The context exposes the streak as speech ("14 day streak"), so read the
+  // count back off the front of it; anything unparseable just isn't a milestone.
+  const streak = parseInt(ctx.streak, 10);
+  if (Number.isFinite(streak) && STREAK_MILESTONES.includes(streak)) return 'streak_milestone';
+
+  if (ctx.todays_workout.toLowerCase().startsWith('rest day')) return 'rest_day';
+
+  // The context carries no per-week session count, so "first session of the
+  // week" is taken from the week boundary instead: Monday is day 0 of every
+  // expert program's schedule (see buildTodaysWorkout), and we already know
+  // today is a training day because the rest-day check above did not fire.
+  if (new Date().getDay() === 1) return 'first_session_of_week';
+
+  return 'normal';
+}
 
 // ── Ongoing "On call" notification ──────────────────────────────────────────
 // A SILENT, sticky status-bar notification shown while the live call is up —
@@ -194,15 +259,49 @@ function CoachCallInner() {
           kind === 'workout' ? 'workout session'
           : isRecall ? 'wake-up check-in'
           : 'morning wake-up';
-        // Personalize the coach: who they're calling, the goal, and why. The
-        // ElevenLabs agent prompt/first-message reference these via {{vars}}.
-        const dynamicVariables = {
+        // The five fields the agent prompt has always had. Built here rather than
+        // read back off the context so they are identical whether or not the
+        // context lands — these are the keys the prompt cannot do without.
+        const baseVariables = {
           // Profile stores the name in `full_name`; greet with just the first name.
           user_name: profile?.full_name?.trim().split(/\s+/)[0] || 'athlete',
           goal: GOAL_LABEL[(profile?.goal as string) ?? ''] || 'crush your goals',
           coach_name: persona.fullName,
           coach_style: COACH_STYLE[personaId] ?? COACH_STYLE.cbum,
           call_purpose: callPurpose,
+        };
+
+        // What the coach KNOWS — today's session, the last one, PRs, missed days,
+        // recovery, streak — without which it cannot say "you hit 85 on bench
+        // Monday, today is pull". Raced against CONTEXT_TIMEOUT_MS: if the reads
+        // are slow we start the call anyway with UNKNOWN_CONTEXT and let the
+        // coach be less informed rather than let the phone ring on a dead line.
+        // The .catch() is attached at creation, not at the await, so a rejection
+        // can never escape as an unhandled rejection while the race is pending.
+        const ctx = await Promise.race<CallContext | null>([
+          buildCallContext({
+            profile,
+            personaId,
+            personaName: persona.fullName,
+            coachStyle: baseVariables.coach_style,
+            callPurpose,
+          }).catch((e: any) => {
+            console.log('[call] context failed ' + (e?.message ?? e));
+            return null;
+          }),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), CONTEXT_TIMEOUT_MS)),
+        ]);
+        if (!ctx) console.log('[call] context unavailable — starting uninformed');
+
+        // Personalize the coach: who they're calling, the goal, why, what they
+        // know, and which kind of morning this is. The ElevenLabs agent
+        // prompt/first-message reference these via {{vars}}. baseVariables is
+        // spread LAST so the five original keys always win.
+        const dynamicVariables = {
+          ...UNKNOWN_CONTEXT,
+          ...(ctx ?? {}),
+          ...baseVariables,
+          call_flavour: callFlavour(ctx),
         };
         console.log('[call] vars ' + JSON.stringify(dynamicVariables));
         // Personality comes from the agent's prompt using {{coach_style}} +

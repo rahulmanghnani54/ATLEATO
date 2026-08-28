@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
+  Platform,
   RefreshControl,
   StyleSheet,
   Text,
@@ -23,6 +24,11 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { PhoneCall } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import notifee, {
+  RepeatFrequency,
+  TriggerType,
+  type TimestampTrigger,
+} from '@notifee/react-native';
 
 import {
   BigStat,
@@ -35,10 +41,13 @@ import {
 } from '@/components/ui/canvas';
 import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
 import { Fonts } from '@/constants/theme';
+import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { useAuthStore } from '@/stores/authStore';
 import { useWorkoutStreak, useThisWeekVolume, useProgramSchedule } from '@/hooks/useDashboardStats';
 import { useDailyNutrition } from '@/hooks/useDailyNutrition';
-import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { getActiveSession } from '@/lib/activeSession';
+import type { CallKind } from '@/lib/notifeeCallScheduler';
+import { getPersona, personaAccent, personaFromProgramId, type PersonaId } from '@/lib/personaTheme';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 /** Breathing room between the last scroll row and the top of the pinned CTA. */
@@ -47,6 +56,171 @@ const CTA_GAP = 16;
 /** Bar width for a macro, clamped so an overshoot can't run past the track. */
 function macroWidth(eaten: number, goal: number): DimensionValue {
   return `${Math.min(100, (eaten / Math.max(goal, 1)) * 100)}%`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Resumable workout
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The fields Home reads off the record `lib/activeSession` owns. Declared here
+ * (and read defensively) because that module is the authority on the record's
+ * shape — Home only needs enough to re-open the SAME session, and a field it
+ * can't find must quietly shrink the label, never break the button.
+ */
+type StoredSession = {
+  programId?: string | null;
+  dayIndex?: number | string | null;
+  exerciseIndex?: number | null;
+  volumeModifier?: number | string | null;
+};
+
+interface ResumeInfo {
+  /** Params to hand straight back to /workout-session — the same ones it stored. */
+  programId: string;
+  dayIndex: string;
+  volumeModifier: string | null;
+  /** "PUSH DAY A · EXERCISE 3 OF 6", or null when the program can't be resolved. */
+  detail: string | null;
+}
+
+/** Read the in-progress session, or null when there is nothing to resume. */
+async function readResume(): Promise<ResumeInfo | null> {
+  try {
+    // Cast: the sibling module owns this type; Home reads a subset structurally.
+    const stored = (await getActiveSession()) as unknown as StoredSession | null;
+    const programId = typeof stored?.programId === 'string' ? stored.programId : '';
+    if (!programId) return null;
+
+    const dayIndex = Number.parseInt(String(stored?.dayIndex ?? 0), 10);
+    if (!Number.isFinite(dayIndex) || dayIndex < 0) return null;
+
+    // Name + exercise count come from the PROGRAM, not the session record, so
+    // the line still reads correctly if the record only kept the two params.
+    const program = EXPERT_PROGRAMS[programId];
+    const workout = program?.schedule.length
+      ? program.schedule[dayIndex % program.schedule.length]
+      : undefined;
+    const total = workout?.exercises?.length ?? 0;
+    const at = Number(stored?.exerciseIndex);
+    const position =
+      total > 0 && Number.isFinite(at) && at >= 0 ? Math.min(at + 1, total) : null;
+
+    return {
+      programId,
+      dayIndex: String(dayIndex),
+      volumeModifier: stored?.volumeModifier != null ? String(stored.volumeModifier) : null,
+      detail: workout
+        ? position
+          ? `${workout.name} · exercise ${position} of ${total}`
+          : workout.name
+        : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Next coach call
+// ─────────────────────────────────────────────────────────────────────────────
+
+// The scheduler registers its recurring calls with AlarmManager under this id
+// prefix (SCHED_PREFIX in lib/notifeeCallScheduler.ts, not exported). Home
+// mirrors the literal to READ the registered alarms — it must never schedule:
+// mounting useCoachReminders() here would re-run applySchedule() on every visit,
+// cancelling and re-registering the user's alarms just for opening a tab.
+const SCHED_CALL_PREFIX = 'coach-call:sched-';
+
+type NextCall =
+  /** Not read yet, or the OS scheduler can't be queried — render NOTHING. */
+  | { status: 'unknown' }
+  /** Queried successfully, no alarm registered — invite them to set one. */
+  | { status: 'none' }
+  | { status: 'set'; label: string };
+
+/**
+ * A repeating trigger keeps the timestamp of an occurrence that may already have
+ * fired; AlarmManager rolls it forward by the repeat interval. Mirror that so the
+ * line shows the NEXT occurrence. Whole CALENDAR days, not 24h steps, so the
+ * wall-clock time survives a DST shift. A lapsed one-shot returns null (dropped)
+ * rather than being guessed forward.
+ */
+function nextOccurrence(timestamp: number, repeat?: RepeatFrequency): number | null {
+  const d = new Date(timestamp);
+  if (d.getTime() > Date.now()) return d.getTime();
+  const stepDays =
+    repeat === RepeatFrequency.DAILY ? 1 : repeat === RepeatFrequency.WEEKLY ? 7 : 0;
+  if (!stepDays) return null;
+  for (let guard = 0; d.getTime() <= Date.now() && guard < 400; guard++) {
+    d.setDate(d.getDate() + stepDays);
+  }
+  return d.getTime() > Date.now() ? d.getTime() : null;
+}
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/** "6:00 AM tomorrow" — formatted by hand so it doesn't depend on Intl data. */
+function formatCallTime(at: number): string {
+  const d = new Date(at);
+  const suffix = d.getHours() < 12 ? 'AM' : 'PM';
+  const hour = d.getHours() % 12 || 12;
+  const time = `${hour}:${String(d.getMinutes()).padStart(2, '0')} ${suffix}`;
+
+  const midnight = new Date();
+  midnight.setHours(0, 0, 0, 0);
+  const days = Math.round((new Date(at).setHours(0, 0, 0, 0) - midnight.getTime()) / 86_400_000);
+  const when = days <= 0 ? 'today' : days === 1 ? 'tomorrow' : DAY_NAMES[d.getDay()];
+  return `${time} ${when}`;
+}
+
+/**
+ * The soonest coach call the OS is actually holding an alarm for. Everything
+ * here is READ from the registered trigger — coach, time and kind. If the
+ * scheduler can't be queried at all we report 'unknown' and Home renders
+ * nothing, because a plausible-looking time the phone won't honour is worse
+ * than no line.
+ */
+async function readNextCall(): Promise<NextCall> {
+  // scheduleIncomingCall() is Android-only, so there is nothing to report
+  // elsewhere — and no basis for a time.
+  if (Platform.OS !== 'android') return { status: 'unknown' };
+  try {
+    const scheduled = await notifee.getTriggerNotifications();
+    let best: { at: number; kind: CallKind; personaId?: PersonaId } | null = null;
+
+    for (const entry of scheduled) {
+      const id = entry.notification.id ?? '';
+      if (!id.startsWith(SCHED_CALL_PREFIX)) continue;
+      if (entry.trigger?.type !== TriggerType.TIMESTAMP) continue;
+
+      const trigger = entry.trigger as TimestampTrigger;
+      const at = nextOccurrence(trigger.timestamp, trigger.repeatFrequency);
+      if (at === null) continue;
+
+      const data = entry.notification.data as
+        | { kind?: CallKind; personaId?: PersonaId }
+        | undefined;
+      // The id always encodes the kind (`sched-wakeup`, `sched-workout-3`), so
+      // it's the fallback when the payload's data didn't survive a cold start.
+      const fromId = id.slice(SCHED_CALL_PREFIX.length).split('-')[0];
+      const kind: CallKind | null =
+        data?.kind ?? (fromId === 'wakeup' || fromId === 'workout' ? fromId : null);
+      if (!kind) continue;
+
+      if (!best || at < best.at) best = { at, kind, personaId: data?.personaId };
+    }
+
+    if (!best) return { status: 'none' };
+    const coach = best.personaId ? getPersona(best.personaId).shortName : null;
+    const kindLabel = best.kind === 'wakeup' ? 'Wake-up call' : 'Workout call';
+    return {
+      status: 'set',
+      label: [coach, formatCallTime(best.at), kindLabel].filter(Boolean).join(' · '),
+    };
+  } catch {
+    return { status: 'unknown' };
+  }
 }
 
 export default function Dashboard() {
@@ -99,12 +273,26 @@ export default function Dashboard() {
     { label: 'FAT',     eaten: Math.round(nutrition?.fatG ?? 0),     goal: profile?.fat_g ?? 65,      color: tokens.macroFat },
   ];
 
-  // Re-fetch streak + volume + nutrition when the user returns to this tab
+  // An in-progress workout and the coach's next alarm both live OUTSIDE React
+  // Query (AsyncStorage / the OS scheduler), so they're read here and re-read on
+  // focus below. 'unknown' is the honest start: nothing renders until we know.
+  const [resume, setResume] = useState<ResumeInfo | null>(null);
+  const [nextCall, setNextCall] = useState<NextCall>({ status: 'unknown' });
+
+  // Re-fetch streak + volume + nutrition when the user returns to this tab.
+  // Resume + next call are re-read here too, not just on mount: this tab stays
+  // MOUNTED under the workout session, so finishing (or abandoning) a workout
+  // would otherwise leave "Continue workout" on screen with nothing behind it.
   useFocusEffect(
     useCallback(() => {
       refetchStreak();
       refetchWeek();
       refetchNutrition();
+
+      let alive = true;
+      readResume().then((r) => { if (alive) setResume(r); });
+      readNextCall().then((n) => { if (alive) setNextCall(n); });
+      return () => { alive = false; };
     }, [refetchStreak, refetchWeek, refetchNutrition]),
   );
 
@@ -129,7 +317,13 @@ export default function Dashboard() {
 
   const exerciseCount = today?.workout?.exercises?.length ?? 6;
   const estimatedMinutes = today?.workout?.estimatedMinutes ?? 55;
-  const ctaLabel = today?.isRest ? 'PLAN TOMORROW →' : `${persona.workoutCTA} →`;
+  // An unfinished workout outranks today's plan — it IS what the user came back
+  // for. With no session in progress the CTA is exactly what it was before.
+  const ctaLabel = resume
+    ? 'CONTINUE WORKOUT →'
+    : today?.isRest
+      ? 'PLAN TOMORROW →'
+      : `${persona.workoutCTA} →`;
 
   // Open the lobby for TODAY's workout. The lobby/session address workouts by
   // ARRAY index, so we must pass programId + today's dayIndex — otherwise the
@@ -140,6 +334,21 @@ export default function Dashboard() {
       params: {
         programId: profile?.selected_program ?? 'cbum_evolved',
         dayIndex: String(today?.dayIndex ?? 0),
+      },
+    } as any);
+  };
+
+  // Straight back into the SESSION with the params it stored — not the lobby,
+  // which would restart the day from set one. volumeModifier only rides along
+  // when the session kept one, so the set counts match what's half-logged.
+  const continueWorkout = () => {
+    if (!resume) return;
+    router.push({
+      pathname: '/workout-session',
+      params: {
+        programId: resume.programId,
+        dayIndex: resume.dayIndex,
+        ...(resume.volumeModifier ? { volumeModifier: resume.volumeModifier } : {}),
       },
     } as any);
   };
@@ -165,7 +374,43 @@ export default function Dashboard() {
           meta={persona.motivation}
           accent={crownTint}
           pills={[persona.shortName, today?.isRest ? 'REST DAY' : `${exerciseCount} exercises`]}
-        />
+        >
+          {/* The coach's presence, in the crown: the next call the OS is really
+              holding an alarm for. 'unknown' (unread, or the scheduler can't be
+              queried) renders nothing — an invented time would be a promise the
+              phone doesn't keep. */}
+          {nextCall.status !== 'unknown' ? (
+            <PressableScale
+              onPress={() => router.push('/coach-reminders' as any)}
+              haptic="light"
+              scaleTo={0.98}
+              accessibilityRole="button"
+              accessibilityLabel={
+                nextCall.status === 'set'
+                  ? `Next coach call: ${nextCall.label}. Change call schedule.`
+                  : 'No coach call scheduled. Schedule one.'
+              }
+              style={[styles.nextCall, { borderTopColor: tokens.crownLine }]}
+            >
+              <PhoneCall
+                size={12}
+                color={nextCall.status === 'set' ? crownTint : tokens.crownTextDim}
+              />
+              <Text
+                style={[
+                  styles.nextCallText,
+                  {
+                    color:
+                      nextCall.status === 'set' ? tokens.crownText : tokens.crownTextDim,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {nextCall.status === 'set' ? nextCall.label : 'No call scheduled · set one →'}
+              </Text>
+            </PressableScale>
+          ) : null}
+        </Crown>
 
         <View style={styles.body}>
           {/* ── 2. THE HERO METRIC ─────────────────────────────────────── */}
@@ -335,9 +580,23 @@ export default function Dashboard() {
         pointerEvents="box-none"
         onLayout={onCtaLayout}
       >
+        {/* What's waiting behind "Continue workout". pointerEvents none so the
+            scroll still runs under it; opaque because it floats over content. */}
+        {resume?.detail ? (
+          <View style={styles.resumeNote} pointerEvents="none">
+            <Text style={styles.resumeNoteText} numberOfLines={1}>
+              {resume.detail}
+            </Text>
+          </View>
+        ) : null}
+
         <PressableScale
           onPress={() =>
-            today?.isRest ? router.push('/workout-picker' as any) : openTodayWorkout()
+            resume
+              ? continueWorkout()
+              : today?.isRest
+                ? router.push('/workout-picker' as any)
+                : openTodayWorkout()
           }
           haptic="heavy"
           scaleTo={0.97}
@@ -358,6 +617,23 @@ const makeStyles = (t: SemanticTokens) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: t.bg },
     body: { paddingHorizontal: 22 },
+
+    // ── Next coach call — a hairline-separated line inside the crown ──
+    nextCall: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 9,
+      marginTop: 18,
+      paddingTop: 14,
+      borderTopWidth: StyleSheet.hairlineWidth,
+    },
+    nextCallText: {
+      flex: 1,
+      fontFamily: Fonts.legacyMono,
+      fontSize: 9,
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
+    },
 
     // ── Hero: one oversized numeral against a tiny mono label ──
     hero: { paddingTop: 30, gap: 10 },
@@ -454,6 +730,22 @@ const makeStyles = (t: SemanticTokens) =>
 
     // ── Pinned CTA ──
     ctaWrap: { position: 'absolute', left: 22, right: 22, bottom: 0 },
+    resumeNote: {
+      alignSelf: 'center',
+      maxWidth: '100%',
+      marginBottom: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: t.surfaceAlt,
+    },
+    resumeNoteText: {
+      fontFamily: Fonts.legacyMono,
+      fontSize: 9,
+      letterSpacing: 1.4,
+      textTransform: 'uppercase',
+      color: t.textSecondary,
+    },
     cta: {
       // minHeight, not height: at a large OS font scale a fixed 58 clipped the
       // label, and it also lied to the onLayout measurement the scroll reserve
