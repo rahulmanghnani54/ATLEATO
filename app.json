@@ -63,8 +63,6 @@
         "android.permission.USE_EXACT_ALARM",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK",
-        "android.permission.ACCESS_COARSE_LOCATION",
-        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.FOREGROUND_SERVICE"
       ]
     },
@@ -72,7 +70,6 @@
       "bundleIdentifier": "com.madsales.atleato",
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Evulto uses your location during runs to track the route and award you the grid cells you pass through in the Territory game.",
         "NSCameraUsageDescription": "Evulto uses your camera to check your exercise form rep by rep during a workout, to take physique progress photos, and to scan a meal so it can be logged. Images are encrypted on your device before upload.",
         "NSMicrophoneUsageDescription": "Evulto uses your microphone during a live coach call so the AI coach can hear you and talk you through the set. It is used only while a call you started is active.",
         "NSPhotoLibraryUsageDescription": "Evulto opens your photo library so you can pick an existing photo to use as a physique progress shot or a meal to log. Only the photo you choose is read, and it is encrypted on your device before upload \u2014 we never see the original.",

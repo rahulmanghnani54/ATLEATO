@@ -32,7 +32,6 @@ const PRO_FEATURES: FeatureKey[] = [
 
 const LEGEND_FEATURES: FeatureKey[] = [
   'snooze_recalls',
-  'territory_heatmap',
   'video_review',
   'voice_customization',
 ];
@@ -150,9 +149,9 @@ describe('featureGates — downgrade path', () => {
   it('reads the provider live, so a mid-session downgrade takes effect at once', () => {
     let tier: Tier = 'legend';
     _setTierProvider(() => tier);
-    expect(canAccess('territory_heatmap')).toBe(true);
+    expect(canAccess('video_review')).toBe(true);
     tier = 'free';
-    expect(canAccess('territory_heatmap')).toBe(false);
+    expect(canAccess('video_review')).toBe(false);
   });
 });
 

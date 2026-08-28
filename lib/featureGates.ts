@@ -20,7 +20,6 @@ export type FeatureKey =
   | 'custom_ringtone'
   | 'unlimited_freezes'
   | 'snooze_recalls'
-  | 'territory_heatmap'
   | 'video_review'
   | 'voice_customization'
   | 'food_scan';
@@ -37,7 +36,6 @@ const FEATURE_TIER: Record<FeatureKey, Tier> = {
   unlimited_freezes:   'pro',
   food_scan:           'pro',
   snooze_recalls:      'legend',
-  territory_heatmap:   'legend',
   video_review:        'legend',
   voice_customization: 'legend',
 };
@@ -50,7 +48,6 @@ const FEATURE_LABELS: Record<FeatureKey, string> = {
   unlimited_freezes:   'Unlimited Streak Freezes',
   food_scan:           'AI Food Scanner',
   snooze_recalls:      '5-Min Snooze Re-Calls',
-  territory_heatmap:   'Territory Heatmap & Analytics',
   video_review:        'Advanced Form AI & Video Review',
   voice_customization: 'Coach Voice Customization',
 };
