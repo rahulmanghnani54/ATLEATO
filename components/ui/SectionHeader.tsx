@@ -4,7 +4,8 @@
  */
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 export function SectionHeader({
   label,
@@ -15,6 +16,7 @@ export function SectionHeader({
   accent: string;
   marginTop?: number;
 }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.row, { marginTop }]}>
       <View style={[styles.bar, { backgroundColor: accent }]} />
@@ -24,18 +26,19 @@ export function SectionHeader({
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row', alignItems: 'center',
-    gap: 10, marginBottom: 14,
-  },
-  bar: { width: 3, height: 12, borderRadius: 1.5 },
-  text: {
-    fontFamily: Fonts.mono, fontSize: 11,
-    letterSpacing: 2.2, fontWeight: '700',
-  },
-  rule: {
-    flex: 1, height: 1,
-    backgroundColor: Colors.border,
-  },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    row: {
+      flexDirection: 'row', alignItems: 'center',
+      gap: 10, marginBottom: 14,
+    },
+    bar: { width: 3, height: 12, borderRadius: 1.5 },
+    text: {
+      fontFamily: Fonts.mono, fontSize: 11,
+      letterSpacing: 2.2, fontWeight: '700',
+    },
+    rule: {
+      flex: 1, height: 1,
+      backgroundColor: t.border,
+    },
+  });

@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Spacing, Typography } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { format, addDays, subDays, isToday } from 'date-fns';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 
 export function DateNavigator({ date, onDateChange }: Props) {
   const label = isToday(date) ? 'Today' : format(date, 'MMM d, yyyy');
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.container}>
@@ -28,16 +30,22 @@ export function DateNavigator({ date, onDateChange }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Spacing.sm,
-    gap: Spacing.md,
-  },
-  arrow: { padding: 4 },
-  arrowText: { fontSize: 28, color: Colors.text, lineHeight: 32 },
-  disabled: { color: Colors.textTertiary },
-  dateLabel: { ...Typography.bodyMedium, minWidth: 120, textAlign: 'center' },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: Spacing.sm,
+      gap: Spacing.md,
+    },
+    arrow: { padding: 4 },
+    arrowText: { fontSize: 28, color: t.text, lineHeight: 32 },
+    disabled: { color: t.textTertiary },
+    // Spelled out rather than spread from Typography.bodyMedium: those presets
+    // bake in the light-scheme colour and would pin this label to dark text.
+    dateLabel: {
+      fontSize: 15, fontFamily: Fonts.bodyMedium, color: t.text,
+      minWidth: 120, textAlign: 'center',
+    },
+  });

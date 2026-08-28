@@ -13,7 +13,8 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { getMissDayNudge } from '@/lib/streakEngine';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 export function StreakNudge({
   streak, trainedToday, isRestDay, persona, onTrainPress,
@@ -24,6 +25,7 @@ export function StreakNudge({
   persona: PersonaTheme;
   onTrainPress: () => void;
 }) {
+  const styles = useThemedStyles(makeStyles);
   const nudge = getMissDayNudge({ streak, trainedToday, isRestDay, persona });
   if (!nudge) return null;
 
@@ -47,16 +49,17 @@ export function StreakNudge({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    borderWidth: 1, borderRadius: 6,
-    padding: 12, marginBottom: 14,
-  },
-  left: { width: 28, alignItems: 'center' },
-  flame: { fontSize: 22 },
-  middle: { flex: 1 },
-  label: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
-  text: { fontFamily: Fonts.body, fontSize: 12, color: Colors.text, lineHeight: 17 },
-  arrow: { fontSize: 18, fontFamily: Fonts.display },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    card: {
+      flexDirection: 'row', alignItems: 'center', gap: 10,
+      borderWidth: 1, borderRadius: 6,
+      padding: 12, marginBottom: 14,
+    },
+    left: { width: 28, alignItems: 'center' },
+    flame: { fontSize: 22 },
+    middle: { flex: 1 },
+    label: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
+    text: { fontFamily: Fonts.body, fontSize: 12, color: t.text, lineHeight: 17 },
+    arrow: { fontSize: 18, fontFamily: Fonts.display },
+  });

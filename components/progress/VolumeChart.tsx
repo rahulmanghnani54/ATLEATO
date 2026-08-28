@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Svg, { Rect, Text as SvgText, Line } from 'react-native-svg';
-import { Colors, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import type { WeeklyVolume } from '@/hooks/useProgressStats';
 
 interface Props {
@@ -15,6 +16,8 @@ export function VolumeChart({ data }: Props) {
   const chartWidth = screenWidth - Spacing.md * 4; // account for card padding
   const maxVolume = Math.max(...data.map((d) => d.totalVolumeKg), 1);
   const barWidth = (chartWidth - BAR_GAP * (data.length - 1)) / Math.max(data.length, 1);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   if (data.length === 0) {
     return (
@@ -42,14 +45,16 @@ export function VolumeChart({ data }: Props) {
                 width={barWidth}
                 height={barHeight}
                 rx={3}
-                fill={isLast ? Colors.primary : '#e5e7eb'}
+                // Prior weeks are context, not data to read — a surface step
+                // keeps them visible on both schemes where a fixed grey does not.
+                fill={isLast ? tokens.accent : tokens.borderStrong}
               />
               <SvgText
                 x={x + barWidth / 2}
                 y={CHART_HEIGHT + 16}
                 textAnchor="middle"
                 fontSize={9}
-                fill={Colors.textSecondary}
+                fill={tokens.textSecondary}
                 fontFamily="Inter_400Regular"
               >
                 {d.weekLabel}
@@ -61,7 +66,7 @@ export function VolumeChart({ data }: Props) {
         <Line
           x1={0} y1={CHART_HEIGHT}
           x2={chartWidth} y2={CHART_HEIGHT}
-          stroke={Colors.border} strokeWidth={1}
+          stroke={tokens.border} strokeWidth={1}
         />
       </Svg>
       <View style={styles.legend}>
@@ -79,9 +84,10 @@ export function VolumeChart({ data }: Props) {
 // React import needed for Fragment in JSX
 import React from 'react';
 
-const styles = StyleSheet.create({
-  empty: { height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  emptyText: { ...Typography.caption, color: Colors.textTertiary, textAlign: 'center' },
-  legend: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  legendText: { ...Typography.caption, color: Colors.textSecondary },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    empty: { height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+    emptyText: { ...Typography.caption, color: t.textTertiary, textAlign: 'center' },
+    legend: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+    legendText: { ...Typography.caption, color: t.textSecondary },
+  });

@@ -16,7 +16,8 @@ import {
 } from 'react-native';
 import { openChest, tierStyle, type Drop } from '@/lib/rewardChest';
 import type { PersonaTheme } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 export function RewardChestModal({
   visible,
@@ -31,6 +32,8 @@ export function RewardChestModal({
   const [rolling, setRolling] = useState(false);
   const scale = useRef(new Animated.Value(1)).current;
   const fade  = useRef(new Animated.Value(0)).current;
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const handleOpen = async () => {
     if (rolling || drop) return;
@@ -92,7 +95,7 @@ export function RewardChestModal({
                 onPress={handleContinue}
                 activeOpacity={0.85}
               >
-                <Text style={[styles.continueText, { color: Colors.text }]}>
+                <Text style={[styles.continueText, { color: tokens.text }]}>
                   CONTINUE
                 </Text>
               </TouchableOpacity>
@@ -104,29 +107,30 @@ export function RewardChestModal({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.85)',
-    justifyContent: 'center', alignItems: 'center', padding: 24,
-  },
-  card: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1.5, borderColor: Colors.borderStrong,
-    borderRadius: 12, padding: 28, alignItems: 'center', width: '100%',
-    shadowOpacity: 0.6, shadowRadius: 24, shadowOffset: { width: 0, height: 0 },
-    elevation: 14,
-  },
-  label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginBottom: 18 },
-  chestEmoji: { fontSize: 96, textAlign: 'center', marginBottom: 14 },
-  hint: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, textAlign: 'center' },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1, backgroundColor: t.scrim,
+      justifyContent: 'center', alignItems: 'center', padding: 24,
+    },
+    card: {
+      backgroundColor: t.surface,
+      borderWidth: 1.5, borderColor: t.borderStrong,
+      borderRadius: 12, padding: 28, alignItems: 'center', width: '100%',
+      shadowOpacity: 0.6, shadowRadius: 24, shadowOffset: { width: 0, height: 0 },
+      elevation: 14,
+    },
+    label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginBottom: 18 },
+    chestEmoji: { fontSize: 96, textAlign: 'center', marginBottom: 14 },
+    hint: { fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary, textAlign: 'center' },
 
-  tierLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 2, marginBottom: 12 },
-  dropEmoji: { fontSize: 72, marginBottom: 12 },
-  dropTitle: { fontFamily: Fonts.display, fontSize: 22, letterSpacing: -0.4, marginBottom: 8, textAlign: 'center' },
-  dropBody:  { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 19, textAlign: 'center', marginBottom: 22, paddingHorizontal: 4 },
+    tierLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 2, marginBottom: 12 },
+    dropEmoji: { fontSize: 72, marginBottom: 12 },
+    dropTitle: { fontFamily: Fonts.display, fontSize: 22, letterSpacing: -0.4, marginBottom: 8, textAlign: 'center' },
+    dropBody:  { fontFamily: Fonts.body, fontSize: 13, color: t.text, lineHeight: 19, textAlign: 'center', marginBottom: 22, paddingHorizontal: 4 },
 
-  continueBtn: {
-    paddingVertical: 12, paddingHorizontal: 32, borderRadius: 4,
-  },
-  continueText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 1.2 },
-});
+    continueBtn: {
+      paddingVertical: 12, paddingHorizontal: 32, borderRadius: 4,
+    },
+    continueText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 1.2 },
+  });

@@ -73,13 +73,12 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Evulto uses your location during runs to track the route and award you the grid cells you pass through in the Territory game.",
-        "NSCameraUsageDescription": "Evulto uses your camera to analyze your exercise form in real time and to capture physique progress photos. Photos are encrypted on your device before upload.",
-        "NSMicrophoneUsageDescription": "Microphone access is required by the camera framework but is not used by Evulto.",
-        "NSPhotoLibraryUsageDescription": "Evulto accesses your photo library so you can select physique progress photos. Photos are encrypted on your device before upload \u2014 we never see the originals.",
-        "NSPhotoLibraryAddUsageDescription": "Evulto may save processed images to your photo library.",
-        "NSHealthShareUsageDescription": "Evulto does not access Apple Health data.",
-        "NSHealthUpdateUsageDescription": "Evulto does not write to Apple Health.",
-        "NSHealthClinicalHealthRecordsShareUsageDescription": "Evulto does not access clinical health records.",
+        "NSCameraUsageDescription": "Evulto uses your camera to check your exercise form rep by rep during a workout, to take physique progress photos, and to scan a meal so it can be logged. Images are encrypted on your device before upload.",
+        "NSMicrophoneUsageDescription": "Evulto uses your microphone during a live coach call so the AI coach can hear you and talk you through the set. It is used only while a call you started is active.",
+        "NSPhotoLibraryUsageDescription": "Evulto opens your photo library so you can pick an existing photo to use as a physique progress shot or a meal to log. Only the photo you choose is read, and it is encrypted on your device before upload \u2014 we never see the original.",
+        "NSPhotoLibraryAddUsageDescription": "Evulto asks for this only so iOS can offer to keep a photo you have just taken in the app in your own library. Evulto adds nothing else to your photo library.",
+        "NSHealthShareUsageDescription": "Evulto reads your steps, resting heart rate, HRV and sleep from Apple Health to work out how recovered you are each morning and to adjust that day's training load.",
+        "NSHealthUpdateUsageDescription": "Evulto requests read-only Health access and does not write workouts or any other data back to Apple Health.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },

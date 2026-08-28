@@ -1,6 +1,7 @@
 import { Component, type ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { captureError } from '@/lib/sentry';
 
 interface Props {
@@ -35,34 +36,45 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
-      return (
-        <View style={styles.container}>
-          <Text style={styles.emoji}>⚠️</Text>
-          <Text style={styles.title}>Something went wrong</Text>
-          <Text style={styles.message}>
-            {this.state.error?.message ?? 'An unexpected error occurred.'}
-          </Text>
-          <TouchableOpacity style={styles.btn} onPress={this.handleRetry}>
-            <Text style={styles.btnText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      );
+      return <ErrorFallback message={this.state.error?.message} onRetry={this.handleRetry} />;
     }
     return this.props.children;
   }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
-    padding: Spacing.xl, backgroundColor: Colors.background,
-  },
-  emoji: { fontSize: 48, marginBottom: Spacing.md },
-  title: { ...Typography.h3, marginBottom: Spacing.sm },
-  message: { ...Typography.body, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg },
-  btn: {
-    backgroundColor: Colors.primary, paddingHorizontal: 24, paddingVertical: 12,
-    borderRadius: 8,
-  },
-  btnText: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
-});
+// The boundary itself has to stay a class (only classes can catch), and a class
+// cannot call useThemedStyles — so the fallback UI lives in its own function
+// component, which can.
+function ErrorFallback({ message, onRetry }: { message?: string; onRetry: () => void }) {
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={styles.container}>
+      <Text style={styles.emoji}>⚠️</Text>
+      <Text style={styles.title}>Something went wrong</Text>
+      <Text style={styles.message}>
+        {message ?? 'An unexpected error occurred.'}
+      </Text>
+      <TouchableOpacity style={styles.btn} onPress={onRetry}>
+        <Text style={styles.btnText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    container: {
+      flex: 1, alignItems: 'center', justifyContent: 'center',
+      padding: Spacing.xl, backgroundColor: t.bgAlt,
+    },
+    emoji: { fontSize: 48, marginBottom: Spacing.md },
+    // Typography presets carry the frozen LIGHT colour, so it is re-stated here.
+    title: { ...Typography.h3, color: t.text, marginBottom: Spacing.sm },
+    message: { ...Typography.body, color: t.textSecondary, textAlign: 'center', marginBottom: Spacing.lg },
+    btn: {
+      backgroundColor: t.accent, paddingHorizontal: 24, paddingVertical: 12,
+      borderRadius: 8, borderWidth: 1, borderColor: t.accentLine,
+    },
+    // White on the brand emerald is 2.54:1; the dark emerald ink is 7.38:1.
+    btnText: { color: t.accentInk, fontFamily: 'Inter_600SemiBold' },
+  });

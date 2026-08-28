@@ -1,5 +1,6 @@
 import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
-import { Colors, Radius, Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   children: React.ReactNode;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function Card({ children, style, onPress, padding = Spacing.md, raised }: Props) {
+  const styles = useThemedStyles(makeStyles);
   const content = (
     <View style={[styles.card, raised && styles.cardRaised, { padding }, style]}>
       {children}
@@ -25,14 +27,17 @@ export function Card({ children, style, onPress, padding = Spacing.md, raised }:
   return content;
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cardRaised: {
-    backgroundColor: Colors.raised,
-  },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: t.surface,
+      borderRadius: Radius.md,
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    cardRaised: {
+      // In dark the raised step is a lighter surface, not a shadow — shadows are
+      // invisible on a near-black page.
+      backgroundColor: t.surfaceAlt,
+    },
+  });

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, AppState, type AppStateStatus } from 'react-native';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 async function checkConnectivity(): Promise<boolean> {
   try {
@@ -15,6 +16,7 @@ async function checkConnectivity(): Promise<boolean> {
 
 export function OfflineBanner() {
   const [isOffline, setIsOffline] = useState(false);
+  const styles = useThemedStyles(makeStyles);
 
   useEffect(() => {
     let mounted = true;
@@ -50,10 +52,13 @@ export function OfflineBanner() {
   );
 }
 
-const styles = StyleSheet.create({
-  banner: {
-    backgroundColor: '#92400e',
-    paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center',
-  },
-  text: { color: '#fef3c7', fontSize: 12, fontFamily: 'Inter_500Medium' },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    banner: {
+      backgroundColor: t.warning,
+      paddingVertical: 8, paddingHorizontal: 16, alignItems: 'center',
+    },
+    // Dark ink on the amber fill, not a pale amber-on-amber pair — `crown` is
+    // the darkest ink of the active scheme, so it clears AA on both ambers.
+    text: { color: t.crown, fontSize: 12, fontFamily: 'Inter_500Medium' },
+  });

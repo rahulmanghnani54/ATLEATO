@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Colors, Spacing, Typography } from '@/constants/theme';
+import { Fonts, Spacing, Typography } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   label: string;
@@ -19,6 +20,7 @@ export function RecoverySlider({ label, value, min, max, step = 1, onChange, low
   const roundTo = (n: number) => Math.round(n * 10 ** precision) / 10 ** precision;
   const values = Array.from({ length: steps }, (_, i) => roundTo(min + i * step));
   const roundedValue = roundTo(value);
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.container}>
@@ -51,20 +53,23 @@ export function RecoverySlider({ label, value, min, max, step = 1, onChange, low
   );
 }
 
-const styles = StyleSheet.create({
-  container: { marginBottom: Spacing.md },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  label: { ...Typography.label },
-  valueText: { ...Typography.bodyMedium, color: Colors.primary },
-  track: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: {
-    flex: 1, height: 12, borderRadius: 6,
-    backgroundColor: Colors.border,
-  },
-  dotActive: {
-    backgroundColor: Colors.primary,
-    transform: [{ scaleY: 1.4 }],
-  },
-  hints: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  hint: { ...Typography.caption, color: Colors.textTertiary },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    container: { marginBottom: Spacing.md },
+    labelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+    // Typography presets carry the frozen LIGHT colour, so each is re-stated.
+    label: { fontSize: 13, fontFamily: Fonts.bodyMedium, color: t.textSecondary },
+    // Emerald AS TEXT needs the AA-safe deep tone, not the fill emerald.
+    valueText: { fontSize: 15, fontFamily: Fonts.bodyMedium, color: t.accentText },
+    track: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+    dot: {
+      flex: 1, height: 12, borderRadius: 6,
+      backgroundColor: t.borderStrong,
+    },
+    dotActive: {
+      backgroundColor: t.accent,
+      transform: [{ scaleY: 1.4 }],
+    },
+    hints: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+    hint: { ...Typography.caption, color: t.textTertiary },
+  });

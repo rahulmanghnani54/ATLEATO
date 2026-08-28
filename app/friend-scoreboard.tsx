@@ -13,23 +13,32 @@
  * Weekly reset every Monday.
  *
  * Encouraging header: "3 friends trained today. Join them."
+ *
+ * Bold Canvas: the crown carries the encouraging message and the
+ * trained-today count; the light body is a borderless ranked list where the
+ * rank is the oversized numeral. The persona accent is spent on the ADD
+ * control and the single live "trained today" signal — podium position is
+ * shown by SIZE, not by a second colour.
  */
 import { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  TextInput, Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, TextInput, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { X } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { useAuthStore } from '@/stores/authStore';
-import { personaFromProgramId } from '@/lib/personaTheme';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { personaAccent, personaFromProgramId, styleText } from '@/lib/personaTheme';
+import { CanvasScreen, Crown, Hairline, Section } from '@/components/ui/canvas';
+import { PressableScale, Skeleton } from '@/components/ui/motion';
+import { Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles } from '@/lib/theme';
 import {
   addFriend, removeFriend, getFriends, getScoreboardMessage,
   type Friend,
 } from '@/lib/friendScoreboard';
 import { useTrainedToday } from '@/hooks/useTrainedToday';
+
+type PersonaAccent = ReturnType<typeof personaAccent>;
+type ScoreboardStyles = ReturnType<typeof useScoreboardStyles>;
 
 const TODAY_ISO = format(new Date(), 'yyyy-MM-dd');
 
@@ -40,51 +49,59 @@ function trainedToday(friend: Friend): boolean {
 // ─── Row component ────────────────────────────────────────────────────────────
 
 function FriendRow({
-  friend, rank, accent, onRemove,
-}: { friend: Friend; rank: number; accent: string; onRemove: () => void }) {
+  friend, rank, pa, dim, styles, onRemove,
+}: {
+  friend: Friend;
+  rank: number;
+  pa: PersonaAccent;
+  dim: string;
+  styles: ScoreboardStyles;
+  onRemove: () => void;
+}) {
   const trained = trainedToday(friend);
+  // Podium is carried by the numeral's SIZE. The accent stays reserved for the
+  // ADD control and the live trained-today signal.
+  const podium = rank <= 3;
+
   return (
-    <View style={rowStyles.wrap}>
-      <Text style={[rowStyles.rank, { color: rank <= 3 ? accent : Colors.textTertiary }]}>
-        #{rank}
+    <View style={styles.row}>
+      <Text
+        style={[styles.rankNum, podium ? styles.rankNumPodium : styles.rankNumRest]}
+        numberOfLines={1}
+      >
+        {rank}
       </Text>
-      <View style={rowStyles.info}>
-        <View style={rowStyles.nameRow}>
-          <Text style={rowStyles.name}>{friend.name}</Text>
+
+      <View style={styles.rowText}>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>{friend.name}</Text>
           {trained && (
-            <View style={[rowStyles.trainedBadge, { backgroundColor: accent + '22' }]}>
-              <Text style={[rowStyles.trainedText, { color: accent }]}>trained today</Text>
+            <View style={[styles.trainedPill, { backgroundColor: pa.accentSoft }]}>
+              <Text style={[styles.trainedText, { color: pa.accentText }]} numberOfLines={1}>
+                TRAINED TODAY
+              </Text>
             </View>
           )}
         </View>
-        <Text style={rowStyles.meta}>
-          {friend.workoutsThisWeek} workouts this week · {friend.streak}🔥
+        <Text style={styles.meta} numberOfLines={1}>
+          {friend.workoutsThisWeek} WORKOUTS THIS WEEK · {friend.streak}🔥
         </Text>
       </View>
-      <TouchableOpacity onPress={onRemove} style={rowStyles.removeBtn} hitSlop={8}>
-        <Text style={rowStyles.removeText}>✕</Text>
-      </TouchableOpacity>
+
+      <PressableScale
+        onPress={onRemove}
+        haptic="light"
+        scaleTo={0.9}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel={`Remove ${friend.name}`}
+        style={styles.removeBtn}
+      >
+        <X size={16} color={dim} />
+      </PressableScale>
     </View>
   );
 }
-
-const rowStyles = StyleSheet.create({
-  wrap: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  rank: { fontFamily: Fonts.display, fontSize: 14, width: 30, textAlign: 'center' },
-  info: { flex: 1 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 2 },
-  name: { fontFamily: Fonts.bodySemi, fontSize: 15, color: Colors.text },
-  trainedBadge: {
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4,
-  },
-  trainedText: { fontFamily: Fonts.mono, fontSize: 8, letterSpacing: 0.8 },
-  meta: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
-  removeBtn: { padding: 4 },
-  removeText: { fontSize: 14, color: Colors.textTertiary },
-});
 
 // ─── Main screen ─────────────────────────────────────────────────────────────
 
@@ -93,6 +110,13 @@ export default function FriendScoreboardScreen() {
   const profile = useAuthStore((s) => s.profile);
   const persona = personaFromProgramId(profile?.selected_program);
   const { data: userTrainedToday = false } = useTrainedToday();
+
+  const { tokens, scheme } = useTheme();
+  const styles = useScoreboardStyles();
+  const pa = personaAccent(persona, scheme);
+  // The crown is near-black in BOTH schemes, so its tint always comes from the
+  // dark triplet — the light-tuned persona accents go muddy against ink.
+  const crownTint = personaAccent(persona, 'dark').accent;
 
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -151,8 +175,6 @@ export default function FriendScoreboardScreen() {
     );
   }, [loadFriends]);
 
-  if (!loaded) return null;
-
   const trainedFriendCount = friends.filter(trainedToday).length;
   const headerMsg = getScoreboardMessage(userTrainedToday, trainedFriendCount);
 
@@ -163,180 +185,297 @@ export default function FriendScoreboardScreen() {
   // The opt-in commitment devices (social-stake, charity-stake) provide
   // accountability without guilt-shaming the dashboard.
   const isLosing = false;
+  const heroTint = isLosing ? tokens.danger : crownTint;
+
+  const crown = (
+    <Crown
+      eyebrow={`${isLosing ? '😤' : '💪'}  Your circle · this week`}
+      title={styleText(persona, 'Leaderboard')}
+      meta={headerMsg}
+      accent={heroTint}
+      onBack={() => router.back()}
+    >
+      {loaded ? (
+        <View style={styles.crownStats}>
+          <View>
+            <Text style={[styles.crownBig, { color: heroTint }]} numberOfLines={1}>
+              {trainedFriendCount}
+            </Text>
+            <Text style={styles.crownLabel} numberOfLines={1}>TRAINED TODAY</Text>
+          </View>
+          <View style={styles.crownSide}>
+            <Text style={styles.crownSideNum} numberOfLines={1}>{friends.length}</Text>
+            <Text style={styles.crownLabel} numberOfLines={1}>IN YOUR CIRCLE</Text>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.crownStats}>
+          <View style={styles.crownSkel}>
+            <Skeleton width={62} height={44} radius={10} />
+            <Skeleton width={86} height={8} radius={4} />
+          </View>
+        </View>
+      )}
+
+      <Text style={styles.crownReset} numberOfLines={1}>
+        Weekly reset every Monday · {format(new Date(), 'EEEE, MMM d')}
+      </Text>
+    </Crown>
+  );
+
+  if (!loaded) {
+    return (
+      <CanvasScreen tabBar={false} bottomSpace={28}>
+        {crown}
+        <View style={styles.gutter}>
+          <Section label="This week's board">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <View key={i}>
+                <View style={styles.skelRow}>
+                  <Skeleton width={34} height={28} radius={8} />
+                  <View style={styles.skelText}>
+                    <Skeleton width="56%" height={15} radius={6} />
+                    <Skeleton width="38%" height={8} radius={4} />
+                  </View>
+                  <Skeleton width={16} height={16} radius={8} />
+                </View>
+                {i < 4 ? <Hairline /> : null}
+              </View>
+            ))}
+          </Section>
+        </View>
+      </CanvasScreen>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>LEADERBOARD</Text>
-        <View style={{ width: 32 }} />
-      </View>
+    <CanvasScreen tabBar={false} bottomSpace={28}>
+      {crown}
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Loss-framed header */}
-        <View style={[
-          styles.heroCard,
-          { backgroundColor: isLosing ? Colors.error + '1a' : persona.accent + '1a',
-            borderColor: isLosing ? Colors.error + '55' : persona.accent + '55' },
-        ]}>
-          <Text style={[
-            styles.heroEmoji,
-          ]}>{isLosing ? '😤' : '💪'}</Text>
-          <Text style={[
-            styles.heroMsg,
-            { color: isLosing ? Colors.error : persona.accent },
-          ]}>
-            {headerMsg}
-          </Text>
-          <Text style={styles.heroSub}>
-            Weekly reset every Monday · {format(new Date(), 'EEEE, MMM d')}
-          </Text>
-        </View>
-
+      <View style={styles.gutter}>
         {/* Add friend */}
-        <View style={styles.addSection}>
-          <Text style={styles.sectionLabel}>ADD A FRIEND BY CODE</Text>
+        <Section label="Add a friend by code">
           <View style={styles.addRow}>
             <TextInput
               style={styles.input}
               value={code}
               onChangeText={(t) => setCode(t.toUpperCase())}
               placeholder="e.g. ALEX42"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={tokens.textTertiary}
               autoCapitalize="characters"
               maxLength={12}
             />
-            <TouchableOpacity
-              style={[styles.addBtn, { backgroundColor: persona.accent }, adding && { opacity: 0.5 }]}
+            <PressableScale
+              // A persona-tinted fill on a light page needs a boundary the same
+              // way tokens.accentLine backs the emerald one; accentText is that tone.
+              style={[styles.addBtn, { backgroundColor: pa.accent, borderColor: pa.accentText }]}
               onPress={handleAdd}
               disabled={adding}
-              activeOpacity={0.85}
+              haptic="medium"
+              accessibilityRole="button"
+              accessibilityLabel="Add friend by referral code"
             >
-              <Text style={[styles.addBtnText, { color: persona.ink }]}>
+              <Text style={[styles.addBtnText, { color: pa.ink }]}>
                 {adding ? '…' : 'ADD'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
           <Text style={styles.addHelper}>
             Share your own code with friends: {((profile as any)?.username ?? profile?.full_name?.slice(0, 6) ?? 'YOURCODE').toUpperCase()}
           </Text>
-        </View>
+        </Section>
 
         {/* Scoreboard */}
         {friends.length === 0 ? (
-          <View style={styles.emptyCard}>
+          <Section label="This week's board">
             <Text style={styles.emptyTitle}>No friends yet</Text>
             <Text style={styles.emptySub}>
-              Add friends by their referral code. Once added, you'll see how your
+              Add friends by their referral code. Once added, you&apos;ll see how your
               weekly workouts compare — light, friendly accountability without the pressure.
             </Text>
-          </View>
+          </Section>
         ) : (
-          <View style={styles.boardCard}>
-            <Text style={styles.sectionLabel}>THIS WEEK'S BOARD</Text>
+          <Section
+            label="This week's board"
+            right={
+              <Text style={styles.headHint}>
+                {friends.length} {friends.length === 1 ? 'FRIEND' : 'FRIENDS'}
+              </Text>
+            }
+          >
             {friends.map((f, i) => (
-              <FriendRow
-                key={f.id}
-                friend={f}
-                rank={i + 1}
-                accent={persona.accent}
-                onRemove={() => handleRemove(f.id, f.name)}
-              />
+              <View key={f.id}>
+                <FriendRow
+                  friend={f}
+                  rank={i + 1}
+                  pa={pa}
+                  dim={tokens.textTertiary}
+                  styles={styles}
+                  onRemove={() => handleRemove(f.id, f.name)}
+                />
+                {i < friends.length - 1 ? <Hairline /> : null}
+              </View>
             ))}
-          </View>
+          </Section>
         )}
 
         {/* How it works */}
-        <View style={styles.howCard}>
-          <Text style={styles.howTitle}>HOW IT WORKS</Text>
-          <Text style={styles.howBody}>
-            Friends are added by code — no contacts access needed.
-            Workout counts reset every Monday. The board is updated whenever
-            your friends log a session.{'\n\n'}
-            MVP note: friend data is simulated from their code for now.
-            Full sync coming in a future update.
-          </Text>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        <Section label="How it works">
+          <View style={styles.howPlate}>
+            <Text style={styles.howBody}>
+              Friends are added by code — no contacts access needed.
+              Workout counts reset every Monday. The board is updated whenever
+              your friends log a session.{'\n\n'}
+              MVP note: friend data is simulated from their code for now.
+              Full sync coming in a future update.
+            </Text>
+          </View>
+        </Section>
+      </View>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
+function useScoreboardStyles() {
+  return useThemedStyles((t) =>
+    StyleSheet.create({
+      /** Matches Crown's own horizontal inset, so the body lines up with the hero. */
+      gutter: { paddingHorizontal: 22 },
 
-  header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: Spacing.md, paddingVertical: 12,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  backBtn: { padding: 6, minWidth: 32 },
-  backText: { fontSize: 20, color: Colors.text },
-  headerTitle: { fontFamily: Fonts.display, fontSize: 13, color: Colors.text, letterSpacing: 0.4 },
+      // ── Crown hero ────────────────────────────────────────────────────────
+      crownStats: { flexDirection: 'row', alignItems: 'flex-end', gap: 26, marginTop: 22 },
+      crownBig: {
+        fontFamily: Fonts.displayBold,
+        fontSize: 52,
+        lineHeight: 53,
+        letterSpacing: -2.34,
+        fontVariant: ['tabular-nums'],
+      },
+      crownSide: { paddingBottom: 7 },
+      crownSideNum: {
+        fontFamily: Fonts.displayMedium,
+        fontSize: 21,
+        letterSpacing: -0.63,
+        color: t.crownText,
+        fontVariant: ['tabular-nums'],
+      },
+      crownLabel: {
+        fontFamily: Fonts.legacyMono,
+        fontSize: 8,
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
+        color: t.crownTextDim,
+        marginTop: 3,
+      },
+      crownSkel: { gap: 9 },
+      crownReset: {
+        fontFamily: Fonts.legacyMono,
+        fontSize: 8,
+        letterSpacing: 1.4,
+        textTransform: 'uppercase',
+        color: t.crownTextDim,
+        marginTop: 20,
+      },
 
-  scroll: { padding: Spacing.md, paddingBottom: 48 },
+      // ── Add a friend ──────────────────────────────────────────────────────
+      addRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+      input: {
+        flex: 1,
+        height: 54,
+        backgroundColor: t.surfaceAlt,
+        borderRadius: 27,
+        paddingHorizontal: 20,
+        fontFamily: Fonts.bodySemi,
+        fontSize: 15,
+        letterSpacing: 1.2,
+        color: t.text,
+      },
+      addBtn: {
+        height: 54,
+        paddingHorizontal: 24,
+        borderRadius: 27,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      addBtnText: {
+        fontFamily: Fonts.legacyMono,
+        fontSize: 10,
+        letterSpacing: 1.8,
+      },
+      addHelper: {
+        fontFamily: Fonts.legacyMono,
+        fontSize: 9,
+        letterSpacing: 0.6,
+        color: t.textTertiary,
+        marginTop: 12,
+      },
 
-  heroCard: {
-    borderRadius: 10, padding: 20, marginBottom: 20,
-    borderWidth: 1, alignItems: 'center',
-  },
-  heroEmoji: { fontSize: 36, marginBottom: 8 },
-  heroMsg: {
-    fontFamily: Fonts.display, fontSize: 18, letterSpacing: -0.3,
-    textAlign: 'center', lineHeight: 24, marginBottom: 8,
-  },
-  heroSub: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 0.8, textAlign: 'center',
-  },
+      // ── Rows ──────────────────────────────────────────────────────────────
+      headHint: {
+        fontFamily: Fonts.legacyMono,
+        fontSize: 9,
+        letterSpacing: 1.7,
+        textTransform: 'uppercase',
+        color: t.textTertiary,
+      },
+      row: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+      rankNum: {
+        fontFamily: Fonts.displayBold,
+        width: 40,
+        fontVariant: ['tabular-nums'],
+      },
+      rankNumPodium: { fontSize: 34, lineHeight: 37, letterSpacing: -1.53, color: t.text },
+      rankNumRest: { fontSize: 27, lineHeight: 30, letterSpacing: -1.22, color: t.textTertiary },
 
-  addSection: { marginBottom: 20 },
-  sectionLabel: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.6, marginBottom: 10,
-  },
-  addRow: { flexDirection: 'row', gap: 8, marginBottom: 6 },
-  input: {
-    flex: 1, backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12,
-    fontFamily: Fonts.mono, fontSize: 14, color: Colors.text, letterSpacing: 1.2,
-  },
-  addBtn: {
-    paddingHorizontal: 18, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-  },
-  addBtnText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 0.8 },
-  addHelper: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 0.6, fontStyle: 'italic',
-  },
+      rowText: { flex: 1, gap: 4 },
+      nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+      name: {
+        flexShrink: 1,
+        fontFamily: Fonts.bodySemi,
+        fontSize: 15,
+        letterSpacing: -0.2,
+        color: t.text,
+      },
+      trainedPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 },
+      trainedText: { fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.1 },
+      meta: {
+        fontFamily: Fonts.legacyMono,
+        fontSize: 8,
+        letterSpacing: 1.3,
+        textTransform: 'uppercase',
+        color: t.textTertiary,
+      },
+      removeBtn: { padding: 6 },
 
-  boardCard: {
-    backgroundColor: Colors.surface, borderRadius: 10, padding: 16, marginBottom: 16,
-  },
+      // ── Empty ─────────────────────────────────────────────────────────────
+      emptyTitle: {
+        fontFamily: Fonts.displayBold,
+        fontSize: 27,
+        lineHeight: 31,
+        letterSpacing: -1.22,
+        color: t.text,
+      },
+      emptySub: {
+        fontFamily: Fonts.body,
+        fontSize: 13.5,
+        lineHeight: 20,
+        color: t.textSecondary,
+        marginTop: 10,
+      },
 
-  emptyCard: {
-    backgroundColor: Colors.surface, borderRadius: 10, padding: 24,
-    alignItems: 'center', marginBottom: 16,
-  },
-  emptyTitle: {
-    fontFamily: Fonts.display, fontSize: 18, color: Colors.text,
-    letterSpacing: -0.2, marginBottom: 8,
-  },
-  emptySub: {
-    fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary,
-    textAlign: 'center', lineHeight: 19,
-  },
+      // ── Loading ───────────────────────────────────────────────────────────
+      skelRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13 },
+      skelText: { flex: 1, gap: 8 },
 
-  howCard: {
-    backgroundColor: Colors.raised, borderRadius: 8, padding: 16,
-  },
-  howTitle: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.6, marginBottom: 8,
-  },
-  howBody: {
-    fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, lineHeight: 20,
-  },
-});
+      // ── How it works ──────────────────────────────────────────────────────
+      howPlate: { backgroundColor: t.surfaceAlt, borderRadius: 22, padding: 20 },
+      howBody: {
+        fontFamily: Fonts.body,
+        fontSize: 13,
+        lineHeight: 20,
+        color: t.textSecondary,
+      },
+    }),
+  );
+}

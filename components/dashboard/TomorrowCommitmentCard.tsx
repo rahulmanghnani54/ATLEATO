@@ -22,13 +22,15 @@ import {
 } from '@/lib/implementationIntention';
 import { ImplementationIntentionSheet } from './ImplementationIntentionSheet';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { format } from 'date-fns';
 
 export function TomorrowCommitmentCard({ persona }: { persona: PersonaTheme }) {
   const [intention, setIntention] = useState<Intention | null>(null);
   const [loaded, setLoaded]       = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const styles = useThemedStyles(makeStyles);
 
   const refresh = async () => {
     const i = await getTomorrowIntention();
@@ -101,26 +103,28 @@ export function TomorrowCommitmentCard({ persona }: { persona: PersonaTheme }) {
   );
 }
 
-const styles = StyleSheet.create({
-  // Committed state
-  cardSet: {
-    borderLeftWidth: 3, borderRadius: 6,
-    padding: 14, marginBottom: 14,
-  },
-  cardSetRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4 },
-  editHint: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.6, fontStyle: 'italic' },
-  timeBig: { fontFamily: Fonts.display, fontSize: 26, color: Colors.text, marginTop: 8, letterSpacing: -0.6 },
-  details: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    // Committed state
+    cardSet: {
+      borderLeftWidth: 3, borderRadius: 6,
+      padding: 14, marginBottom: 14,
+    },
+    cardSetRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+    label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4 },
+    editHint: { fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary, letterSpacing: 0.6, fontStyle: 'italic' },
+    timeBig: { fontFamily: Fonts.display, fontSize: 26, color: t.text, marginTop: 8, letterSpacing: -0.6 },
+    details: { fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary, marginTop: 4 },
 
-  // Empty / prompt state
-  cardEmpty: {
-    flexDirection: 'row', alignItems: 'center', gap: 12,
-    borderWidth: 1, borderStyle: 'dashed', borderRadius: 6,
-    padding: 14, marginBottom: 14,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-  },
-  emptyTitle: { fontFamily: Fonts.display, fontSize: 17, color: Colors.text, marginTop: 4, letterSpacing: -0.3 },
-  emptySub: { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, marginTop: 4, lineHeight: 15 },
-  emptyArrow: { fontFamily: Fonts.display, fontSize: 22 },
-});
+    // Empty / prompt state
+    cardEmpty: {
+      flexDirection: 'row', alignItems: 'center', gap: 12,
+      borderWidth: 1, borderStyle: 'dashed', borderRadius: 6,
+      padding: 14, marginBottom: 14,
+      // Was a 2%-white wash: invisible on the light page, visible only on dark.
+      backgroundColor: t.surfaceAlt,
+    },
+    emptyTitle: { fontFamily: Fonts.display, fontSize: 17, color: t.text, marginTop: 4, letterSpacing: -0.3 },
+    emptySub: { fontFamily: Fonts.body, fontSize: 11, color: t.textSecondary, marginTop: 4, lineHeight: 15 },
+    emptyArrow: { fontFamily: Fonts.display, fontSize: 22 },
+  });

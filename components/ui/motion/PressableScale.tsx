@@ -44,6 +44,24 @@ const LAYOUT_KEYS = [
   'position', 'top', 'right', 'bottom', 'left', 'zIndex',
 ] as const;
 
+/**
+ * Explicit sizes are COPIED to the inner box rather than moved to the outer one.
+ *
+ * The wrapper is a column flex container, so its single child stretches on the
+ * cross axis (width) but never on the main axis (height). Moving `height: 56`
+ * outward therefore left the inner Pressable — which is what carries the
+ * backgroundColor, border and radius — shrink-wrapped to its label, painting a
+ * ~16px pill top-aligned inside a 56px transparent box. Every fixed-height
+ * button, icon circle and shutter in the app renders through here, so the size
+ * has to exist on BOTH: the outer for the parent's layout, the inner for paint.
+ *
+ * Margins, position and flex are deliberately NOT duplicated — those describe
+ * the box's relationship to its parent and belong to the wrapper alone.
+ */
+const SIZE_KEYS = [
+  'width', 'height', 'minWidth', 'maxWidth', 'minHeight', 'maxHeight',
+] as const;
+
 /** Split a flattened style into [outer layout box, inner paint]. */
 function splitStyle(style: StyleProp<ViewStyle>): [ViewStyle | null, ViewStyle | null] {
   const flat = StyleSheet.flatten(style) as Record<string, unknown> | undefined;
@@ -54,6 +72,7 @@ function splitStyle(style: StyleProp<ViewStyle>): [ViewStyle | null, ViewStyle |
   for (const k of Object.keys(flat)) {
     if ((LAYOUT_KEYS as readonly string[]).includes(k)) { outer[k] = flat[k]; hasOuter = true; }
     else inner[k] = flat[k];
+    if ((SIZE_KEYS as readonly string[]).includes(k)) inner[k] = flat[k];
   }
   return [hasOuter ? (outer as ViewStyle) : null, inner as ViewStyle];
 }

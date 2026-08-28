@@ -10,11 +10,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGlobalLeaderboard } from '@/hooks/useGlobalLeaderboard';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 export function LeaderboardCard({ persona }: { persona: PersonaTheme }) {
   const router = useRouter();
   const { data: rows = [], isLoading } = useGlobalLeaderboard(100);
+  const styles = useThemedStyles(makeStyles);
 
   const top3 = rows.slice(0, 3);
   const me = rows.find((r) => r.is_current_user);
@@ -62,6 +64,7 @@ export function LeaderboardCard({ persona }: { persona: PersonaTheme }) {
 }
 
 function Row({ row, accent, soft }: { row: { rank: number; anon_handle: string; volume_kg: number; sessions: number; is_current_user: boolean }; accent: string; soft: string }) {
+  const styles = useThemedStyles(makeStyles);
   const medal =
     row.rank === 1 ? '🥇' :
     row.rank === 2 ? '🥈' :
@@ -85,24 +88,27 @@ function Row({ row, accent, soft }: { row: { rank: number; anon_handle: string; 
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1, borderRadius: 8, padding: 14, marginBottom: 14,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-  },
-  headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 },
-  label:     { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4 },
-  headRight: { fontFamily: Fonts.mono, fontSize: 14, color: Colors.textSecondary },
-  empty:     { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, paddingVertical: 8 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    card: {
+      borderWidth: 1, borderRadius: 8, padding: 14, marginBottom: 14,
+      // Was a 2%-white wash, which is a no-op on a white page and only ever
+      // read on dark. The surface token gives the card a body in both.
+      backgroundColor: t.surface,
+    },
+    headRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 },
+    label:     { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4 },
+    headRight: { fontFamily: Fonts.mono, fontSize: 14, color: t.textSecondary },
+    empty:     { fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary, paddingVertical: 8 },
 
-  row: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 4,
-    borderRadius: 4,
-  },
-  rank:   { fontFamily: Fonts.display, fontSize: 14, color: Colors.text },
-  handle: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: Colors.text },
-  volume: { fontFamily: Fonts.display, fontSize: 14, color: Colors.text },
-  unit:   { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary },
+    row: {
+      flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 4,
+      borderRadius: 4,
+    },
+    rank:   { fontFamily: Fonts.display, fontSize: 14, color: t.text },
+    handle: { flex: 1, fontFamily: Fonts.body, fontSize: 13, color: t.text },
+    volume: { fontFamily: Fonts.display, fontSize: 14, color: t.text },
+    unit:   { fontFamily: Fonts.body, fontSize: 11, color: t.textSecondary },
 
-  divider: { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textTertiary, textAlign: 'center', paddingVertical: 4 },
-});
+    divider: { fontFamily: Fonts.mono, fontSize: 12, color: t.textTertiary, textAlign: 'center', paddingVertical: 4 },
+  });

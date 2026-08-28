@@ -17,7 +17,8 @@ import {
 import { BottomSheet } from '@/components/ui';
 import { addCustomFood } from '@/lib/customFoods';
 import { type FoodItem } from '@/lib/api/openFoodFacts';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   visible: boolean;
@@ -34,6 +35,8 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
   const [fat, setFat]         = useState('');
   const [serving, setServing] = useState('');
   const [saving, setSaving]   = useState(false);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   // Live-derived calories from macros (4P + 4C + 9F per g) — shown as hint
   const calcFromMacros = useMemo(() => {
@@ -102,7 +105,7 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
             value={name}
             onChangeText={setName}
             placeholder="e.g. Grandma's Chicken Curry"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={tokens.textTertiary}
             autoFocus
             maxLength={80}
           />
@@ -121,7 +124,7 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
             value={calories}
             onChangeText={setCals}
             placeholder={calcFromMacros > 0 ? `e.g. ${calcFromMacros}` : 'e.g. 180'}
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={tokens.textTertiary}
             keyboardType="decimal-pad"
             maxLength={6}
           />
@@ -136,7 +139,7 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
               value={protein}
               onChangeText={setProtein}
               placeholder="0"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={tokens.textTertiary}
               keyboardType="decimal-pad"
               maxLength={5}
             />
@@ -148,7 +151,7 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
               value={carbs}
               onChangeText={setCarbs}
               placeholder="0"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={tokens.textTertiary}
               keyboardType="decimal-pad"
               maxLength={5}
             />
@@ -160,7 +163,7 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
               value={fat}
               onChangeText={setFat}
               placeholder="0"
-              placeholderTextColor={Colors.textTertiary}
+              placeholderTextColor={tokens.textTertiary}
               keyboardType="decimal-pad"
               maxLength={5}
             />
@@ -175,7 +178,7 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
             value={serving}
             onChangeText={setServing}
             placeholder="100"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={tokens.textTertiary}
             keyboardType="number-pad"
             maxLength={5}
           />
@@ -204,41 +207,46 @@ export function CustomFoodSheet({ visible, onClose, initialName = '', onCreated 
   );
 }
 
-const styles = StyleSheet.create({
-  helper: {
-    fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary,
-    marginBottom: 16, lineHeight: 17, fontStyle: 'italic',
-  },
-  field: { marginBottom: 14 },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 },
-  label: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    letterSpacing: 1.4, marginBottom: 4,
-  },
-  hint: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.primary, letterSpacing: 1 },
-  input: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1, borderColor: Colors.border, borderRadius: 4,
-    paddingHorizontal: 12, paddingVertical: 10,
-    fontFamily: Fonts.body, fontSize: 14, color: Colors.text,
-  },
-  macroRow: { flexDirection: 'row', gap: 8 },
-  macroField: { flex: 1 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    helper: {
+      fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary,
+      marginBottom: 16, lineHeight: 17, fontStyle: 'italic',
+    },
+    field: { marginBottom: 14 },
+    labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 },
+    label: {
+      fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary,
+      letterSpacing: 1.4, marginBottom: 4,
+    },
+    // Emerald AS TEXT needs the AA-safe deep tone, not the fill emerald.
+    hint: { fontFamily: Fonts.mono, fontSize: 9, color: t.accentText, letterSpacing: 1 },
+    input: {
+      backgroundColor: t.surface,
+      borderWidth: 1, borderColor: t.border, borderRadius: 4,
+      paddingHorizontal: 12, paddingVertical: 10,
+      fontFamily: Fonts.body, fontSize: 14, color: t.text,
+    },
+    macroRow: { flexDirection: 'row', gap: 8 },
+    macroField: { flex: 1 },
 
-  actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  cancelBtn: {
-    flex: 1, paddingVertical: 14, borderRadius: 4,
-    borderWidth: 1, borderColor: Colors.border, alignItems: 'center',
-  },
-  cancelText: { fontFamily: Fonts.display, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.8 },
-  saveBtn: {
-    flex: 2, backgroundColor: Colors.primary, borderRadius: 4,
-    paddingVertical: 14, alignItems: 'center',
-  },
-  saveText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 0.8 },
+    actionsRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+    cancelBtn: {
+      flex: 1, paddingVertical: 14, borderRadius: 4,
+      borderWidth: 1, borderColor: t.border, alignItems: 'center',
+    },
+    cancelText: { fontFamily: Fonts.display, fontSize: 12, color: t.textSecondary, letterSpacing: 0.8 },
+    saveBtn: {
+      flex: 2, backgroundColor: t.accent, borderRadius: 4,
+      // The emerald fill is under 3:1 on the light page, so the deep-tone
+      // hairline is what gives the button an identifiable boundary.
+      borderWidth: 1, borderColor: t.accentLine,
+      paddingVertical: 14, alignItems: 'center',
+    },
+    saveText: { fontFamily: Fonts.display, fontSize: 13, color: t.accentInk, letterSpacing: 0.8 },
 
-  tinyNote: {
-    fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary,
-    textAlign: 'center', marginTop: 14, fontStyle: 'italic', letterSpacing: 0.4,
-  },
-});
+    tinyNote: {
+      fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary,
+      textAlign: 'center', marginTop: 14, fontStyle: 'italic', letterSpacing: 0.4,
+    },
+  });

@@ -6,7 +6,8 @@ import {
 import { useRouter } from 'expo-router';
 import { usePhysiqueCheckins, decryptStorageBlob, type PhysiqueCheckin } from '@/hooks/usePhysiqueCheckins';
 import { useAuthStore } from '@/stores/authStore';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 function dueDateLabel(lastDate: string, cadence: 'weekly' | 'biweekly' | 'monthly'): string {
   const days = cadence === 'weekly' ? 7 : cadence === 'biweekly' ? 14 : 30;
@@ -30,6 +31,8 @@ function ThumbnailCell({
 }) {
   const user = useAuthStore((s) => s.user);
   const [uri, setUri] = useState<string | null>(null);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   useEffect(() => {
     if (!user) return;
@@ -57,7 +60,7 @@ function ThumbnailCell({
       {uri ? (
         <Image source={{ uri }} style={styles.thumbnail} resizeMode="cover" />
       ) : (
-        <ActivityIndicator color={Colors.primary} style={styles.thumbnail} />
+        <ActivityIndicator color={tokens.accent} style={styles.thumbnail} />
       )}
       <View style={styles.cellFooter}>
         <Text style={styles.cellDate}>
@@ -78,6 +81,8 @@ export function PhysiqueGallery() {
   const router = useRouter();
   const { data: checkins = [], isLoading } = usePhysiqueCheckins();
   const [selected, setSelected] = useState<string[]>([]);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const toggleSelect = (id: string) => {
     setSelected((prev) =>
@@ -98,7 +103,7 @@ export function PhysiqueGallery() {
   const latestCheckin = checkins[0];
 
   if (isLoading) {
-    return <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />;
+    return <ActivityIndicator color={tokens.accent} style={{ marginTop: 40 }} />;
   }
 
   return (
@@ -160,71 +165,77 @@ export function PhysiqueGallery() {
 
 const CELL_SIZE = 160;
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  dueBanner: {
-    backgroundColor: Colors.systemAccentSoft,
-    borderWidth: 1,
-    borderColor: Colors.borderWarm,
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginBottom: 12,
-  },
-  dueText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.primary, letterSpacing: 1 },
-  row: { gap: 10, marginBottom: 10 },
-  cell: {
-    flex: 1,
-    height: CELL_SIZE,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  cellSelected: { borderColor: Colors.primary, borderWidth: 2 },
-  thumbnail: { flex: 1, width: '100%' },
-  cellFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  cellDate: { fontFamily: Fonts.mono, fontSize: 9, color: '#fff', letterSpacing: 0.5 },
-  poseBadge: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.primary },
-  selectedOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    borderRadius: 5,
-  },
-  newCheckinCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderStyle: 'dashed',
-  },
-  newCheckinPlus: { fontFamily: Fonts.display, fontSize: 32, color: Colors.primary, marginBottom: 6 },
-  newCheckinLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4 },
-  emptyText: {
-    fontFamily: Fonts.body,
-    fontSize: 13,
-    color: Colors.textTertiary,
-    textAlign: 'center',
-    marginTop: 24,
-    lineHeight: 20,
-  },
-  compareBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 4,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  compareBtnText: { fontFamily: Fonts.display, fontSize: 13, color: Colors.accentInk, letterSpacing: 1 },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    container: { flex: 1 },
+    dueBanner: {
+      backgroundColor: t.accentSoft,
+      borderWidth: 1,
+      borderColor: t.accentLine,
+      borderRadius: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      marginBottom: 12,
+    },
+    // Emerald AS TEXT needs the AA-safe deep tone; the fill emerald is 2.54:1
+    // on light and would fail here and on the two labels below.
+    dueText: { fontFamily: Fonts.mono, fontSize: 10, color: t.accentText, letterSpacing: 1 },
+    row: { gap: 10, marginBottom: 10 },
+    cell: {
+      flex: 1,
+      height: CELL_SIZE,
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.border,
+      borderRadius: 6,
+      overflow: 'hidden',
+    },
+    cellSelected: { borderColor: t.accent, borderWidth: 2 },
+    thumbnail: { flex: 1, width: '100%' },
+    cellFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 5,
+      // This bar sits ON the photo, not on the page, so it uses the scrim/crown
+      // pair — dark ground with light ink — in both schemes.
+      backgroundColor: t.scrim,
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+    },
+    cellDate: { fontFamily: Fonts.mono, fontSize: 9, color: t.crownText, letterSpacing: 0.5 },
+    // Sits on the photo scrim, not the page, so it takes the crown accent.
+    poseBadge: { fontFamily: Fonts.mono, fontSize: 8, color: t.crownAccent },
+    selectedOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      borderWidth: 2,
+      borderColor: t.accent,
+      borderRadius: 5,
+    },
+    newCheckinCell: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderStyle: 'dashed',
+    },
+    newCheckinPlus: { fontFamily: Fonts.display, fontSize: 32, color: t.accentText, marginBottom: 6 },
+    newCheckinLabel: { fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary, letterSpacing: 1.4 },
+    emptyText: {
+      fontFamily: Fonts.body,
+      fontSize: 13,
+      color: t.textTertiary,
+      textAlign: 'center',
+      marginTop: 24,
+      lineHeight: 20,
+    },
+    compareBtn: {
+      backgroundColor: t.accent,
+      borderRadius: 4,
+      paddingVertical: 14,
+      alignItems: 'center',
+      marginTop: 16,
+    },
+    compareBtnText: { fontFamily: Fonts.display, fontSize: 13, color: t.accentInk, letterSpacing: 1 },
+  });

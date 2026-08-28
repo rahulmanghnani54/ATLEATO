@@ -5,10 +5,11 @@
  * colored. The signature "START PUSH DAY →" or "RESUME RUN" button you see in
  * Nike Training Club / Strava / Calm.
  *
- * Pass an `accent` prop (persona accent) to color it; defaults to brand orange.
+ * Pass an `accent` prop (persona accent) to color it; defaults to the brand
+ * emerald of the active scheme.
  *
  * Usage:
- *   <AnchorCTA label="START PUSH DAY →" onPress={...} accent="#c8ff3d" />
+ *   <AnchorCTA label="START PUSH DAY →" onPress={...} accent={persona.accent} />
  *
  * Note: positioned absolute so it overlays the scroll area. Parent screen
  * should add bottom padding of ~90px to its scroll content so the last item
@@ -16,18 +17,24 @@
  */
 import { Text, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Spacing, Radius, Typography } from '@/constants/theme';
+import { useTheme } from '@/lib/theme';
 
 interface Props {
   label: string;
   onPress: () => void;
-  accent?: string;        // background color — defaults to brand orange
-  accentInk?: string;     // text color on the accent — defaults to white
+  accent?: string;        // background color — defaults to the brand emerald
+  accentInk?: string;     // text color on the accent — defaults to the emerald ink
   disabled?: boolean;
 }
 
-export function AnchorCTA({ label, onPress, accent = Colors.primary, accentInk = Colors.accentInk, disabled }: Props) {
+export function AnchorCTA({ label, onPress, accent: accentProp, accentInk: accentInkProp, disabled }: Props) {
   const insets = useSafeAreaInsets();
+  const { tokens } = useTheme();
+  // Resolved at render, not as default parameters: a default parameter would
+  // freeze the light-scheme emerald into the signature.
+  const accent = accentProp ?? tokens.accent;
+  const accentInk = accentInkProp ?? tokens.accentInk;
   return (
     <View style={[styles.wrap, { paddingBottom: insets.bottom + Spacing.sm + 2 }]} pointerEvents="box-none">
       <TouchableOpacity

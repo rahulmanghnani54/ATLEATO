@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { View, StyleSheet, type ViewStyle, type StyleProp } from 'react-native';
-import { Colors } from '../../constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 export function GlassCard({
   children,
@@ -14,6 +14,7 @@ export function GlassCard({
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={[styles.wrap, style]}>
       <View style={styles.tint} />
@@ -22,16 +23,17 @@ export function GlassCard({
   );
 }
 
-const styles = StyleSheet.create({
-  wrap: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  tint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: Colors.surface,
-  },
-  content: { padding: 18 },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    wrap: {
+      borderRadius: 18,
+      overflow: 'hidden',
+      borderWidth: 1,
+      borderColor: t.border,
+    },
+    tint: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: t.surface,
+    },
+    content: { padding: 18 },
+  });

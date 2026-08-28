@@ -5,7 +5,8 @@ import { BottomSheet, Button } from '@/components/ui';
 import { calculateMacrosForServing, type FoodItem } from '@/lib/api/openFoodFacts';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Spacing, Radius, Typography } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import type { MealType } from '@/types/index';
 
 interface Props {
@@ -22,6 +23,8 @@ export function AddServingSheet({ visible, food, mealType, date, onClose, onLogg
   const queryClient = useQueryClient();
   const [serving, setServing] = useState(String(food.servingSizeG));
   const [loading, setLoading] = useState(false);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const servingG = parseFloat(serving) || 0;
   const macros = servingG > 0 ? calculateMacrosForServing(food, servingG) : { calories: 0, proteinG: 0, carbsG: 0, fatG: 0 };
@@ -83,10 +86,12 @@ export function AddServingSheet({ visible, food, mealType, date, onClose, onLogg
       {/* Macro preview */}
       <View style={styles.macroRow}>
         {[
-          { label: 'Calories', value: macros.calories, unit: 'kcal', color: Colors.primary },
-          { label: 'Protein', value: macros.proteinG, unit: 'g', color: '#3b82f6' },
-          { label: 'Carbs', value: macros.carbsG, unit: 'g', color: '#f59e0b' },
-          { label: 'Fat', value: macros.fatG, unit: 'g', color: '#ef4444' },
+          // The macro hues are their own token family — the old blue/amber/red
+          // hexes were a light-only ramp with no dark counterpart.
+          { label: 'Calories', value: macros.calories, unit: 'kcal', color: tokens.accentText },
+          { label: 'Protein', value: macros.proteinG, unit: 'g', color: tokens.macroProtein },
+          { label: 'Carbs', value: macros.carbsG, unit: 'g', color: tokens.macroCarbs },
+          { label: 'Fat', value: macros.fatG, unit: 'g', color: tokens.macroFat },
         ].map((m) => (
           <View key={m.label} style={styles.macroItem}>
             <Text style={[styles.macroValue, { color: m.color }]}>{m.value}{m.unit}</Text>
@@ -107,17 +112,19 @@ export function AddServingSheet({ visible, food, mealType, date, onClose, onLogg
   );
 }
 
-const styles = StyleSheet.create({
-  brand: { ...Typography.caption, color: Colors.textSecondary, marginBottom: Spacing.md },
-  label: { ...Typography.label, marginBottom: 6 },
-  input: {
-    height: 52, backgroundColor: Colors.background, borderRadius: Radius.md,
-    paddingHorizontal: Spacing.md, borderWidth: 1, borderColor: Colors.border,
-    fontFamily: 'Inter_400Regular', fontSize: 16, color: Colors.text, marginBottom: Spacing.md,
-  },
-  macroRow: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: Colors.background, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md },
-  macroItem: { alignItems: 'center' },
-  macroValue: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  macroLabel: { ...Typography.caption, marginTop: 2 },
-  logBtn: { marginTop: 4 },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    brand: { ...Typography.caption, color: t.textSecondary, marginBottom: Spacing.md },
+    // Typography presets carry the frozen LIGHT colour, so each is re-stated.
+    label: { ...Typography.label, color: t.textSecondary, marginBottom: 6 },
+    input: {
+      height: 52, backgroundColor: t.bgAlt, borderRadius: Radius.md,
+      paddingHorizontal: Spacing.md, borderWidth: 1, borderColor: t.border,
+      fontFamily: 'Inter_400Regular', fontSize: 16, color: t.text, marginBottom: Spacing.md,
+    },
+    macroRow: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: t.bgAlt, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md },
+    macroItem: { alignItems: 'center' },
+    macroValue: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+    macroLabel: { ...Typography.caption, color: t.textSecondary, marginTop: 2 },
+    logBtn: { marginTop: 4 },
+  });

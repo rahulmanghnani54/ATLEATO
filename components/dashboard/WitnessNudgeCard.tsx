@@ -19,7 +19,8 @@ import {
 } from '@/lib/socialStake';
 import { useAuthStore } from '@/stores/authStore';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 const THRESHOLD = 3;
 
@@ -33,6 +34,7 @@ export function WitnessNudgeCard({
   const profile = useAuthStore((s) => s.profile);
   const [show, setShow]       = useState(false);
   const [witness, setW]       = useState<Witness | null>(null);
+  const styles = useThemedStyles(makeStyles);
 
   useEffect(() => {
     let alive = true;
@@ -105,15 +107,16 @@ export function WitnessNudgeCard({
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1, borderRadius: 8, padding: 14, marginBottom: 14,
-  },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
-  label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4 },
-  dismiss: { fontFamily: Fonts.body, fontSize: 16, color: Colors.textTertiary, paddingHorizontal: 4 },
-  title: { fontFamily: Fonts.display, fontSize: 20, color: Colors.text, marginTop: 8, marginBottom: 6, letterSpacing: -0.3 },
-  body: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, lineHeight: 17, marginBottom: 12 },
-  btn: { paddingVertical: 12, borderRadius: 6, alignItems: 'center' },
-  btnText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 1 },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    card: {
+      borderWidth: 1, borderRadius: 8, padding: 14, marginBottom: 14,
+    },
+    row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+    label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.4 },
+    dismiss: { fontFamily: Fonts.body, fontSize: 16, color: t.textTertiary, paddingHorizontal: 4 },
+    title: { fontFamily: Fonts.display, fontSize: 20, color: t.text, marginTop: 8, marginBottom: 6, letterSpacing: -0.3 },
+    body: { fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary, lineHeight: 17, marginBottom: 12 },
+    btn: { paddingVertical: 12, borderRadius: 6, alignItems: 'center' },
+    btnText: { fontFamily: Fonts.display, fontSize: 12, letterSpacing: 1 },
+  });

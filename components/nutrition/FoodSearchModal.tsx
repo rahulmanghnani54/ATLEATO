@@ -6,7 +6,8 @@ import {
 import { BottomSheet } from '@/components/ui';
 import { useFoodSearch } from '@/hooks/useFoodSearch';
 import { type FoodItem } from '@/lib/api/openFoodFacts';
-import { Colors, Spacing, Radius, Typography, Fonts } from '@/constants/theme';
+import { Spacing, Radius, Typography, Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import type { MealType } from '@/types/index';
 import { AddServingSheet } from './AddServingSheet';
 import { CustomFoodSheet } from './CustomFoodSheet';
@@ -28,6 +29,8 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
   const { height: screenHeight } = useWindowDimensions();
   const inputRef = useRef<TextInput>(null);
   const queryClient = useQueryClient();
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   // After a custom food is created, jump straight into the serving picker for it
   // and invalidate the search so it shows up at the top in future queries.
@@ -59,7 +62,7 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
             ref={inputRef}
             style={styles.searchInput}
             placeholder="Search any food — sushi, pizza, biryani, chicken…"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={tokens.textTertiary}
             value={query}
             onChangeText={setQuery}
             autoFocus
@@ -82,7 +85,7 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
         )}
 
         {isFetching && query.length >= 2 && (
-          <ActivityIndicator color={Colors.primary} style={styles.loader} />
+          <ActivityIndicator color={tokens.accent} style={styles.loader} />
         )}
 
         {results.length === 0 && query.length >= 2 && !isFetching && (
@@ -169,60 +172,65 @@ export function FoodSearchModal({ visible, onClose, mealType, date, onFoodLogged
   );
 }
 
-const styles = StyleSheet.create({
-  searchRow: {
-    flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md,
-    backgroundColor: Colors.background, borderRadius: Radius.md, borderWidth: 1, borderColor: Colors.border,
-    paddingHorizontal: Spacing.md,
-  },
-  searchInput: {
-    flex: 1, height: 50,
-    fontFamily: 'Inter_400Regular', fontSize: 15, color: Colors.text,
-  },
-  clearBtn: { padding: 6 },
-  clearBtnText: { fontSize: 14, color: Colors.textSecondary },
-  hint: {
-    fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary,
-    textAlign: 'center', marginVertical: Spacing.md, lineHeight: 18,
-  },
-  loader: { marginVertical: Spacing.md },
-  empty: {
-    fontFamily: Fonts.bodySemi, fontSize: 14, color: Colors.text,
-    textAlign: 'center', marginTop: Spacing.lg,
-  },
-  emptySub: {
-    fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary,
-    textAlign: 'center', marginTop: 6, lineHeight: 17,
-  },
-  emptyState: { paddingHorizontal: Spacing.sm, marginBottom: Spacing.md },
-  emptyAddBtn: {
-    marginTop: Spacing.md, backgroundColor: Colors.primary,
-    borderRadius: 4, paddingVertical: 14, alignItems: 'center',
-  },
-  emptyAddBtnText: { fontFamily: Fonts.display, fontSize: 12, color: Colors.accentInk, letterSpacing: 0.6 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    searchRow: {
+      flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md,
+      backgroundColor: t.bgAlt, borderRadius: Radius.md, borderWidth: 1, borderColor: t.border,
+      paddingHorizontal: Spacing.md,
+    },
+    searchInput: {
+      flex: 1, height: 50,
+      fontFamily: 'Inter_400Regular', fontSize: 15, color: t.text,
+    },
+    clearBtn: { padding: 6 },
+    clearBtnText: { fontSize: 14, color: t.textSecondary },
+    hint: {
+      fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary,
+      textAlign: 'center', marginVertical: Spacing.md, lineHeight: 18,
+    },
+    loader: { marginVertical: Spacing.md },
+    empty: {
+      fontFamily: Fonts.bodySemi, fontSize: 14, color: t.text,
+      textAlign: 'center', marginTop: Spacing.lg,
+    },
+    emptySub: {
+      fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary,
+      textAlign: 'center', marginTop: 6, lineHeight: 17,
+    },
+    emptyState: { paddingHorizontal: Spacing.sm, marginBottom: Spacing.md },
+    emptyAddBtn: {
+      marginTop: Spacing.md, backgroundColor: t.accent,
+      // The emerald fill is under 3:1 on the light page, so the deep-tone
+      // hairline is what gives the button an identifiable boundary.
+      borderWidth: 1, borderColor: t.accentLine,
+      borderRadius: 4, paddingVertical: 14, alignItems: 'center',
+    },
+    emptyAddBtnText: { fontFamily: Fonts.display, fontSize: 12, color: t.accentInk, letterSpacing: 0.6 },
 
-  result: {
-    flexDirection: 'row', alignItems: 'center', paddingVertical: 13,
-    borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  resultBody: { flex: 1, marginRight: Spacing.sm },
-  foodNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  foodName: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 14, color: Colors.text },
-  myFoodTag: {
-    backgroundColor: Colors.primary, borderRadius: 3,
-    paddingHorizontal: 6, paddingVertical: 2,
-  },
-  myFoodTagText: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.accentInk, letterSpacing: 0.8 },
-  brand: { ...Typography.caption, marginTop: 2, color: Colors.textSecondary },
-  kcalBadge: { alignItems: 'flex-end' },
-  kcalNum: { fontFamily: 'Inter_700Bold', fontSize: 15, color: Colors.primary },
-  kcalUnit: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.5 },
+    result: {
+      flexDirection: 'row', alignItems: 'center', paddingVertical: 13,
+      borderBottomWidth: 1, borderBottomColor: t.border,
+    },
+    resultBody: { flex: 1, marginRight: Spacing.sm },
+    foodNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    foodName: { flex: 1, fontFamily: 'Inter_600SemiBold', fontSize: 14, color: t.text },
+    myFoodTag: {
+      backgroundColor: t.accent, borderRadius: 3,
+      paddingHorizontal: 6, paddingVertical: 2,
+    },
+    myFoodTagText: { fontFamily: Fonts.mono, fontSize: 8, color: t.accentInk, letterSpacing: 0.8 },
+    brand: { ...Typography.caption, marginTop: 2, color: t.textSecondary },
+    kcalBadge: { alignItems: 'flex-end' },
+    // Emerald AS TEXT needs the AA-safe deep tone, not the fill emerald.
+    kcalNum: { fontFamily: 'Inter_700Bold', fontSize: 15, color: t.accentText },
+    kcalUnit: { fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary, letterSpacing: 0.5 },
 
-  addCustomFooter: {
-    marginTop: 8, paddingVertical: 12, alignItems: 'center',
-    borderTopWidth: 1, borderTopColor: Colors.border,
-  },
-  addCustomFooterText: {
-    fontFamily: Fonts.bodySemi, fontSize: 12, color: Colors.primary, letterSpacing: 0.3,
-  },
-});
+    addCustomFooter: {
+      marginTop: 8, paddingVertical: 12, alignItems: 'center',
+      borderTopWidth: 1, borderTopColor: t.border,
+    },
+    addCustomFooterText: {
+      fontFamily: Fonts.bodySemi, fontSize: 12, color: t.accentText, letterSpacing: 0.3,
+    },
+  });

@@ -7,7 +7,7 @@
  *
  * Usage:
  *   <HeroBlock
- *     accent="#ff6b35"        // persona accent
+ *     accent={persona.accent}  // persona accent
  *     day="Day 47 · Push"
  *     name="Let's go,\nRahul"
  *   />
@@ -17,7 +17,8 @@
  * is the Nike Training Club / Telegram convention.
  */
 import { View, Text, StyleSheet, ImageSourcePropType, ImageBackground, useWindowDimensions } from 'react-native';
-import { Colors, Fonts, Spacing, Typography } from '@/constants/theme';
+import { Spacing, Typography } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   accent: string;                // persona accent color (gradient start)
@@ -35,6 +36,7 @@ export function HeroBlock({ accent, day, name, photo, heightRatio = 0.38 }: Prop
   // from the device window height instead.
   const { height: screenH } = useWindowDimensions();
   const heroH = Math.round(screenH * heightRatio);
+  const styles = useThemedStyles(makeStyles);
   const content = (
     <>
       {/* Bottom-of-block dark gradient overlay so white text always reads */}
@@ -76,7 +78,8 @@ function shadeDarker(hex: string): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
   wrap: { position: 'relative', overflow: 'hidden' },
   gradWrap: {},
   gradBlob: {
@@ -87,7 +90,9 @@ const styles = StyleSheet.create({
     top: -40,
     left: -40,
   },
-  gradBlobLight: { backgroundColor: 'rgba(255,255,255,0.15)' },
+  // Highlight stop of the persona gradient — it lifts whatever accent the
+  // caller passed, so it is tied to that fill, not to the page scheme.
+  gradBlobLight: { backgroundColor: t.crownLine },
   gradBlobAccent: {
     position: 'absolute',
     width: 320,
@@ -115,14 +120,17 @@ const styles = StyleSheet.create({
     left: Spacing.heroPad,
     right: Spacing.heroPad,
   },
+  // The hero is a saturated persona fill or a photo in BOTH schemes, so its
+  // copy uses the crown tokens (light ink on a permanently dark surface) rather
+  // than the page's text tokens, which would go pale-on-pale in dark mode.
   day: {
     ...Typography.heroSub,
-    color: 'rgba(255,255,255,0.92)',
+    color: t.crownTextDim,
     marginBottom: Spacing.xs + 1,   // off-ladder 5
   },
   name: {
     ...Typography.heroName,
-    color: '#fff',
+    color: t.crownText,
     lineHeight: 32,
   },
-});
+  });

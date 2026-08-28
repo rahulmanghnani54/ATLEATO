@@ -21,7 +21,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { BottomSheet } from '@/components/ui';
 import { setIntention, formatTime12h } from '@/lib/implementationIntention';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   visible: boolean;
@@ -70,6 +71,8 @@ export function ImplementationIntentionSheet({
   const [location, setLocation] = useState('');
   const [wearing, setWearing]   = useState('');
   const [saving, setSaving]     = useState(false);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const reset = () => {
     setStep('when');
@@ -224,7 +227,7 @@ export function ImplementationIntentionSheet({
             value={location.startsWith('🏠') || location.startsWith('🏋️') || location.startsWith('🌳') || location.startsWith('🏨') ? '' : location}
             onChangeText={setLocation}
             placeholder="e.g. Gold's Gym, basement"
-            placeholderTextColor={Colors.textTertiary}
+            placeholderTextColor={tokens.textTertiary}
             maxLength={60}
           />
 
@@ -284,65 +287,66 @@ export function ImplementationIntentionSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 18 },
-  dot: { width: 8, height: 3, borderRadius: 2, backgroundColor: Colors.borderStrong },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 18 },
+    dot: { width: 8, height: 3, borderRadius: 2, backgroundColor: t.borderStrong },
 
-  eyebrow: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 8 },
-  question: { fontFamily: Fonts.display, fontSize: 22, color: Colors.text, lineHeight: 26, letterSpacing: -0.4, marginBottom: 6 },
-  helper: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, lineHeight: 17, marginBottom: 18, fontStyle: 'italic' },
+    eyebrow: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 8 },
+    question: { fontFamily: Fonts.display, fontSize: 22, color: t.text, lineHeight: 26, letterSpacing: -0.4, marginBottom: 6 },
+    helper: { fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary, lineHeight: 17, marginBottom: 18, fontStyle: 'italic' },
 
-  // Time picker tile
-  timePicker: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: 18, paddingVertical: 22,
-    borderRadius: 8, borderWidth: 2,
-    marginBottom: 18, justifyContent: 'space-between',
-  },
-  timeText: { fontFamily: Fonts.display, fontSize: 32, letterSpacing: -0.6 },
-  timeChevron: { fontFamily: Fonts.body, fontSize: 24, color: Colors.textTertiary },
+    // Time picker tile
+    timePicker: {
+      flexDirection: 'row', alignItems: 'center',
+      paddingHorizontal: 18, paddingVertical: 22,
+      borderRadius: 8, borderWidth: 2,
+      marginBottom: 18, justifyContent: 'space-between',
+    },
+    timeText: { fontFamily: Fonts.display, fontSize: 32, letterSpacing: -0.6 },
+    timeChevron: { fontFamily: Fonts.body, fontSize: 24, color: t.textTertiary },
 
-  // Chips
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
-  chip: {
-    paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6,
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border,
-  },
-  chipText: { fontFamily: Fonts.bodySemi, fontSize: 13, color: Colors.text },
+    // Chips
+    chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 },
+    chip: {
+      paddingHorizontal: 12, paddingVertical: 10, borderRadius: 6,
+      backgroundColor: t.surface, borderWidth: 1, borderColor: t.border,
+    },
+    chipText: { fontFamily: Fonts.bodySemi, fontSize: 13, color: t.text },
 
-  orLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.2, marginTop: 6, marginBottom: 6 },
-  input: {
-    backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border, borderRadius: 6,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontFamily: Fonts.body, fontSize: 14, color: Colors.text, marginBottom: 18,
-  },
+    orLabel: { fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary, letterSpacing: 1.2, marginTop: 6, marginBottom: 6 },
+    input: {
+      backgroundColor: t.surface, borderWidth: 1, borderColor: t.border, borderRadius: 6,
+      paddingHorizontal: 14, paddingVertical: 12,
+      fontFamily: Fonts.body, fontSize: 14, color: t.text, marginBottom: 18,
+    },
 
-  // Buttons
-  btnRow: { flexDirection: 'row', gap: 8 },
-  btnPrimary: {
-    paddingVertical: 14, alignItems: 'center', borderRadius: 6,
-  },
-  btnPrimaryFlex: { flex: 2 },
-  btnPrimaryText: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: 1.2 },
-  btnSecondary: {
-    flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 6,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  btnSecondaryText: { fontFamily: Fonts.display, fontSize: 12, color: Colors.textSecondary, letterSpacing: 0.8 },
+    // Buttons
+    btnRow: { flexDirection: 'row', gap: 8 },
+    btnPrimary: {
+      paddingVertical: 14, alignItems: 'center', borderRadius: 6,
+    },
+    btnPrimaryFlex: { flex: 2 },
+    btnPrimaryText: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: 1.2 },
+    btnSecondary: {
+      flex: 1, paddingVertical: 14, alignItems: 'center', borderRadius: 6,
+      borderWidth: 1, borderColor: t.border,
+    },
+    btnSecondaryText: { fontFamily: Fonts.display, fontSize: 12, color: t.textSecondary, letterSpacing: 0.8 },
 
-  // Done state
-  doneCard: {
-    borderLeftWidth: 3, borderRadius: 8, padding: 18, marginBottom: 14, alignItems: 'center',
-  },
-  doneCheck: { fontFamily: Fonts.display, fontSize: 44 },
-  doneLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.8, marginTop: 6 },
-  doneTime: { fontFamily: Fonts.display, fontSize: 36, color: Colors.text, marginTop: 8, letterSpacing: -0.8 },
-  doneDetails: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, marginTop: 4 },
+    // Done state
+    doneCard: {
+      borderLeftWidth: 3, borderRadius: 8, padding: 18, marginBottom: 14, alignItems: 'center',
+    },
+    doneCheck: { fontFamily: Fonts.display, fontSize: 44 },
+    doneLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.8, marginTop: 6 },
+    doneTime: { fontFamily: Fonts.display, fontSize: 36, color: t.text, marginTop: 8, letterSpacing: -0.8 },
+    doneDetails: { fontFamily: Fonts.body, fontSize: 13, color: t.textSecondary, marginTop: 4 },
 
-  coachLineBox: {
-    marginTop: 18, paddingTop: 14, alignSelf: 'stretch',
-    borderTopWidth: 1, borderTopColor: Colors.border,
-  },
-  coachAttrib: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 6 },
-  coachLine: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 19, fontStyle: 'italic' },
-});
+    coachLineBox: {
+      marginTop: 18, paddingTop: 14, alignSelf: 'stretch',
+      borderTopWidth: 1, borderTopColor: t.border,
+    },
+    coachAttrib: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.6, marginBottom: 6 },
+    coachLine: { fontFamily: Fonts.body, fontSize: 13, color: t.text, lineHeight: 19, fontStyle: 'italic' },
+  });

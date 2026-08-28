@@ -7,7 +7,8 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts, Spacing } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   visible: boolean;
@@ -22,6 +23,7 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   const translateY = useSharedValue(screenHeight);
   const opacity = useSharedValue(0);
   const [modalVisible, setModalVisible] = useState(false);
+  const styles = useThemedStyles(makeStyles);
 
   useEffect(() => {
     if (visible) {
@@ -73,28 +75,29 @@ export function BottomSheet({ visible, onClose, title, children }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  // Fully OPAQUE backdrop (solid app bg) — not a dim overlay. Sheets in this app
-  // can stack (e.g. food-search sheet → add-serving sheet), and a translucent
-  // backdrop let the list behind bleed through, which read as a "floating" popup.
-  // Solid bg makes every sheet a clean, focused surface with nothing showing through.
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: Colors.bg },
-  sheetContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    borderTopWidth: 1,
-    borderColor: Colors.border,
-    padding: Spacing.lg,
-  },
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: Spacing.md,
-  },
-  title: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, letterSpacing: -0.2 },
-  closeBtn: { fontSize: 18, color: Colors.textSecondary },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    // Fully OPAQUE backdrop (solid app bg) — not a dim overlay. Sheets in this app
+    // can stack (e.g. food-search sheet → add-serving sheet), and a translucent
+    // backdrop let the list behind bleed through, which read as a "floating" popup.
+    // Solid bg makes every sheet a clean, focused surface with nothing showing through.
+    backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: t.bgAlt },
+    sheetContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: t.surface,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      borderTopWidth: 1,
+      borderColor: t.border,
+      padding: Spacing.lg,
+    },
+    header: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      marginBottom: Spacing.md,
+    },
+    title: { fontFamily: Fonts.display, fontSize: 18, color: t.text, letterSpacing: -0.2 },
+    closeBtn: { fontSize: 18, color: t.textSecondary },
+  });

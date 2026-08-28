@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, DimensionValue } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   label: string;
@@ -11,6 +12,7 @@ interface Props {
 
 export function MacroBar({ label, consumed, goal, color, unit = 'g' }: Props) {
   const progress = goal > 0 ? Math.min(consumed / goal, 1) : 0;
+  const styles = useThemedStyles(makeStyles);
 
   return (
     <View style={styles.container}>
@@ -27,12 +29,15 @@ export function MacroBar({ label, consumed, goal, color, unit = 'g' }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { marginBottom: Spacing.sm },
-  header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  label: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.text },
-  value: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text },
-  goal: { fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
-  track: { height: 6, backgroundColor: '#f3f4f6', borderRadius: 3, overflow: 'hidden' },
-  fill: { height: '100%', borderRadius: 3 },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    container: { marginBottom: Spacing.sm },
+    header: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    label: { fontSize: 13, fontFamily: 'Inter_500Medium', color: t.text },
+    value: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: t.text },
+    goal: { fontFamily: 'Inter_400Regular', color: t.textSecondary },
+    // The unfilled track has to stay visible against the card it sits on, so it
+    // is a surface step rather than a fixed grey.
+    track: { height: 6, backgroundColor: t.surfaceAlt, borderRadius: 3, overflow: 'hidden' },
+    fill: { height: '100%', borderRadius: 3 },
+  });

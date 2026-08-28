@@ -13,7 +13,8 @@
  */
 import { useEffect, useRef } from 'react';
 import { View, Text, Animated, Easing, StyleSheet } from 'react-native';
-import { Fonts, Colors } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 const LETTERS = ['V', 'U', 'L', 'T', 'O']; // letters after the emerald 'E'
 
@@ -25,6 +26,7 @@ export function AnimatedLogo() {
   const barWidth   = useRef(new Animated.Value(0)).current;
   const taglineOp  = useRef(new Animated.Value(0)).current;
   const aPulse     = useRef(new Animated.Value(1)).current;
+  const styles     = useThemedStyles(makeStyles);
 
   useEffect(() => {
     // Sequence: A in → letters stagger → ™ → bar → tagline → start pulse
@@ -105,12 +107,16 @@ export function AnimatedLogo() {
   );
 }
 
-const styles = StyleSheet.create({
-  area:     { marginBottom: 48, alignItems: 'center' },
-  wordmark: { flexDirection: 'row', alignItems: 'baseline' },
-  wordmarkA:    { fontFamily: Fonts.display, fontSize: 48, color: Colors.primary, letterSpacing: -1 },
-  wordmarkRest: { fontFamily: Fonts.display, fontSize: 48, color: Colors.text, letterSpacing: -1 },
-  tmSymbol:     { fontFamily: Fonts.mono, fontSize: 12, color: Colors.textTertiary, marginLeft: 3, marginBottom: 28 },
-  bar:          { height: 4, backgroundColor: Colors.primary, borderRadius: 2, marginTop: 4, marginBottom: 8, alignSelf: 'stretch' },
-  tagline:      { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textTertiary, letterSpacing: 2.5, marginTop: 6 },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    area:     { marginBottom: 48, alignItems: 'center' },
+    wordmark: { flexDirection: 'row', alignItems: 'baseline' },
+    // The brand emerald is 2.54:1 on a light page — under even the 3:1 large-text
+    // bar — so the wordmark's E takes the text-safe deep tone. The bar below is a
+    // fill, not text, and keeps the brand emerald.
+    wordmarkA:    { fontFamily: Fonts.display, fontSize: 48, color: t.accentText, letterSpacing: -1 },
+    wordmarkRest: { fontFamily: Fonts.display, fontSize: 48, color: t.text, letterSpacing: -1 },
+    tmSymbol:     { fontFamily: Fonts.mono, fontSize: 12, color: t.textTertiary, marginLeft: 3, marginBottom: 28 },
+    bar:          { height: 4, backgroundColor: t.accent, borderRadius: 2, marginTop: 4, marginBottom: 8, alignSelf: 'stretch' },
+    tagline:      { fontFamily: Fonts.mono, fontSize: 11, color: t.textTertiary, letterSpacing: 2.5, marginTop: 6 },
+  });

@@ -18,7 +18,8 @@ import {
   type SleepQuality, type Intent,
 } from '@/hooks/useMorningBrief';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Option<T> {
   value: T;
@@ -45,6 +46,8 @@ export function MorningBriefCard({ persona }: { persona: PersonaTheme }) {
   const [pickedSleep, setPickedSleep] = useState<SleepQuality | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   if (loading) return null;
 
@@ -153,72 +156,74 @@ export function MorningBriefCard({ persona }: { persona: PersonaTheme }) {
         <View style={[styles.progressDot, { backgroundColor: persona.accent }]} />
         <View style={[
           styles.progressDot,
-          { backgroundColor: isStep1 ? Colors.borderStrong : persona.accent },
+          { backgroundColor: isStep1 ? tokens.borderStrong : persona.accent },
         ]} />
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  // ── Active card ────────────────────────────────────────────────────────────
-  card: {
-    borderLeftWidth: 3, borderRadius: 6,
-    padding: 16, marginBottom: 14,
-  },
-  cardHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    marginBottom: 6,
-  },
-  cardEyebrow: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
-  cardQuestion: {
-    fontFamily: Fonts.display, fontSize: 20, color: Colors.text,
-    lineHeight: 24, letterSpacing: -0.3, marginBottom: 14, marginTop: 2,
-  },
-  cardHeadline: {
-    fontFamily: Fonts.display, fontSize: 22, color: Colors.text,
-    lineHeight: 26, marginTop: 4,
-  },
-  cardAdvice: {
-    fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary,
-    lineHeight: 19, marginTop: 6,
-  },
-  collapseBtn: { fontSize: 22, lineHeight: 22, paddingHorizontal: 8 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    // ── Active card ────────────────────────────────────────────────────────────
+    card: {
+      borderLeftWidth: 3, borderRadius: 6,
+      padding: 16, marginBottom: 14,
+    },
+    cardHeader: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+      marginBottom: 6,
+    },
+    cardEyebrow: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4, marginBottom: 4 },
+    cardQuestion: {
+      fontFamily: Fonts.display, fontSize: 20, color: t.text,
+      lineHeight: 24, letterSpacing: -0.3, marginBottom: 14, marginTop: 2,
+    },
+    cardHeadline: {
+      fontFamily: Fonts.display, fontSize: 22, color: t.text,
+      lineHeight: 26, marginTop: 4,
+    },
+    cardAdvice: {
+      fontFamily: Fonts.body, fontSize: 13, color: t.textSecondary,
+      lineHeight: 19, marginTop: 6,
+    },
+    collapseBtn: { fontSize: 22, lineHeight: 22, paddingHorizontal: 8 },
 
-  // ── Options ────────────────────────────────────────────────────────────────
-  optionsRow: { flexDirection: 'row', gap: 8 },
-  option: {
-    flex: 1, borderWidth: 1, borderRadius: 5,
-    padding: 12, alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.02)',
-  },
-  optionEmoji: { fontSize: 24, marginBottom: 6 },
-  optionLabel: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: -0.2 },
-  optionSub: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, marginTop: 4, textAlign: 'center', letterSpacing: 0.4 },
+    // ── Options ────────────────────────────────────────────────────────────────
+    optionsRow: { flexDirection: 'row', gap: 8 },
+    option: {
+      flex: 1, borderWidth: 1, borderRadius: 5,
+      padding: 12, alignItems: 'center',
+      // Was a 2%-white wash: invisible on the light page, visible only on dark.
+      backgroundColor: t.surface,
+    },
+    optionEmoji: { fontSize: 24, marginBottom: 6 },
+    optionLabel: { fontFamily: Fonts.display, fontSize: 13, letterSpacing: -0.2 },
+    optionSub: { fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary, marginTop: 4, textAlign: 'center', letterSpacing: 0.4 },
 
-  // ── Progress dots ──────────────────────────────────────────────────────────
-  progressRow: { flexDirection: 'row', gap: 5, justifyContent: 'center', marginTop: 14 },
-  progressDot: { width: 18, height: 3, borderRadius: 2 },
+    // ── Progress dots ──────────────────────────────────────────────────────────
+    progressRow: { flexDirection: 'row', gap: 5, justifyContent: 'center', marginTop: 14 },
+    progressDot: { width: 18, height: 3, borderRadius: 2 },
 
-  // ── Modifier readout (expanded) ────────────────────────────────────────────
-  modifierRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginTop: 14, paddingTop: 14,
-    borderTopWidth: 1, borderTopColor: Colors.border,
-  },
-  modifierLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 1.4 },
-  modifierValue: { fontFamily: Fonts.display, fontSize: 20, letterSpacing: -0.3 },
-  resetLink: { marginTop: 10, alignSelf: 'flex-start' },
-  resetLinkText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textTertiary, textDecorationLine: 'underline' },
+    // ── Modifier readout (expanded) ────────────────────────────────────────────
+    modifierRow: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      marginTop: 14, paddingTop: 14,
+      borderTopWidth: 1, borderTopColor: t.border,
+    },
+    modifierLabel: { fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary, letterSpacing: 1.4 },
+    modifierValue: { fontFamily: Fonts.display, fontSize: 20, letterSpacing: -0.3 },
+    resetLink: { marginTop: 10, alignSelf: 'flex-start' },
+    resetLinkText: { fontFamily: Fonts.mono, fontSize: 10, color: t.textTertiary, textDecorationLine: 'underline' },
 
-  // ── Collapsed done chip ────────────────────────────────────────────────────
-  doneChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    borderLeftWidth: 3, borderRadius: 5,
-    paddingVertical: 11, paddingHorizontal: 14, marginBottom: 14,
-  },
-  doneIcon: { fontSize: 16, fontFamily: Fonts.display },
-  doneLabel: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4 },
-  doneText: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
-  doneModifier: { fontFamily: Fonts.display, fontSize: 16, letterSpacing: -0.3 },
-});
+    // ── Collapsed done chip ────────────────────────────────────────────────────
+    doneChip: {
+      flexDirection: 'row', alignItems: 'center', gap: 10,
+      borderLeftWidth: 3, borderRadius: 5,
+      paddingVertical: 11, paddingHorizontal: 14, marginBottom: 14,
+    },
+    doneIcon: { fontSize: 16, fontFamily: Fonts.display },
+    doneLabel: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4 },
+    doneText: { fontFamily: Fonts.body, fontSize: 12, color: t.textSecondary, marginTop: 2 },
+    doneModifier: { fontFamily: Fonts.display, fontSize: 16, letterSpacing: -0.3 },
+  });

@@ -13,7 +13,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { useRouter } from 'expo-router';
 import { usePersonalRecords } from '@/hooks/useProgressStats';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 /** Best-effort Epley formula if the stored 1RM is missing. */
 function epley(weight: number, reps: number): number {
@@ -35,6 +36,7 @@ function shortDate(iso: string): string {
 export function PRShelf({ persona }: { persona: PersonaTheme }) {
   const router = useRouter();
   const { data: prs = [], isLoading } = usePersonalRecords();
+  const styles = useThemedStyles(makeStyles);
 
   // Don't render anything until we know — avoids a flash of empty state
   if (isLoading) return null;
@@ -153,67 +155,71 @@ export function PRShelf({ persona }: { persona: PersonaTheme }) {
 // Styles
 // ─────────────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  shelf: { marginBottom: 14 },
-  shelfHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  shelfLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6 },
-  shelfMore:  { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    shelf: { marginBottom: 14 },
+    shelfHeader: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline',
+      marginBottom: 8,
+    },
+    shelfLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6 },
+    shelfMore:  { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2 },
 
-  // ── #1 hero card ──────────────────────────────────────────────────────────
-  champCard: {
-    borderRadius: 8, padding: 16, overflow: 'hidden',
-  },
-  champTopRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    marginBottom: 14,
-  },
-  champRankPill: {
-    fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4,
-    borderWidth: 1, borderRadius: 3,
-    paddingHorizontal: 8, paddingVertical: 4,
-  },
-  champDate: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2 },
-  champExercise: {
-    fontFamily: Fonts.display, fontSize: 16, letterSpacing: 0.3, marginBottom: 6,
-  },
-  champStatsRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  champLiftMain: { fontFamily: Fonts.display, fontSize: 36, letterSpacing: -1, lineHeight: 38 },
-  champUnit: { fontSize: 16 },
-  champEstimate: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.2, marginTop: 4 },
+    // ── #1 hero card ────────────────────────────────────────────────────────
+    // Every colour on this card is the persona accent or its ink, applied at
+    // the call site — the card is a fill, not a page surface.
+    champCard: {
+      borderRadius: 8, padding: 16, overflow: 'hidden',
+    },
+    champTopRow: {
+      flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+      marginBottom: 14,
+    },
+    champRankPill: {
+      fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.4,
+      borderWidth: 1, borderRadius: 3,
+      paddingHorizontal: 8, paddingVertical: 4,
+    },
+    champDate: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2 },
+    champExercise: {
+      fontFamily: Fonts.display, fontSize: 16, letterSpacing: 0.3, marginBottom: 6,
+    },
+    champStatsRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
+    champLiftMain: { fontFamily: Fonts.display, fontSize: 36, letterSpacing: -1, lineHeight: 38 },
+    champUnit: { fontSize: 16 },
+    champEstimate: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.2, marginTop: 4 },
 
-  // ── #2 & #3 medal cards ──────────────────────────────────────────────────
-  medalsRow: { gap: 10, marginTop: 10 },
-  medalCard: {
-    width: 160,
-    backgroundColor: Colors.surface,
-    borderTopWidth: 2,
-    borderRadius: 4,
-    padding: 12,
-    borderWidth: 1, borderColor: Colors.border, borderTopColor: undefined,
-  },
-  medalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 },
-  medalRank: { fontFamily: Fonts.display, fontSize: 18, letterSpacing: -0.4 },
-  medalDate: { fontFamily: Fonts.mono, fontSize: 8, color: Colors.textTertiary, letterSpacing: 1 },
-  medalExercise: {
-    fontFamily: Fonts.bodySemi, fontSize: 12, color: Colors.text,
-    marginBottom: 8, lineHeight: 15, minHeight: 30,
-  },
-  medalLift: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, lineHeight: 20 },
-  medalUnit: { fontSize: 10, color: Colors.textTertiary },
-  medalEstimate: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2, marginTop: 4 },
+    // ── #2 & #3 medal cards ────────────────────────────────────────────────
+    medalsRow: { gap: 10, marginTop: 10 },
+    medalCard: {
+      width: 160,
+      backgroundColor: t.surface,
+      borderTopWidth: 2,
+      borderRadius: 4,
+      padding: 12,
+      borderWidth: 1, borderColor: t.border, borderTopColor: undefined,
+    },
+    medalTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 },
+    medalRank: { fontFamily: Fonts.display, fontSize: 18, letterSpacing: -0.4 },
+    medalDate: { fontFamily: Fonts.mono, fontSize: 8, color: t.textTertiary, letterSpacing: 1 },
+    medalExercise: {
+      fontFamily: Fonts.bodySemi, fontSize: 12, color: t.text,
+      marginBottom: 8, lineHeight: 15, minHeight: 30,
+    },
+    medalLift: { fontFamily: Fonts.display, fontSize: 18, color: t.text, lineHeight: 20 },
+    medalUnit: { fontSize: 10, color: t.textTertiary },
+    medalEstimate: { fontFamily: Fonts.mono, fontSize: 9, letterSpacing: 1.2, marginTop: 4 },
 
-  // ── Empty state ──────────────────────────────────────────────────────────
-  emptyCard: {
-    flexDirection: 'row', alignItems: 'center', gap: 14,
-    backgroundColor: 'rgba(255,255,255,0.02)',
-    borderWidth: 1, borderStyle: 'dashed',
-    borderRadius: 8, padding: 14, marginBottom: 14,
-  },
-  emptyTrophy: { fontSize: 36 },
-  emptyLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginBottom: 4 },
-  emptyTitle: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginBottom: 4, letterSpacing: -0.3 },
-  emptySub:   { fontFamily: Fonts.body, fontSize: 11, color: Colors.textSecondary, lineHeight: 15 },
-});
+    // ── Empty state ────────────────────────────────────────────────────────
+    emptyCard: {
+      flexDirection: 'row', alignItems: 'center', gap: 14,
+      // Was a 2%-white wash: invisible on the light page, visible only on dark.
+      backgroundColor: t.surfaceAlt,
+      borderWidth: 1, borderStyle: 'dashed',
+      borderRadius: 8, padding: 14, marginBottom: 14,
+    },
+    emptyTrophy: { fontSize: 36 },
+    emptyLabel: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginBottom: 4 },
+    emptyTitle: { fontFamily: Fonts.display, fontSize: 18, color: t.text, marginBottom: 4, letterSpacing: -0.3 },
+    emptySub:   { fontFamily: Fonts.body, fontSize: 11, color: t.textSecondary, lineHeight: 15 },
+  });

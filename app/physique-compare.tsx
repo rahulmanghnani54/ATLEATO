@@ -1,8 +1,22 @@
+/**
+ * Physique Compare — before/after, Bold Canvas.
+ *
+ * The two frames ARE the hero: they take the top of the light body at full
+ * width, and everything else is reduced to type around them. The dark crown
+ * holds only what the pair needs to be read — the date range and the pose
+ * switch — so nothing competes with the photographs.
+ *
+ * The three scores collapse into their DELTA, which is the only number a
+ * before/after actually asks for; the raw A→B pair drops to a mono caption
+ * under it. Direction still reads as colour on exactly the old rule
+ * (up = success, down = warning, flat/unknown = tertiary).
+ *
+ * The analysis query, its gating, the decryption path, every loading branch and
+ * the persona label map are untouched — this file changed shape, not behaviour.
+ */
+
 import { useState, useEffect } from 'react';
-import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView,
-  Image, ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -11,12 +25,21 @@ import {
   decryptStorageBlob,
   type PhysiqueCheckin,
 } from '@/hooks/usePhysiqueCheckins';
-import { PhysiqueScoreCard } from '@/components/progress/PhysiqueScoreCard';
 import { useAuthStore } from '@/stores/authStore';
-import { Colors, Fonts, Spacing } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
+import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
+import { CanvasScreen, Crown, Section, StatRow } from '@/components/ui/canvas';
+import { PressableScale, Skeleton, SkeletonLines } from '@/components/ui/motion';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 type Pose = 'front' | 'side' | 'back';
+
+// Matches Crown's own horizontal inset so the body lines up under the hero.
+const BODY_PAD = 22;
+// Photo frames sit in the 19-30px band; the plate radius and the skeleton's
+// must agree or the shimmer corners cut outside the frame.
+const PHOTO_RADIUS = 26;
 
 function decryptedImageUri(userId: string, path: string | null, setUri: (u: string) => void): () => void {
   if (!path) return () => {};
@@ -41,6 +64,8 @@ export default function PhysiqueCompare() {
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
   const { data: allCheckins = [] } = usePhysiqueCheckins();
+  const { tokens, scheme } = useTheme();
+  const styles = useThemedStyles(makeStyles);
 
   const selectedProgram = profile?.selected_program ?? null;
   const programId = selectedProgram ? (EXPERT_PROGRAMS[selectedProgram]?.id ?? 'cbum_evolved') : 'cbum_evolved';
@@ -52,12 +77,23 @@ export default function PhysiqueCompare() {
     ct: 'THE COMMANDER SAYS', ct_fletcher: 'THE COMMANDER SAYS', dr_mike: 'DR. GROWTH SAYS',
   };
 
+  // Purely for colour. The persona STRING above is what the API receives and is
+  // never derived from this.
+  const personaTheme = personaFromProgramId(selectedProgram);
+  const pa = personaAccent(personaTheme, scheme);
+  // The crown is dark in both schemes, so its tint always comes from the dark triplet.
+  const crownPa = personaAccent(personaTheme, 'dark');
+
   const checkinA = allCheckins.find((c) => c.id === checkinAId) ?? null;
   const checkinB = allCheckins.find((c) => c.id === checkinBId) ?? null;
 
   const [activePose, setActivePose] = useState<Pose>('front');
   const [uriA, setUriA] = useState<string>('');
   const [uriB, setUriB] = useState<string>('');
+  // The frames are aspect-ratio boxes, so their height is only known after
+  // layout — and Skeleton needs a real number, not a ratio, to shimmer at the
+  // photo's own size instead of a guessed strip.
+  const [photoH, setPhotoH] = useState(0);
 
   // Available poses = poses captured in BOTH check-ins
   const availablePoses: Pose[] = (['front', 'side', 'back'] as Pose[]).filter(
@@ -85,162 +121,274 @@ export default function PhysiqueCompare() {
     persona,
   );
 
-  if (!checkinA || !checkinB) {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <View style={styles.center}>
-          <ActivityIndicator color={Colors.primary} />
-        </View>
-      </SafeAreaView>
-    );
-  }
+  const onFrameLayout = (h: number) => setPhotoH((prev) => (prev === h ? prev : h));
+
+  // A frame is the plate first and the photograph second, so the pair holds its
+  // shape from the first frame — only the content inside fades in.
+  const renderFrame = (uri: string, label: string) => (
+    <View style={styles.photoCol}>
+      <View
+        style={styles.photoFrame}
+        onLayout={(e) => onFrameLayout(Math.round(e.nativeEvent.layout.height))}
+      >
+        {uri ? (
+          <Image source={{ uri }} style={styles.photo} resizeMode="cover" />
+        ) : photoH > 0 ? (
+          <Skeleton height={photoH} radius={PHOTO_RADIUS} />
+        ) : null}
+      </View>
+      <Text style={styles.photoDate} numberOfLines={1}>{label}</Text>
+    </View>
+  );
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  return (
-    <SafeAreaView style={styles.safe}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {formatDate(checkinA.date)} vs {formatDate(checkinB.date)}
+  // Skeleton-shaped stand-in for the score row, so the waiting screen is the
+  // same object as the loaded one.
+  const renderScoreSkeleton = () => (
+    <StatRow>
+      {[0, 1, 2].map((i) => (
+        <View key={i} style={styles.deltaSkel}>
+          <Skeleton height={38} radius={10} />
+          <Skeleton height={8} width="70%" radius={4} />
+        </View>
+      ))}
+    </StatRow>
+  );
+
+  if (!checkinA || !checkinB) {
+    return (
+      <CanvasScreen tabBar={false} bottomSpace={40}>
+        {/* The stack runs headerShown:false, so the crown's own control is the
+            only way out — an unresolved id must not strand the screen. */}
+        <Crown
+          eyebrow="Physique compare"
+          title="BEFORE"
+          accentLine="& AFTER"
+          accent={crownPa.accent}
+          onBack={() => router.back()}
+        />
+
+        <SafeAreaView edges={['left', 'right']} style={styles.body}>
+          <View style={styles.photosRow}>
+            <View style={styles.photoCol}>
+              <View
+                style={styles.photoFrame}
+                onLayout={(e) => onFrameLayout(Math.round(e.nativeEvent.layout.height))}
+              >
+                {photoH > 0 ? <Skeleton height={photoH} radius={PHOTO_RADIUS} /> : null}
+              </View>
+            </View>
+            <View style={styles.photoCol}>
+              <View style={styles.photoFrame}>
+                {photoH > 0 ? <Skeleton height={photoH} radius={PHOTO_RADIUS} /> : null}
+              </View>
+            </View>
+          </View>
+
+          <Section label="Change">{renderScoreSkeleton()}</Section>
+        </SafeAreaView>
+      </CanvasScreen>
+    );
+  }
+
+  const deltaOf = (a: number | null, b: number | null) => (a != null && b != null ? b - a : null);
+
+  // The old chip's arrow colour rule, unchanged — only the glyph it paints is
+  // now the signed numeral itself.
+  const deltaColor = (delta: number | null) =>
+    delta == null ? tokens.textTertiary
+    : delta > 0 ? tokens.success
+    : delta < 0 ? tokens.warning
+    : tokens.textTertiary;
+
+  const renderDelta = (label: string, scoreA: number | null, scoreB: number | null) => {
+    const delta = deltaOf(scoreA, scoreB);
+    return (
+      <View style={styles.delta}>
+        <Text style={[styles.deltaValue, { color: deltaColor(delta) }]} numberOfLines={1}>
+          {delta == null ? '—' : `${delta > 0 ? '+' : ''}${delta}`}
+        </Text>
+        <Text style={styles.deltaLabel} numberOfLines={1}>{label}</Text>
+        <Text style={styles.deltaPair} numberOfLines={1}>
+          {`${scoreA ?? '—'} → ${scoreB ?? '—'}`}
         </Text>
       </View>
+    );
+  };
 
-      <ScrollView contentContainerStyle={styles.scroll}>
+  return (
+    <CanvasScreen tabBar={false} bottomSpace={40}>
+      <Crown
+        eyebrow="Physique compare"
+        title="BEFORE"
+        accentLine="& AFTER"
+        meta={`${formatDate(checkinA.date)} → ${formatDate(checkinB.date)}`}
+        accent={crownPa.accent}
+        onBack={() => router.back()}
+      >
         {/* Pose switcher */}
         {availablePoses.length > 1 && (
           <View style={styles.poseSwitcher}>
-            {availablePoses.map((p) => (
-              <TouchableOpacity
-                key={p}
-                style={[styles.posePill, activePose === p && styles.posePillActive]}
-                onPress={() => setActivePose(p)}
-              >
-                <Text style={[styles.posePillText, activePose === p && styles.posePillTextActive]}>
-                  {p.toUpperCase()}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {availablePoses.map((p) => {
+              const on = activePose === p;
+              return (
+                <PressableScale
+                  key={p}
+                  onPress={() => setActivePose(p)}
+                  haptic="light"
+                  scaleTo={0.96}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: on }}
+                  accessibilityLabel={`${p} pose`}
+                  style={[styles.posePill, on && styles.posePillActive]}
+                >
+                  <Text style={[styles.posePillText, on && styles.posePillTextActive]}>
+                    {p.toUpperCase()}
+                  </Text>
+                </PressableScale>
+              );
+            })}
           </View>
         )}
+      </Crown>
 
-        {/* Side-by-side photos */}
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        {/* Side-by-side photos — the hero */}
         <View style={styles.photosRow}>
-          <View style={styles.photoCol}>
-            {uriA ? (
-              <Image source={{ uri: uriA }} style={styles.photo} resizeMode="cover" />
-            ) : (
-              <View style={[styles.photo, styles.photoLoading]}>
-                <ActivityIndicator color={Colors.primary} />
-              </View>
-            )}
-            <Text style={styles.photoDate}>{formatDate(checkinA.date)}</Text>
-          </View>
-          <View style={styles.photoCol}>
-            {uriB ? (
-              <Image source={{ uri: uriB }} style={styles.photo} resizeMode="cover" />
-            ) : (
-              <View style={[styles.photo, styles.photoLoading]}>
-                <ActivityIndicator color={Colors.primary} />
-              </View>
-            )}
-            <Text style={styles.photoDate}>{formatDate(checkinB.date)}</Text>
-          </View>
+          {renderFrame(uriA, formatDate(checkinA.date))}
+          {renderFrame(uriB, formatDate(checkinB.date))}
         </View>
 
-        {/* Score chips */}
-        <View style={styles.scoreRow}>
-          <PhysiqueScoreCard
-            label="FULLNESS"
-            scoreA={analysis?.fullness_a ?? checkinA.fullness_score}
-            scoreB={analysis?.fullness_b ?? checkinB.fullness_score}
-          />
-          <PhysiqueScoreCard
-            label="LEANNESS"
-            scoreA={analysis?.leanness_a ?? checkinA.leanness_score}
-            scoreB={analysis?.leanness_b ?? checkinB.leanness_score}
-          />
-          <PhysiqueScoreCard
-            label="SYMMETRY"
-            scoreA={analysis?.symmetry_a ?? checkinA.symmetry_score}
-            scoreB={analysis?.symmetry_b ?? checkinB.symmetry_score}
-          />
-        </View>
+        {/* Score deltas */}
+        <Section label="Change">
+          <StatRow>
+            {renderDelta(
+              'FULLNESS',
+              analysis?.fullness_a ?? checkinA.fullness_score,
+              analysis?.fullness_b ?? checkinB.fullness_score,
+            )}
+            {renderDelta(
+              'LEANNESS',
+              analysis?.leanness_a ?? checkinA.leanness_score,
+              analysis?.leanness_b ?? checkinB.leanness_score,
+            )}
+            {renderDelta(
+              'SYMMETRY',
+              analysis?.symmetry_a ?? checkinA.symmetry_score,
+              analysis?.symmetry_b ?? checkinB.symmetry_score,
+            )}
+          </StatRow>
+        </Section>
 
         {/* AI narrative */}
         {analysisLoading ? (
-          <View style={styles.analysingCard}>
-            <ActivityIndicator color={Colors.primary} />
-            <Text style={styles.analysingText}>Getting AI analysis…</Text>
-          </View>
+          <Section label={`✦ ${PERSONA_LABELS[persona] ?? 'COACH SAYS'}`}>
+            <View style={[styles.narrativeCard, { backgroundColor: pa.accentSoft }]}>
+              <SkeletonLines count={3} height={14} />
+              <Text style={styles.analysingText}>Getting AI analysis…</Text>
+            </View>
+          </Section>
         ) : analysis ? (
-          <View style={styles.narrativeCard}>
-            <Text style={styles.narrativeLabel}>✦ {PERSONA_LABELS[persona] ?? 'COACH SAYS'}</Text>
-            <Text style={styles.narrativeText}>{analysis.narrative}</Text>
-          </View>
+          <Section label={`✦ ${PERSONA_LABELS[persona] ?? 'COACH SAYS'}`}>
+            <View style={[styles.narrativeCard, { backgroundColor: pa.accentSoft }]}>
+              <Text style={styles.narrativeText}>{analysis.narrative}</Text>
+            </View>
+          </Section>
         ) : null}
-
-        <View style={{ height: 40 }} />
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
+    </CanvasScreen>
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: 12,
-  },
-  backBtn: { padding: 4 },
-  backText: { fontSize: 20, color: Colors.text },
-  headerTitle: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 0.8, flex: 1 },
-  scroll: { padding: Spacing.md },
-  poseSwitcher: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  body: { paddingHorizontal: BODY_PAD, paddingTop: 24 },
+
+  // ── Pose switcher (inside the crown) ───────────────────────────────────────
+  poseSwitcher: { flexDirection: 'row', gap: 8, marginTop: 18 },
   posePill: {
+    borderWidth: 1,
+    borderColor: t.crownLine,
+    borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 3,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
-  posePillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  posePillText: { fontFamily: Fonts.mono, fontSize: 10, color: Colors.textSecondary, letterSpacing: 1 },
-  posePillTextActive: { color: Colors.accentInk },
-  photosRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
-  photoCol: { flex: 1, alignItems: 'center' },
-  photo: { width: '100%', aspectRatio: 0.75, borderRadius: 6, backgroundColor: Colors.surface },
-  photoLoading: { alignItems: 'center', justifyContent: 'center' },
-  photoDate: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, marginTop: 6, letterSpacing: 0.5 },
-  scoreRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  analysingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 16,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 6,
+  // Bone on ink rather than the persona tint: the crown already spends its
+  // accent on the title line, and a second tint up here flattens both.
+  posePillActive: { backgroundColor: t.crownText, borderColor: t.crownText },
+  posePillText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.7,
+    color: t.crownTextDim,
   },
-  analysingText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  posePillTextActive: { color: t.crown },
+
+  // ── Photos ─────────────────────────────────────────────────────────────────
+  photosRow: { flexDirection: 'row', gap: 12 },
+  photoCol: { flex: 1, gap: 9 },
+  // The plate carries the shape so the pair never collapses while decrypting.
+  photoFrame: {
+    width: '100%',
+    aspectRatio: 0.75,
+    borderRadius: PHOTO_RADIUS,
+    overflow: 'hidden',
+    backgroundColor: t.surfaceAlt,
+  },
+  photo: { width: '100%', height: '100%' },
+  photoDate: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+
+  // ── Deltas ─────────────────────────────────────────────────────────────────
+  delta: { gap: 7 },
+  deltaValue: {
+    fontFamily: Fonts.displayBold,
+    fontVariant: ['tabular-nums'],
+    fontSize: 38,
+    lineHeight: 39,
+    // -0.045em at 38px.
+    letterSpacing: -1.71,
+  },
+  deltaLabel: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
+  deltaPair: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.1,
+    color: t.textTertiary,
+  },
+  deltaSkel: { gap: 9 },
+
+  // ── Narrative ──────────────────────────────────────────────────────────────
   narrativeCard: {
-    backgroundColor: 'rgba(91,140,255,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(91,140,255,0.2)',
-    borderRadius: 6,
-    padding: 16,
+    borderRadius: 24,
+    paddingHorizontal: 18,
+    paddingVertical: 17,
+    gap: 12,
   },
-  narrativeLabel: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.info, letterSpacing: 1.4, marginBottom: 10 },
-  narrativeText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.text, lineHeight: 20, fontStyle: 'italic' },
+  narrativeText: {
+    fontFamily: Fonts.body,
+    fontSize: 15,
+    lineHeight: 23,
+    fontStyle: 'italic',
+    color: t.text,
+  },
+  analysingText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 8,
+    letterSpacing: 1.3,
+    textTransform: 'uppercase',
+    color: t.textTertiary,
+  },
 });

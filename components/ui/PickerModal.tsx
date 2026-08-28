@@ -4,7 +4,8 @@ import {
   StyleSheet, Platform,
   type NativeSyntheticEvent, type NativeScrollEvent,
 } from 'react-native';
-import { Colors, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 export interface PickerOption {
   label: string;
@@ -33,6 +34,7 @@ export function PickerModal({ visible, title, options, selectedValue, onSelect, 
   const listRef = useRef<FlatList<PickerOption>>(null);
   const initialIndex = Math.max(0, options.findIndex((o) => o.value === selectedValue));
   const [centerIndex, setCenterIndex] = useState(initialIndex);
+  const styles = useThemedStyles(makeStyles);
 
   // Jump to the current value each time the wheel opens.
   useEffect(() => {
@@ -128,41 +130,43 @@ export function PickerModal({ visible, title, options, selectedValue, onSelect, 
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  title: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.text },
-  cancel: { fontSize: 16, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
-  done: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.primary },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    backdrop: { flex: 1, backgroundColor: t.overlay },
+    sheet: {
+      backgroundColor: t.surface,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: Spacing.lg,
+      paddingVertical: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: t.border,
+    },
+    title: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: t.text },
+    cancel: { fontSize: 16, fontFamily: 'Inter_400Regular', color: t.textSecondary },
+    // 16px emerald as text needs the AA-safe deep tone, not the fill emerald.
+    done: { fontSize: 16, fontFamily: 'Inter_700Bold', color: t.accentText },
 
-  wheelWrap: { height: WHEEL_HEIGHT, position: 'relative' },
-  centerBand: {
-    position: 'absolute',
-    left: 12, right: 12,
-    top: PAD,
-    height: ITEM_HEIGHT,
-    borderRadius: 10,
-    backgroundColor: Colors.primaryLight,
-    borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: Colors.borderStrong,
-  },
-  item: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
-  itemText: { fontSize: 20, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
-  itemTextSelected: { fontSize: 22, fontFamily: 'Inter_700Bold', color: Colors.primary },
-  itemTextNear: { color: Colors.text, opacity: 0.9 },
-  itemTextFar: { color: Colors.textTertiary, opacity: 0.55 },
-});
+    wheelWrap: { height: WHEEL_HEIGHT, position: 'relative' },
+    centerBand: {
+      position: 'absolute',
+      left: 12, right: 12,
+      top: PAD,
+      height: ITEM_HEIGHT,
+      borderRadius: 10,
+      backgroundColor: t.accentSoft,
+      borderTopWidth: 1, borderBottomWidth: 1,
+      borderColor: t.borderStrong,
+    },
+    item: { height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+    itemText: { fontSize: 20, fontFamily: 'Inter_500Medium', color: t.textSecondary },
+    itemTextSelected: { fontSize: 22, fontFamily: 'Inter_700Bold', color: t.accentText },
+    itemTextNear: { color: t.text, opacity: 0.9 },
+    itemTextFar: { color: t.textTertiary, opacity: 0.55 },
+  });

@@ -1,6 +1,7 @@
 import Svg, { Circle, Line } from 'react-native-svg';
 import type { Keypoint } from '@tensorflow-models/pose-detection';
 import { POSE_CONNECTIONS } from '@/lib/poseAnalyzer';
+import { TOKENS } from '@/lib/theme';
 
 interface Props {
   keypoints: Keypoint[];
@@ -11,8 +12,14 @@ interface Props {
 }
 
 const MIN_CONFIDENCE = 0.3;
-const JOINT_COLOR = '#ff6b35';
-const BONE_COLOR = 'rgba(255, 107, 53, 0.7)';
+
+// This overlay is drawn on the live camera feed, which is its own dark stage —
+// it never sits on the themed page, so it is pinned to TOKENS.dark like the rest
+// of the form-coach chrome instead of following the active scheme.
+const stage = TOKENS.dark;
+const JOINT_COLOR = stage.crownAccent;
+const BONE_COLOR = stage.accentLine;
+const JOINT_RING = stage.crownText;
 
 export function SkeletonOverlay({ keypoints, width, height, scaleX, scaleY }: Props) {
   return (
@@ -49,7 +56,7 @@ export function SkeletonOverlay({ keypoints, width, height, scaleX, scaleY }: Pr
             cy={kp.y * scaleY}
             r={5}
             fill={JOINT_COLOR}
-            stroke="#fff"
+            stroke={JOINT_RING}
             strokeWidth={1.5}
           />
         );

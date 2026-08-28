@@ -12,11 +12,13 @@ import { View, Text, StyleSheet } from 'react-native';
 import { getStreakStatus } from '@/lib/streakEngine';
 import { type PersonaTheme, styleText } from '@/lib/personaTheme';
 import { useStreakFreezes } from '@/hooks/useStreakFreezes';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 export function StreakHero({ days, persona }: { days: number; persona: PersonaTheme }) {
   const status = getStreakStatus(days, persona);
   const { freezes, maxFreezes } = useStreakFreezes();
+  const styles = useThemedStyles(makeStyles);
 
   // Day 0 → render an "INVITATION" card instead — no flame, just a CTA tone
   if (days === 0) {
@@ -119,56 +121,58 @@ function milestoneProgressPct(days: number, next: number): number {
   return pct;
 }
 
-const styles = StyleSheet.create({
-  card: {
-    borderWidth: 1, borderRadius: 8,
-    padding: 16, marginBottom: 14,
-  },
-  cardEmpty: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-  },
-  label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginBottom: 6 },
-  emptyHeadline: { fontFamily: Fonts.display, fontSize: 24, color: Colors.text, marginTop: 2, marginBottom: 8, letterSpacing: -0.4 },
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    card: {
+      borderWidth: 1, borderRadius: 8,
+      padding: 16, marginBottom: 14,
+    },
+    cardEmpty: {
+      // Was a 3%-white wash: invisible on the light page, visible only on dark.
+      backgroundColor: t.surfaceAlt,
+    },
+    label: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginBottom: 6 },
+    emptyHeadline: { fontFamily: Fonts.display, fontSize: 24, color: t.text, marginTop: 2, marginBottom: 8, letterSpacing: -0.4 },
 
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
-  flame: { lineHeight: 60 },
-  numberStack: { flex: 1 },
-  numberRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  number: { fontFamily: Fonts.display, fontSize: 44, letterSpacing: -1.2, lineHeight: 44 },
-  unit: { fontFamily: Fonts.mono, fontSize: 11, color: Colors.textTertiary, letterSpacing: 1.4 },
-  tier: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginTop: 2 },
+    topRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
+    flame: { lineHeight: 60 },
+    numberStack: { flex: 1 },
+    numberRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+    number: { fontFamily: Fonts.display, fontSize: 44, letterSpacing: -1.2, lineHeight: 44 },
+    unit: { fontFamily: Fonts.mono, fontSize: 11, color: t.textTertiary, letterSpacing: 1.4 },
+    tier: { fontFamily: Fonts.mono, fontSize: 10, letterSpacing: 1.6, marginTop: 2 },
 
-  milestoneBadge: {
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 3,
-  },
-  milestoneBadgeText: { fontFamily: Fonts.display, fontSize: 10, letterSpacing: 0.8 },
+    milestoneBadge: {
+      paddingHorizontal: 10, paddingVertical: 5,
+      borderRadius: 3,
+    },
+    milestoneBadgeText: { fontFamily: Fonts.display, fontSize: 10, letterSpacing: 0.8 },
 
-  // Freeze inventory row (between top + subline)
-  freezeRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: 8, marginBottom: 6,
-    borderTopWidth: 1, borderBottomWidth: 1,
-    borderColor: Colors.border,
-  },
-  freezeIcon:      { fontSize: 16 },
-  freezeIconEmpty: { fontSize: 16, color: Colors.textTertiary, opacity: 0.4 },
-  freezeLabel: {
-    flex: 1, fontFamily: Fonts.mono, fontSize: 9,
-    color: Colors.textSecondary, letterSpacing: 0.8, marginLeft: 4,
-  },
+    // Freeze inventory row (between top + subline)
+    freezeRow: {
+      flexDirection: 'row', alignItems: 'center', gap: 6,
+      paddingVertical: 8, marginBottom: 6,
+      borderTopWidth: 1, borderBottomWidth: 1,
+      borderColor: t.border,
+    },
+    freezeIcon:      { fontSize: 16 },
+    freezeIconEmpty: { fontSize: 16, color: t.textTertiary, opacity: 0.4 },
+    freezeLabel: {
+      flex: 1, fontFamily: Fonts.mono, fontSize: 9,
+      color: t.textSecondary, letterSpacing: 0.8, marginLeft: 4,
+    },
 
-  subline: {
-    fontFamily: Fonts.body, fontSize: 13, color: Colors.text,
-    lineHeight: 19, marginBottom: 12,
-  },
+    subline: {
+      fontFamily: Fonts.body, fontSize: 13, color: t.text,
+      lineHeight: 19, marginBottom: 12,
+    },
 
-  milestoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  milestoneTrack: {
-    flex: 1, height: 4, borderRadius: 2,
-    backgroundColor: Colors.border,
-    overflow: 'hidden',
-  },
-  milestoneFill: { height: '100%', borderRadius: 2 },
-  milestoneMeta: { fontFamily: Fonts.mono, fontSize: 9, color: Colors.textTertiary, letterSpacing: 0.8 },
-});
+    milestoneRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    milestoneTrack: {
+      flex: 1, height: 4, borderRadius: 2,
+      backgroundColor: t.border,
+      overflow: 'hidden',
+    },
+    milestoneFill: { height: '100%', borderRadius: 2 },
+    milestoneMeta: { fontFamily: Fonts.mono, fontSize: 9, color: t.textTertiary, letterSpacing: 0.8 },
+  });

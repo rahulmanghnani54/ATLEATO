@@ -30,7 +30,8 @@ import { cancelAllCalls, scheduleRecall } from '@/lib/notifeeCallScheduler';
 import { silence } from '@/lib/voiceCues';
 import { getPersona, personaFromProgramId, styleText, type PersonaId } from '@/lib/personaTheme';
 import { useAuthStore } from '@/stores/authStore';
-import { Colors, Fonts } from '@/constants/theme';
+import { Fonts } from '@/constants/theme';
+import { TOKENS } from '@/lib/theme';
 import { Phone, PhoneOff, Sun, Dumbbell } from 'lucide-react-native';
 
 export default function IncomingCallScreen() {
@@ -160,7 +161,7 @@ export default function IncomingCallScreen() {
         <View style={styles.actions}>
           <View style={styles.actionCol}>
             <TouchableOpacity style={styles.declineBtn} onPress={handleDecline} activeOpacity={0.85}>
-              <PhoneOff size={30} color="#fff" />
+              <PhoneOff size={30} color={stage.crownText} />
             </TouchableOpacity>
             <Text style={[styles.actionLabel, { color: persona.ink, opacity: 0.7 }]}>
               {styleText(persona, 'Decline')}
@@ -168,7 +169,7 @@ export default function IncomingCallScreen() {
           </View>
           <View style={styles.actionCol}>
             <TouchableOpacity style={styles.answerBtn} onPress={handleAnswer} activeOpacity={0.85}>
-              <Phone size={30} color="#fff" fill="#fff" />
+              <Phone size={30} color={RING_GREEN_INK} fill={RING_GREEN_INK} />
             </TouchableOpacity>
             <Text style={[styles.actionLabel, { color: persona.ink, opacity: 0.7 }]}>
               {styleText(persona, 'Answer')}
@@ -184,8 +185,19 @@ export default function IncomingCallScreen() {
 // Styles
 // ─────────────────────────────────────────────────────────────────────────────
 
-const RING_GREEN = '#00c853';
-const RING_RED   = '#e53935';
+// The incoming-call screen is a full-bleed persona-accent stage, never the
+// themed page, so its chrome is pinned to TOKENS.dark rather than following the
+// active scheme — same convention as the form-coach camera stage.
+const stage = TOKENS.dark;
+// The two call buttons are FILLS, so their ink governs the hue, not the stage.
+// The dark set's tones are lifted to read as text on ink and are far too bright
+// to carry a light glyph — white on stage.danger is 2.8:1 and on stage.accent
+// only 2.0:1, both under the 3:1 SC 1.4.11 owes a control's glyph. Red keeps a
+// light glyph and drops to the deeper tone; green keeps its lifted tone and
+// takes the dark accentInk, which is the token contract for ink on a fill.
+const RING_GREEN = stage.accent;
+const RING_GREEN_INK = stage.accentInk;
+const RING_RED   = TOKENS.light.danger;
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
@@ -207,7 +219,7 @@ const styles = StyleSheet.create({
   pulseRing2: { width: 130, height: 130 },
   avatar: {
     width: 130, height: 130, borderRadius: 65, borderWidth: 3,
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: stage.crownLine,
     alignItems: 'center', justifyContent: 'center',
   },
   avatarInitials: { fontFamily: Fonts.display, fontSize: 56, letterSpacing: -2 },
@@ -222,14 +234,14 @@ const styles = StyleSheet.create({
   declineBtn: {
     width: 76, height: 76, borderRadius: 38,
     backgroundColor: RING_RED, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+    shadowColor: stage.crown, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
 
   answerBtn: {
     width: 76, height: 76, borderRadius: 38,
     backgroundColor: RING_GREEN, alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+    shadowColor: stage.crown, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
     elevation: 8,
   },
 

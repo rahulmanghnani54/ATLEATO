@@ -8,6 +8,7 @@ import Animated, {
   Easing,
   cancelAnimation,
 } from 'react-native-reanimated';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   width?: number | string;
@@ -18,6 +19,7 @@ interface Props {
 
 export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 8, style }: Props) {
   const opacity = useSharedValue(1);
+  const styles = useThemedStyles(makeStyles);
 
   useEffect(() => {
     opacity.value = withRepeat(
@@ -44,6 +46,8 @@ export function SkeletonLoader({ width = '100%', height = 16, borderRadius = 8, 
   );
 }
 
-const styles = StyleSheet.create({
-  skeleton: { backgroundColor: '#e5e7eb' },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    // One step off the card it covers — a fixed grey is invisible on the dark page.
+    skeleton: { backgroundColor: t.surfaceAlt },
+  });

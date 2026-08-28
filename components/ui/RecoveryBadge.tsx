@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   score: number;
@@ -6,12 +7,29 @@ interface Props {
   style?: import('react-native').ViewStyle;
 }
 
-function getColor(score: number): { bg: string; text: string; label: string } {
-  if (score >= 80) return { bg: '#dcfce7', text: '#16a34a', label: 'Excellent' };
-  if (score >= 65) return { bg: '#f0fdf4', text: '#22c55e', label: 'Good' };
-  if (score >= 50) return { bg: '#fefce8', text: '#ca8a04', label: 'Moderate' };
-  if (score >= 35) return { bg: '#fff7ed', text: '#ea580c', label: 'Poor' };
-  return { bg: '#fef2f2', text: '#dc2626', label: 'Rest' };
+/**
+ * Five recovery bands, three semantic hues. The old five-hex ramp (green →
+ * lime → yellow → orange → red) has no counterpart in the token set and was
+ * light-only, so adjacent bands now share a hue and the LABEL carries the
+ * finer distinction.
+ */
+function bandColor(score: number, t: SemanticTokens): { hue: string; label: string } {
+  if (score >= 80) return { hue: t.success, label: 'Excellent' };
+  if (score >= 65) return { hue: t.success, label: 'Good' };
+  if (score >= 50) return { hue: t.warning, label: 'Moderate' };
+  if (score >= 35) return { hue: t.warning, label: 'Poor' };
+  return { hue: t.danger, label: 'Rest' };
+}
+
+// Status hues are only guaranteed 3:1 (non-text) against the page, so the badge
+// carries them as a fill tint plus a ring and keeps the numerals on `text`,
+// which clears AA on both schemes.
+function tint(color: string, alpha: number): string {
+  if (!color.startsWith('#')) return color;
+  let h = color.slice(1);
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  const num = parseInt(h, 16);
+  return `rgba(${(num >> 16) & 0xff}, ${(num >> 8) & 0xff}, ${num & 0xff}, ${alpha})`;
 }
 
 const SIZES = {
@@ -21,19 +39,28 @@ const SIZES = {
 };
 
 export function RecoveryBadge({ score, size = 'md', style }: Props) {
-  const { bg, text, label } = getColor(score);
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const { hue, label } = bandColor(score, tokens);
   const s = SIZES[size];
 
   return (
-    <View style={[styles.circle, { width: s.circle, height: s.circle, backgroundColor: bg }, style]}>
-      <Text style={[styles.score, { color: text, fontSize: s.score }]}>{score}</Text>
-      <Text style={[styles.label, { color: text, fontSize: s.label }]}>{label}</Text>
+    <View
+      style={[
+        styles.circle,
+        { width: s.circle, height: s.circle, backgroundColor: tint(hue, 0.14), borderColor: hue },
+        style,
+      ]}
+    >
+      <Text style={[styles.score, { fontSize: s.score }]}>{score}</Text>
+      <Text style={[styles.label, { fontSize: s.label }]}>{label}</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  circle: { borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
-  score: { fontFamily: 'Inter_700Bold' },
-  label: { fontFamily: 'Inter_500Medium' },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    circle: { borderRadius: 999, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
+    score: { fontFamily: 'Inter_700Bold', color: t.text },
+    label: { fontFamily: 'Inter_500Medium', color: t.textSecondary },
+  });

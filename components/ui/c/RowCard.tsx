@@ -7,14 +7,15 @@
  * Usage:
  *   import { Dumbbell } from 'lucide-react-native';
  *   <RowCard
- *     icon={<Dumbbell size={22} color="#ff6b35" />}
+ *     icon={<Dumbbell size={22} color={tokens.accentText} />}
  *     title="Today's Workout"
  *     meta="Push · 55 min · 6 exercises"
  *     onPress={() => router.push('/workout-lobby')}
  *   />
  */
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Spacing, Radius, Typography } from '@/constants/theme';
+import { Spacing, Radius, Typography } from '@/constants/theme';
+import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   icon: React.ReactNode;            // already-sized Lucide icon (size=22, persona color)
@@ -26,13 +27,16 @@ interface Props {
   iconTintColor?: string;
 }
 
-export function RowCard({ icon, title, meta, onPress, iconTinted = true, iconTintColor = Colors.primary }: Props) {
+export function RowCard({ icon, title, meta, onPress, iconTinted = true, iconTintColor }: Props) {
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  const tint = iconTintColor ?? tokens.accent;
   const inner = (
     <>
       <View
         style={[
           styles.iconWrap,
-          iconTinted && { backgroundColor: hexAlpha(iconTintColor, 0.14) },
+          iconTinted && { backgroundColor: hexAlpha(tint, 0.14) },
         ]}
       >
         {icon}
@@ -55,8 +59,11 @@ export function RowCard({ icon, title, meta, onPress, iconTinted = true, iconTin
 }
 
 // Convert hex + alpha to rgba string. Robust to short and long hex.
-function hexAlpha(hex: string, alpha: number): string {
-  let h = hex.replace('#', '');
+// Tokens can also arrive as rgba() strings, which have no hex to parse — those
+// already carry their own alpha, so they pass through untouched.
+function hexAlpha(color: string, alpha: number): string {
+  if (!color.startsWith('#')) return color;
+  let h = color.slice(1);
   if (h.length === 3) h = h.split('').map((c) => c + c).join('');
   const num = parseInt(h, 16);
   const r = (num >> 16) & 0xff;
@@ -65,27 +72,32 @@ function hexAlpha(hex: string, alpha: number): string {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    padding: Spacing.md - 2,                       // off-ladder 14
-    marginBottom: Spacing.sm + 2,                  // off-ladder 10
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.cardGap + 1,                      // off-ladder 14 (declared 13 elsewhere)
-  },
-  iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: Radius.md + 2,                   // off-ladder 12
-    backgroundColor: 'rgba(255,107,53,0.14)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  content: { flex: 1, minWidth: 0 },
-  title: { ...Typography.cardTitle, marginBottom: Spacing.xxs },
-  meta: { ...Typography.cardMeta },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    card: {
+      backgroundColor: t.surface,
+      borderWidth: 1,
+      borderColor: t.border,
+      borderRadius: Radius.lg,
+      padding: Spacing.md - 2,                       // off-ladder 14
+      marginBottom: Spacing.sm + 2,                  // off-ladder 10
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: Spacing.cardGap + 1,                      // off-ladder 14 (declared 13 elsewhere)
+    },
+    iconWrap: {
+      width: 42,
+      height: 42,
+      borderRadius: Radius.md + 2,                   // off-ladder 12
+      // Untinted fallback only — the tinted case overrides this at render with
+      // the caller's accent.
+      backgroundColor: t.surfaceAlt,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    content: { flex: 1, minWidth: 0 },
+    // Typography presets carry the frozen LIGHT colour, so each is re-stated
+    // from the active scheme.
+    title: { ...Typography.cardTitle, color: t.text, marginBottom: Spacing.xxs },
+    meta: { ...Typography.cardMeta, color: t.textSecondary },
+  });

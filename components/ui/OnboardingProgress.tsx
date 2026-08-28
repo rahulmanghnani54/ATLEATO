@@ -1,5 +1,5 @@
 import { View, StyleSheet } from 'react-native';
-import { Colors } from '@/constants/theme';
+import { useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 interface Props {
   current: number; // 1-based
@@ -7,6 +7,7 @@ interface Props {
 }
 
 export function OnboardingProgress({ current, total }: Props) {
+  const styles = useThemedStyles(makeStyles);
   return (
     <View style={styles.row}>
       {Array.from({ length: total }).map((_, i) => (
@@ -22,9 +23,10 @@ export function OnboardingProgress({ current, total }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  row: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 32 },
-  dot: { borderRadius: 999 },
-  active: { width: 24, height: 8, backgroundColor: Colors.primary },
-  inactive: { width: 8, height: 8, backgroundColor: Colors.borderStrong },
-});
+const makeStyles = (t: SemanticTokens) =>
+  StyleSheet.create({
+    row: { flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 32 },
+    dot: { borderRadius: 999 },
+    active: { width: 24, height: 8, backgroundColor: t.accent },
+    inactive: { width: 8, height: 8, backgroundColor: t.borderStrong },
+  });

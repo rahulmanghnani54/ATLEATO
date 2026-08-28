@@ -22,6 +22,7 @@ import { speakAs, silence } from '@/lib/voiceCues';
 import { useAuthStore } from '@/stores/authStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Fonts } from '@/constants/theme';
+import { TOKENS } from '@/lib/theme';
 import { PhoneOff } from 'lucide-react-native';
 import notifee, { AndroidImportance, AndroidCategory } from '@notifee/react-native';
 
@@ -303,7 +304,7 @@ function CoachCallInner() {
             disabled={ending}
             activeOpacity={0.85}
           >
-            <PhoneOff size={30} color="#fff" />
+            <PhoneOff size={30} color={stage.crownText} />
           </TouchableOpacity>
           <Text style={[styles.hangLabel, { color: persona.ink, opacity: 0.7 }]}>
             {ending ? 'Ending…' : offline ? 'Done' : 'End call'}
@@ -314,13 +315,18 @@ function CoachCallInner() {
   );
 }
 
+// The call screen is a full-bleed persona-accent stage, never the themed page,
+// so its chrome is pinned to TOKENS.dark rather than following the active
+// scheme — same convention as the form-coach camera stage.
+const stage = TOKENS.dark;
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
   safe: { flex: 1, justifyContent: 'space-between', padding: 32, alignItems: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   avatar: {
     width: 140, height: 140, borderRadius: 70, borderWidth: 3,
-    backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: stage.crownLine, alignItems: 'center', justifyContent: 'center',
     marginBottom: 24,
   },
   initials: { fontFamily: Fonts.display, fontSize: 60, letterSpacing: -2 },
@@ -328,9 +334,12 @@ const styles = StyleSheet.create({
   status: { fontFamily: Fonts.bodyMedium, fontSize: 15, marginTop: 12, textAlign: 'center', paddingHorizontal: 16 },
   actions: { alignItems: 'center', gap: 10, paddingBottom: 16 },
   hangBtn: {
-    width: 76, height: 76, borderRadius: 38, backgroundColor: '#e53935',
+    // The dark set's danger is lifted to read as TEXT on ink; as a fill under a
+    // light glyph it is only 2.8:1, under the 3:1 SC 1.4.11 owes the glyph. The
+    // deeper light-scheme red is the tone that carries crownText (4.2:1).
+    width: 76, height: 76, borderRadius: 38, backgroundColor: TOKENS.light.danger,
     alignItems: 'center', justifyContent: 'center', elevation: 8,
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
+    shadowColor: stage.crown, shadowOpacity: 0.3, shadowRadius: 12, shadowOffset: { width: 0, height: 4 },
   },
   hangLabel: { fontFamily: Fonts.bodyMedium, fontSize: 12, letterSpacing: 0.2 },
 });
