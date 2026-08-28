@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit, ALLOWED_PERSONAS } from '../_shared/security.ts';
+import { requireTier } from '../_shared/entitlement.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const VISION_MODEL = 'claude-sonnet-4-5-20251001';
@@ -108,6 +109,12 @@ serve(async (req) => {
     if (!checkRateLimit(user.id, 'analyze-physique', 10, 60 * 60 * 1000)) {
       return errorResponse('Rate limit exceeded. Please wait before analysing again.', 429);
     }
+
+    // Entitlement: physique check-ins are featureGates physique_photos = 'pro'.
+    // Gated before the body is read — this endpoint accepts up to three base64
+    // images and runs Sonnet vision, the most expensive call in the app.
+    const denied = await requireTier(supabase, user.id, 'pro', 'physique_photos');
+    if (denied) return denied;
 
     const body = await req.json() as {
       mode?: unknown;

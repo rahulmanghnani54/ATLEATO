@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit, sanitize } from '../_shared/security.ts';
+import { requireTier } from '../_shared/entitlement.ts';
 
 const MAX_EXERCISE_NAME_LEN = 100;
 const MAX_ISSUE_LEN = 200;
@@ -37,6 +38,12 @@ serve(async (req) => {
     if (!checkRateLimit(user.id, 'form-feedback', 30, 60_000)) {
       return errorResponse('Too many requests. Please wait a moment.', 429);
     }
+
+    // Entitlement: this backs the AI Form Coach (featureGates ai_form_coach =
+    // 'pro'). Checked AFTER the in-memory rate limit (cheap, shields the DB) and
+    // BEFORE the body is parsed, so a free caller never reaches paid inference.
+    const denied = await requireTier(supabase, user.id, 'pro', 'ai_form_coach');
+    if (denied) return denied;
 
     const body = await req.json() as {
       exerciseName?: unknown;

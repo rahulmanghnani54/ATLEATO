@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit } from '../_shared/security.ts';
+import { requireTier } from '../_shared/entitlement.ts';
 
 // ---------------------------------------------------------------------------
 // MVP food recognition — returns realistic mock macro data.
@@ -83,6 +84,12 @@ serve(async (req) => {
     if (!checkRateLimit(user.id, 'analyze-food-photo', 5, 60_000)) {
       return errorResponse('Too many requests. Please wait a moment.', 429);
     }
+
+    // Entitlement: the food scanner is featureGates food_scan = 'pro'. Gated
+    // before req.json() so an unentitled caller can't make us buffer an ~8MB
+    // upload, and before this endpoint becomes real (paid) vision inference.
+    const denied = await requireTier(supabase, user.id, 'pro', 'food_scan');
+    if (denied) return denied;
 
     const body = await req.json() as { image_base64?: string };
 

@@ -8,8 +8,21 @@ import { checkRateLimit, sanitize, ALLOWED_PERSONAS } from '../_shared/security.
 
 const MAX_MESSAGE_LEN = 2_000;
 const MAX_HISTORY_TURNS = 10;
+// The coach is the FREE tier's headline feature, so it is deliberately NOT
+// entitlement-gated — cost control here is rate limiting, not tier.
+// Two windows, because one alone doesn't hold:
+//   burst  — 15/min is roughly the fastest a human can actually type and read.
+//   volume — 15/min sustained is 900 replies/hour per user, which a script can
+//            hold all day. The burst limit alone puts no ceiling on the day.
+// 60/hour is still far above real use (a long coaching session is tens of
+// messages, not hundreds) while cutting the sustained-abuse ceiling by 15x.
+// NOTE: checkRateLimit is per-isolate and in-memory, so both windows are a
+// floor, not a guarantee — a durable per-user daily cap belongs in the DB
+// (chat_messages already records every turn) and is not added here.
 const RATE_LIMIT_REQUESTS = 15;
 const RATE_LIMIT_WINDOW_MS = 60_000;
+const HOURLY_LIMIT_REQUESTS = 60;
+const HOURLY_LIMIT_WINDOW_MS = 60 * 60_000;
 
 const EXPERT_PERSONAS: Record<string, string> = {
   arnold: `You are The Monument — Monument eralympia, legendary bodybuilder, and motivator.
@@ -115,6 +128,9 @@ serve(async (req) => {
 
     if (!checkRateLimit(user.id, 'ai-coach-chat', RATE_LIMIT_REQUESTS, RATE_LIMIT_WINDOW_MS)) {
       return errorResponse('Too many requests. Please wait a moment.', 429);
+    }
+    if (!checkRateLimit(user.id, 'ai-coach-chat:hourly', HOURLY_LIMIT_REQUESTS, HOURLY_LIMIT_WINDOW_MS)) {
+      return errorResponse('You have reached this hour\'s coaching limit. Please try again later.', 429);
     }
 
     const body = await req.json() as {
