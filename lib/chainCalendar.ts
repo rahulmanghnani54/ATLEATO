@@ -27,15 +27,28 @@ export interface CalendarMonth {
 
 const DAY_MS = 86_400_000;
 
-/** Format Date → 'YYYY-MM-DD' */
+/**
+ * Format Date → 'YYYY-MM-DD', on the UTC day boundary.
+ *
+ * UTC is not a preference here, it is the rest of the app's convention: every
+ * writer of `workout_logs.date` stamps `new Date().toISOString().slice(0, 10)`.
+ * The calendar's day identity has to be the SAME identity, or a lookup against
+ * the trained-date set compares two different calendars.
+ */
 export function toISO(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Parse 'YYYY-MM-DD' → Date at local midnight */
+/**
+ * Parse 'YYYY-MM-DD' → Date at UTC midnight.
+ *
+ * Must be UTC to match toISO. A local-midnight Date is a different instant, and
+ * east of UTC it converts back to the PREVIOUS day's ISO — so the round trip
+ * `toISO(fromISO(x)) === x` silently failed for most of the world.
+ */
 export function fromISO(iso: string): Date {
   const [y, m, d] = iso.split('-').map(Number);
-  return new Date(y, m - 1, d);
+  return new Date(Date.UTC(y, m - 1, d));
 }
 
 /** Add N days to a Date (returns new Date). */
@@ -75,7 +88,11 @@ export async function buildMonth(
   let trainedCount = 0;
   let elapsed = 0;
   for (let day = 1; day <= daysInMonth; day++) {
-    const dateISO = toISO(new Date(year, monthIndex, day));
+    // Date.UTC, not `new Date(y, m, d)`: a local-midnight cell converts to the
+    // previous day's ISO everywhere east of UTC, which shifted the WHOLE grid by
+    // one square — every trained day rendered on the wrong date and the real one
+    // rendered as 'missed'.
+    const dateISO = toISO(new Date(Date.UTC(year, monthIndex, day)));
     const isToday = dateISO === todayISO;
     const isFuture = dateISO > todayISO;
     if (!isFuture) elapsed++;
@@ -126,8 +143,10 @@ export async function buildCompactStrip(
   const today = new Date();
   const todayISO = toISO(today);
   const totalDays = weeksBack * 7;
-  // Anchor so today is in the last column (Sun=6 in Mon-first grid)
-  const todayCol = (today.getDay() + 6) % 7;
+  // Anchor so today is in the last column (Sun=6 in Mon-first grid). UTC weekday,
+  // because every cell's identity below is its UTC date — a local weekday would
+  // put the anchor a column off whenever the two disagree.
+  const todayCol = (today.getUTCDay() + 6) % 7;
   const trailingFromToday = 6 - todayCol;
   const endDate = addDays(today, trailingFromToday);
   const startDate = addDays(endDate, -(totalDays - 1));
@@ -144,7 +163,8 @@ export async function buildCompactStrip(
     else if (await isFrozen(dateISO)) status = 'frozen';
     else status = 'missed';
 
-    cells.push({ dateISO, day: d.getDate(), status, isToday });
+    // getUTCDate, so the number printed on the square is the same day as dateISO.
+    cells.push({ dateISO, day: d.getUTCDate(), status, isToday });
   }
   return cells;
 }

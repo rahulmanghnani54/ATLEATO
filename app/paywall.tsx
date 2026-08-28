@@ -17,8 +17,9 @@
  * surfaceAlt band (radius 0, edge to edge) and Pro sits on the bare page, which
  * is what separates them.
  *
- * Pricing, product ids, purchase/restore handlers and the "coming soon" Alert
- * are untouched — this file is presentation only.
+ * Pricing, product ids and the "coming soon" Alert are unchanged. The purchase
+ * handler now runs real store billing when it is configured, and falls back to
+ * that same Alert when it is not.
  */
 import { useState, useEffect } from 'react';
 import {
@@ -32,8 +33,11 @@ import { BigStat, CanvasScreen, Crown, Hairline } from '@/components/ui/canvas';
 import { PressableScale } from '@/components/ui/motion';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { getFeatureLabel, type FeatureKey, getUserTier } from '@/lib/featureGates';
+// Purchases go through subscriptionManager, never lib/billing directly: it is
+// the layer that re-reads entitlement from the SERVER after the store takes the
+// money. Calling the billing adapter from here would skip that sync.
 import {
-  purchaseSubscription, restorePurchases, getProductPrices,
+  startPurchase, restorePurchases, getProductPrices, isBillingConfigured,
   PRODUCT_IDS,
 } from '@/lib/subscriptionManager';
 
@@ -93,23 +97,51 @@ export default function PaywallScreen() {
   const proId = period === 'yearly' ? PRODUCT_IDS.PRO_YEARLY : PRODUCT_IDS.PRO_MONTHLY;
   const legendId = period === 'yearly' ? PRODUCT_IDS.LEGEND_YEARLY : PRODUCT_IDS.LEGEND_MONTHLY;
 
-  const handlePurchase = async (productId: string) => {
-    setLoading(productId);
-    const success = await purchaseSubscription(productId);
-    setLoading(null);
-    if (success) {
-      router.back();
-      return;
-    }
-    // In-app billing (Google Play) isn't wired yet — Pro/Legend are "coming soon".
-    // We deliberately do NOT link out to a web checkout here: selling digital
-    // goods via an external payment flow violates Google Play's Payments policy.
-    // Real Play Billing will replace this stub.
+  // The pre-billing path, unchanged. We deliberately do NOT link out to a web
+  // checkout here: selling digital goods via an external payment flow violates
+  // Google Play's Payments policy.
+  const comingSoon = (productId: string) => {
     const tier = productId.toLowerCase().includes('legend') ? 'LEGEND' : 'PRO';
     Alert.alert(
       `${tier} — coming soon`,
       'Paid plans unlock shortly after launch. You’re on the free plan with full access to your coach, workouts, nutrition, and calls in the meantime.',
       [{ text: 'Got it', style: 'default' }],
+    );
+  };
+
+  const handlePurchase = async (productId: string) => {
+    // Checked before the spinner so an unconfigured build shows the alert
+    // immediately, with no loading flash — exactly as it did pre-billing.
+    if (!isBillingConfigured()) {
+      comingSoon(productId);
+      return;
+    }
+
+    setLoading(productId);
+    const result = await startPurchase(productId);
+    setLoading(null);
+
+    if (result.status === 'success') {
+      router.back();
+      return;
+    }
+
+    // A user who backs out of the store sheet has not failed at anything.
+    // Surfacing an error here is what makes a paywall feel like it's arguing
+    // with you — say nothing and leave them exactly where they were.
+    if (result.status === 'cancelled') return;
+
+    // Billing dropped out between the check above and the call.
+    if (result.status === 'unavailable') {
+      comingSoon(productId);
+      return;
+    }
+
+    Alert.alert(
+      'Purchase not completed',
+      result.message ||
+        'Something went wrong on the way to the store. You have not been charged. If you believe you were, tap Restore Purchases.',
+      [{ text: 'OK', style: 'default' }],
     );
   };
 

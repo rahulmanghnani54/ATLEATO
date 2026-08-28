@@ -1,32 +1,33 @@
 /**
  * Subscription Manager — tier resolution + cache.
  *
- * NATIVE BILLING IS CURRENTLY STUBBED.
+ * Purchases run through RevenueCat (lib/billing.ts), which wraps Google Play
+ * Billing and StoreKit and owns receipt validation. Billing is ENV-GATED: with
+ * no EXPO_PUBLIC_REVENUECAT_ANDROID_KEY the adapter never configures, every
+ * function here keeps its pre-billing behaviour, and the paywall still shows
+ * its "coming soon" path. A missing key can never crash or gate anything.
  *
- * `expo-in-app-purchases` was removed because it does NOT compile on Expo
- * SDK 54 — it still imports the old `expo.modules.core.ExportedModule` /
- * `ExpoMethod` API that Expo deleted in SDK 52+. Keeping it broke the
- * Android build (`compileDebugJavaWithJavac` failure).
+ * We never link out to a web checkout for these plans — selling digital goods
+ * through an external payment flow violates Google Play's Payments policy.
  *
- * This module keeps the SAME public API so every caller (paywall, feature
- * gates, profile) keeps working. Tier is resolved from:
- *   1. EXPO_PUBLIC_DEV_TIER (dev override for testing gated features)
- *   2. AsyncStorage cache (a tier the user previously had)
- *   3. Otherwise 'free'
+ * Tier is resolved from:
+ *   1. Founder allowlist (comp accounts)
+ *   2. EXPO_PUBLIC_DEV_TIER (dev override for testing gated features)
+ *   3. AsyncStorage cache (a tier the user previously had)
+ *   4. Referral reward (server-granted, elevates to Legend while active)
  *
- * TO RE-ENABLE REAL PURCHASES (when ready):
- *   - Install an SDK-54-compatible IAP lib: `react-native-iap` or `expo-iap`
- *   - Implement connect / getProducts / purchase / restore inside the
- *     clearly-marked sections below
- *   - The product IDs + tier resolution logic are already here.
+ * ⚠️ A PAID tier is NOT granted anywhere yet — see refreshReferralReward()
+ * for the missing server-side entitlement writer. Purchases can be taken, but
+ * nothing may unlock a tier until the server can vouch for it.
  *
- * Product IDs (register in Google Play Console):
+ * Product IDs (register in Google Play Console + RevenueCat):
  *   atleato_pro_monthly     $9.99/mo
  *   atleato_pro_yearly      $101.90/yr  (15% off)
  *   atleato_legend_monthly  $19.99/mo
  *   atleato_legend_yearly   $191.90/yr  (20% off)
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as billing from '@/lib/billing';
 import { _setTierProvider } from '@/lib/featureGates';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -42,6 +43,18 @@ export const ALL_PRODUCT_IDS = Object.values(PRODUCT_IDS);
 
 type Tier = 'free' | 'pro' | 'legend';
 type TierListener = (tier: Tier) => void;
+
+/**
+ * Result of a purchase attempt. 'cancelled' is a user backing out of the store
+ * sheet — it is NOT a failure and must not raise an error alert. 'unavailable'
+ * means billing isn't configured (no key / no native module), which is the
+ * paywall's existing "coming soon" path.
+ */
+export type PurchaseOutcome =
+  | { status: 'success' }
+  | { status: 'cancelled' }
+  | { status: 'unavailable' }
+  | { status: 'error'; message: string };
 
 const CACHE_KEY = 'subscription_tier:v1';
 const REFERRAL_UNTIL_KEY = 'referral_pro_until:v1';
@@ -105,12 +118,76 @@ function setTier(tier: Tier) {
 }
 
 /**
- * Pull the server's referral reward state and apply it. The RPC both GRANTS
- * the reward (if the user just crossed 3 referrals) and returns pro_until, so
- * one call covers "grant + read". Cached locally for offline/instant boot.
- * Safe to call repeatedly + when logged out (returns no grant).
+ * Bind the RevenueCat customer to the signed-in Supabase user, so entitlement
+ * follows the ACCOUNT not the device and the webhook can resolve a profile row.
+ * The id comes from the auth session only — never from UI state. No-ops when
+ * billing isn't configured.
+ */
+let lastIdentifiedUserId: string | null | undefined; // undefined = never synced
+
+async function identifyBillingUser(): Promise<void> {
+  const userId = useAuthStore.getState().user?.id ?? null;
+  if (userId === lastIdentifiedUserId) return;
+  try {
+    await billing.identify(userId);
+    lastIdentifiedUserId = userId;
+  } catch {
+    // never let identity binding break the caller; leave the marker unset so
+    // the next auth change retries instead of assuming we're bound
+  }
+}
+
+let watchingAuthForBilling = false;
+
+/**
+ * Keep the RevenueCat customer bound to whoever is signed in — including when
+ * that is NOBODY.
+ *
+ * Sign-out matters as much as sign-in. app/_layout.tsx only syncs entitlement
+ * on a session that HAS a user, so without this the SDK keeps the previous
+ * account's appUserID after they log out. On a shared device the next person's
+ * purchase — or their Restore Purchases — would then land on the account that
+ * left. Only registered when billing is live, so an unconfigured build behaves
+ * exactly as it did before.
+ */
+function watchAuthForBilling(): void {
+  if (watchingAuthForBilling) return;
+  watchingAuthForBilling = true;
+  try {
+    useAuthStore.subscribe(() => { identifyBillingUser(); });
+  } catch {
+    watchingAuthForBilling = false;
+  }
+}
+
+/**
+ * Re-read entitlement from the SERVER and apply it. This is the app's single
+ * entitlement sync point: called on boot, on every auth state change
+ * (app/_layout.tsx), from /referral, and after a purchase or restore.
+ *
+ * Today the server has exactly one entitlement writer: claim_referral_reward()
+ * (migration 022). It both GRANTS the referral reward and returns pro_until,
+ * so one call covers "grant + read". It knows nothing about purchases.
+ *
+ * ⚠️ MISSING SEAM — NO SERVER WRITER FOR A PURCHASED TIER.
+ * A successful Play purchase currently unlocks nothing, because no server-side
+ * signal exists to vouch for it. Do NOT close that gap on the client (i.e.
+ * never `setTier(resolveTier(await billing.getActiveProductIds()))`): the ten
+ * gates in lib/featureGates.ts are all that stand between a free user and every
+ * paid feature, and a patched binary would then grant itself Legend.
+ *
+ * To close it, server-side:
+ *   1. public.profiles gains paid_tier / paid_until / paid_provider /
+ *      paid_txn_id (service_role writes only, mirroring 016_referral_reward).
+ *   2. A `revenuecat-webhook` edge function verifies RevenueCat's Authorization
+ *      header fail-closed, reads event.app_user_id (the id identifyBillingUser
+ *      bound above) and writes those columns — same shape as
+ *      lemonsqueezy-webhook, but keyed on auth.uid(), never on email.
+ *   3. claim_referral_reward() (or a sibling RPC) also returns paid_tier, and
+ *      the marked block below applies it via setTier().
  */
 export async function refreshReferralReward(): Promise<void> {
+  identifyBillingUser();
   try {
     const { data, error } = await (supabase.rpc as any)('claim_referral_reward');
     if (error || !data) return;
@@ -121,6 +198,16 @@ export async function refreshReferralReward(): Promise<void> {
     } else {
       AsyncStorage.removeItem(REFERRAL_UNTIL_KEY).catch(() => {});
     }
+
+    // ── PAID TIER SEAM ──────────────────────────────────────────────────────
+    // The only place a purchased tier may ever be applied — `data` here is the
+    // server's word, not the client's. Unblock once step 3 above ships:
+    //   const paid = data.paid_tier;
+    //   const paidUntil = data.paid_until ? Date.parse(data.paid_until) : NaN;
+    //   const live = Number.isFinite(paidUntil) && Date.now() < paidUntil;
+    //   setTier(live && (paid === 'pro' || paid === 'legend') ? paid : 'free');
+    // ────────────────────────────────────────────────────────────────────────
+
     notify();
   } catch {
     // network/RPC failure — keep whatever (cached) state we have
@@ -128,8 +215,9 @@ export async function refreshReferralReward(): Promise<void> {
 }
 
 /**
- * Resolve tier from a set of owned product IDs.
- * Kept for when a real IAP library is wired back in.
+ * Resolve tier from a set of owned product IDs. Used server-side reasoning
+ * only — the RevenueCat webhook must apply this same mapping. Do not call it
+ * with ids read from the device to set a tier (see the seam below).
  */
 export function resolveTier(ownedProductIds: string[]): Tier {
   const owned = new Set(ownedProductIds);
@@ -167,9 +255,12 @@ export async function initBilling(): Promise<void> {
   // Best-effort server sync (grants if just earned; no-op when logged out).
   refreshReferralReward();
 
-  // ── REAL BILLING GOES HERE (when an SDK-54-compatible lib is added) ──
-  // e.g. connect to store, query active purchases, call setTier(resolveTier(ids)),
-  //      register a purchase listener + AppState foreground re-validation.
+  // RevenueCat. Resolves false and changes nothing when no key is configured.
+  await billing.initBilling();
+  if (billing.isConfigured()) {
+    await identifyBillingUser();
+    watchAuthForBilling();
+  }
 }
 
 export function getUserTier(): Tier {
@@ -188,17 +279,50 @@ export function getReferralProUntil(): number | null {
 }
 
 /**
- * Start a purchase. Currently a no-op stub (no native billing module).
- * Returns false so the paywall shows its "not configured" path gracefully.
+ * Start a purchase, reporting exactly what happened.
+ *
+ * A 'success' here means the STORE took the money — it does not mean a tier was
+ * granted. Entitlement is applied only by the server sync below (see the paid
+ * tier seam in refreshReferralReward), so until that writer exists a paid user
+ * stays on their current tier. That is deliberate: better a support ticket than
+ * a client-side unlock anyone can forge.
  */
-export async function purchaseSubscription(_productId: string): Promise<boolean> {
-  if (__DEV__) console.warn('[subscription] purchases unavailable — native billing not installed');
-  return false;
+export async function startPurchase(productId: string): Promise<PurchaseOutcome> {
+  if (!billing.isConfigured()) {
+    if (__DEV__) console.warn('[subscription] purchases unavailable — RevenueCat not configured');
+    return { status: 'unavailable' };
+  }
+
+  const result = await billing.purchase(productId);
+  if (result.status === 'cancelled') return { status: 'cancelled' };
+  if (result.status === 'error') return { status: 'error', message: result.message };
+
+  // Purchase went through — ask the SERVER what the user is now entitled to.
+  // RevenueCat's webhook is what writes it; this just re-reads.
+  await refreshReferralReward();
+  return { status: 'success' };
 }
 
-/** Restore previous purchases. No-op until a real IAP lib is wired in. */
+/**
+ * Start a purchase. Kept for existing callers: true only when the store
+ * completed the purchase. A cancellation and a not-configured build both
+ * return false, so prefer startPurchase() when the caller needs to tell those
+ * apart (a cancellation must not raise a failure alert).
+ */
+export async function purchaseSubscription(productId: string): Promise<boolean> {
+  const outcome = await startPurchase(productId);
+  return outcome.status === 'success';
+}
+
+/**
+ * Restore previous purchases, then re-sync entitlement from the server.
+ * No-ops when billing isn't configured — same as before.
+ */
 export async function restorePurchases(): Promise<void> {
-  // No native billing — nothing to restore.
+  if (!billing.isConfigured()) return;
+  const result = await billing.restore();
+  if (result.status !== 'success') return;
+  await refreshReferralReward();
 }
 
 export function addTierChangeListener(cb: TierListener): () => void {
@@ -207,14 +331,26 @@ export function addTierChangeListener(cb: TierListener): () => void {
 }
 
 /**
- * Get formatted store prices. Returns empty without native billing — the
- * paywall UI falls back to its hardcoded display prices.
+ * Localized store prices keyed by product id. Returns empty when billing isn't
+ * configured — the paywall UI then falls back to its hardcoded display prices.
  */
 export async function getProductPrices(): Promise<Record<string, string>> {
-  return {};
+  return billing.getPrices();
 }
 
-/** Manually set tier (e.g. after a future web-checkout confirmation). */
+/** Whether real in-app billing is live (key present + SDK configured). */
+export function isBillingConfigured(): boolean {
+  return billing.isConfigured();
+}
+
+/**
+ * Manually set tier. DEV/ADMIN ONLY — the founder tier switcher in
+ * app/profile.tsx is its sole caller and is __DEV__-gated.
+ *
+ * ⚠️ Must NEVER be reachable from a purchase path: it writes a paid tier from
+ * client state alone, which is exactly what the server-authoritative seam in
+ * refreshReferralReward() exists to prevent.
+ */
 export function applyTier(tier: Tier): void {
   setTier(tier);
 }

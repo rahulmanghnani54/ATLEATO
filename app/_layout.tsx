@@ -1,6 +1,8 @@
 import '@/lib/domExceptionPolyfill'; // must be first — livekit/ElevenLabs needs DOMException
 import { initSentry, Sentry } from '@/lib/sentry';
 initSentry(); // crash + error reporting — env-gated, no-op until DSN is set
+import { initAnalytics, identify as identifyAnalytics, reset as resetAnalytics } from '@/lib/analytics';
+initAnalytics(); // product analytics — env-gated, no-op until POSTHOG key is set
 import { useEffect, useState } from 'react';
 import { View, AppState, StatusBar } from 'react-native';
 import { Stack, useRouter, useSegments, useGlobalSearchParams , SplashScreen } from 'expo-router';
@@ -80,7 +82,12 @@ function RootNavigator() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      // Analytics identity follows auth. Sentry's equivalent (setSentryUser)
+      // lives in authStore.setUser; this is the same moment, one layer up.
+      // Id only — never the email/name on the session.
+      if (!session?.user) resetAnalytics();
       if (session?.user) {
+        identifyAnalytics(session.user.id);
         await fetchProfile(session.user.id);
         // Record today's app-open (powers the "active referral" definition —
         // 3+ open-days in first 7) + grant any earned referral reward. Both
