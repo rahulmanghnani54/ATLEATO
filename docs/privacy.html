@@ -135,7 +135,7 @@
       No dark patterns. No selling your data. No tracking pixels. The shortest
       readable privacy policy we could write while still being legally accurate.
     </p>
-    <div class="updated">LAST UPDATED · 26 JUNE 2026</div>
+    <div class="updated">LAST UPDATED · 28 AUGUST 2026</div>
   </div>
 </section>
 
@@ -172,39 +172,27 @@
       <li><strong>Streak history</strong> — training day counts, freeze inventory</li>
     </ul>
 
-    <h3>2.3 Location data (territory game only)</h3>
-    <p>
-      When you start a run via the <strong>Territory</strong> feature, we collect GPS coordinates
-      <strong>during that run only</strong>. We compute a list of "grid cells" you passed through
-      (200×200 metre squares) and save those cells — not the raw GPS track.
-      Stop the run, the GPS subscription stops.
-    </p>
-    <p>
-      We <strong>never</strong> read your location in the background or outside an active run.
-    </p>
-
-    <h3>2.4 Physique photos</h3>
+    <h3>2.3 Physique photos</h3>
     <p>
       Photos you take in the Physique Check-in feature are <strong>encrypted on your device</strong>
       using a key only you hold. The encrypted blobs are uploaded to our storage, but
       we cannot decrypt them — even with full database access — because we never see your key.
     </p>
 
-    <h3>2.5 Push tokens</h3>
+    <h3>2.4 Push tokens</h3>
     <p>
-      We store your Firebase Cloud Messaging (FCM) token so the territory game can notify
-      you when someone takes one of your cells, and so the coach can call you at your
-      scheduled time. Used for nothing else.
+      We store your Firebase Cloud Messaging (FCM) token so your coach can call you at the
+      time you scheduled, and to send the reminders you turn on. Used for nothing else.
     </p>
 
-    <h3>2.6 Device data</h3>
+    <h3>2.5 Device data</h3>
     <p>
       Standard request metadata (IP address, browser user-agent, OS version) is logged
       by our infrastructure provider (Supabase) for security + abuse prevention. Retained
       for 30 days, then auto-deleted.
     </p>
 
-    <h3>2.7 Camera</h3>
+    <h3>2.6 Camera</h3>
     <p>
       The <strong>Form Coach</strong> uses your camera to analyse your exercise form. This runs
       <strong>entirely on your device</strong> using on-device pose detection — video frames are
@@ -213,7 +201,7 @@
       physique-photo session you started is open.
     </p>
 
-    <h3>2.8 Microphone &amp; voice (coach calls)</h3>
+    <h3>2.7 Microphone &amp; voice (coach calls)</h3>
     <p>
       When you <strong>answer a live coach call</strong>, your microphone audio is streamed in
       real time to our voice provider, <strong>ElevenLabs</strong>, so the AI coach can hold a
@@ -223,7 +211,7 @@
       microphone is used only during an active call or a Form Coach session you start.
     </p>
 
-    <h3>2.9 Health &amp; wearable data (optional)</h3>
+    <h3>2.8 Health &amp; wearable data (optional)</h3>
     <p>
       If you choose to connect a smartwatch or <strong>Health Connect</strong>, Evulto reads
       your steps, heart rate, HRV and sleep <strong>only to calculate daily recovery</strong> and
@@ -232,29 +220,41 @@
       Health Connect / Apple Health settings.
     </p>
 
-    <h2>3. What we DON'T collect</h2>
+    <h2>3. Product analytics</h2>
+    <p>
+      We record a small set of <strong>events</strong> — things like "workout started",
+      "onboarding completed", "paywall viewed" — so we can tell whether the app actually works
+      for people. Each event carries counts, durations and yes/no flags. Nothing else.
+    </p>
+    <p>
+      Analytics <strong>never</strong> receives your photos, your pose or body-tracking data,
+      your body measurements, your health metrics, the content of your coach conversations, or
+      anything you typed. Those never leave the parts of the app that need them.
+    </p>
+
+    <h2>4. What we DON'T collect</h2>
     <ul>
       <li>No advertising IDs</li>
-      <li>No analytics tracking pixels (Google Analytics, Facebook Pixel, etc.)</li>
+      <li>No advertising or cross-site tracking pixels (Google Analytics, Facebook Pixel, etc.)</li>
+      <li>No location or GPS data of any kind</li>
       <li>No access to your contact list or full photo library</li>
       <li>No background microphone or camera access — both are used only during an active coach call or Form Coach session that you start</li>
       <li>No data from third-party platforms (Instagram, Strava, etc.) unless you connect them</li>
-      <li>No card or bank details — our payment processor handles those (see section 5); we never see or store them</li>
+      <li>No card or bank details — our payment processor handles those (see section 6); we never see or store them</li>
     </ul>
 
-    <h2>4. How we use it</h2>
+    <h2>5. How we use it</h2>
     <ul>
       <li><strong>Run the app</strong> — display your data back to you, compute your macros, draw your charts</li>
       <li><strong>Personalise coaching</strong> — pick which workouts / tips to surface based on your stats</li>
-      <li><strong>Power the territory game</strong> — compute leaderboards, deliver steal notifications</li>
-      <li><strong>Improve the app</strong> — aggregate, anonymised usage stats only (no individual tracking)</li>
+      <li><strong>Improve the app</strong> — product analytics, described in section 3 below</li>
     </ul>
     <p>
       We <strong>never</strong> sell your data. We <strong>never</strong> share your data with advertisers.
       We <strong>never</strong> use your data to train AI models without your explicit opt-in.
     </p>
 
-    <h2>5. Where it's stored &amp; who processes it</h2>
+    <h2>6. Where it's stored &amp; who processes it</h2>
     <p>
       Your account, fitness, and (encrypted) photo data is stored on <strong>Supabase</strong>
       (Postgres + storage) in the AWS US-East region. We share specific data with the
@@ -276,30 +276,30 @@
       receive confirmation of what you bought and the email tied to the purchase.
     </p>
 
-    <h2>6. Your rights</h2>
+    <h2>7. Your rights</h2>
     <p>You can, at any time:</p>
     <ul>
       <li><strong>Export your data</strong> — email <a href="mailto:hello@evulto.com">hello@evulto.com</a> and we send a JSON dump within 7 days</li>
       <li><strong>Delete your account</strong> — Profile → Settings → Delete Account. Erases everything immediately and irreversibly. (Or email us if you can't access the app.)</li>
       <li><strong>Edit or correct any field</strong> — directly from the app</li>
-      <li><strong>Withdraw consent</strong> — disable specific features (location, photos, notifications) any time from Profile → Permissions</li>
+      <li><strong>Withdraw consent</strong> — disable specific features (camera, photos, microphone, notifications) any time from Profile → Permissions</li>
     </ul>
 
-    <h2>7. Children</h2>
+    <h2>8. Children</h2>
     <p>
       Evulto is not directed at children under 13 (under 16 in the EU). We do not knowingly
       collect data from minors. If you believe a minor has signed up, email
       <a href="mailto:hello@evulto.com">hello@evulto.com</a> and we will delete the account.
     </p>
 
-    <h2>8. Changes to this policy</h2>
+    <h2>9. Changes to this policy</h2>
     <p>
       If we make material changes (e.g. start collecting new data, add a third-party service),
       we'll notify you via email + in-app banner at least 14 days before the change takes effect.
       Minor wording changes don't need notification.
     </p>
 
-    <h2>9. Contact</h2>
+    <h2>10. Contact</h2>
     <p>
       Questions, complaints, data export requests, deletion requests — all to:
       <a href="mailto:hello@evulto.com">hello@evulto.com</a>. We respond within 48 hours.
