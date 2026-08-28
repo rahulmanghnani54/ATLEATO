@@ -44,7 +44,7 @@ import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { BigStat, CanvasScreen, Hairline, Section, StatRow } from '@/components/ui/canvas';
 import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
 import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
-import { getExerciseForm, getCoachCue } from '@/constants/exerciseFormLibrary';
+import { getExerciseForm, getCoachCue, visionCategoryFor } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { canAccess } from '@/lib/featureGates';
 import {
@@ -520,11 +520,15 @@ export default function FormCoach() {
   // Bridge the category to handlePose via a ref (avoids re-creating the pose
   // callback — and its RunOnJS binding — when the exercise changes).
   useEffect(() => {
-    categoryRef.current = formLibraryData?.category;
+    // Translate the library's vocabulary into the engine's. These grew apart:
+    // 'push'/'isolation'/'hinge' matched no profile, so getProfile() fell back to
+    // 'general' (checks: []) and the coach watched in silence. null = we have no
+    // profile for this movement and must say so rather than pretend.
+    categoryRef.current = visionCategoryFor(formLibraryData) ?? undefined;
     // setCategory rebuilds the rep machine (new exercise = new set) but KEEPS
     // the body scale on purpose: the lifter's torso is the same length, and
     // re-measuring it would blank the coach for another second for nothing.
-    engineRef.current?.setCategory(formLibraryData?.category);
+    engineRef.current?.setCategory(categoryRef.current);
     visionRef.current = null;
     setAnalysisTick((t) => t + 1);
   }, [formLibraryData]);

@@ -22,6 +22,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react-native';
 
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { EXERCISE_LIBRARY, type MuscleGroup } from '@/constants/exerciseLibrary';
+import { hasVisionCoverage } from '@/constants/exerciseFormLibrary';
 import { useAuthStore } from '@/stores/authStore';
 import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/lib/theme';
@@ -98,20 +99,28 @@ function MuscleGroupRow({
 
       {open && (
         <View style={styles.groupBody}>
-          {group.exercises.map((ex, i) => (
-            <ListRow
-              key={ex.name}
-              title={ex.name}
-              last={i === group.exercises.length - 1}
-              onPress={() =>
-                router.push({
-                  pathname: '/form-coach' as any,
-                  params: { exerciseName: ex.name, persona: personaId },
-                })
-              }
-              right={<Text style={[styles.tag, { color: accentText }]}>FORM CHECK</Text>}
-            />
-          ))}
+          {group.exercises.map((ex, i) => {
+            // Only offer Form Check where a biomechanical profile actually exists.
+            // Opening a camera that watches in silence is worse than not offering it.
+            const analysable = hasVisionCoverage(ex.name);
+            return (
+              <ListRow
+                key={ex.name}
+                title={ex.name}
+                last={i === group.exercises.length - 1}
+                onPress={analysable
+                  ? () =>
+                    router.push({
+                      pathname: '/form-coach' as any,
+                      params: { exerciseName: ex.name, persona: personaId },
+                    })
+                  : undefined}
+                right={analysable
+                  ? <Text style={[styles.tag, { color: accentText }]}>FORM CHECK</Text>
+                  : undefined}
+              />
+            );
+          })}
         </View>
       )}
 
@@ -265,12 +274,13 @@ export default function Workouts() {
                       subtitle={`${ex.sets} sets · ${ex.reps} · ${ex.restSeconds}s rest`}
                       value={String(i + 1).padStart(2, '0')}
                       last={i === todayWorkout!.exercises.length - 1}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/form-coach' as any,
-                          params: { exerciseName: ex.name, persona: persona.id },
-                        })
-                      }
+                      onPress={hasVisionCoverage(ex.name)
+                        ? () =>
+                          router.push({
+                            pathname: '/form-coach' as any,
+                            params: { exerciseName: ex.name, persona: persona.id },
+                          })
+                        : undefined}
                     />
                   ))}
                 </Section>

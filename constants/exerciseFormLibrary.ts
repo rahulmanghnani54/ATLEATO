@@ -513,3 +513,46 @@ export function getCoachCue(form: ExerciseForm, coachId: string): string {
   const cue = form.coachCues.find((c) => c.coachId === coachId);
   return cue?.cue ?? form.coachCues[0]?.cue ?? 'Focus on controlled form and mind-muscle connection.';
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISION COVERAGE
+//
+// This library and lib/vision/biomechanics.ts grew separate vocabularies, and
+// nothing bridged them: 'push' never matched the engine's 'press', 'isolation'
+// never matched 'curl', 'hinge' never matched 'deadlift'. getProfile() falls back
+// to the 'general' profile, whose checks array is EMPTY — so those exercises
+// silently produced no form analysis at all while still advertising a FORM CHECK
+// button. Only 'squat' and 'pull' happened to line up.
+//
+// Mapping them here keeps one source of truth for "can we actually judge this?".
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Engine profile keys that declare real checks (biomechanics.ts PROFILES). */
+export type VisionCategory = 'squat' | 'deadlift' | 'lunge' | 'press' | 'pull' | 'curl';
+
+const CATEGORY_TO_VISION: Record<ExerciseForm['category'], VisionCategory | null> = {
+  squat:     'squat',
+  hinge:     'deadlift',
+  push:      'press',
+  pull:      'pull',
+  isolation: 'curl',
+  // A loaded carry has no rep cycle to measure — there is no honest profile for
+  // it, so it must not claim live form analysis.
+  carry:     null,
+};
+
+/** The engine category for an exercise, or null when we cannot judge it. */
+export function visionCategoryFor(form: ExerciseForm | null): VisionCategory | null {
+  return form ? CATEGORY_TO_VISION[form.category] : null;
+}
+
+/**
+ * Can the Form Coach genuinely analyse this exercise?
+ *
+ * The honest gate for showing a FORM CHECK affordance. False means the app has
+ * no biomechanical profile for the movement — better to offer nothing than to
+ * open a camera that watches and says nothing useful.
+ */
+export function hasVisionCoverage(exerciseName: string): boolean {
+  return visionCategoryFor(getExerciseForm(exerciseName)) !== null;
+}
