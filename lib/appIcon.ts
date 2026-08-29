@@ -83,15 +83,3 @@ export async function syncAppIconToCoach(personaId: PersonaId | string): Promise
     captureError(err, { where: 'syncAppIconToCoach', personaId, alias });
   }
 }
-
-/** Manual test (temporary Profile rows). Also deferred — returns a status. */
-export async function forceAppIcon(personaId: PersonaId | string): Promise<string> {
-  if (Platform.OS !== 'android') return 'android only';
-  const mod = NativeModules.AppIcon;
-  if (!mod?.setIcon) return 'native module missing';
-  const alias = PERSONA_TO_ALIAS[personaId] ?? 'Default';
-  pendingAlias = alias;
-  await AsyncStorage.setItem(PENDING_KEY, alias).catch(() => {});
-  ensureFlusher();
-  return `Queued ${alias}. Press Home (leave the app) and the icon recolors — no crash.`;
-}

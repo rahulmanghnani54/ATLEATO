@@ -109,24 +109,6 @@ export async function openChest(persona: PersonaTheme): Promise<Drop> {
   return drop;
 }
 
-/** Get the last opened drop (for the post-workout reveal animation). */
-export async function getLastDrop(): Promise<Drop | null> {
-  const raw = await AsyncStorage.getItem(KEY_LAST);
-  if (!raw) return null;
-  try { return JSON.parse(raw) as Drop; } catch { return null; }
-}
-
-export async function getChestStats(): Promise<{ opens: number; rarePlus: number }> {
-  const [o, r] = await Promise.all([
-    AsyncStorage.getItem(KEY_OPENS),
-    AsyncStorage.getItem(KEY_RARE),
-  ]);
-  return {
-    opens: parseInt(o ?? '0', 10) || 0,
-    rarePlus: parseInt(r ?? '0', 10) || 0,
-  };
-}
-
 // ─── Internals ──────────────────────────────────────────────────────────────
 
 /**

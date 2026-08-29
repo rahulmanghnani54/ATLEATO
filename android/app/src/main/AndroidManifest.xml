@@ -9,17 +9,28 @@
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" tools:node="remove"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+  <!-- Superseded by READ_MEDIA_IMAGES from API 33. Capped so the merged manifest
+       does not advertise broad storage access to Play review on modern devices. -->
+  <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
   <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
   <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
   <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+  <!-- SCHEDULE_EXACT_ALARM is the user-granted alarm permission and is the one we
+       actually use: notifeeCallScheduler checks settings.android.alarm and sends the
+       user to openAlarmPermissionSettings() when it is not enabled.
+       USE_EXACT_ALARM was REMOVED deliberately. It is auto-granted with no prompt, and
+       Play restricts it to alarm-clock/calendar/timer apps — a fitness app declaring it
+       is a policy rejection risk, and we do not need it given the runtime flow above.
+       SYSTEM_ALERT_WINDOW was REMOVED too: no code ever requests it (it requires an
+       explicit Settings grant to do anything), so it granted nothing and only widened
+       the permission surface a reviewer has to justify. Lock-screen call takeover comes
+       from USE_FULL_SCREEN_INTENT, which is kept. -->
   <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-  <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
-  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
   <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WAKE_LOCK"/>
-  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+  <!-- Ignored from API 29 (scoped storage). Capped so it is not advertised at all. -->
+  <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
   <queries>
     <intent>
       <action android:name="android.intent.action.VIEW"/>

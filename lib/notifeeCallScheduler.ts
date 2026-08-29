@@ -25,11 +25,22 @@ import notifee, {
   type TimestampTrigger,
 } from '@notifee/react-native';
 import * as Speech from 'expo-speech';
+// Only used to retire orphans left by the pre-notifee scheduler (clearStaleCalls).
+import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, Linking, PermissionsAndroid } from 'react-native';
 import { getPersona, type PersonaId } from './personaTheme';
+import {
+  getCallCopy as sharedCallCopy,
+  incomingCallTitle,
+  DECLINE_LINES,
+  DECLINE_VOICE,
+  type CallKind,
+} from './coachCallScheduler';
 
-export type CallKind = 'wakeup' | 'workout';
+// Declared once in coachCallScheduler; re-exported so existing importers of
+// either module keep working.
+export type { CallKind };
 
 // v3: the channel SOUND is cached at creation, so changing it requires a new
 // channel id. v2 used the system 'default' sound = a single notification "ding".
@@ -40,45 +51,28 @@ const CHANNEL_ID = 'coach-incoming-calls-v3';
 // Raw resource name for the ringtone (android/app/src/main/res/raw/coach_call.wav).
 const CALL_SOUND = 'coach_call';
 const ID_PREFIX  = 'coach-call:';
+/**
+ * How long the call rings before the OS retires it as a missed call.
+ *
+ * The notification is `ongoing` (non-dismissable) so it survives a stray swipe
+ * while the phone is actually ringing — but without a timeout that same flag
+ * makes an ignored call permanent: it cannot be swiped away, and it still reads
+ * as "your coach is calling" days later, even after calls have been turned off.
+ * 60s is roughly what a real carrier call rings for before going to voicemail.
+ */
+const RING_TIMEOUT_MS = 60_000;
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Voice copy per persona (mirrors coachCallScheduler.ts so behavior matches)
+// Voice copy per persona — single source in coachCallScheduler.
+//
+// This file used to keep its own WAKEUP/WORKOUT/DECLINE_LINES/DECLINE_VOICE
+// tables "mirroring" that file. They had drifted: dr_mike's workout body was
+// missing "deload Friday" here, and the titles used different casing, so the
+// preview in settings did not match the notification that actually fired.
 // ─────────────────────────────────────────────────────────────────────────────
 
-interface CallCopy { title: string; body: string }
-
-const WAKEUP: Record<PersonaId, CallCopy> = {
-  cbum:        { title: 'THE SCULPTOR',         body: "Good morning. The mat's ready. Are you?" },
-  arnold:      { title: 'The Monument',       body: 'Rise up, champion. Today is yours to take.' },
-  nippard:     { title: 'The Analyst', body: 'Morning check-in: hydrate, eat protein, get moving.' },
-  ct_fletcher: { title: 'The Commander',  body: 'WAKE THE HELL UP! I COMMAND YOU TO MOVE!' },
-  dr_mike:     { title: 'The Architect',      body: 'Mesocycle progress check — your day starts now.' },
-};
-const WORKOUT: Record<PersonaId, CallCopy> = {
-  cbum:        { title: 'THE SCULPTOR',         body: "Session time. Let's get to work — control every rep." },
-  arnold:      { title: 'The Monument',       body: 'The gym is waiting. The last three reps build the muscle.' },
-  nippard:     { title: 'The Analyst', body: 'Training window open. RIR 1-3 on top sets today.' },
-  ct_fletcher: { title: 'The Commander',  body: 'GET TO THAT GYM! NO EXCUSES! I COMMAND YOU TO GROW!' },
-  dr_mike:     { title: 'The Architect',      body: 'Volume window: now. Hit your sets, log the data.' },
-};
-const DECLINE_LINES: Record<PersonaId, string> = {
-  cbum:        "Not today? I'll be back. Set the bar higher tomorrow.",
-  arnold:      "There are no excuses. The iron does not wait. Rise.",
-  nippard:     "Adherence is your single biggest variable. Don't break the streak.",
-  ct_fletcher: "WHAT?! NO?! I COMMANDED YOU TO GET UP! NO EXCUSES! I'LL BE BACK!",
-  dr_mike:     "Compliance percentile just dropped. You're sabotaging your own mesocycle.",
-};
-const DECLINE_VOICE: Record<PersonaId, { pitch: number; rate: number }> = {
-  cbum:        { pitch: 1.00, rate: 0.95 },
-  arnold:      { pitch: 0.82, rate: 0.88 },
-  nippard:     { pitch: 1.05, rate: 1.05 },
-  ct_fletcher: { pitch: 0.92, rate: 1.10 },
-  dr_mike:     { pitch: 1.00, rate: 1.10 },
-};
-
-function getCallCopy(personaId: PersonaId, kind: CallKind): CallCopy {
-  const table = kind === 'wakeup' ? WAKEUP : WORKOUT;
-  return table[personaId] ?? table.cbum;
+function getCallCopy(personaId: PersonaId, kind: CallKind) {
+  return sharedCallCopy(getPersona(personaId), kind);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -181,7 +175,7 @@ export async function fireIncomingCall(args: {
 
   await notifee.displayNotification({
     id,
-    title: '📞  ' + copy.title + (isTest ? '  (TEST)' : '') + '  ·  INCOMING CALL',
+    title: copy.title + (isTest ? '  (TEST)' : ''),
     body: copy.body,
     data: { kind, personaId, callId: id, voice: persona.id },
     android: {
@@ -214,6 +208,12 @@ export async function fireIncomingCall(args: {
       loopSound: true,                            // ring continuously until answered/declined
       ongoing: true,                              // sticky — won't dismiss until interacted with
       autoCancel: false,
+      // A real call stops ringing and becomes a missed call. Without this the
+      // ONGOING flag makes an unanswered call sit in the tray FOREVER — the user
+      // cannot swipe it away, and days later it still reads as "the coach is
+      // calling", even after coach calls have been switched off. `timeoutAfter`
+      // is handled by the OS, so it still fires if the app is killed mid-ring.
+      timeoutAfter: RING_TIMEOUT_MS,
       visibility: AndroidVisibility.PUBLIC,
       timestamp: Date.now(),
       showTimestamp: true,
@@ -260,6 +260,52 @@ export async function cancelAllCalls(): Promise<void> {
   }
 }
 
+/**
+ * Clear stale call notifications at app start.
+ *
+ * A ringing call is a transient event: if the app is only now booting, any call
+ * still sitting in the tray was never answered and is stale by definition. It
+ * must be cleared, because `ongoing` means the user CANNOT swipe it away.
+ *
+ * This also retires the pre-notifee scheduler's orphans. `coachCallScheduler`
+ * used to schedule through expo-notifications under the id `coach-call:<kind>`,
+ * with no `sched-` segment. Nothing schedules those any more, but ones already
+ * on a device outlive the upgrade, and none of the current cancel paths match
+ * them: toggling calls off cancels `coach-call:sched-*`. So an ignored wake-up
+ * call from an old build stays in the tray permanently, in whichever coach's
+ * voice was active when it was scheduled — reading as a live call from a coach
+ * the user no longer has, months after they switched calls off.
+ */
+export async function clearStaleCalls(): Promise<void> {
+  try {
+    const displayed = await notifee.getDisplayedNotifications();
+    await Promise.all(
+      displayed
+        .filter((n) => n.id?.startsWith(ID_PREFIX))
+        .map((n) => notifee.cancelNotification(n.id!)),
+    );
+  } catch {
+    // Never let tray cleanup block startup.
+  }
+  // The legacy ids were created by expo-notifications, so they live in ITS
+  // scheduled set — notifee.getTriggerNotifications() does not list them.
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    await Promise.all(
+      scheduled
+        .filter((n) => {
+          const id = n.identifier ?? '';
+          return id.startsWith(ID_PREFIX) && !id.startsWith(SCHED_PREFIX);
+        })
+        .map((n) =>
+          Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}),
+        ),
+    );
+  } catch {
+    // noop
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SCHEDULED calls (daily) — the real fix for "scheduled wake-up never fires"
 // ─────────────────────────────────────────────────────────────────────────────
@@ -282,7 +328,21 @@ export async function ensureExactAlarmPermission(): Promise<boolean> {
   try {
     const settings = await notifee.getNotificationSettings();
     if (settings.android.alarm === AndroidNotificationSetting.ENABLED) return true;
-    try { await notifee.openAlarmPermissionSettings(); } catch { /* ignore */ }
+
+    // Send the user somewhere they can ACTUALLY grant it. Verified on Android 17:
+    // notifee.openAlarmPermissionSettings() lands on the generic App info page,
+    // which has no "Alarms & reminders" row at all — the user is stranded and the
+    // scheduled call never fires. This action opens the Alarms & reminders
+    // special-access list with our app in it instead.
+    // (The variant that opens our app's toggle directly needs a `package:` data
+    // URI, and RN's Linking.sendIntent can only send extras — so we use the list.)
+    try {
+      await Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM');
+    } catch {
+      // OEM without that action: fall back to notifee, then to app settings.
+      try { await notifee.openAlarmPermissionSettings(); }
+      catch { try { await Linking.openSettings(); } catch { /* ignore */ } }
+    }
     return false;
   } catch {
     return true; // older Android / API unavailable — exact alarms allowed
@@ -359,7 +419,7 @@ export async function scheduleIncomingCall(args: {
   // Same notification payload for every trigger — only the id varies.
   const notif = (id: string) => ({
     id,
-    title: '📞  ' + copy.title + '  ·  INCOMING CALL',
+    title: copy.title,
     body: copy.body,
     data: { kind, personaId, callId: id, voice: persona.id },
     android: {
@@ -487,7 +547,7 @@ export async function scheduleCallIn(minutes: number, kind: CallKind, personaId:
   await notifee.createTriggerNotification(
     {
       id,
-      title: '📞  ' + copy.title + '  ·  CALLING BACK',
+      title: incomingCallTitle(getPersona(personaId), 'CALLING BACK'),
       body: copy.body,
       data: { kind, personaId, callId: id, voice: persona.id },
       android: {

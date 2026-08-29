@@ -147,20 +147,6 @@ export async function getPrices(): Promise<Record<string, string>> {
   return out;
 }
 
-/** Store product ids the customer currently has an active subscription to. */
-export async function getActiveProductIds(): Promise<string[]> {
-  if (!configured) return [];
-  const purchases = loadSdk();
-  if (!purchases) return [];
-  try {
-    const info: CustomerInfo = await purchases.getCustomerInfo();
-    return activeProductIds(info);
-  } catch (e) {
-    if (__DEV__) console.log('[billing] getCustomerInfo failed', e);
-    return [];
-  }
-}
-
 /**
  * Buy a package. `id` accepts either a RevenueCat package identifier or a
  * store product id (PRODUCT_IDS in subscriptionManager are product ids) —

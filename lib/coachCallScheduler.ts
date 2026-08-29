@@ -33,55 +33,39 @@ const idFor = (kind: CallKind) => `${IDENTIFIER_PREFIX}${kind}`;
 
 interface CallCopy { title: string; body: string }
 
-const WAKEUP_LINES: Record<PersonaId, CallCopy> = {
-  cbum: {
-    title: '📞 THE SCULPTOR CALLING',
-    body: "Good morning. The mat's ready. Are you?",
-  },
-  arnold: {
-    title: '📞 THE MONUMENT CALLING',
-    body: 'Rise up, champion. Today is yours to take.',
-  },
-  nippard: {
-    title: '📞 THE ANALYST CALLING',
-    body: 'Morning check-in: hydrate, eat protein, get moving.',
-  },
-  ct_fletcher: {
-    title: '📞 THE COMMANDER CALLING',
-    body: 'WAKE THE HELL UP! I COMMAND YOU TO MOVE!',
-  },
-  dr_mike: {
-    title: '📞 THE ARCHITECT CALLING',
-    body: 'Mesocycle progress check — your day starts now.',
-  },
+// Bodies only. The TITLE is derived from `persona.shortName` — see
+// `incomingCallTitle`. It used to be stored per-persona here, in
+// notifeeCallScheduler AND in scarcityEngine, and those copies had already
+// drifted into different casing ("THE MONUMENT" vs "The Monument") for the
+// same coach, so the settings preview and the notification that actually
+// rang disagreed.
+const WAKEUP_BODIES: Record<PersonaId, string> = {
+  cbum:        "Good morning. The mat's ready. Are you?",
+  arnold:      'Rise up, champion. Today is yours to take.',
+  nippard:     'Morning check-in: hydrate, eat protein, get moving.',
+  ct_fletcher: 'WAKE THE HELL UP! I COMMAND YOU TO MOVE!',
+  dr_mike:     'Mesocycle progress check — your day starts now.',
 };
 
-const WORKOUT_LINES: Record<PersonaId, CallCopy> = {
-  cbum: {
-    title: '📞 THE SCULPTOR CALLING',
-    body: "Session time. Let's get to work — control every rep.",
-  },
-  arnold: {
-    title: '📞 THE MONUMENT CALLING',
-    body: 'The gym is waiting. The last three reps build the muscle.',
-  },
-  nippard: {
-    title: '📞 THE ANALYST CALLING',
-    body: 'Training window open. RIR 1-3 on top sets today.',
-  },
-  ct_fletcher: {
-    title: '📞 THE COMMANDER CALLING',
-    body: 'GET TO THAT GYM! NO EXCUSES! I COMMAND YOU TO GROW!',
-  },
-  dr_mike: {
-    title: '📞 THE ARCHITECT CALLING',
-    body: 'Volume window: now. Hit your sets, log the data, deload Friday.',
-  },
+const WORKOUT_BODIES: Record<PersonaId, string> = {
+  cbum:        "Session time. Let's get to work — control every rep.",
+  arnold:      'The gym is waiting. The last three reps build the muscle.',
+  nippard:     'Training window open. RIR 1-3 on top sets today.',
+  ct_fletcher: 'GET TO THAT GYM! NO EXCUSES! I COMMAND YOU TO GROW!',
+  dr_mike:     'Volume window: now. Hit your sets, log the data, deload Friday.',
 };
+
+/**
+ * The exact title a fired call notification shows. The settings preview renders
+ * this same string, so what the user is shown is literally what will ring.
+ */
+export function incomingCallTitle(persona: PersonaTheme, suffix = 'INCOMING CALL'): string {
+  return `📞  ${persona.shortName}  ·  ${suffix}`;
+}
 
 export function getCallCopy(persona: PersonaTheme, kind: CallKind): CallCopy {
-  const table = kind === 'wakeup' ? WAKEUP_LINES : WORKOUT_LINES;
-  return table[persona.id] ?? table.cbum;
+  const bodies = kind === 'wakeup' ? WAKEUP_BODIES : WORKOUT_BODIES;
+  return { title: incomingCallTitle(persona), body: bodies[persona.id] ?? bodies.cbum };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -101,17 +85,6 @@ export function configureNotificationHandler() {
       shouldSetBadge: false,
     }),
   });
-}
-
-/** Ensure we have permission to send notifications. Returns final status. */
-export async function ensureNotificationPermission(): Promise<'granted' | 'denied' | 'undetermined'> {
-  const current = await Notifications.getPermissionsAsync();
-  if (current.status === 'granted') return 'granted';
-  const next = await Notifications.requestPermissionsAsync({
-    android: { allowAlert: true, allowSound: true } as any,
-    ios: { allowAlert: true, allowSound: true },
-  } as any);
-  return (next.status as any) ?? 'undetermined';
 }
 
 /**
@@ -176,7 +149,7 @@ const RING_INTERVAL_SEC   = 4;       // 6 rings × 4s ≈ 25s of "ringing"
 const NOEXCUSES_DELAY_SEC = 60;
 
 /** Persona-specific "you said no? Wrong." line — spoken via TTS when DECLINE pressed. */
-const DECLINE_LINES: Record<PersonaId, string> = {
+export const DECLINE_LINES: Record<PersonaId, string> = {
   cbum:        "Not today? I'll be back. Set the bar higher tomorrow.",
   arnold:      "There are no excuses. The iron does not wait. Rise.",
   nippard:     "Adherence is your single biggest variable. Don't break the streak.",
@@ -184,8 +157,9 @@ const DECLINE_LINES: Record<PersonaId, string> = {
   dr_mike:     "Compliance percentile just dropped. You're sabotaging your own mesocycle.",
 };
 
-/** Voice profile per persona (mirrors the one in voiceCues.ts — kept local for self-containment). */
-const DECLINE_VOICE: Record<PersonaId, { pitch: number; rate: number }> = {
+/** Voice profile per persona. Shared with notifeeCallScheduler, which used to
+ *  keep a byte-identical copy of this table. */
+export const DECLINE_VOICE: Record<PersonaId, { pitch: number; rate: number }> = {
   cbum:        { pitch: 1.00, rate: 0.95 },
   arnold:      { pitch: 0.82, rate: 0.88 },
   nippard:     { pitch: 1.05, rate: 1.05 },
@@ -193,141 +167,12 @@ const DECLINE_VOICE: Record<PersonaId, { pitch: number; rate: number }> = {
   dr_mike:     { pitch: 1.00, rate: 1.10 },
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Scheduling
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Schedule (or replace) one of the two daily coach calls.
- *
- * Cancels any prior notification with the same identifier so we never
- * end up with stale or duplicate reminders.
- */
-export async function scheduleCoachCall(args: {
-  kind: CallKind;
-  hour: number;
-  minute: number;
-  personaId: PersonaId;
-}): Promise<void> {
-  const { kind, hour, minute, personaId } = args;
-  const persona = getPersona(personaId);
-  const copy = getCallCopy(persona, kind);
-
-  // Always cancel the prior schedule for this kind first
-  await cancelCoachCall(kind);
-
-  await Notifications.scheduleNotificationAsync({
-    identifier: idFor(kind),
-    content: {
-      title: copy.title,
-      body: copy.body,
-      sound: 'default',
-      data: { kind, personaId, snoozeable: true },
-      categoryIdentifier: CATEGORY_ID,        // ANSWER / SNOOZE buttons
-      sticky: true,                            // stays until tapped
-      autoDismiss: false,
-      ...(Platform.OS === 'android'
-        ? ({
-            channelId: CHANNEL_ID,
-            priority: Notifications.AndroidNotificationPriority.MAX,
-          } as any)
-        : {}),
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute,
-    } as any,
-  });
-}
-
-/** Cancel a specific coach call. Safe to call even if none is scheduled. */
-export async function cancelCoachCall(kind: CallKind): Promise<void> {
-  try {
-    await Notifications.cancelScheduledNotificationAsync(idFor(kind));
-  } catch {
-    // ignore — nothing was scheduled
-  }
-}
-
-/** List currently-scheduled coach calls (for debugging / status). */
-export async function listScheduledCoachCalls(): Promise<Array<{ kind: CallKind; identifier: string }>> {
-  const all = await Notifications.getAllScheduledNotificationsAsync();
-  return all
-    .filter((n) => n.identifier.startsWith(IDENTIFIER_PREFIX))
-    .map((n) => ({
-      kind: n.identifier.replace(IDENTIFIER_PREFIX, '') as CallKind,
-      identifier: n.identifier,
-    }));
-}
-
-/**
- * Fire a TEST coach call right now using the full ringing-chain experience.
- * Fires 6 notifications spaced ~4s apart over ~25 seconds — gives the user a
- * real "incoming call" ringing feel using the alarm-grade channel sound,
- * without bundling a custom audio file.
- *
- * Tap ANSWER on any of them → opens app, cancels remaining rings.
- * Tap DECLINE → coach speaks "no excuses" line + schedules angry follow-up.
- */
-export async function sendTestCall(args: { kind: CallKind; personaId: PersonaId }): Promise<void> {
-  await fireRingingChain({ ...args, isTest: true });
-}
-
-/**
- * The core ringing-chain: schedules 1 main + N follow-up notifications spaced
- * `RING_INTERVAL_SEC` apart. Each one plays the channel's alarm sound +
- * vibration. Visually they look like an incoming call that keeps ringing.
- */
-async function fireRingingChain(args: {
-  kind: CallKind;
-  personaId: PersonaId;
-  isTest?: boolean;
-}): Promise<void> {
-  const { kind, personaId, isTest } = args;
-  const persona = getPersona(personaId);
-  const copy = getCallCopy(persona, kind);
-  const baseId = `${IDENTIFIER_PREFIX}RING-${kind}`;
-
-  // Clean up any prior ring chain so we don't double up
-  await cancelRingingChain(kind);
-
-  const ringContent = (ringIdx: number) => ({
-    title: copy.title + (isTest ? ' (TEST)' : '') + (ringIdx > 0 ? `  ·  ${ringIdx + 1}` : ''),
-    body: copy.body,
-    sound: 'default',
-    data: { kind, personaId, ring: ringIdx, test: !!isTest },
-    categoryIdentifier: CATEGORY_ID,
-    sticky: true,
-    autoDismiss: false,
-    ...(Platform.OS === 'android'
-      ? ({
-          channelId: CHANNEL_ID,
-          priority: Notifications.AndroidNotificationPriority.MAX,
-        } as any)
-      : {}),
-  });
-
-  // Main ring fires immediately
-  await Notifications.scheduleNotificationAsync({
-    identifier: `${baseId}-0`,
-    content: ringContent(0),
-    trigger: null, // null = fire immediately
-  });
-
-  // Follow-up rings stretch the experience to ~25 seconds
-  for (let i = 1; i <= FOLLOWUP_RING_COUNT; i++) {
-    await Notifications.scheduleNotificationAsync({
-      identifier: `${baseId}-${i}`,
-      content: ringContent(i),
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-        seconds: i * RING_INTERVAL_SEC,
-        repeats: false,
-      } as any,
-    });
-  }
-}
+// NOTE: daily coach calls are scheduled by `notifeeCallScheduler`, not here.
+// The expo-notifications scheduler that used to live in this file was removed:
+// it wrote ids of the form `coach-call:<kind>`, which none of the current cancel
+// paths match (they target `coach-call:sched-*`), so an unanswered call could sit
+// in the tray forever with no way to dismiss it. `clearStaleCalls()` retires the
+// ones already on devices. Do not reintroduce scheduling here.
 
 /**
  * Cancel all pending follow-up rings AND dismiss any visible rings for `kind`.

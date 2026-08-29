@@ -49,10 +49,6 @@ export async function getTomorrowIntention(): Promise<Intention | null> {
   return getIntention(tomorrowISO());
 }
 
-export async function getTodayIntention(): Promise<Intention | null> {
-  return getIntention(todayISO());
-}
-
 /** Save a commitment for a specific date. */
 export async function setIntention(args: Omit<Intention, 'setAt'>): Promise<Intention> {
   const intention: Intention = { ...args, setAt: new Date().toISOString() };
@@ -62,10 +58,6 @@ export async function setIntention(args: Omit<Intention, 'setAt'>): Promise<Inte
     // best effort
   }
   return intention;
-}
-
-export async function clearIntention(dateISO: string): Promise<void> {
-  try { await AsyncStorage.removeItem(`${KEY_PREFIX}${dateISO}`); } catch { /* ignore */ }
 }
 
 /** Sweep AsyncStorage and delete any intention keys older than today. */

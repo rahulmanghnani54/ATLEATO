@@ -25,8 +25,6 @@ export interface ProgressionSuggestion {
   reason: string;
 }
 
-export type ProgressionType = 'increase_weight' | 'increase_reps' | 'maintain' | 'deload';
-
 // Increment sizes by muscle group — lower body lifts use larger jumps
 const LOWER_BODY_EXERCISES = ['squat', 'deadlift', 'leg press', 'hack squat', 'lunge', 'leg curl', 'leg extension', 'calf'];
 const LARGE_INCREMENT = 2.5;

@@ -40,7 +40,7 @@ import {
   declineCoachCall, cancelRingingChain,
 } from '@/lib/coachCallScheduler';
 import {
-  setupCallChannel, registerCallEventHandler,
+  setupCallChannel, registerCallEventHandler, clearStaleCalls,
 } from '@/lib/notifeeCallScheduler';
 import {
   handleWakeupBackground,
@@ -335,6 +335,11 @@ function RootLayout() {
           await notifee.cancelNotification(WORKOUT_SESSION_NOTIF_ID);
         }
       } catch { /* a stuck chip must never block startup */ }
+      // Same class of bug, different notification: an unanswered call is also
+      // `ongoing`, so it cannot be swiped away. If we are only booting now, no
+      // call is genuinely ringing — clear anything left over, including the
+      // pre-notifee scheduler's orphans that no cancel path matches.
+      await clearStaleCalls();
     })();
   }, []);
 

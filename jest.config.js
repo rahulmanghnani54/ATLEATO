@@ -5,9 +5,10 @@ module.exports = {
   roots: ['<rootDir>/__tests__'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    '^@tensorflow-models/pose-detection$': '<rootDir>/stubs/pose-detection-stub.js',
-    '^@tensorflow/tfjs$': '<rootDir>/stubs/mediapipe-stub.js',
     '^expo-.*$': '<rootDir>/stubs/expo-stub.js',
+    // Reuses metro's web stub: a proxy that answers any property access, which
+    // is all a Node test needs from react-native (Platform, StyleSheet, …).
+    '^react-native$': '<rootDir>/stubs/native-web-stub.js',
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: 'tsconfig.json' }],

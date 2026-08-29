@@ -33,8 +33,7 @@
 // telephony permissions (CALL_PHONE / READ_PHONE_STATE / MANAGE_OWN_CALLS /
 // telecom binding) are a Google Play rejection risk for a non-dialer app.
 import notifee, {
-  TriggerType, AndroidImportance, AndroidVisibility, AndroidCategory,
-  type TimestampTrigger,
+  AndroidImportance, AndroidVisibility, AndroidCategory,
 } from '@notifee/react-native';
 import { Platform } from 'react-native';
 import { Audio, InterruptionModeAndroid, InterruptionModeIOS } from 'expo-av';
@@ -42,7 +41,6 @@ import { getPersona, type PersonaId } from './personaTheme';
 import { getActiveRingtoneSource } from './ringtonePreference';
 
 const RING_CHANNEL = 'atleato-wakeup-call';
-const WAKEUP_NOTIFEE_ID_PREFIX = 'atleato-wakeup:';
 
 // ─── Trigger an incoming call NOW ───────────────────────────────────────────
 
@@ -263,99 +261,13 @@ export interface WakeupSchedule {
   daysOfWeek?: number[];  // 0=Sun..6=Sat, undefined = every day
 }
 
-/**
- * Schedule a wake-up call at the given local time. Internally we use a
- * Notifee TimestampTrigger so the alarm fires even if the app is killed.
- * The trigger's onForegroundEvent / onBackgroundEvent should call
- * `triggerIncomingCall` to escalate the alarm into a real ring.
- */
-export async function scheduleWakeupCall(s: WakeupSchedule): Promise<string> {
-  await ensureChannel();
-  const next = nextOccurrence(s.hour, s.minute, s.daysOfWeek);
-  const trigger: TimestampTrigger = {
-    type: TriggerType.TIMESTAMP,
-    timestamp: next.getTime(),
-    alarmManager: { allowWhileIdle: true },
-  };
-  const id = await notifee.createTriggerNotification(
-    {
-      title: 'Wake up — coach calling',
-      body: `Your ${getPersona(s.persona).shortName} call is incoming.`,
-      data: { kind: 'wakeup-call', persona: s.persona },
-      android: {
-        channelId: RING_CHANNEL,
-        importance: AndroidImportance.HIGH,
-        visibility: AndroidVisibility.PUBLIC,
-        category: AndroidCategory.CALL,
-        // fullScreenAction takes over the lock screen, then our background
-        // handler upgrades it into a real ring via CallKeep.
-        fullScreenAction: { id: 'default', launchActivity: 'default' },
-        pressAction:      { id: 'default', launchActivity: 'default' },
-      },
-    },
-    trigger,
-  );
-  return id;
-}
-
-export async function cancelWakeupCall(id: string): Promise<void> {
-  await notifee.cancelTriggerNotification(id);
-}
-
 // ─── Snooze: re-call N minutes after a decline ──────────────────────────────
 
 const SNOOZE_NOTIF_ID = 'atleato-wakeup-snooze';
 
-/**
- * Schedule a wake-up follow-up call to fire in `minutes` minutes. Called from
- * /incoming-call's handleDecline so the coach doesn't take "no" for an
- * answer — same psychology as a snooze alarm but feels like the coach
- * calling back.
- *
- * If a snooze is already queued, it's replaced (no stacking).
- */
-export async function scheduleSnoozeCall(opts: {
-  persona: PersonaId;
-  minutes?: number;
-}): Promise<void> {
-  await ensureChannel();
-  const minutes = opts.minutes ?? 5;
-  // Cancel any existing snooze first — last decline wins
-  try { await notifee.cancelTriggerNotification(SNOOZE_NOTIF_ID); } catch { /* ignore */ }
-
-  const trigger: TimestampTrigger = {
-    type: TriggerType.TIMESTAMP,
-    timestamp: Date.now() + minutes * 60 * 1000,
-    alarmManager: { allowWhileIdle: true },
-  };
-
-  await notifee.createTriggerNotification(
-    {
-      id: SNOOZE_NOTIF_ID,
-      title: `${getPersona(opts.persona).shortName} calling back`,
-      body: `You declined. ${minutes} minutes is up — answer this time.`,
-      data: { kind: 'wakeup-call', persona: opts.persona, snooze: 'true' },
-      android: {
-        channelId: RING_CHANNEL,
-        importance: AndroidImportance.HIGH,
-        visibility: AndroidVisibility.PUBLIC,
-        category: AndroidCategory.CALL,
-        fullScreenAction: { id: 'default', launchActivity: 'default' },
-        pressAction:      { id: 'default', launchActivity: 'default' },
-      },
-    },
-    trigger,
-  );
-}
-
 /** Cancel a pending snooze (e.g. user answered the second call). */
 export async function cancelSnoozeCall(): Promise<void> {
   try { await notifee.cancelTriggerNotification(SNOOZE_NOTIF_ID); } catch { /* ignore */ }
-}
-
-export async function listScheduledWakeupIds(): Promise<string[]> {
-  const ids = await notifee.getTriggerNotificationIds();
-  return ids.filter((x) => x.startsWith(WAKEUP_NOTIFEE_ID_PREFIX));
 }
 
 // ─── Background event handler hook ──────────────────────────────────────────
@@ -407,22 +319,6 @@ async function ensureChannel(): Promise<void> {
     vibrationPattern: [300, 800, 300, 800, 300, 800, 300, 800],
     bypassDnd: true,
   });
-}
-
-/** Compute the next absolute Date for the given local hour:minute. */
-function nextOccurrence(hour: number, minute: number, daysOfWeek?: number[]): Date {
-  const now = new Date();
-  const target = new Date(now);
-  target.setHours(hour, minute, 0, 0);
-  // If the time has already passed today, push to tomorrow
-  if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1);
-  // If daysOfWeek is provided, advance until we land on one
-  if (daysOfWeek && daysOfWeek.length > 0) {
-    while (!daysOfWeek.includes(target.getDay())) {
-      target.setDate(target.getDate() + 1);
-    }
-  }
-  return target;
 }
 
 /** RFC4122-style v4 UUID without bringing in a dep. */

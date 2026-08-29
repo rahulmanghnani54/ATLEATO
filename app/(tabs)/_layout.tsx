@@ -154,6 +154,12 @@ export default function TabsLayout() {
           {
             bottom: insets.bottom + BAR_GAP,
             shadowColor: tokens.crown,
+            // Android draws no blur (intensity 0), so the pill cannot depend on
+            // the BlurView painting anything. Giving the bar itself the surface
+            // colour guarantees an opaque pill even if that layer no-ops; the
+            // barClip radius below keeps it pill-shaped. iOS stays transparent
+            // so its real blur shows through.
+            ...(Platform.OS === 'android' ? { backgroundColor: tokens.tabBar } : null),
           },
           // iOS draws the shadow off the view's bounds, so the bar must not
           // clip; the BlurView rounds itself instead. Android clips here and
@@ -199,8 +205,16 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   bar: {
     position: 'absolute',
-    left: BAR_INSET,
-    right: BAR_INSET,
+    // start/end, NOT left/right. BottomTabBar's own base style pins the bar with
+    // `start: 0, end: 0` (its styles.bottom), and Yoga resolves the logical
+    // start/end AFTER left/right no matter which order the styles are merged in.
+    // So `left: BAR_INSET, right: BAR_INSET` here lost to its zeros and the pill
+    // rendered edge-to-edge: measured on device at [0,2127]-[1080,2295], full
+    // 1080px width instead of the expected 42px inset. Overriding the same two
+    // properties it sets is what actually wins. (`height` and `bottom` looked
+    // fine throughout precisely because nothing upstream sets those.)
+    start: BAR_INSET,
+    end: BAR_INSET,
     height: BAR_HEIGHT,
     borderRadius: BAR_RADIUS,
     // No welded edge: the bar floats, so the top border and the opaque
@@ -223,13 +237,20 @@ const styles = StyleSheet.create({
     borderRadius: BAR_RADIUS,
     overflow: 'hidden',
   },
-  // Without a real blur behind it the tint has to carry the surface alone.
-  tint: { opacity: Platform.OS === 'ios' ? 0.58 : 0.98 },
+  // Without a real blur behind it the tint has to carry the surface alone, so on
+  // Android it must be FULLY opaque. At 0.98 those 2% let scrolling content read
+  // straight through the pill — "Recovery check-in" was legible across the tab
+  // labels. iOS keeps 0.58 because there is a genuine blur behind it there.
+  tint: { opacity: Platform.OS === 'ios' ? 0.58 : 1 },
   rim: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: BAR_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
   },
+  // NOTE: tabBarItemStyle lands on BottomTabItem's OUTER View. The vertical
+  // alignment (`justifyContent: 'flex-start'`) lives on the INNER pressable and
+  // no public prop reaches it — so centering has to happen in iconWrap below,
+  // not here.
   tabItem: {
     height: BAR_HEIGHT,
     paddingVertical: 0,
@@ -242,7 +263,17 @@ const styles = StyleSheet.create({
   // padding = 55.6pt at Android's narrowest common width, so widening the slot
   // to LABEL_SLOT still leaves air on both sides. Overriding here rather than
   // inside TabIcon keeps the badge, which anchors to this slot, correctly placed.
-  iconWrap: { width: LABEL_SLOT },
+  // `flex: 1` is what centers the tab contents vertically, and it is load-
+  // bearing. TabBarIcon's own wrapper is a FIXED 31x28 box (its wrapperUikit),
+  // while our icon+label+dot stack is ~41dp tall — so it overflowed the box and,
+  // because the pressable around it lays out `flex-start`, everything sat jammed
+  // against the top of the pill: measured on device at content 2127-2236 inside
+  // a 2127-2295 item, i.e. 0px of space above and 59px below, with the icon
+  // glyph clipped by the pill's rounded top edge. Filling the pressable instead
+  // lets `item`'s own centering do the work, and it stays correct whatever
+  // padding the pressable applies. Our style is merged AFTER wrapperUikit, which
+  // is the only reason the fixed height can be overridden at all.
+  iconWrap: { width: LABEL_SLOT, flex: 1, justifyContent: 'center' },
   item: {
     alignItems: 'center',
     justifyContent: 'center',

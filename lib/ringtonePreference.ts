@@ -112,24 +112,3 @@ export async function getActiveRingtoneSource(): Promise<AVPlaybackSource> {
   return meta.asset;
 }
 
-/**
- * Same as getActiveRingtoneSource but returns the bundle metadata if the
- * preference is bundled. Useful for the picker UI's "currently selected"
- * indicator.
- */
-export async function describeActiveRingtone(): Promise<{
-  label: string;
-  detail: string;
-  emoji: string;
-}> {
-  const pref = await getRingtonePref();
-  if (pref.kind === 'file') {
-    return {
-      label: pref.filename ?? 'Custom file',
-      detail: 'From your device storage',
-      emoji: '📁',
-    };
-  }
-  const meta = BUNDLED_RINGTONES.find((b) => b.key === pref.bundle) ?? BUNDLED_RINGTONES[0];
-  return { label: meta.label, detail: meta.tagline, emoji: meta.emoji };
-}

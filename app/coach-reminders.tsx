@@ -24,9 +24,6 @@ import { useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useCoachReminders } from '@/hooks/useCoachReminders';
 import { getCallCopy, getNextFiringDate, type CallKind } from '@/lib/coachCallScheduler';
-import { fireIncomingCall, ensureNotifeePermission } from '@/lib/notifeeCallScheduler';
-import { triggerIncomingCall } from '@/lib/wakeupCalls';
-import { AuthorizationStatus } from '@notifee/react-native';
 import { personaAccent, styleText } from '@/lib/personaTheme';
 import { Fonts } from '@/constants/theme';
 import { CanvasScreen, Crown, Hairline, ListRow, Section } from '@/components/ui/canvas';
@@ -86,62 +83,6 @@ export default function CoachRemindersScreen() {
         'Enable notifications for Evulto in your phone Settings, then try again.',
       );
     }
-  };
-
-  /**
-   * Fire a real Notifee-backed CALL notification right now so the user can
-   * see/feel the actual incoming-call UI (not just a notification banner).
-   *
-   * First: explicitly request notification permission — triggers the Android
-   * 13+ POST_NOTIFICATIONS popup the very first time, or opens app Settings
-   * if previously denied.
-   */
-  const handleTestCall = async (kind: CallKind) => {
-    // 1. Permission request — triggers Android 13 popup OR opens settings
-    let status: AuthorizationStatus;
-    try {
-      status = await ensureNotifeePermission();
-    } catch (e: any) {
-      Alert.alert('Permission request failed', e?.message ?? String(e));
-      return;
-    }
-    if (status === AuthorizationStatus.DENIED) {
-      Alert.alert(
-        'Notifications blocked',
-        'Opened your phone settings — turn on Notifications for Evulto and try again.',
-      );
-      return;
-    }
-
-    // 2. Fire the incoming call: a full-screen Notifee ring + looping ringtone
-    //    (triggerIncomingCall → startPersistentRing). Full volume, vibration,
-    //    and a lock-screen takeover via the full-screen intent — what actually
-    //    wakes people up. Plain notifications get slept through.
-    try {
-      await triggerIncomingCall({
-        persona: persona.id,
-        reason: kind === 'wakeup' ? 'WAKE UP' : 'WORKOUT TIME',
-      });
-    } catch (e: any) {
-      // Fall back to the scheduled-notification path if the ring fails to start.
-      if (__DEV__) console.warn('[wakeup] ring fire failed, falling back:', e?.message);
-      try {
-        await fireIncomingCall({ kind, personaId: persona.id, isTest: true });
-      } catch (e2: any) {
-        Alert.alert(
-          'Could not start call',
-          `Reason: ${e2?.message ?? String(e2)}\n\nCheck: Notifications + Battery → Unrestricted for Evulto.`,
-        );
-        return;
-      }
-    }
-
-    // Also open the in-app call UI immediately so testing on an unlocked
-    // screen still feels like a call.
-    router.push({
-      pathname: '/incoming-call',
-      params: { kind, personaId: persona.id },
-    } as any);
   };
 
   /**
@@ -266,7 +207,6 @@ export default function CoachRemindersScreen() {
                   accent={pa.accent}
                   accentText={pa.accentText}
                   nextFireLabel={prefs.wakeupEnabled ? formatNextFire(prefs.wakeupHour, prefs.wakeupMinute) : undefined}
-                  onTestPress={() => handleTestCall('wakeup')}
                 />
 
                 <Hairline />
@@ -284,7 +224,6 @@ export default function CoachRemindersScreen() {
                   accent={pa.accent}
                   accentText={pa.accentText}
                   nextFireLabel={prefs.workoutEnabled ? formatNextFire(prefs.workoutHour, prefs.workoutMinute) : undefined}
-                  onTestPress={() => handleTestCall('workout')}
                 />
               </Section>
 
@@ -334,7 +273,7 @@ export default function CoachRemindersScreen() {
 
 function ReminderBlock({
   icon, title, enabled, onToggle, time, onPressTime, previewTitle, previewBody,
-  accent, accentText, nextFireLabel, onTestPress,
+  accent, accentText, nextFireLabel,
 }: {
   icon: string;
   title: string;
@@ -347,7 +286,6 @@ function ReminderBlock({
   accent: string;
   accentText: string;
   nextFireLabel?: string;
-  onTestPress: () => void;
 }) {
   const { tokens } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -407,21 +345,6 @@ function ReminderBlock({
         <Text style={styles.previewTitle}>{previewTitle}</Text>
         <Text style={styles.previewBody}>{previewBody}</Text>
       </View>
-
-      {/* TEST NOW button — always available, even when reminder is off */}
-      <PressableScale
-        onPress={onTestPress}
-        haptic="heavy"
-        scaleTo={0.97}
-        accessibilityRole="button"
-        accessibilityLabel="Test now, fires in 5 seconds"
-        style={[styles.testBtn, { borderColor: accentText }]}
-      >
-        <Text style={[styles.testBtnText, { color: accentText }]} numberOfLines={1}>
-          ▶  Test now
-        </Text>
-        <Text style={styles.testBtnHint} numberOfLines={1}>Fires in 5 seconds</Text>
-      </PressableScale>
     </View>
   );
 }
@@ -522,27 +445,6 @@ const makeStyles = (t: SemanticTokens) => StyleSheet.create({
     fontSize: 12.5,
     lineHeight: 18,
     color: t.textSecondary,
-  },
-
-  testBtn: {
-    marginTop: 14,
-    paddingVertical: 13,
-    borderWidth: 1,
-    borderRadius: 24,
-    alignItems: 'center',
-    gap: 3,
-  },
-  testBtnText: {
-    fontFamily: Fonts.displayMedium,
-    fontSize: 12.5,
-    letterSpacing: 0.6,
-  },
-  testBtnHint: {
-    fontFamily: Fonts.legacyMono,
-    fontSize: 8,
-    letterSpacing: 1.3,
-    textTransform: 'uppercase',
-    color: t.textTertiary,
   },
 
   // ── Permission notice ──────────────────────────────────────────────────────

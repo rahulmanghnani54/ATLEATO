@@ -8,8 +8,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { getDayOfYear } from 'date-fns';
+import { getPersona, type PersonaId } from './personaTheme';
 
-export type PersonaId = 'cbum' | 'arnold' | 'nippard' | 'ct_fletcher' | 'dr_mike';
+// Re-exported for existing importers; the union itself lives in personaTheme.
+export type { PersonaId };
 
 // ─── Daily tips: 7 per coach ────────────────────────────────────────────────
 
@@ -124,15 +126,6 @@ export async function markTipSeen(personaId: PersonaId): Promise<void> {
   }
 }
 
-/** Coach short-name for notification copy */
-const COACH_NAMES: Record<PersonaId, string> = {
-  cbum: 'THE SCULPTOR',
-  arnold: 'The Monument',
-  nippard: 'The Analyst',
-  ct_fletcher: 'The Commander',
-  dr_mike: 'The Architect',
-};
-
 /**
  * Schedule a local notification at 6pm today saying:
  * "[Coach] has a tip for you — expires at 9pm tonight"
@@ -160,7 +153,7 @@ export async function scheduleScarcityNotification(personaId: PersonaId): Promis
     // If 6pm is already past, skip (tip expires at 9pm, no point notifying after)
     if (fireAt.getTime() <= Date.now()) return;
 
-    const coachName = COACH_NAMES[personaId] ?? 'Your coach';
+    const coachName = getPersona(personaId).shortName;
 
     await Notifications.scheduleNotificationAsync({
       content: {

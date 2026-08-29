@@ -97,22 +97,6 @@ export async function addCustomFood(input: CustomFoodInput): Promise<FoodItem> {
   return food;
 }
 
-/** Delete a custom food by id. Returns true if it existed. */
-export async function deleteCustomFood(id: string): Promise<boolean> {
-  await ensureLoaded();
-  const before = cache.length;
-  cache = cache.filter((f) => f.id !== id);
-  if (cache.length === before) return false;
-  await flush();
-  return true;
-}
-
-/** Return all custom foods (newest first). */
-export async function getAllCustomFoods(): Promise<FoodItem[]> {
-  await ensureLoaded();
-  return [...cache];
-}
-
 /**
  * Fuzzy search across the user's custom foods.
  * Same matching rules as the global DB: multi-word, partial-match, scored.

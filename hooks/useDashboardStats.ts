@@ -183,16 +183,3 @@ export function useProgramSchedule() {
     staleTime: 60 * 60 * 1000, // 1 hour — program doesn't change often
   });
 }
-
-// ── Program week number (weeks since account creation) ───────────────────────
-export function useProgramWeek() {
-  const profile = useAuthStore((s) => s.profile);
-
-  if (!profile) return 1;
-  // Use created_at field from profile
-  const createdAt = (profile as any).created_at;
-  if (!createdAt) return 1;
-  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-  const week = Math.floor((Date.now() - new Date(createdAt).getTime()) / msPerWeek) + 1;
-  return Math.min(week, 52); // cap at 52
-}
