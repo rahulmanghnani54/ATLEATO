@@ -28,13 +28,19 @@ type Tier = 'free' | 'pro' | 'legend';
 
 const TIER_RANK: Record<Tier, number> = { free: 0, pro: 1, legend: 2 };
 
+// Tiers are cumulative — canAccess compares RANKS, so legend already includes
+// everything marked 'pro'. Moving a key to 'legend' therefore does not add to
+// legend; it removes from pro. Only worth doing when the feature genuinely
+// belongs to legend's story.
 const FEATURE_TIER: Record<FeatureKey, Tier> = {
   ai_form_coach:      'pro',
   reward_chests:       'pro',
   physique_photos:     'pro',
-  custom_ringtone:     'pro',
   unlimited_freezes:   'pro',
   food_scan:           'pro',
+  // Ringtone sits with voice_customization: together they are "make the coach
+  // sound like yours", which is legend's pitch. Cosmetic, so pro loses little.
+  custom_ringtone:     'legend',
   snooze_recalls:      'legend',
   video_review:        'legend',
   voice_customization: 'legend',
@@ -45,7 +51,9 @@ const FEATURE_LABELS: Record<FeatureKey, string> = {
   reward_chests:       'Reward Chests & Leaderboards',
   physique_photos:     'Physique Progress Photos',
   custom_ringtone:     'Custom Ringtone Picker',
-  unlimited_freezes:   'Unlimited Streak Freezes',
+  // NOT "unlimited" — streakFreezes grants MAX_FREEZES_PRO = 3 against free's 1.
+  // The old label promised something a paying user disproves in a week.
+  unlimited_freezes:   '3 Streak Freezes',
   food_scan:           'AI Food Scanner',
   snooze_recalls:      '5-Min Snooze Re-Calls',
   video_review:        'Advanced Form AI & Video Review',

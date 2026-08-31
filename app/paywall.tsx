@@ -53,21 +53,26 @@ const FALLBACK_PRICES: Record<string, string> = {
   [PRODUCT_IDS.LEGEND_YEARLY]:  '$191.90',
 };
 
+// These bullets must match FEATURE_TIER in lib/featureGates.ts — that file is
+// what actually gates the app, and a bullet it does not back is a promise the
+// product breaks. "Unlimited Streak Freezes" was exactly that (pro gets 3), and
+// the AI Food Scanner was gated at pro but never advertised.
 const PRO_FEATURES = [
   '3 Legend Coaches',
   'AI Form Correction (Live)',
+  'AI Food Scanner',
   'Reward Chests + Leaderboards',
   'Physique Progress Photos',
-  'Custom Ringtone Picker',
-  'Unlimited Streak Freezes',
+  '3 Streak Freezes',
 ];
 
 const LEGEND_FEATURES = [
   'All 5 Legend Coaches',
   'Everything in Pro',
+  'Coach Voice Customization',
+  'Custom Ringtone Picker',
   '5-Min Snooze Re-Calls',
   'Advanced Form AI + Video Review',
-  'Coach Voice Customization',
 ];
 
 export default function PaywallScreen() {

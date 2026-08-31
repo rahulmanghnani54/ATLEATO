@@ -25,12 +25,15 @@ const PRO_FEATURES: FeatureKey[] = [
   'ai_form_coach',
   'reward_chests',
   'physique_photos',
-  'custom_ringtone',
   'unlimited_freezes',
   'food_scan',
 ];
 
+// custom_ringtone moved up from pro: it pairs with voice_customization as
+// legend's "make the coach sound like yours" pair. Tiers are cumulative, so
+// legend still grants every PRO_FEATURES key above.
 const LEGEND_FEATURES: FeatureKey[] = [
+  'custom_ringtone',
   'snooze_recalls',
   'video_review',
   'voice_customization',

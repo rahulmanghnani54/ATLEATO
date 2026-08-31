@@ -73,11 +73,22 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
+/**
+ * Longest the app will wait for the profile before releasing the UI. Generous
+ * enough to cover a cold start with the retries, short enough that a dead
+ * network costs a pause rather than a hang. Nothing is lost when it expires:
+ * the profile keeps loading, and screens re-render when it lands.
+ */
+const PROFILE_FETCH_DEADLINE_MS = 8_000;
+
 function RootNavigator() {
   const router = useRouter();
   const segments = useSegments();
   const glob = useGlobalSearchParams<{ fromProfile?: string }>();
-  const { user, profile, loading, setUser, setSession, setLoading, fetchProfile } = useAuthStore();
+  const {
+    user, profile, profileLoaded, loading,
+    setUser, setSession, setLoading, fetchProfile,
+  } = useAuthStore();
   const { tokens } = useTheme();
 
   useEffect(() => {
@@ -90,7 +101,29 @@ function RootNavigator() {
       if (!session?.user) resetAnalytics();
       if (session?.user) {
         identifyAnalytics(session.user.id);
-        await fetchProfile(session.user.id);
+        // Retry a failed profile fetch before giving up. This runs on a cold
+        // start, often on the worst network the app will ever see (radio waking,
+        // token refresh in flight), and the profile decides which app the user
+        // gets: their coach, their calorie targets, and whether the router thinks
+        // they still need onboarding. Three quick attempts, then carry on — the
+        // guard below no longer misreads a failure as a new account.
+        //
+        // HARD DEADLINE. The router gate below starts with `if (loading) return`,
+        // so for as long as this await is outstanding NOTHING routes. A slow or
+        // hung request therefore strands the user on whatever screen they were
+        // on — after Google sign-in that is the "Signing you in…" callback
+        // screen, which just sits there forever. The profile is worth waiting a
+        // few seconds for, never worth deadlocking the app for: whatever has or
+        // hasn't arrived by the deadline, we release the UI.
+        await Promise.race([
+          (async () => {
+            for (let attempt = 0; attempt < 3; attempt++) {
+              if (await fetchProfile(session.user.id)) break;
+              await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
+            }
+          })(),
+          new Promise((r) => setTimeout(r, PROFILE_FETCH_DEADLINE_MS)),
+        ]);
         // Record today's app-open (powers the "active referral" definition —
         // 3+ open-days in first 7) + grant any earned referral reward. Both
         // best-effort, never block auth.
@@ -245,9 +278,13 @@ function RootNavigator() {
       if (inAuth || inAuthCallback) router.replace('/(tabs)');
       else if (inOnboarding && !editingFromProfile) router.replace('/(tabs)');
     } else if (user && !profile) {
-      if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
+      // Only route to onboarding once we KNOW there is no profile row. Without
+      // profileLoaded this branch fired whenever the fetch merely failed, so a
+      // brief network problem told an existing user to set their account up
+      // again — the most alarming thing the app could show them.
+      if (profileLoaded && !inOnboarding) router.replace('/(onboarding)/step1-goal');
     }
-  }, [user, profile, loading, segments, glob.fromProfile]);
+  }, [user, profile, profileLoaded, loading, segments, glob.fromProfile]);
 
   // Keep scheduled coach calls in sync with the ACTIVE coach. Fires on boot
   // (when the profile loads) and whenever the user switches program/coach on ANY
