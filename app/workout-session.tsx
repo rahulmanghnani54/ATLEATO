@@ -49,6 +49,7 @@ import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
 import { supabase } from '@/lib/supabase';
 import { TOKENS, useTheme, useThemedStyles } from '@/lib/theme';
 import { useAuthStore } from '@/stores/authStore';
+import { track } from '@/lib/analytics';
 
 interface SetEntry {
   weight: string;
@@ -235,6 +236,9 @@ export default function WorkoutSession() {
   useEffect(() => {
     if (!voice.loaded || startedRef.current) return;
     startedRef.current = true;
+    // Guarded by the same ref as the voice cue, so a re-render cannot double-count
+    // a session. Pairs with workout_completed to give the finish rate.
+    track('workout_started', { program_id: resolvedProgramId, day_index: resolvedDayIndex });
     voice.cue('workout_start');
     // Stop any in-flight speech when the user leaves the screen
     return () => voice.stop();
@@ -389,6 +393,15 @@ export default function WorkoutSession() {
         volume: `${Math.round(volume)} kg`,
         tag: isPR ? 'PR' : (doneSets.length === exSets.length ? 'COMPLETED' : 'PARTIAL'),
       };
+    });
+
+    // Fired here, after the log and sets have actually been written — a
+    // "completed" event recorded before the save could outnumber the workouts
+    // that really exist.
+    track('workout_completed', {
+      duration_min: duration,
+      volume_kg: Math.round(totalVolume),
+      program_id: programId ?? null,
     });
 
     router.replace({

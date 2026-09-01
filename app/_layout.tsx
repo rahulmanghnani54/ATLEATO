@@ -265,13 +265,22 @@ function RootNavigator() {
     // PKCE code the user isn't authenticated yet, so DON'T bounce it to login;
     // once signed in, route away from it just like we do from the auth group.
     const inAuthCallback = segments[0] === 'auth-callback';
+    // Password recovery arrives as a deep link while the user is, by definition,
+    // NOT signed in yet. Without this the gate bounces them straight to /login
+    // and the reset link can never be used.
+    const inResetPassword = segments[0] === 'reset-password';
     // Onboarding-complete users can intentionally re-enter onboarding screens to
     // EDIT settings (e.g. "Change program" / "Edit goals" from Profile). Those
     // links pass ?fromProfile=1 so the guard below doesn't bounce them to home.
     const editingFromProfile = glob.fromProfile === '1';
 
     if (!user) {
-      if (!inAuth && !inAuthCallback) router.replace('/(auth)/login');
+      if (!inAuth && !inAuthCallback && !inResetPassword) router.replace('/(auth)/login');
+    } else if (inResetPassword) {
+      // A recovery link signs the user in, so `user` is set the moment the code
+      // is exchanged. Leave them on the screen to finish setting the password —
+      // the branches below would otherwise route them into the app immediately
+      // and the reset would silently never happen.
     } else if (profile && !profile.onboarding_complete) {
       if (!inOnboarding) router.replace('/(onboarding)/step1-goal');
     } else if (profile?.onboarding_complete) {

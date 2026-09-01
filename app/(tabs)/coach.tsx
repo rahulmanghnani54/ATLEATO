@@ -38,6 +38,7 @@ import {
 import { PressableScale, Skeleton } from '@/components/ui/motion';
 import { Fonts } from '@/constants/theme';
 import { useTheme, useThemedStyles } from '@/lib/theme';
+import { track } from '@/lib/analytics';
 
 // Map persona.id → the program_id stored in profiles.selected_program.
 // Coach hub uses PersonaId in local state for the switcher chips; persisting
@@ -282,6 +283,8 @@ export default function CoachHub() {
 
     try {
       const history: ClaudeMessage[] = [...messages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+      // persona is an enum slug; the message itself is never sent to analytics.
+      track('coach_message_sent', { persona: persona.id });
       const { reply } = await aiCoachChat(persona.id, trimmed, history);
       setMessages((prev) => [...prev, { id: (Date.now() + 1).toString(), role: 'assistant', content: reply }]);
     } catch (e: any) {

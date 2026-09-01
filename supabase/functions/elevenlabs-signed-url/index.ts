@@ -4,6 +4,17 @@
 // authenticated users get a URL (protects your ElevenLabs credits from abuse).
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { checkRateLimit } from '../_shared/security.ts';
+
+// Auth alone is not cost control here. Every token this mints starts a voice
+// call billed BY THE MINUTE, so a single free account looping this endpoint bills
+// straight to us — the one AI endpoint that was missing a limit. A real user
+// starts a handful of calls a day; these ceilings are far above that and far
+// below anything that hurts.
+const CALL_LIMIT_REQUESTS = 5;
+const CALL_LIMIT_WINDOW_MS = 60_000;
+const CALL_HOURLY_REQUESTS = 20;
+const CALL_HOURLY_WINDOW_MS = 3_600_000;
 
 const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
@@ -38,6 +49,16 @@ serve(async (req) => {
     });
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
     if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
+
+    // Per-minute burst, then an hourly ceiling. Same shape as the other nine AI
+    // endpoints (in-memory and per-isolate, so both are a soft floor, not a hard
+    // guarantee — enough to stop a loop, not a substitute for billing alerts).
+    if (!checkRateLimit(user.id, 'elevenlabs-call', CALL_LIMIT_REQUESTS, CALL_LIMIT_WINDOW_MS)) {
+      return json({ error: 'Too many calls started. Please wait a moment.' }, 429);
+    }
+    if (!checkRateLimit(user.id, 'elevenlabs-call:hourly', CALL_HOURLY_REQUESTS, CALL_HOURLY_WINDOW_MS)) {
+      return json({ error: 'Call limit reached for this hour.' }, 429);
+    }
 
     // Defensively trim — a trailing space/newline from a dashboard paste makes
     // ElevenLabs reject the key with 401.

@@ -48,6 +48,7 @@ import {
 } from '@/lib/personaTheme';
 import { getMaxCoaches } from '@/lib/featureGates';
 import { syncAppIconToCoach } from '@/lib/appIcon';
+import { track } from '@/lib/analytics';
 
 type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 
@@ -205,6 +206,12 @@ export default function Step5Program() {
         fetchProfile(user.id),
         new Promise<void>((resolve) => setTimeout(resolve, 6000)),
       ]);
+      // Only a first run through the funnel counts as completing onboarding —
+      // re-entering these screens from Profile to change coach is not that, and
+      // counting it would quietly inflate the number that matters most.
+      if (!changeProgramOnly) {
+        track('onboarding_completed', { persona: currentCard.personaId });
+      }
       // The whole app transforms with the coach — including the launcher icon
       // (fire-and-forget; cosmetic, never blocks the switch).
       syncAppIconToCoach(currentCard.personaId);

@@ -58,6 +58,7 @@ import {
   X as XIcon, RefreshCw, AlertTriangle, Check, Pause, Video, Sparkles,
   Camera as CameraIcon,
 } from 'lucide-react-native';
+import { track } from '@/lib/analytics';
 
 // The MLKit plugin registers a native frame processor named "detectPose", but
 // its JS entry only exports <Camera> (not the worklet). So we initialize the
@@ -490,7 +491,11 @@ export default function FormCoach() {
   useEffect(() => {
     if (!canAccess('ai_form_coach')) {
       router.replace('/paywall?feature=ai_form_coach' as any);
+      return;
     }
+    // Only counted once the gate has let them through — otherwise every blocked
+    // free user would register as having started a form check.
+    track('form_check_started', { exercise: exerciseName ?? null });
   }, []);
 
   useEffect(() => {

@@ -33,6 +33,7 @@ import { BigStat, CanvasScreen, Crown, Hairline } from '@/components/ui/canvas';
 import { PressableScale } from '@/components/ui/motion';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { getFeatureLabel, type FeatureKey, getUserTier } from '@/lib/featureGates';
+import { track } from '@/lib/analytics';
 // Purchases go through subscriptionManager, never lib/billing directly: it is
 // the layer that re-reads entitlement from the SERVER after the store takes the
 // money. Calling the billing adapter from here would skip that sync.
@@ -91,6 +92,13 @@ export default function PaywallScreen() {
     });
   }, []);
 
+  // Which gate sent them here is the whole point of this event — "paywall views"
+  // alone cannot tell you whether the form coach or the food scanner is what
+  // people actually try to buy. `feature` is one of our own FeatureKey slugs.
+  useEffect(() => {
+    track('paywall_viewed', { feature: typeof feature === 'string' ? feature : null });
+  }, [feature]);
+
   const featureLabel = feature
     ? getFeatureLabel(feature as FeatureKey)
     : null;
@@ -123,10 +131,13 @@ export default function PaywallScreen() {
     }
 
     setLoading(productId);
+    // product_id is an enum-ish slug (atleato_pro_monthly …), never free text.
+    track('purchase_started', { product_id: productId });
     const result = await startPurchase(productId);
     setLoading(null);
 
     if (result.status === 'success') {
+      track('purchase_completed', { product_id: productId, tier: getUserTier() });
       router.back();
       return;
     }
@@ -134,7 +145,12 @@ export default function PaywallScreen() {
     // A user who backs out of the store sheet has not failed at anything.
     // Surfacing an error here is what makes a paywall feel like it's arguing
     // with you — say nothing and leave them exactly where they were.
-    if (result.status === 'cancelled') return;
+    if (result.status === 'cancelled') {
+      // Worth recording even though we say nothing: the gap between started and
+      // cancelled is the clearest read on whether the price is landing.
+      track('purchase_cancelled', { product_id: productId });
+      return;
+    }
 
     // Billing dropped out between the check above and the call.
     if (result.status === 'unavailable') {

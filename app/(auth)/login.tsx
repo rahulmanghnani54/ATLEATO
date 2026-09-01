@@ -25,6 +25,7 @@ import {
   View,
 } from 'react-native';
 import { Link } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 import { CanvasScreen, Crown, Hairline } from '@/components/ui/canvas';
@@ -68,7 +69,15 @@ export default function Login() {
     setLoading(true);
     // Respond identically whether or not the email exists, so the reset flow
     // can't be used to enumerate registered accounts (CWE-204).
-    await supabase.auth.resetPasswordForEmail(email.trim()).catch(() => {});
+    //
+    // redirectTo is REQUIRED, and its absence is why this flow used to dead-end:
+    // without it Supabase sends the user to the project's Site URL — the
+    // marketing site — where there is no way to set a password, and the app has
+    // no screen for it either. `atleato://reset-password` deep-links back to the
+    // route below, which exchanges the link's session and takes the new password.
+    await supabase.auth
+      .resetPasswordForEmail(email.trim(), { redirectTo: Linking.createURL('reset-password') })
+      .catch(() => {});
     setLoading(false);
     Alert.alert('Check your email', "If an account exists for that address, we've sent a password reset link.");
   };

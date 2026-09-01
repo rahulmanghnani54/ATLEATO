@@ -17,7 +17,7 @@
 
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Linking, Share, StyleSheet, Switch, Text, TextInput, View,
+  ActivityIndicator, Alert, Linking, Platform, Share, StyleSheet, Switch, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -561,6 +561,53 @@ export default function ProfileScreen() {
               right={themeMode === mode ? <Check size={17} color={tokens.text} /> : undefined}
             />
           ))}
+        </Section>
+
+        {/* ── Help ──
+            Google expects a contact route from inside the app, and selling
+            subscriptions here without the terms reachable from here is what a
+            reviewer notices. Before this, the only support address in the whole
+            app sat inside the delete-account confirmation — the one screen a
+            user is already leaving. */}
+        <Section label="Help">
+          <ListRow
+            title="Contact support"
+            subtitle="hello@evulto.com · we reply within 2 working days"
+            onPress={() =>
+              Linking.openURL('mailto:hello@evulto.com?subject=Evulto%20support').catch(() => {})
+            }
+          />
+          <ListRow
+            title="Report a bug"
+            subtitle="Tell us what broke — it opens a pre-filled email"
+            last
+            onPress={() =>
+              Linking.openURL(
+                'mailto:hello@evulto.com?subject=Evulto%20bug%20report' +
+                  '&body=' +
+                  encodeURIComponent(
+                    // Pre-filled so a report arrives with the things we would
+                    // otherwise have to ask for.
+                    `What happened:\n\n\nWhat you expected:\n\n\n---\nApp version: 1.0.0\nDevice: ${Platform.OS} ${Platform.Version}\nCoach: ${programName}`,
+                  ),
+              ).catch(() => {})
+            }
+          />
+        </Section>
+
+        {/* ── Legal ── */}
+        <Section label="Legal">
+          <ListRow
+            title="Privacy Policy"
+            subtitle="What we collect, and what never leaves your device"
+            onPress={() => Linking.openURL('https://evulto.com/privacy').catch(() => {})}
+          />
+          <ListRow
+            title="Terms of Service"
+            subtitle="Subscription terms, renewals and cancellation"
+            last
+            onPress={() => Linking.openURL('https://evulto.com/terms').catch(() => {})}
+          />
         </Section>
 
         {/* ── About Evulto ── */}
