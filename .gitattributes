@@ -1,0 +1,11 @@
+# Shell scripts MUST keep LF endings.
+#
+# These run under WSL/bash. Git on Windows checked them out as CRLF after they
+# were first committed, and bash then failed with `$'\r': command not found`
+# before the build could start — a two-hour build that never began. eol=lf is
+# what stops that happening to the next person who clones this on Windows.
+*.sh text eol=lf
+
+# Same reasoning for anything else consumed by a Unix toolchain.
+gradlew text eol=lf
+*.bash text eol=lf
