@@ -27,9 +27,16 @@ export function PhysiquePrivacyCard() {
     <View style={styles.card}>
       <Text style={styles.icon}>🔒</Text>
       <View style={styles.body}>
-        <Text style={styles.title}>YOUR PHOTOS ARE PRIVATE</Text>
+        <Text style={styles.title}>HOW YOUR PHOTOS ARE HANDLED</Text>
+        {/* This card is the consent basis for the whole feature, so it has to
+            describe what actually happens. It previously said "Only you can see
+            them — not even our servers", which was false: the stored blob really
+            is encrypted with a device-held key, but hooks/usePhysiqueCheckins.ts
+            also sends the PLAINTEXT jpeg to the analyze-physique function, which
+            forwards it to Anthropic for scoring on every check-in. */}
         <Text style={styles.text}>
-          Photos are encrypted on your device before upload. Only you can see them — not even our servers.
+          Stored encrypted with a key that never leaves this device. To score a check-in,
+          the photo is sent once to our AI coach. It is never used to train any model.
         </Text>
       </View>
       <TouchableOpacity onPress={dismiss} style={styles.dismissBtn}>

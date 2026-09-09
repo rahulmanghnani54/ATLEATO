@@ -21,6 +21,7 @@ import { setupAndroidChannels, type CallKind } from '@/lib/coachCallScheduler';
 import {
   scheduleIncomingCall, cancelScheduledCall, ensureExactAlarmPermission,
   ensureNotifeePermission, setupCallChannel, ensureBackgroundCallDelivery,
+  recordScheduleOffset,
 } from '@/lib/notifeeCallScheduler';
 import { AuthorizationStatus } from '@notifee/react-native';
 
@@ -85,6 +86,9 @@ export async function resyncCoachCalls(): Promise<void> {
     const personaId = personaFromProgramId(profile?.selected_program).id;
     await setupCallChannel();
     await applySchedule(prefs, personaId, computeTrainingDays(profile?.selected_program));
+    // Stamp the offset even if applySchedule scheduled nothing (reminders off),
+    // or the drift check below would fire on every foreground forever.
+    await recordScheduleOffset();
   } catch { /* ignore */ }
 }
 

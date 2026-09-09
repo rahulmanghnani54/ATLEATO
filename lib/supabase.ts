@@ -63,12 +63,24 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
+/**
+ * The key supabase-js derives for itself: `sb-<project-ref>-auth-token`. We pass
+ * it explicitly rather than let it be inferred, because the verifier helpers
+ * below have to address a key *derived from* it — leaving that implicit means a
+ * future supabase-js could change the derivation and silently break them.
+ * The value is identical to the default, so no existing session is orphaned.
+ */
+const PROJECT_REF =
+  (process.env.EXPO_PUBLIC_SUPABASE_URL || '').match(/^https?:\/\/([^.]+)\./)?.[1] ?? '';
+export const AUTH_STORAGE_KEY = `sb-${PROJECT_REF}-auth-token`;
+
 export const supabase = createClient<Database>(
   process.env.EXPO_PUBLIC_SUPABASE_URL!,
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!,
   {
     auth: {
       storage: ExpoSecureStoreAdapter,
+      storageKey: AUTH_STORAGE_KEY,
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: false,
@@ -87,6 +99,46 @@ export const supabase = createClient<Database>(
     },
   }
 );
+
+/**
+ * Recovery code-verifier preservation.
+ *
+ * auth-js keeps ONE code_verifier slot — `<storageKey>-code-verifier` — shared
+ * by every PKCE flow. resetPasswordForEmail, signInWithOAuth and signUp all
+ * write it. So if a user asks for a reset link and then touches Google,
+ * Facebook or Create account while the email is in flight, the recovery
+ * verifier is overwritten; exchangeCodeForSession later posts the wrong one and
+ * the reset screen reports "expired or already used" for a link that is
+ * perfectly valid. Backing out of the OAuth sheet does not undo it.
+ *
+ * So we snapshot the verifier when the reset is requested and put it back
+ * immediately before the exchange. Addressing auth-js's key from outside is
+ * deliberate; if a future version renames it, getItem returns null, both
+ * helpers no-op, and we degrade to today's behaviour rather than breaking.
+ */
+const VERIFIER_KEY = `${AUTH_STORAGE_KEY}-code-verifier`;
+const RECOVERY_VERIFIER_KEY = `${AUTH_STORAGE_KEY}-recovery-code-verifier`;
+
+/** Call right after resetPasswordForEmail resolves — the verifier is written before the request goes out. */
+export async function preserveRecoveryVerifier(): Promise<void> {
+  try {
+    const verifier = await ExpoSecureStoreAdapter.getItem(VERIFIER_KEY);
+    if (verifier) await ExpoSecureStoreAdapter.setItem(RECOVERY_VERIFIER_KEY, verifier);
+  } catch { /* best effort — never block the reset request */ }
+}
+
+/** Call immediately before exchangeCodeForSession on the reset screen. */
+export async function restoreRecoveryVerifier(): Promise<void> {
+  try {
+    const saved = await ExpoSecureStoreAdapter.getItem(RECOVERY_VERIFIER_KEY);
+    if (saved) await ExpoSecureStoreAdapter.setItem(VERIFIER_KEY, saved);
+  } catch { /* best effort */ }
+}
+
+/** Call once the recovery code has been spent, so a stale verifier can't be replayed. */
+export async function clearRecoveryVerifier(): Promise<void> {
+  try { await ExpoSecureStoreAdapter.removeItem(RECOVERY_VERIFIER_KEY); } catch { /* ignore */ }
+}
 
 // Drive token auto-refresh by app foreground/background. supabase-js only runs
 // its refresh timer while told the app is active; without this the access token

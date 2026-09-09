@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit, isValidDate } from '../_shared/security.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
@@ -59,6 +60,14 @@ Logged today:
 - Fat: ${Math.round(totalFat)}g / ${profile.fat_g}g
 
 Give 3-4 specific, practical nutrition tips for the rest of this day based on the gaps. Be concise.`;
+
+    // Meter immediately before the provider call, not earlier: everything
+    // above this line can still return without spending a cent (validation,
+    // ownership checks, the not-enough-data path), and a unit consumed by a
+    // request that produced no inference is one the user paid for and did
+    // not receive.
+    const overQuota = await requireQuota(supabase, user.id, 'nutrition_advice', DAILY_QUOTA.nutrition_advice);
+    if (overQuota) return overQuota;
 
     const advice = await callClaude(
       'You are a registered dietitian and sports nutritionist helping athletes optimise their diet.',

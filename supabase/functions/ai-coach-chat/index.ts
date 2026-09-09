@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY, type ClaudeMessage,
 } from '../_shared/claude.ts';
 import { checkRateLimit, sanitize, ALLOWED_PERSONAS } from '../_shared/security.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 const MAX_MESSAGE_LEN = 2_000;
 const MAX_HISTORY_TURNS = 10;
@@ -171,6 +172,14 @@ serve(async (req) => {
       ...conversationHistory,
       { role: 'user', content: message },
     ];
+
+    // Meter immediately before the provider call, not earlier: everything
+    // above this line can still return without spending a cent (validation,
+    // ownership checks, the not-enough-data path), and a unit consumed by a
+    // request that produced no inference is one the user paid for and did
+    // not receive.
+    const overQuota = await requireQuota(supabase, user.id, 'ai_coach_chat', DAILY_QUOTA.ai_coach_chat);
+    if (overQuota) return overQuota;
 
     const reply = await callClaude(systemPrompt, messages, 600);
 

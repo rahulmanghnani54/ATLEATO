@@ -19,7 +19,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { CanvasScreen, Crown, Hairline } from '@/components/ui/canvas';
 import { PressableScale } from '@/components/ui/motion';
 import { Fonts } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { supabase, restoreRecoveryVerifier, clearRecoveryVerifier } from '@/lib/supabase';
 import { authErrorMessage } from '@/lib/authErrors';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
@@ -41,28 +41,42 @@ export default function ResetPassword() {
   // 'checking' until we know the link is usable — offering the form before then
   // invites the user to type a password we cannot actually save.
   const [linkState, setLinkState] = useState<'checking' | 'ready' | 'invalid'>('checking');
-  const exchanged = useRef(false);
+  // The code we have already spent, NOT merely "the effect has run once". Two
+  // reasons it is keyed on the value: a single-use code must never be posted
+  // twice, and the screen must still be able to act on a code that arrives
+  // AFTER mount — a plain ran-once ref left the user stranded on "expired" with
+  // a perfectly good link, because the effect could never run again.
+  const spentCode = useRef<string | null>(null);
+
+  const code = typeof params.code === 'string' ? params.code : undefined;
+  const linkError = params.error_description;
 
   useEffect(() => {
-    if (exchanged.current) return;
-    exchanged.current = true;
+    if (linkError) { setLinkState('invalid'); return; }
+    if (!code) { setLinkState('invalid'); return; }
+    if (spentCode.current === code) return;
+    spentCode.current = code;
 
+    setLinkState('checking');
     (async () => {
-      if (params.error_description) { setLinkState('invalid'); return; }
+      // Put our snapshot of the recovery verifier back first: any OAuth or
+      // signup attempt made while the email was in flight will have overwritten
+      // auth-js's single shared slot. Without this the exchange below fails and
+      // we blame the link.
+      await restoreRecoveryVerifier();
 
-      // A recovery link may already have been turned into a session by the
-      // deep-link handler, so check for one before spending the single-use code.
-      const { data: existing } = await supabase.auth.getSession();
-      if (existing.session) { setLinkState('ready'); return; }
-
-      const code = typeof params.code === 'string' ? params.code : undefined;
-      if (!code) { setLinkState('invalid'); return; }
-
+      // Always exchange. Do NOT short-circuit on an existing session: this
+      // screen is reachable while someone else is still signed in on the device,
+      // and trusting that session would point updateUser at the WRONG account —
+      // silently changing the signed-in user's password to whatever is typed
+      // here, while the real recipient's link went unused. The exchange is what
+      // proves the person holding the link owns the account being changed.
       const { error: exErr } = await supabase.auth.exchangeCodeForSession(code);
-      setLinkState(exErr ? 'invalid' : 'ready');
+      if (exErr) { setLinkState('invalid'); return; }
+      await clearRecoveryVerifier();
+      setLinkState('ready');
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [code, linkError]);
 
   const handleSave = async () => {
     if (!password || !confirm) { setError('Enter and confirm your new password.'); return; }
@@ -76,7 +90,7 @@ export default function ResetPassword() {
     const { error: upErr } = await supabase.auth.updateUser({ password });
     setSaving(false);
 
-    if (upErr) { setError(authErrorMessage(upErr.message, 'login')); return; }
+    if (upErr) { setError(authErrorMessage(upErr.message, 'reset')); return; }
 
     // updateUser leaves the recovery session signed in, so the auth gate in
     // _layout routes into the app on its own once we step off this screen.

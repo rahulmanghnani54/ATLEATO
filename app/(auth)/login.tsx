@@ -31,7 +31,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { CanvasScreen, Crown, Hairline } from '@/components/ui/canvas';
 import { PressableScale } from '@/components/ui/motion';
 import { Fonts } from '@/constants/theme';
-import { supabase } from '@/lib/supabase';
+import { supabase, preserveRecoveryVerifier } from '@/lib/supabase';
 import { authErrorMessage } from '@/lib/authErrors';
 import { signInWithProvider, type OAuthProvider } from '@/lib/socialAuth';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
@@ -78,6 +78,11 @@ export default function Login() {
     await supabase.auth
       .resetPasswordForEmail(email.trim(), { redirectTo: Linking.createURL('reset-password') })
       .catch(() => {});
+    // Snapshot the PKCE code_verifier this just wrote. auth-js keeps one shared
+    // slot for every PKCE flow, so a Google/Facebook/Create-account tap made
+    // while the user waits for the email would wipe it and make a valid reset
+    // link fail as "expired". reset-password.tsx puts this copy back.
+    await preserveRecoveryVerifier();
     setLoading(false);
     Alert.alert('Check your email', "If an account exists for that address, we've sent a password reset link.");
   };

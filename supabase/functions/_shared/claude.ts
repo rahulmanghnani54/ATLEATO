@@ -43,6 +43,14 @@ export async function callClaude(
     // the body is stashed on a property the client response never includes.
     let bodyText = '';
     try { bodyText = await response.text(); } catch { /* ignore */ }
+    // Log the real cause HERE, not at the call site. Only 1 of the 9 functions
+    // that call this ever logged err.anthropicBody, so the single most likely
+    // production failure — "credit balance is too low" — was invisible in the
+    // other 8 and surfaced to the user as a bare "internal error". That is how
+    // an empty balance turns into days of "the AI is broken" with no diagnosis.
+    // Anthropic error bodies carry no user data, so this is safe to log.
+    console.error(`[claude] API error ${response.status}:`, bodyText.slice(0, 500));
+
     const err = new Error(`Claude API error ${response.status}`);
     (err as any).status = response.status;
     (err as any).anthropicBody = bodyText;

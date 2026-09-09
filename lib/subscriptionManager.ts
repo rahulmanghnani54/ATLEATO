@@ -55,10 +55,25 @@ type TierListener = (tier: Tier) => void;
  * paywall's existing "coming soon" path.
  */
 export type PurchaseOutcome =
-  | { status: 'success' }
+  // `unlocked` distinguishes "the store took the money AND the tier is live"
+  // from "the store took the money and the webhook has not landed yet". The
+  // second is not an error and must never be reported as one — but it is also
+  // not success from the user's point of view, so the caller has to know.
+  | { status: 'success'; unlocked: boolean }
   | { status: 'cancelled' }
   | { status: 'unavailable' }
   | { status: 'error'; message: string };
+
+export type RestoreOutcome =
+  // 'none' = the store has no active purchase for this account (the honest
+  // "nothing to restore"). 'pending' = the store HAS one but our server has not
+  // applied it yet — telling that user "No Subscription Found" is how a paying
+  // customer concludes the app stole from them.
+  | { status: 'restored'; tier: Tier }
+  | { status: 'pending' }
+  | { status: 'none' }
+  | { status: 'error'; message: string }
+  | { status: 'unavailable' };
 
 // ONE key holding {tier, until} together, deliberately not two.
 //
@@ -416,20 +431,59 @@ export function getReferralProUntil(): number | null {
  * next one (auth change, next launch) picks it up. That is deliberate: better a
  * one-launch delay than a client-side unlock anyone can forge.
  */
+/**
+ * Wait for the server to agree that the user's tier improved.
+ *
+ * WHY POLLING. Entitlement is applied by the provider's webhook, not by the
+ * client — that is the right design and stays. But the previous code called
+ * syncEntitlement() exactly once, the instant the Play sheet closed, which is a
+ * race the webhook usually loses. The paying user was bounced back to the
+ * previous screen with nothing unlocked and no explanation, and Restore could
+ * not fix it because it re-read the same not-yet-written row.
+ *
+ * Backs off rather than hammering: the webhook typically lands in a second or
+ * two, and a user watching a spinner will wait ten seconds far more happily
+ * than they will accept being silently charged for nothing.
+ *
+ * Returns true if the tier improved on `before`. Never throws.
+ */
+const ENTITLEMENT_POLL_BACKOFF_MS = [700, 1300, 2000, 3000, 4000];
+
+async function awaitEntitlementAbove(before: Tier): Promise<boolean> {
+  // paidTier(), NOT effectiveTier(). effectiveTier() folds in the founder comp,
+  // the dev override and the referral pass — all of which can already sit at
+  // 'legend', so a genuine purchase could never make it "improve" and every
+  // such customer was told their payment was still pending. A purchase changes
+  // exactly one thing: the PAID tier. Measure that.
+  const improved = () => RANK[paidTier()] > RANK[before];
+  await syncEntitlement();
+  if (improved()) return true;
+  for (const wait of ENTITLEMENT_POLL_BACKOFF_MS) {
+    await new Promise((r) => setTimeout(r, wait));
+    await syncEntitlement();
+    if (improved()) return true;
+  }
+  return false;
+}
+
 export async function startPurchase(productId: string): Promise<PurchaseOutcome> {
   if (!billing.isConfigured()) {
     if (__DEV__) console.warn('[subscription] purchases unavailable — RevenueCat not configured');
     return { status: 'unavailable' };
   }
 
+  const before = paidTier();
+
   const result = await billing.purchase(productId);
   if (result.status === 'cancelled') return { status: 'cancelled' };
   if (result.status === 'error') return { status: 'error', message: result.message };
 
-  // Purchase went through — ask the SERVER what the user is now entitled to.
-  // RevenueCat's webhook is what writes it; this just re-reads.
-  await syncEntitlement();
-  return { status: 'success' };
+  // The store has the money. Now wait for the webhook to write the entitlement
+  // and for us to read it back. Not unlocking inside the timeout is NOT a
+  // failure — the grant will land — but the caller must say so honestly rather
+  // than dropping the user back on the paywall with nothing.
+  const unlocked = await awaitEntitlementAbove(before);
+  return { status: 'success', unlocked };
 }
 
 /**
@@ -447,11 +501,28 @@ export async function purchaseSubscription(productId: string): Promise<boolean> 
  * Restore previous purchases, then re-sync entitlement from the server.
  * No-ops when billing isn't configured — same as before.
  */
-export async function restorePurchases(): Promise<void> {
-  if (!billing.isConfigured()) return;
+export async function restorePurchases(): Promise<RestoreOutcome> {
+  if (!billing.isConfigured()) return { status: 'unavailable' };
+
+  const before = paidTier();
   const result = await billing.restore();
-  if (result.status !== 'success') return;
-  await syncEntitlement();
+  // A network/SDK failure is NOT "billing is unavailable in this build" — that
+  // phrasing tells a paying customer the app cannot take money at all. Keep the
+  // two apart so the UI can offer a retry instead of a dead end.
+  if (result.status === 'error') return { status: 'error', message: result.message };
+  if (result.status !== 'success') return { status: 'unavailable' };
+
+  // Did the STORE actually have anything? This is the distinction the old code
+  // threw away: it re-read our database and, finding nothing, told the user no
+  // subscription existed — even when RevenueCat had just handed back an active
+  // one that our webhook had not yet applied.
+  const storeHasActive = (result.productIds?.length ?? 0) > 0;
+
+  // Already entitled? Answer immediately rather than making them watch the
+  // full backoff for something we already know.
+  if (RANK[paidTier()] > RANK.free) return { status: 'restored', tier: effectiveTier() };
+  if (await awaitEntitlementAbove(before)) return { status: 'restored', tier: effectiveTier() };
+  return storeHasActive ? { status: 'pending' } : { status: 'none' };
 }
 
 export function addTierChangeListener(cb: TierListener): () => void {

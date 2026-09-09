@@ -59,7 +59,11 @@ export type AnalyticsEvent =
   | 'paywall_viewed'
   | 'purchase_started'
   | 'purchase_completed'
-  | 'purchase_cancelled';
+  | 'purchase_cancelled'
+  // Store took the money but the entitlement webhook had not landed inside the
+  // poll window. Not a failure — but the gap between completed and pending is
+  // the only read we have on how often paying users see a delay.
+  | 'purchase_pending';
 
 /**
  * Allowed property values. Strings are for ENUMS ONLY (a tier name, an exercise

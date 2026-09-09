@@ -240,9 +240,9 @@ function CoachCallInner() {
             return;
           }
         }
-        console.log('[call] fetching token…');
+        if (__DEV__) console.log('[call] fetching token…');
         const conversationToken = await getCoachCallToken();
-        console.log('[call] token ' + (conversationToken ? 'OK len=' + conversationToken.length : 'EMPTY'));
+        if (__DEV__) console.log('[call] token ' + (conversationToken ? 'OK len=' + conversationToken.length : 'EMPTY'));
         // Is this a callback (the user bailed on a prior wake-up call)? If so the
         // coach greets as a "check-in" so it can tell whether they fell back
         // asleep. A fresh wake-up call resets the callback chain.
@@ -303,7 +303,13 @@ function CoachCallInner() {
           ...baseVariables,
           call_flavour: callFlavour(ctx),
         };
-        console.log('[call] vars ' + JSON.stringify(dynamicVariables));
+        // NEVER log dynamicVariables. It is the whole coach briefing — the
+        // user's first name, goal, last session, recent PR lifts and weights,
+        // missed days, recovery percentage, sleep duration and streak. This line
+        // was ungated, so it shipped in release, and @sentry/react-native turns
+        // console calls into breadcrumbs by default, which uploaded all of it to
+        // a third party attached to a user id. Count only.
+        if (__DEV__) console.log('[call] vars n=' + Object.keys(dynamicVariables).length);
         // Personality comes from the agent's prompt using {{coach_style}} +
         // dynamicVariables — NO prompt override (the agent doesn't allow prompt
         // overrides, which would make ElevenLabs drop the session right after
@@ -320,7 +326,9 @@ function CoachCallInner() {
             showOnCallNotification(persona.fullName, persona.accent);  // status-bar "on call" chip
           },
           onDisconnect: (d: any) => {
-            console.log('[call] onDisconnect ' + JSON.stringify(d ?? {}));
+            // Raw provider payload — unknown shape, so assume it carries detail
+            // we would not choose to ship. Dev only.
+            if (__DEV__) console.log('[call] onDisconnect ' + JSON.stringify(d ?? {}));
             // The coach hung up (or the call dropped after connecting) — behave
             // like a real call: show "ended" for a beat, then return home (and
             // schedule the callback). If we never connected, leave the error on

@@ -6,6 +6,7 @@ import {
 } from '../_shared/claude.ts';
 import { checkRateLimit, sanitize } from '../_shared/security.ts';
 import { requireTier } from '../_shared/entitlement.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 const MAX_EXERCISE_NAME_LEN = 100;
 const MAX_ISSUE_LEN = 200;
@@ -100,6 +101,14 @@ Respond in the voice of ${personaVoice}
 Give ONE focused coaching cue addressing the most critical issue (or a reinforcing cue if form is good). Reference the actual angle values where relevant. Keep it under 60 words. Be direct, in-character, and actionable.`;
 
     const systemPrompt = 'You are a world-class personal trainer providing real-time form coaching. Respond exactly in the voice of the specified persona.';
+
+    // Meter immediately before the provider call, not earlier: everything
+    // above this line can still return without spending a cent (validation,
+    // ownership checks, the not-enough-data path), and a unit consumed by a
+    // request that produced no inference is one the user paid for and did
+    // not receive.
+    const overQuota = await requireQuota(supabase, user.id, 'form_feedback', DAILY_QUOTA.form_feedback);
+    if (overQuota) return overQuota;
 
     const feedback = await callClaude(
       systemPrompt,

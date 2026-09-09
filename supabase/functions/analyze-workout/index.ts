@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit, isValidUUID } from '../_shared/security.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
@@ -59,6 +60,14 @@ Provide a concise (3-5 bullet points) post-workout analysis covering:
 4. Recovery recommendation
 
 Be specific and actionable. Use the actual numbers.`;
+
+    // Meter immediately before the provider call, not earlier: everything
+    // above this line can still return without spending a cent (validation,
+    // ownership checks, the not-enough-data path), and a unit consumed by a
+    // request that produced no inference is one the user paid for and did
+    // not receive.
+    const overQuota = await requireQuota(supabase, user.id, 'analyze_workout', DAILY_QUOTA.analyze_workout);
+    if (overQuota) return overQuota;
 
     const analysis = await callClaude(
       'You are an expert strength and conditioning coach providing post-workout feedback.',

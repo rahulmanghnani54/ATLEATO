@@ -82,6 +82,12 @@ export default function PhysiqueCheckin() {
   // The crown is dark in both schemes, so its tint always comes from the dark triplet.
   const crownPa = personaAccent(personaTheme, 'dark');
 
+  // 0.7, not 1.0. These photos are scored by a vision model and shown as
+  // thumbnails, and neither can tell the difference — but quality:1 produced
+  // multi-MB uploads that were encrypted, stored, AND sent to the analysis
+  // endpoint, so the cost of the extra bytes was paid three times over.
+  const PHOTO_QUALITY = 0.7;
+
   const pickPhoto = async (): Promise<string | null> => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -91,7 +97,7 @@ export default function PhysiqueCheckin() {
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      quality: 1,
+      quality: PHOTO_QUALITY,
     });
     if (res.canceled || !res.assets?.[0]) return null;
     return res.assets[0].uri;
@@ -103,7 +109,7 @@ export default function PhysiqueCheckin() {
       Alert.alert('Permission needed', 'Please allow camera access to continue.');
       return null;
     }
-    const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 1 });
+    const res = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: PHOTO_QUALITY });
     if (res.canceled || !res.assets?.[0]) return null;
     return res.assets[0].uri;
   };

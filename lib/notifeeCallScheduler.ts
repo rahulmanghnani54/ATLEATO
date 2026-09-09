@@ -383,6 +383,54 @@ export async function ensureBackgroundCallDelivery(): Promise<void> {
   } catch { /* ignore */ }
 }
 
+// ─── Wall-clock drift ────────────────────────────────────────────────────────
+//
+// notifee's repeatFrequency DAILY/WEEKLY repeats at a FIXED INTERVAL from the
+// anchor timestamp — it is not a wall-clock rule. We compute that anchor from
+// device-local time at scheduling time and never store a timezone, so after a
+// DST transition or a flight the 6am call keeps firing at the old absolute
+// instant, which is now 5am or 7am local. It stays wrong until something
+// happens to reschedule it.
+//
+// Storing an IANA zone and recomputing would be the textbook fix, but it means
+// a schema change and a date library. The cheap correct-enough fix is to notice
+// that the device's UTC offset moved and re-run the scheduler, which already
+// recomputes every anchor from the current local time. resyncCoachCalls() in
+// hooks/useCoachReminders.ts is that entry point; app/_layout.tsx calls this on
+// foreground.
+const TZ_OFFSET_KEY = 'coachCalls.tzOffsetMinutes';
+
+/**
+ * Remember the UTC offset the live alarms were computed against.
+ *
+ * Exported because it must also be stamped when a resync schedules NOTHING —
+ * reminders switched off, or no training days. Otherwise the saved offset stays
+ * stale forever, clockOffsetChanged() keeps returning true, and the app
+ * re-runs the whole scheduler on every single foreground for the rest of time.
+ */
+export async function recordScheduleOffset(): Promise<void> {
+  try {
+    await AsyncStorage.setItem(TZ_OFFSET_KEY, String(new Date().getTimezoneOffset()));
+  } catch { /* best effort — a missed record just means no resync */ }
+}
+
+/**
+ * Has the device's UTC offset changed since the alarms were scheduled?
+ *
+ * Returns false when nothing was ever recorded, so a first run does not trigger
+ * a pointless reschedule. getTimezoneOffset() covers both causes we care about:
+ * a DST transition and the user physically changing zone.
+ */
+export async function clockOffsetChanged(): Promise<boolean> {
+  try {
+    const saved = await AsyncStorage.getItem(TZ_OFFSET_KEY);
+    if (saved === null) return false;
+    return Number(saved) !== new Date().getTimezoneOffset();
+  } catch {
+    return false;
+  }
+}
+
 /** Next Date that lands on weekday `dow` (0=Sun..6=Sat) at hour:minute. */
 function nextWeekdayOccurrence(dow: number, hour: number, minute: number): Date {
   const d = new Date();
@@ -455,6 +503,7 @@ export async function scheduleIncomingCall(args: {
       };
       await notifee.createTriggerNotification(notif(`${SCHED_PREFIX}${kind}-${dow}`), trigger);
     }
+    await recordScheduleOffset();
     return;
   }
 
@@ -469,6 +518,7 @@ export async function scheduleIncomingCall(args: {
     alarmManager: { allowWhileIdle: true },
   };
   await notifee.createTriggerNotification(notif(`${SCHED_PREFIX}${kind}`), trigger);
+  await recordScheduleOffset();
 }
 
 /** Cancel every scheduled call for one kind (the daily id AND per-weekday ids),

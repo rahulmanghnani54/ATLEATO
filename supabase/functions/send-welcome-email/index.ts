@@ -11,6 +11,19 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+// The Postgres webhook that triggers this function already sends the project's
+// service-role key as its Authorization bearer (see RESEND_SETUP.md). Until now
+// the handler ignored that header entirely, so the credential was decoration.
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+// Constant-time compare so reject paths don't leak timing info.
+// Same shape as notify-steal/index.ts and send-drip-emails/index.ts.
+function timingSafeEq(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
 const FROM_EMAIL = 'Rahul from Evulto <hello@evulto.com>';
 const REPLY_TO = 'hello@evulto.com';
 
@@ -166,6 +179,29 @@ serve(async (req) => {
   if (!RESEND_API_KEY) {
     return new Response(JSON.stringify({ error: 'RESEND_API_KEY not configured' }), {
       status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
+  // ── Gate: only the database webhook may send mail ──
+  //
+  // WHY THIS EXISTS: this handler took an address out of the request body and
+  // mailed it, with no check of any kind. The platform gateway only requires
+  // *some* accepted JWT, and the anon key is one — it ships inside the APK and
+  // is printed on a public docs page. So anyone could POST {"email":"..."} and
+  // have Evulto's verified Resend domain send fully-branded mail to a stranger.
+  //
+  // That is worse than the wasted quota suggests: spam complaints land against
+  // the SENDING DOMAIN. A domain that has been reported is far harder to
+  // rehabilitate than a cold one, and evulto.com's deliverability was only just
+  // established.
+  //
+  // Fails closed: if the service-role key is not configured we refuse rather
+  // than fall back to open.
+  const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+  if (!SERVICE_ROLE_KEY || !timingSafeEq(bearer, SERVICE_ROLE_KEY)) {
+    console.warn('[send-welcome-email] rejected unauthorized send attempt');
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 

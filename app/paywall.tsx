@@ -138,6 +138,19 @@ export default function PaywallScreen() {
 
     if (result.status === 'success') {
       track('purchase_completed', { product_id: productId, tier: getUserTier() });
+
+      // The store took the money but our webhook has not landed inside the
+      // poll window. Say so plainly. Silence here is what makes a paying user
+      // think they were charged for nothing — and the grant IS coming, so an
+      // error would be a lie in the other direction.
+      if (!result.unlocked) {
+        track('purchase_pending', { product_id: productId });
+        Alert.alert(
+          'Payment received',
+          "Your plan is being activated — this usually takes a few seconds. It will unlock on its own; no need to pay again. If it hasn't after a minute, tap Restore Purchases.",
+          [{ text: 'OK', style: 'default' }],
+        );
+      }
       router.back();
       return;
     }
@@ -168,15 +181,47 @@ export default function PaywallScreen() {
 
   const handleRestore = async () => {
     setRestoring(true);
-    await restorePurchases();
+    const outcome = await restorePurchases();
     setRestoring(false);
-    const tier = getUserTier();
-    if (tier !== 'free') {
-      Alert.alert('Restored!', `Your ${tier.toUpperCase()} subscription has been restored.`);
+
+    if (outcome.status === 'restored') {
+      Alert.alert('Restored!', `Your ${outcome.tier.toUpperCase()} subscription has been restored.`);
       router.back();
-    } else {
-      Alert.alert('No Subscription Found', 'We couldn\'t find an active subscription for this account.');
+      return;
     }
+
+    // The store HAS an active subscription for this account and our server has
+    // simply not applied it yet. This case previously fell through to 'No
+    // Subscription Found' — telling a paying customer their purchase does not
+    // exist, which is false and about the worst thing we could say to them.
+    if (outcome.status === 'pending') {
+      Alert.alert(
+        'Subscription found',
+        'We can see your active subscription and are finishing activation now. It should unlock within a minute — you have not been charged again.',
+      );
+      router.back();
+      return;
+    }
+
+    // A network or SDK failure, not a missing purchase. Offer a retry rather
+    // than telling them no subscription exists.
+    if (outcome.status === 'error') {
+      Alert.alert(
+        'Could not reach the store',
+        outcome.message || 'Please check your connection and try Restore Purchases again.',
+      );
+      return;
+    }
+
+    if (outcome.status === 'unavailable') {
+      Alert.alert('Not available yet', 'Purchases are not available in this build.');
+      return;
+    }
+
+    Alert.alert(
+      'No Subscription Found',
+      "We couldn't find an active subscription for this account. If you paid with a different Google account, sign in with that one and try again.",
+    );
   };
 
   const renderFeature = (label: string, tint: string) => (

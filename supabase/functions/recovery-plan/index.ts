@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit } from '../_shared/security.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
@@ -59,6 +60,14 @@ Provide a personalised 3-day recovery optimisation plan covering:
 4. Nutrition for recovery
 
 Be specific and practical. Under 200 words.`;
+
+    // Meter immediately before the provider call, not earlier: everything
+    // above this line can still return without spending a cent (validation,
+    // ownership checks, the not-enough-data path), and a unit consumed by a
+    // request that produced no inference is one the user paid for and did
+    // not receive.
+    const overQuota = await requireQuota(supabase, user.id, 'recovery_plan', DAILY_QUOTA.recovery_plan);
+    if (overQuota) return overQuota;
 
     const plan = await callClaude(
       'You are a sports scientist and recovery specialist helping athletes optimise rest and regeneration.',

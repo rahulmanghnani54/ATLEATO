@@ -40,7 +40,7 @@ import {
   declineCoachCall, cancelRingingChain,
 } from '@/lib/coachCallScheduler';
 import {
-  setupCallChannel, registerCallEventHandler, clearStaleCalls,
+  setupCallChannel, registerCallEventHandler, clearStaleCalls, clockOffsetChanged,
 } from '@/lib/notifeeCallScheduler';
 import {
   handleWakeupBackground,
@@ -92,15 +92,31 @@ function RootNavigator() {
   const { tokens } = useTheme();
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // NOTE: this callback is deliberately NOT async, and must never await a
+    // supabase call. auth-js invokes subscribers from _notifyAllSubscribers
+    // while still holding its own lock, and awaits each one. Any supabase query
+    // in here needs a bearer token, which calls getSession(), which re-enters
+    // that same lock — so the query waits on the operation that is waiting on
+    // this callback. exchangeCodeForSession (PASSWORD_RECOVERY) and updateUser
+    // (USER_UPDATED) both deadlocked exactly this way; only the 8s deadline
+    // below broke them, which is why the password-reset screen sat on
+    // "Checking your reset link…" and "Saving…" for a full 8 seconds each.
+    // INITIAL_SESSION never showed it because auth-js emits that one WITHOUT
+    // await, so ordinary cold starts were fast and hid the bug.
+    //
+    // Deferring to a macrotask lets this callback return immediately, the lock
+    // release settle, and the profile work run unblocked. setTimeout, not a
+    // microtask: microtasks can still drain before the lock is released.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       // Analytics identity follows auth. Sentry's equivalent (setSentryUser)
       // lives in authStore.setUser; this is the same moment, one layer up.
       // Id only — never the email/name on the session.
-      if (!session?.user) resetAnalytics();
-      if (session?.user) {
-        identifyAnalytics(session.user.id);
+      if (!session?.user) { resetAnalytics(); setLoading(false); return; }
+      identifyAnalytics(session.user.id);
+      const userId = session.user.id;
+      setTimeout(() => { void (async () => {
         // Retry a failed profile fetch before giving up. This runs on a cold
         // start, often on the worst network the app will ever see (radio waking,
         // token refresh in flight), and the profile decides which app the user
@@ -118,7 +134,7 @@ function RootNavigator() {
         await Promise.race([
           (async () => {
             for (let attempt = 0; attempt < 3; attempt++) {
-              if (await fetchProfile(session.user.id)) break;
+              if (await fetchProfile(userId)) break;
               await new Promise((r) => setTimeout(r, 400 * (attempt + 1)));
             }
           })(),
@@ -129,8 +145,8 @@ function RootNavigator() {
         // best-effort, never block auth.
         try { (supabase.rpc as any)('record_app_open'); } catch { /* ignore */ }
         refreshReferralReward();
-      }
-      setLoading(false);
+        setLoading(false);
+      })(); }, 0);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -301,6 +317,37 @@ function RootNavigator() {
   // a stale one. (The schedule bakes the persona in at schedule time.)
   useEffect(() => {
     if (profile?.selected_program) resyncCoachCalls();
+  }, [profile?.selected_program]);
+
+  // Re-anchor coach calls when the wall clock moves under us.
+  //
+  // notifee's DAILY/WEEKLY repeat is a fixed interval from the anchor instant,
+  // not a wall-clock rule, and we store no timezone — so after a DST change or
+  // a flight the 6am call keeps firing at what is now 5am or 7am, indefinitely.
+  // resyncCoachCalls() recomputes every anchor from current local time, so the
+  // whole fix is noticing that the offset moved and calling it.
+  //
+  // On foreground rather than on a timer: the offset can only change while the
+  // app is backgrounded, and this is the first moment we can observe it.
+  useEffect(() => {
+    // GATED ON THE PROFILE. resyncCoachCalls() reads the coach and the training
+    // days from it; running before it loads reschedules every alarm with the
+    // DEFAULT coach and no rest-day filter, so the user gets called by the wrong
+    // persona on a rest day. The dependency also re-runs the check once the
+    // profile arrives, which is the moment we can act correctly.
+    if (!profile?.selected_program) return;
+    let alive = true;
+    const check = async () => {
+      if (!alive) return;
+      try {
+        if (await clockOffsetChanged()) await resyncCoachCalls();
+      } catch { /* never let a reschedule failure surface to the user */ }
+    };
+    check();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') check();
+    });
+    return () => { alive = false; sub.remove(); };
   }, [profile?.selected_program]);
 
   // AUTO app-icon color: the launcher ring follows the ACTIVE coach, no matter

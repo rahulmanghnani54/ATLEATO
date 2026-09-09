@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit } from '../_shared/security.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
@@ -108,6 +109,14 @@ Write a motivating but honest weekly debrief (4-5 sentences) that:
 2. Identifies the biggest opportunity for next week
 3. Sets one specific focus for the coming week
 Be personal, specific, and action-oriented.`;
+
+    // Meter immediately before the provider call, not earlier: everything
+    // above this line can still return without spending a cent (validation,
+    // ownership checks, the not-enough-data path), and a unit consumed by a
+    // request that produced no inference is one the user paid for and did
+    // not receive.
+    const overQuota = await requireQuota(supabase, user.id, 'weekly_summary', DAILY_QUOTA.weekly_summary);
+    if (overQuota) return overQuota;
 
     const summary = await callClaude(
       'You are a world-class strength and conditioning coach providing weekly athlete reviews.',

@@ -4,8 +4,9 @@ import {
   corsHeaders, jsonResponse, errorResponse, internalError,
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
-import { checkRateLimit } from '../_shared/security.ts';
+import { checkRateLimit, MAX_IMAGE_BASE64_LEN } from '../_shared/security.ts';
 import { requireTier } from '../_shared/entitlement.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 // ---------------------------------------------------------------------------
 // MVP food recognition — returns realistic mock macro data.
@@ -91,13 +92,18 @@ serve(async (req) => {
     const denied = await requireTier(supabase, user.id, 'pro', 'food_scan');
     if (denied) return denied;
 
+    // Quota after the tier gate (see form-feedback for the reasoning).
+    const overQuota = await requireQuota(supabase, user.id, 'food_scan', DAILY_QUOTA.food_scan);
+    if (overQuota) return overQuota;
+
     const body = await req.json() as { image_base64?: string };
 
     if (!body.image_base64) {
       return errorResponse('image_base64 is required', 400);
     }
     // Cap payload (~8MB raw ≈ 11M base64 chars) to prevent memory-abuse DoS.
-    if (body.image_base64.length > 11_000_000) {
+    // Shared cap (was a local 11MB literal, above the provider's own ceiling).
+    if (body.image_base64.length > MAX_IMAGE_BASE64_LEN) {
       return errorResponse('Image too large', 413);
     }
 

@@ -5,6 +5,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { checkRateLimit } from '../_shared/security.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 // Auth alone is not cost control here. Every token this mints starts a voice
 // call billed BY THE MINUTE, so a single free account looping this endpoint bills
@@ -59,6 +60,12 @@ serve(async (req) => {
     if (!checkRateLimit(user.id, 'elevenlabs-call:hourly', CALL_HOURLY_REQUESTS, CALL_HOURLY_WINDOW_MS)) {
       return json({ error: 'Call limit reached for this hour.' }, 429);
     }
+
+    // Durable daily ceiling on minted call tokens. NOTE this bounds how many
+    // calls START, not how long each runs — conversation length is billed per
+    // minute and can only be capped on the agent in the ElevenLabs dashboard.
+    const overQuota = await requireQuota(supabase, user.id, 'voice_call_token', DAILY_QUOTA.voice_call_token);
+    if (overQuota) return overQuota;
 
     // Defensively trim — a trailing space/newline from a dashboard paste makes
     // ElevenLabs reject the key with 401.

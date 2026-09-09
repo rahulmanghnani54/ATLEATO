@@ -185,12 +185,14 @@ FitAI Pro Privacy Policy
 What we collect:
 - Account email (via Supabase Auth)
 - Workout logs and training data
-- Physique photos: encrypted on your device using AES-256-GCM before upload.
-  We cannot decrypt or view your photos. Only you hold the encryption key.
+- Physique photos: encrypted on your device with AES-256-GCM before upload, using
+  a key that never leaves your device — so the copy we STORE cannot be decrypted
+  by us. To score a check-in, the photo is also sent once, unencrypted over an
+  encrypted connection, to our AI provider (Anthropic). It is never used to train
+  any model and we keep no plaintext copy.
 - AI coaching interactions (text only, not stored long-term)
 
 What we don't collect:
-- Unencrypted photos
 - Location data
 - Contacts
 
@@ -221,9 +223,17 @@ Host this at a URL you control (e.g. `yourwebsite.com/privacy` or a public Notio
 
 ### Data safety form
 Under App content → Data safety:
-- Photos: yes, encrypted, not shared with third parties
+- Photos: collected, encrypted in transit, **SHARED with a third party** (Anthropic,
+  for check-in scoring). Purpose: app functionality. Users can request deletion.
 - App activity (workout logs): yes, required for app functionality
 - Personal info (email): yes, account management
+
+> **Do not declare photos "not shared".** They are sent to Anthropic on every
+> physique check-in (hooks/usePhysiqueCheckins.ts sends the plaintext jpeg to the
+> analyze-physique function, which forwards it to api.anthropic.com). The
+> client-side encryption protects the STORED blob, not the scoring path. A Data
+> Safety declaration that contradicts what the app does is a policy violation and
+> a removal risk, and it is checked against observed network behaviour.
 
 ---
 

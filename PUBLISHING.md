@@ -77,7 +77,7 @@ This is for the hungry. Not the curious.
 
 #1 CHOICE OF SERIOUS LIFTERS
 Built by an athlete, for athletes. Privacy-first (your physique photos
-stay encrypted on your device). Zero ads. Zero noise.
+are encrypted with a key only your device holds). Zero ads. Zero noise.
 
 Download Evulto. Your coach is calling.
 ```

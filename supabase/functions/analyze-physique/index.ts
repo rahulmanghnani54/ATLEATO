@@ -4,8 +4,11 @@ import {
   corsHeaders, jsonResponse, errorResponse, internalError,
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
-import { checkRateLimit, ALLOWED_PERSONAS } from '../_shared/security.ts';
+import {
+  checkRateLimit, ALLOWED_PERSONAS, MAX_IMAGE_BASE64_LEN, MAX_IMAGES_TOTAL_BASE64_LEN,
+} from '../_shared/security.ts';
 import { requireTier } from '../_shared/entitlement.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
 const VISION_MODEL = 'claude-sonnet-4-5-20251001';
@@ -87,9 +90,38 @@ async function callClaudeVision(
       messages: [{ role: 'user', content: userContent }],
     }),
   });
-  if (!response.ok) throw new Error(`Claude Vision API error ${response.status}`);
+  if (!response.ok) {
+    // Read the body before throwing: this is the most expensive call we make,
+    // and without the reason an empty credit balance or an oversize image is
+    // indistinguishable from any other 4xx. No user data in an error body.
+    let bodyText = '';
+    try { bodyText = await response.text(); } catch { /* ignore */ }
+    console.error(`[analyze-physique] Claude Vision error ${response.status}:`, bodyText.slice(0, 500));
+    throw new Error(`Claude Vision API error ${response.status}`);
+  }
   const data = await response.json();
   return data.content?.find((c: { type: string }) => c.type === 'text')?.text ?? '';
+}
+
+// Reject before spending: image tokens scale with pixel count, so an unbounded
+// upload is an unbounded bill.
+//
+// TWO limits, because either alone is insufficient. Per-image keeps a single
+// payload under the provider's own ceiling; the TOTAL is what actually bounds
+// the bill, since compare mode accepts six images and the cost is their sum.
+const TOO_LARGE = 'Image too large. Please retake the photo and try again.';
+
+function imageLengths(...sets: ImageSet[]): number[] {
+  return sets
+    .flatMap((s) => [s.front, s.side, s.back])
+    .filter((b): b is string => typeof b === 'string')
+    .map((b) => b.length);
+}
+
+function oversized(...sets: ImageSet[]): boolean {
+  const lens = imageLengths(...sets);
+  if (lens.some((n) => n > MAX_IMAGE_BASE64_LEN)) return true;
+  return lens.reduce((a, b) => a + b, 0) > MAX_IMAGES_TOTAL_BASE64_LEN;
 }
 
 serve(async (req) => {
@@ -115,6 +147,12 @@ serve(async (req) => {
     // images and runs Sonnet vision, the most expensive call in the app.
     const denied = await requireTier(supabase, user.id, 'pro', 'physique_photos');
     if (denied) return denied;
+
+    // Quota after the tier gate. This endpoint sends multi-MB images to a
+    // Sonnet-tier vision model and is the most expensive call we make, so its
+    // allowance is the tightest of the paid features.
+    const overQuota = await requireQuota(supabase, user.id, 'physique_analysis', DAILY_QUOTA.physique_analysis);
+    if (overQuota) return overQuota;
 
     const body = await req.json() as {
       mode?: unknown;
@@ -144,6 +182,7 @@ serve(async (req) => {
         back: typeof body.backImageBase64 === 'string' ? body.backImageBase64 : undefined,
       };
       if (!images.front) return errorResponse('frontImageBase64 required for single mode', 400);
+      if (oversized(images)) return errorResponse(TOO_LARGE, 413);
 
       const userContent = [
         ...buildImageContent(images),
@@ -179,6 +218,8 @@ serve(async (req) => {
       side: typeof (rawB as any)?.side === 'string' ? (rawB as any).side : undefined,
       back: typeof (rawB as any)?.back === 'string' ? (rawB as any).back : undefined,
     };
+    // Both sets together — six images, and the bill is their sum.
+    if (oversized(aImages, bImages)) return errorResponse(TOO_LARGE, 413);
     if (!aImages.front || !bImages.front) {
       return errorResponse(
         'checkinAImages.front and checkinBImages.front required for compare mode',

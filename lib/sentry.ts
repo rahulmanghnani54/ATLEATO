@@ -33,6 +33,32 @@ export function initSentry(): void {
     environment: __DEV__ ? 'development' : 'production',
     // Trim noisy breadcrumbs.
     maxBreadcrumbs: 50,
+    // DROP EVERY CONSOLE BREADCRUMB.
+    //
+    // @sentry/react-native enables console breadcrumbs by default, so every
+    // surviving console.* call is attached to the next error event and uploaded.
+    // That turned ordinary debug logging into a PII exfiltration path: the coach
+    // call screen was logging the user's name, goals, PR lifts, recovery and
+    // sleep, and it all went to sentry.io under their user id.
+    //
+    // Gating individual log lines is necessary but not sufficient — it relies on
+    // every future line remembering. This is the systemic half: console output
+    // never becomes a breadcrumb, whatever anyone logs later.
+    beforeBreadcrumb: (crumb) => (crumb.category === 'console' ? null : crumb),
+    // Belt and braces on the event itself. lib/analytics.ts enforces a PII deny
+    // regex; captureError() forwards an arbitrary caller-supplied object into
+    // `extra`, so strip the fields most likely to carry identity if one appears.
+    beforeSend: (event) => {
+      if (event.user) event.user = { id: event.user.id };
+      if (event.extra) {
+        for (const k of Object.keys(event.extra)) {
+          if (/email|name|phone|token|password|secret|address/i.test(k)) {
+            event.extra[k] = '[redacted]';
+          }
+        }
+      }
+      return event;
+    },
   });
 
   // One-shot startup ping (release builds only) so the dashboard flips from

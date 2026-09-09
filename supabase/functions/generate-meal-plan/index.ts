@@ -5,6 +5,7 @@ import {
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit, sanitize } from '../_shared/security.ts';
+import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders() });
@@ -61,6 +62,14 @@ Format the response as a structured meal plan with:
 - Daily total at the bottom
 
 Keep foods practical, affordable, and high-protein for the goal. Be specific with portions.`;
+
+    // Meter immediately before the provider call, not earlier: everything
+    // above this line can still return without spending a cent (validation,
+    // ownership checks, the not-enough-data path), and a unit consumed by a
+    // request that produced no inference is one the user paid for and did
+    // not receive.
+    const overQuota = await requireQuota(supabase, user.id, 'generate_meal_plan', DAILY_QUOTA.generate_meal_plan);
+    if (overQuota) return overQuota;
 
     const mealPlan = await callClaude(
       'You are a sports nutritionist creating practical, macro-optimised meal plans for athletes.',

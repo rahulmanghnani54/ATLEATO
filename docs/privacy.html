@@ -175,8 +175,19 @@
     <h3>2.3 Physique photos</h3>
     <p>
       Photos you take in the Physique Check-in feature are <strong>encrypted on your device</strong>
-      using a key only you hold. The encrypted blobs are uploaded to our storage, but
-      we cannot decrypt them — even with full database access — because we never see your key.
+      using a key only you hold. The encrypted blobs we store cannot be decrypted by us —
+      even with full database access — because we never see your key.
+    </p>
+    <p>
+      <strong>Scoring is the exception, and you should know about it.</strong> When you submit a
+      check-in, the photo is also sent — once, unencrypted, over an encrypted connection — to our
+      AI provider (Anthropic) so it can score muscle fullness, leanness and symmetry and write
+      your coaching note. The same happens for the two photos being compared when you use the
+      progress-comparison view. Under our provider's API terms your photo is <strong>never used to
+      train any model</strong>; it may be retained briefly (up to 30 days) for their automated
+      abuse monitoring before deletion, and we do not keep a plaintext copy at any point. If you
+      would rather no photo ever left your device, do not use the Physique Check-in feature —
+      every other part of Evulto works without it.
     </p>
 
     <h3>2.4 Push tokens</h3>
