@@ -108,23 +108,18 @@ const DEV_TIER_OVERRIDE = __DEV__
   ? (process.env.EXPO_PUBLIC_DEV_TIER as Tier | undefined)
   : undefined;
 
-// Founder comp accounts — these emails always resolve to LEGEND, in BOTH dev
-// and release builds. This is the safe "unlock for me, not everyone" lever:
-// it's keyed to specific accounts, so shipping it publicly grants nothing to
-// regular users. Add/remove emails here. (Lowercase.)
-const FOUNDER_EMAILS = new Set<string>([
-  '9alley27@gmail.com',
-  'madasales15@gmail.com',
-]);
-
-function isFounder(): boolean {
-  try {
-    const email = useAuthStore.getState().user?.email?.toLowerCase();
-    return !!email && FOUNDER_EMAILS.has(email);
-  } catch {
-    return false;
-  }
-}
+// Founder comp accounts USED to be a hardcoded email list here, resolving to
+// LEGEND on the client only. That was a lie the server never agreed with: since
+// 023 the edge functions decide entitlement from get_my_entitlement(), which
+// reads profiles.subscription_* and had never heard of that list. A comp account
+// therefore got the paid UI and a 403 from every paid call — the Form Coach
+// would open, the camera would run, and the inference would be refused.
+//
+// The grant now lives in the database (migration 027: provider 'comp', NULL
+// expiry) so client and server read the same row. To comp another account, add
+// it there, not here.
+//
+// It also removed two personal email addresses from a shipped binary.
 
 function referralActive(): boolean {
   return referralProUntil != null && Date.now() < referralProUntil;
@@ -150,8 +145,6 @@ function paidTier(): Tier {
  *  referral reward (the Vanguard pass = Legend, earned at 3 referrals).
  *  Dev override always wins. */
 function effectiveTier(): Tier {
-  // Founder comp accounts → always LEGEND (works in release too).
-  if (isFounder()) return 'legend';
   const base = DEV_TIER_OVERRIDE ?? paidTier();
   if (referralActive() && RANK[base] < RANK.legend) return 'legend';
   return base;
