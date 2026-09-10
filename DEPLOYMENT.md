@@ -221,6 +221,27 @@ Host this at a URL you control (e.g. `yourwebsite.com/privacy` or a public Notio
 - [ ] Short description (80 chars)
 - [ ] Full description (4000 chars)
 
+### App access (demo account) — REQUIRED, and easy to forget
+
+Under App content → App access, choose **All or some functionality is
+restricted** and supply working demo credentials. Evulto gates Form Coach,
+physique check-ins, the food scanner and rewards behind Pro/Legend, so a
+reviewer with a free account sees paywalls where the listing promises features.
+That is a common rejection reason.
+
+1. Sign the demo account up through the app like a normal user. "Confirm
+   email" is ON, so the address must receive mail — a Gmail plus-alias
+   (`you+demo@gmail.com`) lands in your existing inbox and Supabase treats it
+   as a separate account.
+2. Set the address at the top of `supabase/migrations/028_demo_account_comp.sql`
+   and apply it. That grants Legend as a comp through the normal entitlement
+   columns, so the server honours it too — a client-only unlock would give the
+   reviewer the paid UI and a 403 from every AI call (see 027).
+3. Enter the email and password in App access, plus any instructions the
+   reviewer needs (e.g. "coach calls require notification permission").
+4. Re-check it still works before each submission. A comp that silently lapsed
+   fails review with no useful error.
+
 ### Data safety form
 Under App content → Data safety:
 - Photos: collected, encrypted in transit, **SHARED with a third party** (Anthropic,
