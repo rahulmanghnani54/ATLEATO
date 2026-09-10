@@ -33,6 +33,7 @@ import { PressableScale } from '@/components/ui/motion';
 import { Fonts } from '@/constants/theme';
 import { supabase, preserveRecoveryVerifier } from '@/lib/supabase';
 import { authErrorMessage } from '@/lib/authErrors';
+import { captureError } from '@/lib/sentry';
 import { signInWithProvider, type OAuthProvider } from '@/lib/socialAuth';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
@@ -93,8 +94,20 @@ export default function Login() {
     try {
       await signInWithProvider(provider);
       // On success the auth-state listener (app/_layout.tsx) navigates.
-    } catch {
-      setError('Could not sign in with that provider. Please try again.');
+    } catch (e) {
+      // REPORT the cause, do not swallow it. This catch used to be a bare
+      // `catch {}`, so when OAuth started failing there was no error in logcat,
+      // nothing in Sentry, and no way to tell a provider outage from a broken
+      // redirect from a stripped native module — the user got one sentence and
+      // we got nothing. Enumeration-safe: the generic sentence is still what the
+      // SCREEN shows; the detail goes to our own telemetry.
+      const detail = e instanceof Error ? e.message : String(e);
+      captureError(e instanceof Error ? e : new Error(detail), {
+        where: 'login.handleOAuth',
+        provider,
+      });
+      if (__DEV__) console.warn('[oauth] failed:', provider, detail);
+      setError(`Could not sign in with that provider. (${detail})`);
     } finally {
       setLoading(false);
     }
