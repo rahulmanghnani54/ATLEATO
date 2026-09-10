@@ -61,6 +61,57 @@ export async function callClaude(
   return data.content.find((c) => c.type === 'text')?.text ?? '';
 }
 
+/**
+ * Vision call. Same transport as callClaude, but the user turn is a content
+ * ARRAY (image blocks + text) rather than a string.
+ *
+ * Lives here rather than in one function because two endpoints need it:
+ * analyze-physique (Sonnet, scoring a body) and analyze-food-photo (Haiku,
+ * identifying a meal). The model is a parameter because those two differ by
+ * roughly 3x in price and only one of them needs the stronger model.
+ *
+ * Errors are logged with their body for the same reason as callClaude: an
+ * empty credit balance is the most likely production failure and it must not
+ * reach the user as a bare "internal error".
+ */
+export const VISION_MODEL_STRONG = 'claude-sonnet-4-5-20251001';
+export const VISION_MODEL_CHEAP = CLAUDE_MODEL;
+
+export async function callClaudeVision(
+  systemPrompt: string,
+  userContent: unknown[],
+  maxTokens = 1024,
+  model: string = VISION_MODEL_STRONG,
+): Promise<string> {
+  const response = await fetch(ANTHROPIC_API_URL, {
+    method: 'POST',
+    headers: {
+      'x-api-key': ANTHROPIC_API_KEY!,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }],
+    }),
+  });
+
+  if (!response.ok) {
+    let bodyText = '';
+    try { bodyText = await response.text(); } catch { /* ignore */ }
+    console.error(`[claude:vision] API error ${response.status}:`, bodyText.slice(0, 500));
+    const err = new Error(`Claude Vision API error ${response.status}`);
+    (err as any).status = response.status;
+    (err as any).anthropicBody = bodyText;
+    throw err;
+  }
+
+  const data: ClaudeResponse = await response.json();
+  return data.content.find((c) => c.type === 'text')?.text ?? '';
+}
+
 export function corsHeaders() {
   return {
     // Wildcard origin is required for the Supabase JS client from native mobile and

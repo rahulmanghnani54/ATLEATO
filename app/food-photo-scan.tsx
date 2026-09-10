@@ -199,7 +199,18 @@ export default function FoodPhotoScan() {
       if (error) throw error;
 
       const result = data as { matches: FoodMatch[] };
-      if (!result?.matches?.length) throw new Error('No matches returned');
+
+      // An EMPTY array is a correct answer, not a failure: the scanner looked
+      // and there was no food in frame. Reporting that as 'Analysis failed'
+      // sends the user off to retake a photo that was fine.
+      if (!result?.matches?.length) {
+        Alert.alert(
+          'No food found',
+          'That photo does not seem to contain food. Try again with the meal filling more of the frame.',
+          [{ text: 'OK', onPress: () => setStep('capture') }],
+        );
+        return;
+      }
 
       setMatches(result.matches);
       setSelectedIndex(0);

@@ -20,6 +20,13 @@ export PATH=/home/rahul_coder/node20/bin:$JAVA_HOME/bin:$ANDROID_HOME/platform-t
 export EXPO_PUBLIC_ENABLE_HEALTH=1
 export GRADLE_USER_HOME=/mnt/d/dev/.gradle
 
+# Metro needs more heap than Node gives it by default. Bundling this app is
+# ~4,500 modules and it died twice at 95.6% of createBundleReleaseJsAndAssets
+# with NO error in the log — the signature of the bundler process being killed
+# rather than failing. The box has 7.6GB free, so the ceiling was Node's own
+# old-space limit, not the system.
+export NODE_OPTIONS=--max-old-space-size=6144
+
 PROJ=/mnt/d/Dev/fitai-pro-app
 LOG=$PROJ/build-evulto.log
 APKDIR=$PROJ/android/app/build/outputs/apk/release

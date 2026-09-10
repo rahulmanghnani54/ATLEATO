@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   corsHeaders, jsonResponse, errorResponse, internalError,
+  callClaudeVision, VISION_MODEL_CHEAP,
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import { checkRateLimit, MAX_IMAGE_BASE64_LEN } from '../_shared/security.ts';
@@ -9,8 +10,20 @@ import { requireTier } from '../_shared/entitlement.ts';
 import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
 // ---------------------------------------------------------------------------
-// MVP food recognition — returns realistic mock macro data.
-// In production this would forward the base64 image to a vision model.
+// Food recognition from a photo.
+//
+// WHAT THIS USED TO DO: accept an up-to-8MB image, discard it without looking
+// at it, sleep 600ms to imitate analysis, then return three foods shuffled with
+// Math.random() and confidence scores randomised between 0.72 and 0.92 —
+// behind a requireTier('pro') gate labelled "AI Food Scanner".
+//
+// That is worse than a broken feature. The failure was not an error the user
+// could retry; it was confident wrong macros written into their nutrition
+// history, indistinguishable from a working scanner, sold as a paid feature.
+//
+// It now actually looks at the photo. Haiku rather than Sonnet: identifying a
+// plate of food is far easier than scoring a physique, and this is the
+// higher-volume endpoint of the two.
 // ---------------------------------------------------------------------------
 
 interface FoodMatch {
@@ -23,45 +36,85 @@ interface FoodMatch {
   confidence: number;
 }
 
-// Curated list of common foods with realistic macros per serving
-const FOOD_DATABASE: FoodMatch[] = [
-  // High-protein mains
-  { food_name: 'Grilled Chicken Breast', calories: 284, protein: 53, carbs: 0, fat: 6, serving_size: '170g', confidence: 0 },
-  { food_name: 'Scrambled Eggs (3 large)', calories: 234, protein: 18, carbs: 2, fat: 17, serving_size: '3 eggs', confidence: 0 },
-  { food_name: 'Salmon Fillet', calories: 310, protein: 44, carbs: 0, fat: 14, serving_size: '170g', confidence: 0 },
-  { food_name: 'Beef Steak (sirloin)', calories: 358, protein: 48, carbs: 0, fat: 18, serving_size: '170g', confidence: 0 },
-  { food_name: 'Paneer Tikka', calories: 290, protein: 20, carbs: 8, fat: 19, serving_size: '150g', confidence: 0 },
-  // Carb-heavy meals
-  { food_name: 'White Rice (cooked)', calories: 242, protein: 4, carbs: 53, fat: 0, serving_size: '180g', confidence: 0 },
-  { food_name: 'Dal Makhani', calories: 310, protein: 12, carbs: 38, fat: 12, serving_size: '200g', confidence: 0 },
-  { food_name: 'Pasta (cooked, marinara)', calories: 385, protein: 14, carbs: 67, fat: 8, serving_size: '250g', confidence: 0 },
-  { food_name: 'Oatmeal (with milk)', calories: 280, protein: 10, carbs: 46, fat: 7, serving_size: '300ml bowl', confidence: 0 },
-  { food_name: 'Roti / Chapati (2)', calories: 212, protein: 6, carbs: 40, fat: 4, serving_size: '2 rotis', confidence: 0 },
-  // Mixed meals
-  { food_name: 'Chicken Biryani', calories: 490, protein: 28, carbs: 58, fat: 14, serving_size: '300g', confidence: 0 },
-  { food_name: 'Burger (beef, standard)', calories: 540, protein: 30, carbs: 44, fat: 25, serving_size: '1 burger', confidence: 0 },
-  { food_name: 'Caesar Salad (with chicken)', calories: 360, protein: 28, carbs: 14, fat: 22, serving_size: '250g', confidence: 0 },
-  { food_name: 'Greek Yogurt Bowl', calories: 220, protein: 18, carbs: 24, fat: 6, serving_size: '200g', confidence: 0 },
-  { food_name: 'Protein Shake (whey, milk)', calories: 310, protein: 40, carbs: 22, fat: 6, serving_size: '400ml', confidence: 0 },
-  // Snacks / small items
-  { food_name: 'Banana', calories: 105, protein: 1, carbs: 27, fat: 0, serving_size: '1 medium', confidence: 0 },
-  { food_name: 'Almonds (handful)', calories: 164, protein: 6, carbs: 6, fat: 14, serving_size: '28g', confidence: 0 },
-  { food_name: 'Avocado Toast', calories: 290, protein: 8, carbs: 32, fat: 16, serving_size: '1 slice', confidence: 0 },
-  { food_name: 'Pizza Slice (cheese)', calories: 272, protein: 12, carbs: 34, fat: 10, serving_size: '1 slice', confidence: 0 },
-  { food_name: 'Masala Omelette (2 eggs)', calories: 198, protein: 14, carbs: 4, fat: 14, serving_size: '2 eggs', confidence: 0 },
-];
+const SYSTEM_PROMPT = [
+  'You identify food in a photograph and estimate its nutrition.',
+  '',
+  'Return ONLY a JSON array. No prose, no markdown fence. Each element:',
+  '  {"food_name": string, "calories": number, "protein": number,',
+  '   "carbs": number, "fat": number, "serving_size": string,',
+  '   "confidence": number}',
+  '',
+  'Rules:',
+  '- Return 1 to 3 items, most likely first. If the plate holds several distinct',
+  '  foods, list them separately rather than inventing one combined dish.',
+  '- protein/carbs/fat are grams and calories are kcal, for the portion you can',
+  '  SEE - not a generic serving. Estimate the portion from the image.',
+  '- serving_size describes what you estimated, e.g. "about 200g" or "1 bowl".',
+  '- confidence is 0..1 and must reflect real uncertainty. A clear single food',
+  '  is high; a blurry mixed plate is low. Do not inflate it.',
+  '- If the image contains no food at all, return exactly [].',
+  '- Never name a dish or cuisine you cannot see evidence for.',
+].join('\n');
 
-/** Pick 3 random but distinct foods and assign descending confidence scores */
-function pickMatches(): FoodMatch[] {
-  const shuffled = [...FOOD_DATABASE].sort(() => Math.random() - 0.5);
-  const top3 = shuffled.slice(0, 3);
-  // Assign realistic confidence: first is most confident
-  const confidences = [
-    parseFloat((0.72 + Math.random() * 0.20).toFixed(2)),  // 0.72–0.92
-    parseFloat((0.45 + Math.random() * 0.22).toFixed(2)),  // 0.45–0.67
-    parseFloat((0.20 + Math.random() * 0.22).toFixed(2)),  // 0.20–0.42
-  ];
-  return top3.map((food, i) => ({ ...food, confidence: confidences[i] }));
+/**
+ * Parse the model's reply into matches.
+ *
+ * FAILS CLOSED: anything unparseable returns null and the caller reports an
+ * honest error. The whole point of this rewrite is that a wrong number must
+ * never again be presented as a right one, so "couldn't read it" has to be a
+ * reachable outcome.
+ */
+function parseMatches(raw: string): FoodMatch[] | null {
+  try {
+    const start = raw.indexOf('[');
+    const end = raw.lastIndexOf(']');
+    if (start === -1 || end === -1 || end < start) return null;
+
+    const parsed = JSON.parse(raw.slice(start, end + 1));
+    if (!Array.isArray(parsed)) return null;
+
+    // Ceilings are sanity bounds, not opinions: a single photographed portion
+    // above these means the model mis-estimated, and writing that into someone's
+    // nutrition history is the exact failure this endpoint exists to avoid.
+    const num = (v: unknown, max: number): number | null => {
+      const n = Number(v);
+      if (!Number.isFinite(n) || n < 0 || n > max) return null;
+      return Math.round(n);
+    };
+
+    const out: FoodMatch[] = [];
+    for (const item of parsed.slice(0, 3)) {
+      if (!item || typeof item !== 'object') continue;
+      const r = item as Record<string, unknown>;
+
+      const name = typeof r.food_name === 'string' ? r.food_name.trim().slice(0, 80) : '';
+      const calories = num(r.calories, 5000);
+      const protein = num(r.protein, 500);
+      const carbs = num(r.carbs, 1000);
+      const fat = num(r.fat, 500);
+      if (!name || calories === null || protein === null || carbs === null || fat === null) continue;
+
+      const rawConf = Number(r.confidence);
+      const confidence = Number.isFinite(rawConf)
+        ? Math.min(1, Math.max(0, Number(rawConf.toFixed(2))))
+        : 0.5;
+
+      out.push({
+        food_name: name,
+        calories,
+        protein,
+        carbs,
+        fat,
+        serving_size: typeof r.serving_size === 'string' && r.serving_size.trim()
+          ? r.serving_size.trim().slice(0, 40)
+          : 'estimated portion',
+        confidence,
+      });
+    }
+    return out;
+  } catch {
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -71,8 +124,6 @@ serve(async (req) => {
   try {
     // Auth gate — require a valid Supabase JWT. The client calls this via
     // supabase.functions.invoke(), which attaches the user's token automatically.
-    // This endpoint is the intended home for real vision inference, so it must
-    // never be anonymously callable (that would be unlimited paid inference).
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return errorResponse('Unauthorized', 401);
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
@@ -81,18 +132,19 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return errorResponse('Unauthorized', 401);
 
-    // Per-user rate limit — vision is expensive; 5/min is generous for a camera flow.
+    // Per-user burst limit — vision is expensive; 5/min is generous for a camera flow.
     if (!checkRateLimit(user.id, 'analyze-food-photo', 5, 60_000)) {
       return errorResponse('Too many requests. Please wait a moment.', 429);
     }
 
-    // Entitlement: the food scanner is featureGates food_scan = 'pro'. Gated
-    // before req.json() so an unentitled caller can't make us buffer an ~8MB
-    // upload, and before this endpoint becomes real (paid) vision inference.
+    // Entitlement: featureGates food_scan = 'pro'. Gated before req.json() so an
+    // unentitled caller cannot make us buffer a multi-MB upload.
     const denied = await requireTier(supabase, user.id, 'pro', 'food_scan');
     if (denied) return denied;
 
-    // Quota after the tier gate (see form-feedback for the reasoning).
+    // Quota after the tier gate, and before the body is parsed: decoding a
+    // multi-MB base64 image IS the expensive operation here, so metering has to
+    // precede it (see the ordering note in _shared/quota.ts).
     const overQuota = await requireQuota(supabase, user.id, 'food_scan', DAILY_QUOTA.food_scan);
     if (overQuota) return overQuota;
 
@@ -101,22 +153,46 @@ serve(async (req) => {
     if (!body.image_base64) {
       return errorResponse('image_base64 is required', 400);
     }
-    // Cap payload (~8MB raw ≈ 11M base64 chars) to prevent memory-abuse DoS.
-    // Shared cap (was a local 11MB literal, above the provider's own ceiling).
     if (body.image_base64.length > MAX_IMAGE_BASE64_LEN) {
-      return errorResponse('Image too large', 413);
+      return errorResponse('Image too large. Please retake the photo and try again.', 413);
     }
 
-    // Simulate ~600ms analysis latency
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    const raw = await callClaudeVision(
+      SYSTEM_PROMPT,
+      [
+        {
+          type: 'image',
+          source: { type: 'base64', media_type: 'image/jpeg', data: body.image_base64 },
+        },
+        { type: 'text', text: 'Identify the food in this photo and estimate its nutrition.' },
+      ],
+      700,
+      VISION_MODEL_CHEAP,
+    );
 
-    const matches = pickMatches();
+    const matches = parseMatches(raw);
+
+    // Unparseable reply. The previous implementation could not fail, which is
+    // precisely why its wrong answers were invisible.
+    if (matches === null) {
+      return errorResponse('Could not read that photo. Please retake it and try again.', 502);
+    }
+
+    // Genuinely nothing edible in frame — a real answer, not an error.
+    if (matches.length === 0) {
+      return jsonResponse({
+        matches: [],
+        analyzed_at: new Date().toISOString(),
+        model: VISION_MODEL_CHEAP,
+        note: 'No food detected in this photo.',
+      });
+    }
 
     return jsonResponse({
       matches,
       analyzed_at: new Date().toISOString(),
-      model: 'food-vision-mvp-v1',
-      note: 'MVP heuristic estimation — accuracy improves with vision model integration',
+      model: VISION_MODEL_CHEAP,
+      note: 'Estimated from the photo. Portions are approximate — adjust before logging.',
     });
   } catch {
     return internalError();

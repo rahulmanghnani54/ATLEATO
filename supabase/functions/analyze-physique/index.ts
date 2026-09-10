@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   corsHeaders, jsonResponse, errorResponse, internalError,
+  callClaudeVision, VISION_MODEL_STRONG,
   SUPABASE_URL, SUPABASE_ANON_KEY,
 } from '../_shared/claude.ts';
 import {
@@ -10,11 +11,13 @@ import {
 import { requireTier } from '../_shared/entitlement.ts';
 import { requireQuota, DAILY_QUOTA } from '../_shared/quota.ts';
 
-const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1/messages';
-const VISION_MODEL = 'claude-sonnet-4-5-20251001';
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
-
-if (!ANTHROPIC_API_KEY) throw new Error('ANTHROPIC_API_KEY env var is required');
+// The model, the API key and the call itself now all live in
+// _shared/claude.ts. This file used to carry its own copy of the whole vision
+// request plus its own key validation — two implementations of the same thing,
+// which is how they quietly drift apart. Only the model CHOICE stays here,
+// because it is a per-endpoint cost decision: physique scoring needs the strong
+// model, food recognition does not.
+const VISION_MODEL = VISION_MODEL_STRONG;
 
 const PERSONA_VOICES: Record<string, string> = {
   cbum: 'The Sculptor (calm, technical, focuses on symmetry and conditioning)',
@@ -69,38 +72,6 @@ function extractJsonAndNarrative(text: string): { jsonObj: Record<string, unknow
   } catch {
     return null;
   }
-}
-
-async function callClaudeVision(
-  systemPrompt: string,
-  userContent: unknown[],
-  maxTokens: number,
-): Promise<string> {
-  const response = await fetch(ANTHROPIC_API_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: VISION_MODEL,
-      max_tokens: maxTokens,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userContent }],
-    }),
-  });
-  if (!response.ok) {
-    // Read the body before throwing: this is the most expensive call we make,
-    // and without the reason an empty credit balance or an oversize image is
-    // indistinguishable from any other 4xx. No user data in an error body.
-    let bodyText = '';
-    try { bodyText = await response.text(); } catch { /* ignore */ }
-    console.error(`[analyze-physique] Claude Vision error ${response.status}:`, bodyText.slice(0, 500));
-    throw new Error(`Claude Vision API error ${response.status}`);
-  }
-  const data = await response.json();
-  return data.content?.find((c: { type: string }) => c.type === 'text')?.text ?? '';
 }
 
 // Reject before spending: image tokens scale with pixel count, so an unbounded
@@ -192,7 +163,7 @@ serve(async (req) => {
         },
       ];
 
-      const raw = await callClaudeVision(systemPrompt, userContent, 300);
+      const raw = await callClaudeVision(systemPrompt, userContent, 300, VISION_MODEL);
       const parsed = extractJsonAndNarrative(raw);
       if (!parsed) return errorResponse('AI returned unrecognized format — please retry', 502);
       const clamp = (n: unknown) => Math.min(10, Math.max(1, Math.round(Number(n))));
@@ -241,7 +212,7 @@ serve(async (req) => {
       },
     ];
 
-    const raw = await callClaudeVision(systemPrompt, userContent, 400);
+    const raw = await callClaudeVision(systemPrompt, userContent, 400, VISION_MODEL);
 
     const parsed = extractJsonAndNarrative(raw);
     if (!parsed) return errorResponse('AI returned unrecognized format — please retry', 502);
