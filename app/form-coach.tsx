@@ -89,13 +89,11 @@ const STALE_DETECTION_MS    = 1_000;
 const NUM_LANDMARKS         = 33;    // BlazePose body landmarks
 const CUE_COOLDOWN_MS       = 5_000;
 
-const PERSONA_LABELS: Record<string, string> = {
-  cbum:        'THE SCULPTOR SAYS',
-  arnold:      'THE GOVERNOR SAYS',
-  nippard:     'THE SCIENTIST SAYS',
-  ct_fletcher: 'THE COMMANDER SAYS',
-  dr_mike:     'DR. GROWTH SAYS',
-};
+// Persona display names come from lib/personaTheme.ts — see claudePersonaLabel
+// below. This file used to carry its own table, and it had drifted: it called
+// arnold "THE GOVERNOR" and nippard "THE SCIENTIST" while Home and every other
+// screen said "THE MONUMENT" and "THE ANALYST". A user saw two names for one
+// coach depending on which screen they were on.
 
 // The BlazePose landmark NAME→index map lives in MLKIT_TO_INDEX below, and the
 // analysis layer keeps its own copy in lib/vision. What this file needs from
@@ -413,7 +411,6 @@ export default function FormCoach() {
   const cameraHeight = Math.round(screenHeight * 0.62);
 
   const persona            = programIdToPersona(personaParam ?? 'cbum_evolved');
-  const claudePersonaLabel = PERSONA_LABELS[persona] ?? 'COACH SAYS';
 
   const { tokens, scheme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -434,6 +431,10 @@ export default function FormCoach() {
   const personaTheme = personaFromProgramId(personaParam ?? 'cbum_evolved');
   const stageAccent  = personaAccent(personaTheme, 'dark').accent;   // over video
   const pageAccent   = personaAccent(personaTheme, scheme);           // on the page
+  // One source for the coach's name. shortName is the uppercase eyebrow form
+  // ("THE SCULPTOR"), fullName the title-case sentence form ("The Sculptor").
+  const claudePersonaLabel = `${personaTheme.shortName} SAYS`;
+  const coachName          = personaTheme.fullName;
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const [facing, setFacing] = useState<'front' | 'back'>('back');
@@ -1297,8 +1298,8 @@ export default function FormCoach() {
           <Sparkles size={14} color={tokens.textSecondary} />
           <Text style={styles.cueBtnText}>
             {cooldownLeft > 0
-              ? `Ask ${claudePersonaLabel.split(' ')[0]} again (${cooldownLeft}s)`
-              : `Ask ${claudePersonaLabel.split(' ')[0]} for a cue`}
+              ? `Ask ${coachName} again (${cooldownLeft}s)`
+              : `Ask ${coachName} for a cue`}
           </Text>
         </PressableScale>
 
