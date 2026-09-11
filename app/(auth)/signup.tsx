@@ -35,6 +35,12 @@ import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 
 type FieldKey = 'name' | 'email' | 'password' | 'confirm';
 
+// Mirrors login.tsx. Signup had NO format check, so a typo like "gmail com"
+// went straight to Supabase, which rejected it — and the enumeration-safe
+// error mapping then told the user "If you already have one, try signing in",
+// which is exactly the wrong advice for a misspelled address.
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function Signup() {
   const { tokens, scheme } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -54,6 +60,7 @@ export default function Signup() {
     if (!fullName.trim() || !email.trim() || !password || !confirmPassword) {
       setError('Please fill in all fields.'); return;
     }
+    if (!EMAIL_RE.test(email.trim())) { setError('Please enter a valid email address.'); return; }
     if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setError('');

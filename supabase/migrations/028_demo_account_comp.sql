@@ -30,7 +30,7 @@
 DO $$
 DECLARE
   -- ↓↓↓ SET THIS to the address you signed the demo account up with ↓↓↓
-  v_demo_email TEXT := 'skillupstudents.learnnearn+demo@gmail.com';
+  v_demo_email TEXT := 'evulto.app+demo@gmail.com';
   v_updated    INTEGER;
   v_exists     BOOLEAN;
 BEGIN
