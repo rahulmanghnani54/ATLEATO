@@ -312,9 +312,23 @@ const leanBy = ([a, b]: Kpt[], f: Frame) => f.u(Math.abs(a[0] - b[0]));
 const shiftBySpan = ([a, b]: Kpt[], f: Frame) => Math.abs(a[0] - b[0]) / f.sw;
 
 /** Torso stacked over the hips. Shared by five exercises at different tolerances,
- *  because a squat legitimately pitches forward far more than a curl ever should. */
-const torsoStack = (id: string, phases: RepPhase[], band: Band, message: string) =>
-  bodyCheck(id, phases, [L.sh, L.hip], leanBy, band, message);
+ *  because a squat legitimately pitches forward far more than a curl ever should.
+ *
+ *  `uprightOnly` silences the check when the torso is closer to horizontal than
+ *  vertical. "Shoulders over hips" is a statement about an UPRIGHT lifter; a bench
+ *  press, push-up, floor press or bent-over row has no stack to keep, and the
+ *  lean of a lying torso reads ~1.0 torso lengths against a critAt of 0.38 — a
+ *  critical "keep your shoulders over your hips" on every single bench rep. The
+ *  same profile has to serve the overhead press and the bench, so the check
+ *  decides per frame which one it is looking at. Squat and lunge keep the
+ *  unconditional form: a torso past 45deg there IS the fault. */
+const torsoStack = (
+  id: string, phases: RepPhase[], band: Band, message: string, uprightOnly = false,
+) =>
+  bodyCheck(id, phases, [L.sh, L.hip], ([sh, hip], f) => {
+    if (uprightOnly && Math.abs(sh[0] - hip[0]) >= Math.abs(sh[1] - hip[1])) return NaN;
+    return leanBy([sh, hip], f);
+  }, band, message);
 
 // ── Profiles ─────────────────────────────────────────────────────────────────
 
@@ -356,8 +370,10 @@ export const PROFILES: Record<string, ExerciseProfile> = {
         [0.3, 0.38, 0.58], 'Stack your wrists directly over your elbows.'),
       endRangeCheck('press.lockout', ['top'], 'elbow', PRESS_TH.high,
         'Press all the way up until your arms are straight.'),
+      // Upright only: the same profile judges the bench press and the push-up,
+      // where the torso is horizontal by design.
       torsoStack('press.torso_stack', ['concentric', 'top'], [0.2, 0.26, 0.38],
-        'Keep your ribs down and your shoulders over your hips.'),
+        'Keep your ribs down and your shoulders over your hips.', true),
     ],
   },
 
@@ -457,8 +473,10 @@ export const PROFILES: Record<string, ExerciseProfile> = {
         ([ear, sh], f) => 0.14 - f.u(sh[1] - ear[1]),
         [0.0, 0.04, 0.1], 'Pull your shoulders down away from your ears.'),
       // 'eccentric' closes the elbow — the pull itself, and where kipping shows.
+      // Upright only: a bent-over or inverted row is pitched past 45deg by design,
+      // and that is a set-up, not a swing.
       torsoStack('pull.torso_swing', ['eccentric', 'bottom'], [0.22, 0.28, 0.4],
-        'Keep your body still and pull with your back.'),
+        'Keep your body still and pull with your back.', true),
       endRangeCheck('pull.full_stretch', ['top'], 'elbow', PULL_TH.high,
         'Let your arms straighten at the bottom of each rep.'),
     ],
