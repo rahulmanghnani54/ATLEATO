@@ -23,6 +23,7 @@ import {
   View,
 } from 'react-native';
 import { Link } from 'expo-router';
+import * as Linking from 'expo-linking';
 import { Eye, EyeOff } from 'lucide-react-native';
 
 import { CanvasScreen, Crown, Hairline } from '@/components/ui/canvas';
@@ -69,7 +70,18 @@ export default function Signup() {
     const { data, error: authError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { data: { full_name: fullName.trim() } },
+      options: {
+        data: { full_name: fullName.trim() },
+        // Without this the confirmation link falls back to the project's Site
+        // URL — the marketing site — so a brand-new user tapped "Confirm" and
+        // landed on evulto.com with no way back into the app except reopening
+        // it and signing in by hand. Same dead-end the password reset had.
+        //
+        // atleato://auth-callback is the OAuth landing route: it exchanges the
+        // PKCE code for a session and the root auth gate takes it from there,
+        // so a user who confirms on the phone they signed up on lands signed in.
+        emailRedirectTo: Linking.createURL('auth-callback'),
+      },
     });
 
     setLoading(false);
