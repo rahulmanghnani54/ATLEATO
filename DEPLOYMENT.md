@@ -233,10 +233,15 @@ That is a common rejection reason.
    email" is ON, so the address must receive mail — a Gmail plus-alias
    (`you+demo@gmail.com`) lands in your existing inbox and Supabase treats it
    as a separate account.
-2. Set the address at the top of `supabase/migrations/028_demo_account_comp.sql`
-   and apply it. That grants Legend as a comp through the normal entitlement
-   columns, so the server honours it too — a client-only unlock would give the
-   reviewer the paid UI and a 403 from every AI call (see 027).
+2. Comp it from the Supabase SQL editor — no migration, no deploy:
+
+       SELECT public.grant_comp('atleato.app+demo@gmail.com');
+
+   (migration 029). That grants Legend through the normal entitlement columns,
+   so the server honours it too — a client-only unlock would give the reviewer
+   the paid UI and a 403 from every AI call (see 027). It refuses to overwrite a
+   real purchase, and reports not_found if the account does not exist yet.
+   `revoke_comp(email)` undoes it.
 3. Enter the email and password in App access, plus any instructions the
    reviewer needs (e.g. "coach calls require notification permission").
 4. Re-check it still works before each submission. A comp that silently lapsed
