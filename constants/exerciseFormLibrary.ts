@@ -64,8 +64,10 @@ export interface ExerciseForm {
    *  measure (side-plane checks need 'side', x-offset checks need 'front'). */
   cameraAngle?: 'side' | 'front' | 'front_45';
   cameraNote?: string;
-  /** Clip descriptor; versioned because public objects are CDN-cached and an
-   *  in-place overwrite serves stale bytes. `null` = no clip yet → poster state. */
+  /** Optional clip metadata. The app looks for `<id>_v<version>.mp4` in the
+   *  tutorial bucket BY CONVENTION — version 1 when this is null/absent — so a
+   *  clip goes live by upload alone. Bump `version` only when re-shooting:
+   *  public objects are CDN-cached and an in-place overwrite serves stale bytes. */
   tutorial?: { version: number; durationSec: number | null } | null;
   /** What the camera can genuinely flag. `checkId` must be a check id declared
    *  in lib/vision/biomechanics.ts PROFILES (tested). Anything in commonMistakes

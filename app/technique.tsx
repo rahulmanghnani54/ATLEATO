@@ -142,7 +142,11 @@ export default function Technique() {
   const orientation: Orientation = form && LYING_FORM_IDS.has(form.id) ? 'lying' : 'standing';
   const category = visionCategoryFor(form);
   const region: BodyRegion = category && UPPER_CATEGORIES.has(category) ? 'upper' : 'lower';
-  const objectPath = form?.tutorial ? clipObjectPath(form.id, form.tutorial.version) : null;
+  // By convention, not by flag: every exercise with a form entry asks the
+  // bucket for `<id>_v<version>.mp4` (version 1 unless the entry says
+  // otherwise). Uploading a clip is therefore the whole release process; the
+  // player answers a 404 with the poster and lib/tutorialClips remembers it.
+  const objectPath = form ? clipObjectPath(form.id, form.tutorial?.version ?? 1) : null;
 
   const { loaded, entry, fastPath, watched, skipped, setupSeen } = useTutorialMemory(key);
 
@@ -170,6 +174,9 @@ export default function Technique() {
   // Where BACK on the setup step returns to — it is reachable from three places.
   const [setupReturn, setSetupReturn] = useState<Step>('done');
   const [clipFailed, setClipFailed] = useState(false);
+  // Set by the player once the clip is on disk and mounting — the CTA label
+  // follows what is actually on screen, not whether a clip might exist.
+  const [clipReady, setClipReady] = useState(false);
   const [busy, setBusy] = useState(false);
 
   // One `tutorial_shown` per screen, fired when the preview is first on screen
@@ -331,7 +338,7 @@ export default function Technique() {
   }
 
   if (step === 'preview') {
-    const hasClip = objectPath !== null && !clipFailed;
+    const hasClip = clipReady && !clipFailed;
     // An uncovered exercise's how-to card ends here: DONE, no camera claim.
     const primary = !covered ? 'DONE' : hasClip ? 'WATCH TECHNIQUE' : 'CONTINUE';
     return (
@@ -357,6 +364,7 @@ export default function Technique() {
           objectPath={objectPath}
           poster={renderFigure(playerH, false)}
           height={playerH}
+          onReady={() => setClipReady(true)}
           onError={() => setClipFailed(true)}
           accessibilityLabel={`${exerciseName} technique clip, looping`}
           testID="technique-player"

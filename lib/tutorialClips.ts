@@ -18,9 +18,85 @@
  * than importing `lib/supabase`: the clip path must stay reachable from a
  * presentational component without dragging the auth client along with it.
  */
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 
 export const TUTORIAL_BUCKET = 'tutorial-clips';
+
+/**
+ * Clips are looked up BY CONVENTION (`<form.id>_v1.mp4`), not from a list in
+ * the app, so uploading a file to the bucket is all it takes to light an
+ * exercise up — no release. The price of that is a probe for exercises that
+ * have no clip yet, which today is all of them. A 404 is cheap, but not on
+ * every open of every exercise: the answer is remembered here for
+ * MISSING_TTL_MS, in memory and on disk, so a card opens straight to its
+ * poster. The TTL is the longest a freshly uploaded clip can take to appear.
+ */
+const MISSING_KEY = 'tutorial_clips:missing:v1';
+export const MISSING_TTL_MS = 60 * 60 * 1000;
+export const CLIP_MISSING_MESSAGE = 'tutorial clip: not in bucket';
+
+let missing: Record<string, number> | null = null;
+let missingLoad: Promise<Record<string, number>> | null = null;
+
+function loadMissing(): Promise<Record<string, number>> {
+  if (missing) return Promise.resolve(missing);
+  if (!missingLoad) {
+    missingLoad = AsyncStorage.getItem(MISSING_KEY)
+      .then((raw) => {
+        const parsed: unknown = raw ? JSON.parse(raw) : null;
+        const out: Record<string, number> = {};
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+            if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+          }
+        }
+        return out;
+      })
+      .catch(() => ({}))
+      .then((out) => {
+        missing = out;
+        return out;
+      });
+  }
+  return missingLoad;
+}
+
+function persistMissing(): void {
+  if (!missing) return;
+  AsyncStorage.setItem(MISSING_KEY, JSON.stringify(missing)).catch(() => {});
+}
+
+/** True while a recent 404 for this object is on record. */
+export async function isClipKnownMissing(objectPath: string, now: number = Date.now()): Promise<boolean> {
+  const map = await loadMissing();
+  const at = map[objectPath];
+  if (at === undefined) return false;
+  if (now - at < MISSING_TTL_MS) return true;
+  delete map[objectPath];
+  persistMissing();
+  return false;
+}
+
+async function markClipMissing(objectPath: string, now: number = Date.now()): Promise<void> {
+  const map = await loadMissing();
+  map[objectPath] = now;
+  persistMissing();
+}
+
+async function clearClipMissing(objectPath: string): Promise<void> {
+  const map = await loadMissing();
+  if (objectPath in map) {
+    delete map[objectPath];
+    persistMissing();
+  }
+}
+
+/** Test seam: forget every remembered 404 and the loaded state. */
+export function _resetClipMissingForTests(): void {
+  missing = null;
+  missingLoad = null;
+}
 
 /** Folder under the cache directory that holds every downloaded clip. */
 const CACHE_FOLDER = `${TUTORIAL_BUCKET}/`;
@@ -109,6 +185,9 @@ export async function ensureClipCached(
   const info = await FileSystem.getInfoAsync(dest);
   if (info.exists) return dest;
 
+  // A recent 404 is an answer, not a failure to retry on every open.
+  if (await isClipKnownMissing(objectPath)) throw new Error(CLIP_MISSING_MESSAGE);
+
   // `intermediates` also makes this a no-op when the folder is already there.
   await FileSystem.makeDirectoryAsync(`${cacheDir}${CACHE_FOLDER}`, { intermediates: true });
 
@@ -125,8 +204,14 @@ export async function ensureClipCached(
   // after the caller has stopped listening.
   const settled = FileSystem.downloadAsync(clipPublicUrl(supabaseUrl, objectPath), tmp)
     .then(async (res) => {
-      if (res.status !== 200) throw new Error(`tutorial clip: HTTP ${res.status}`);
+      if (res.status !== 200) {
+        // Only "not there" is worth remembering. A 5xx or a captive portal is
+        // transient; treating it as missing would hide a clip for an hour.
+        if (res.status === 404) void markClipMissing(objectPath);
+        throw new Error(`tutorial clip: HTTP ${res.status}`);
+      }
       await FileSystem.moveAsync({ from: tmp, to: dest });
+      void clearClipMissing(objectPath);
       return dest;
     })
     .catch(async (e: unknown) => {

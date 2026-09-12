@@ -14,6 +14,9 @@
 
 // expo-file-system is a device boundary. Jest maps every `expo-*` import to an
 // empty stub, so the legacy API is replaced with spies the tests drive directly.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
 jest.mock('expo-file-system/legacy', () => ({
   cacheDirectory: 'file:///cache/',
   getInfoAsync: jest.fn(),
@@ -24,13 +27,18 @@ jest.mock('expo-file-system/legacy', () => ({
 }));
 
 import * as FileSystem from 'expo-file-system/legacy';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  CLIP_MISSING_MESSAGE,
+  MISSING_TTL_MS,
   TUTORIAL_BUCKET,
+  _resetClipMissingForTests,
   clipCachePath,
   clipObjectPath,
   clipPublicUrl,
   ensureClipCached,
   evictClip,
+  isClipKnownMissing,
 } from '@/lib/tutorialClips';
 
 const getInfoAsync = jest.mocked(FileSystem.getInfoAsync);
@@ -80,8 +88,10 @@ const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 // module registry is per-file. Put the variable back the way it was found.
 const ORIGINAL_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 
-beforeEach(() => {
+beforeEach(async () => {
   jest.clearAllMocks();
+  _resetClipMissingForTests();
+  await AsyncStorage.clear();
   process.env.EXPO_PUBLIC_SUPABASE_URL = SUPABASE_URL;
   getInfoAsync.mockResolvedValue({ exists: false, uri: CACHED, isDirectory: false });
   makeDirectoryAsync.mockResolvedValue(undefined);
@@ -314,5 +324,72 @@ describe('without a cache directory', () => {
     await expect(evictClip(OBJECT)).resolves.toBeUndefined();
 
     expect(deleteAsync).not.toHaveBeenCalled();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Remembered 404s — clips are looked up by convention, so "not there" must be
+// an answer the app keeps, not a request it repeats on every open.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('remembered 404s', () => {
+  const settled = (status: number) =>
+    downloadAsync.mockResolvedValue({ status, uri: '', headers: {}, mimeType: null } as never);
+
+  it('a 404 is remembered: the next call rejects without touching the network', async () => {
+    settled(404);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 404');
+    await flush();
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow(CLIP_MISSING_MESSAGE);
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+    await expect(isClipKnownMissing(OBJECT)).resolves.toBe(true);
+  });
+
+  it('survives a restart: the record is read back from storage', async () => {
+    settled(404);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 404');
+    await flush();
+
+    _resetClipMissingForTests(); // forget the in-memory copy only
+    await expect(isClipKnownMissing(OBJECT)).resolves.toBe(true);
+  });
+
+  it('expires after the TTL, so a later upload is found', async () => {
+    settled(404);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 404');
+    await flush();
+
+    await expect(isClipKnownMissing(OBJECT, Date.now() + MISSING_TTL_MS + 1)).resolves.toBe(false);
+    // ...and the expiry is durable, not just a read-time answer.
+    await expect(isClipKnownMissing(OBJECT)).resolves.toBe(false);
+  });
+
+  it('a 5xx is NOT remembered — transient failures must not hide a clip for an hour', async () => {
+    settled(503);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 503');
+    await flush();
+    await expect(isClipKnownMissing(OBJECT)).resolves.toBe(false);
+
+    settled(503);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 503');
+    expect(downloadAsync).toHaveBeenCalledTimes(2);
+  });
+
+  it('a cached file wins over a stale missing record', async () => {
+    settled(404);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 404');
+    await flush();
+
+    getInfoAsync.mockResolvedValue({ exists: true, uri: CACHED, isDirectory: false } as never);
+    await expect(ensureClipCached(OBJECT)).resolves.toBe(CACHED);
+  });
+
+  it('is scoped per object: one missing clip does not hide another', async () => {
+    settled(404);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 404');
+    await flush();
+    await expect(isClipKnownMissing('barbell_squat_v1.mp4')).resolves.toBe(false);
   });
 });
