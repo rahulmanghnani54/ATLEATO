@@ -34,8 +34,7 @@
 import { Calibrator, normalize, type BodyCalibration, type Kpt } from './calibration';
 import { getProfile, runChecks, type ExerciseProfile, type FormFinding } from './biomechanics';
 import { ExerciseStateMachine, type RepPhase, type RepResult } from './exerciseState';
-import { FormDecider, type FormVerdict } from './formDecision';
-import type { FormFinding as DecisionFinding, RepPhase as DecisionPhase } from './formDecision';
+import { FormDecider, type FormFinding as DecisionFinding, type FormVerdict, type RepPhase as DecisionPhase } from './formDecision';
 import { assessPoseQuality, SkeletonLock, type PoseQuality } from './poseQuality';
 
 export { anatomyPlausible, jointConfidenceTier, SkeletonLock } from './poseQuality';
