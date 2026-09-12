@@ -58,6 +58,19 @@ function warnNotConfigured(where: string) {
   console.log(`[billing] not configured (${where}) — no RevenueCat key or native module; billing disabled`);
 }
 
+/**
+ * Google Play reports a subscription as `<productId>:<basePlanId>` — in
+ * activeSubscriptions, on StoreProduct.identifier, and in the RevenueCat
+ * dashboard's product identifier. PRODUCT_IDS (lib/subscriptionManager) are
+ * the bare Play product ids, so every place that keys or matches on a store
+ * identifier must compare the bare form or the paywall silently falls back
+ * to hard-coded prices and to the deprecated purchaseProduct() path.
+ */
+export function bareProductId(raw: string): string {
+  const colon = raw.indexOf(':');
+  return colon > 0 ? raw.slice(0, colon) : raw;
+}
+
 /** True once RevenueCat has been configured with a real key. */
 export function isConfigured(): boolean {
   return configured;
@@ -137,12 +150,23 @@ export async function getOfferings(): Promise<PurchasesPackage[]> {
 
 /** Localized store prices keyed by store product id. Empty when billing is off. */
 export async function getPrices(): Promise<Record<string, string>> {
-  const packages = await getOfferings();
+  return indexPrices(await getOfferings());
+}
+
+/**
+ * Keyed by BOTH the raw identifier and its bare product id, so
+ * `prices[PRODUCT_IDS.PRO_MONTHLY]` resolves whether the store reported
+ * `atleato_pro_monthly` or `atleato_pro_monthly:monthly`. Exported for tests.
+ */
+export function indexPrices(packages: PurchasesPackage[]): Record<string, string> {
   const out: Record<string, string> = {};
   for (const pkg of packages) {
     const id = pkg?.product?.identifier;
     const price = pkg?.product?.priceString;
-    if (id && price) out[id] = price;
+    if (!id || !price) continue;
+    out[id] = price;
+    const bare = bareProductId(id);
+    if (!(bare in out)) out[bare] = price;
   }
   return out;
 }
@@ -161,9 +185,7 @@ export async function purchase(packageId: string): Promise<PurchaseResult> {
 
   try {
     const packages = await getOfferings();
-    const match = packages.find(
-      (p) => p.identifier === packageId || p.product?.identifier === packageId,
-    );
+    const match = findPackage(packages, packageId);
     const result = match
       ? await purchases.purchasePackage(match)
       : await purchases.purchaseProduct(packageId);
@@ -171,6 +193,22 @@ export async function purchase(packageId: string): Promise<PurchaseResult> {
   } catch (e) {
     return failureFrom(e);
   }
+}
+
+/**
+ * The package for a RevenueCat package id OR a store product id, tolerant of
+ * Play's `:basePlan` suffix on the product side. Exported for tests.
+ */
+export function findPackage(
+  packages: PurchasesPackage[],
+  packageId: string,
+): PurchasesPackage | undefined {
+  const want = bareProductId(packageId);
+  return packages.find((p) => {
+    if (p.identifier === packageId) return true;
+    const pid = p.product?.identifier;
+    return !!pid && (pid === packageId || bareProductId(pid) === want);
+  });
 }
 
 /** Restore purchases made on another device / after a reinstall. */
@@ -196,8 +234,7 @@ function activeProductIds(info: CustomerInfo | undefined): string[] {
   for (const raw of info.activeSubscriptions ?? []) {
     if (!raw) continue;
     ids.add(raw);
-    const colon = raw.indexOf(':');
-    if (colon > 0) ids.add(raw.slice(0, colon));
+    ids.add(bareProductId(raw));
   }
   return Array.from(ids);
 }
