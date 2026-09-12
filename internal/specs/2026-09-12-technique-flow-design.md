@@ -34,7 +34,7 @@ Form chip (session) / FORM CHECK (Train tab)
       first time  ► PREVIEW   clip or poster · KEY POINTS · [WATCH TECHNIQUE] [I KNOW THIS — SKIP]
                   ► DONE      READY TO CHECK YOUR FORM? · [START FORM CHECK] [WATCH AGAIN]
                   ► SETUP     SET UP YOUR CAMERA · figure · 6 rows · [CAMERA READY] [BACK]
-      known       ► READY     [START FORM CHECK] · VIEW TECHNIQUE · CAMERA SETUP
+      known       ► READY     [START FORM CHECK] · VIEW TECHNIQUE · CAMERA SETUP   (covered exercises only; how-to cards for uncovered exercises always open PREVIEW with DONE)
       no engine profile ► same PREVIEW, CTA = [DONE] (no camera claim)
  └─ router.replace → /form-coach   (stack: caller → form-coach; back returns to the workout)
       SETTING UP  ✓ Person ✓ Shoulders ✓ Elbows ✓ Wrists ✓ Hips  + one instruction
