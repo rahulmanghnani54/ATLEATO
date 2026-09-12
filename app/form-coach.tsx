@@ -44,16 +44,18 @@ import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { BigStat, CanvasScreen, Hairline, Section, StatRow } from '@/components/ui/canvas';
 import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
 import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
-import { getExerciseForm, getCoachCue, visionCategoryFor } from '@/constants/exerciseFormLibrary';
+import { getExerciseForm, getExerciseFormKey, getCoachCue, visionCategoryFor } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { canAccess } from '@/lib/featureGates';
 import {
   VisionEngine, anatomyPlausible, jointConfidenceTier,
-  type RepResult, type VisionFrameResult,
+  type FormVerdict, type RepPhase, type VisionFrameResult,
 } from '@/lib/vision';
-import { CameraCoach } from '@/components/formcoach/CameraCoach';
+import { toRepData, buildReport, type SetReport } from '@/lib/vision/repScore';
+import { getEntry, loadTutorialMemory, recordRetrigger, shouldRetrigger } from '@/lib/tutorialMemory';
+import { CameraCoach, type JointTiers } from '@/components/formcoach/CameraCoach';
 import { CalibrationOverlay } from '@/components/formcoach/CalibrationOverlay';
-import { FormReadout } from '@/components/formcoach/FormReadout';
+import { FormReadout, type FormReadoutState } from '@/components/formcoach/FormReadout';
 import {
   X as XIcon, RefreshCw, AlertTriangle, Check, Pause, Video, Sparkles,
   Camera as CameraIcon,
@@ -145,6 +147,9 @@ const MLKIT_TO_INDEX: Record<string, number> = {
 };
 
 type Kpt = [number, number, number]; // [x_px, y_px, confidence]
+// The decision layer's finding (what the verdict carries), not the biomechanics
+// layer's: lib/vision re-exports the latter under the same name.
+type Finding = FormVerdict['findings'][number];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -241,115 +246,68 @@ function lerpKpts(current: Kpt[], target: Kpt[], t: number): Kpt[] {
   return out;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SET REPORT — the ONLY analysis left on this screen, and it is retrospective.
-//
-// Rep detection, phase and tempo now come from the engine's state machine; what
-// stays here is the report card's own grading curve, which is a presentation
-// choice about how to praise or fault a rep that is already banked. The depth
-// target below is that curve's reference angle, not a rep-counting threshold —
-// nothing here can create or cancel a rep.
-// ─────────────────────────────────────────────────────────────────────────────
-const REP_THRESHOLDS: Record<string, { low: number; high: number }> = {
-  squat:    { low: 110, high: 155 },
-  lunge:    { low: 110, high: 155 },
-  deadlift: { low: 120, high: 160 },
-  press:    { low: 100, high: 150 },
-  pull:     { low: 100, high: 150 },
-  curl:     { low: 90,  high: 140 },
+// The set report's grading curve (scoreRep / toRepData / buildReport) lives in
+// lib/vision/repScore.ts, where it is unit-tested. This screen owns NO
+// analysis: it banks what the engine reports and renders what the curve says.
+
+// How long the pill says POSITION GOOD once calibration completes before it
+// settles to READY. Long enough to be read as an answer to "am I set up?",
+// short enough that it is gone before the first rep.
+const POSITION_GOOD_MS = 1_500;
+
+// How long a line the engine ELECTED to speak stays the on-screen correction,
+// even if a worse finding overtakes it in the ranked list. Matches the
+// decider's own re-open window: the ear and the eye should tell one story.
+const SPOKEN_HOLD_MS = 9_000;
+
+// Re-trigger looks at this many most-recent completed reps (the rule itself
+// lives in lib/tutorialMemory; this is the screen's buffer cap).
+const RECENT_REPS_CAP = 4;
+
+// Copy shown by the report card when Finish set is tapped with nothing banked.
+const NO_REPS_COPY =
+  'No complete reps were detected — a full rep is down and back up with the whole upper body in frame';
+
+// BlazePose landmark pairs behind each checklist row. The gate asks for one
+// usable member per group; the CHECKLIST asks whether the PAIR is measurable,
+// which is the stricter question a lifter setting up the phone wants answered.
+const CHECKLIST_PAIRS: Record<Exclude<keyof JointTiers, 'person'>, [number, number]> = {
+  shoulders: [11, 12],
+  elbows:    [13, 14],
+  wrists:    [15, 16],
+  hips:      [23, 24],
+  knees:     [25, 26],
+  ankles:    [27, 28],
 };
-const REP_DEFAULT_TH = { low: 105, high: 150 };
-// ─────────────────────────────────────────────────────────────────────────────
-// PER-REP QUALITY — every rep graded 0-100 on depth, tempo, and symmetry, so
-// the set report reads like a coach ("8 reps · 2 shallow · left side leading").
-// ─────────────────────────────────────────────────────────────────────────────
-export interface RepData {
-  index: number;
-  bottomDeg: number;   // deepest primary angle reached (lower = deeper)
-  tempoMs: number;     // full down-up duration
-  symmetry: number;    // |left − right| at the bottom (deg; lower = balanced)
-  score: number;       // 0-100
-  flaw: 'shallow' | 'rushed' | 'grindy' | 'uneven' | null; // dominant issue
-}
-
-const clamp01 = (x: number) => Math.max(0, Math.min(1, x));
-
-function scoreRep(bottomDeg: number, tempoMs: number, symmetry: number, category?: string): {
-  score: number; flaw: RepData['flaw'];
-} {
-  const th = (category && REP_THRESHOLDS[category]) || REP_DEFAULT_TH;
-  // Depth: full credit at/below the target; falls off over the next 35°.
-  const depth = clamp01((th.low + 35 - bottomDeg) / 35) * 100;
-  // Tempo: ideal ~1.5-5s. Rushed (<1.2s) or grindy (>6s) lose points.
-  const s = tempoMs / 1000;
-  let tempo = 100, tempoFlaw: RepData['flaw'] = null;
-  if (s < 1.2) { tempo = clamp01(s / 1.2) * 70; tempoFlaw = 'rushed'; }
-  else if (s > 6) { tempo = Math.max(55, 100 - (s - 6) * 8); tempoFlaw = 'grindy'; }
-  // Symmetry: ≤12° balanced, ≥45° poor. The engine reports NaN — never 0 — when
-  // only one side was ever visible, because 0 would assert perfect balance about
-  // a limb we never saw. So the term is DROPPED and the remaining weights are
-  // renormalised, rather than a missing measurement scoring as a good one.
-  const symKnown = Number.isFinite(symmetry);
-  const sym = symKnown ? clamp01((45 - symmetry) / 33) * 100 : 0;
-  const score = symKnown
-    ? Math.round(depth * 0.5 + tempo * 0.25 + sym * 0.25)
-    : Math.round((depth * 0.5 + tempo * 0.25) / 0.75);
-  // Dominant flaw = whichever dimension scored worst (if any is weak).
-  let flaw: RepData['flaw'] = null;
-  const worst = symKnown ? Math.min(depth, tempo, sym) : Math.min(depth, tempo);
-  if (worst < 70) {
-    if (worst === depth) flaw = 'shallow';
-    else if (worst === tempo) flaw = tempoFlaw ?? 'rushed';
-    else flaw = 'uneven';
-  }
-  return { score, flaw };
-}
-
-export interface SetReport {
-  reps: number;
-  avgScore: number;
-  avgTempoMs: number;
-  bestRep: RepData | null;
-  worstRep: RepData | null;
-  flawCounts: Record<string, number>;
-  data: RepData[];
-}
+const TIER_RANK = { low: 0, medium: 1, high: 2 } as const;
 
 /**
- * The engine banks a `RepResult` (what happened); the report card renders a
- * `RepData` (what it was worth). Keeping the translation here means the engine
- * never has to know about grading curves, and the card keeps the exact shape it
- * has always rendered.
+ * Per-group confidence tiers for the SETTING UP checklist. Group tier = the
+ * WEAKER of the pair (a shoulder seen on one side only cannot be measured as a
+ * pair). PERSON = the better of shoulders and hips: either one confidently in
+ * view is proof the camera is pointed at a body.
+ *
+ * Computed from the analysed pose (targetKpts) at ~8Hz, never from the
+ * interpolated one, so CameraCoach's memo is not defeated by 30 renders/s.
  */
-function toRepData(r: RepResult, category?: string): RepData {
-  // symmetryAtBottom is NaN when only one side was readable — passed through
-  // untouched so scoreRep can drop the term instead of scoring the unknown.
-  const { score, flaw } = scoreRep(r.bottomAngle, r.totalMs, r.symmetryAtBottom, category);
-  return {
-    index: r.index,
-    bottomDeg: r.bottomAngle,
-    tempoMs: r.totalMs,
-    symmetry: r.symmetryAtBottom,
-    score,
-    flaw,
-  };
+function computeJointTiers(kpts: Kpt[] | null): JointTiers | null {
+  if (!kpts) return null;
+  const tiers: JointTiers = {};
+  for (const g of Object.keys(CHECKLIST_PAIRS) as Array<keyof typeof CHECKLIST_PAIRS>) {
+    const [a, b] = CHECKLIST_PAIRS[g];
+    const ta = jointConfidenceTier(kpts[a]?.[2] ?? 0);
+    const tb = jointConfidenceTier(kpts[b]?.[2] ?? 0);
+    tiers[g] = TIER_RANK[ta] <= TIER_RANK[tb] ? ta : tb;
+  }
+  const s = tiers.shoulders ?? 'low';
+  const h = tiers.hips ?? 'low';
+  tiers.person = TIER_RANK[s] >= TIER_RANK[h] ? s : h;
+  return tiers;
 }
 
-/** Summarize a finished set for the end-of-set report card. */
-function buildReport(reps: RepResult[], category?: string): SetReport {
-  const data = reps.map((r) => toRepData(r, category));
-  const n = data.length;
-  const flawCounts: Record<string, number> = {};
-  for (const r of data) if (r.flaw) flawCounts[r.flaw] = (flawCounts[r.flaw] ?? 0) + 1;
-  return {
-    reps: n,
-    avgScore: n ? Math.round(data.reduce((s, r) => s + r.score, 0) / n) : 0,
-    avgTempoMs: n ? Math.round(data.reduce((s, r) => s + r.tempoMs, 0) / n) : 0,
-    bestRep: n ? data.reduce((a, b) => (b.score > a.score ? b : a)) : null,
-    worstRep: n ? data.reduce((a, b) => (b.score < a.score ? b : a)) : null,
-    flawCounts,
-    data,
-  };
+/** True while a rep is in flight — the phases between leaving the top and returning to it. */
+function phaseInRep(phase: RepPhase | undefined): boolean {
+  return phase === 'eccentric' || phase === 'bottom' || phase === 'concentric';
 }
 
 // Throttled debug logger (visible via `adb logcat | grep pose`).
@@ -463,29 +421,99 @@ export default function FormCoach() {
   if (engineRef.current === null) engineRef.current = new VisionEngine(undefined);
   const visionRef = useRef<VisionFrameResult | null>(null);
 
+  // ── Per-rep score gate (screen-side) ──────────────────────────────────────
+  // The engine's verdict.score is a per-FRAME judgement and null only when it
+  // refused to judge. The readout shows a per-REP number instead: banked here
+  // when a rep completes, dash until then. Refs because they are written from
+  // the pose callback, which must not grow a dependency on state.
+  const lastRepScoreRef = useRef<number | null>(null);
+  const repIndexRef     = useRef(0);
+
+  // ── Position-good window ──────────────────────────────────────────────────
+  // When calibration last completed (0 = calibrating / never). The pill says
+  // POSITION GOOD for POSITION_GOOD_MS after this, then READY.
+  const calibratedAtRef = useRef(0);
+
+  // ── On-screen correction latch ────────────────────────────────────────────
+  // The line the engine ELECTED to speak, and when. verdict.speak is non-null
+  // for a single frame; without this the sheet would show whatever ranks first
+  // on the next frame while the coach's voice is still mid-sentence.
+  const spokenRef = useRef<{ finding: Finding; atMs: number } | null>(null);
+
+  // ── SETTING UP checklist tiers ────────────────────────────────────────────
+  // Computed in tickAnalysis (~8Hz) from the analysed pose; published to the
+  // UI by analysisTick like everything else the engine reports.
+  const jointTiersRef = useRef<JointTiers | null>(null);
+
+  // ── Smart re-trigger (the rule lives in lib/tutorialMemory) ───────────────
+  // Check ids the engine confirmed during the rep in flight; the last few
+  // completed reps' sets; and whether this set has already been interrupted.
+  const curRepFindingsRef  = useRef<Set<string>>(new Set());
+  const recentRepsRef      = useRef<string[][]>([]);
+  const promptedThisSetRef = useRef(false);
+  // Which check the prompt is about (null = no prompt). The label is looked up
+  // at render time from the form's detectedFaults.
+  const [retriggerCheckId, setRetriggerCheckId] = useState<string | null>(null);
+  // Memory key for this exercise — form id when covered, else a name slug.
+  // Read inside the rep callback, so it is bridged through a ref.
+  const formKeyRef = useRef('');
+
+  // Forget this set's re-trigger evidence. Shared by every place a set ends.
+  const resetRetrigger = () => {
+    curRepFindingsRef.current = new Set();
+    recentRepsRef.current = [];
+    promptedThisSetRef.current = false;
+    setRetriggerCheckId(null);
+  };
+
+  // Forget the per-rep readout. Shared by every place a set ends.
+  const resetRepReadout = () => {
+    lastRepScoreRef.current = null;
+    repIndexRef.current = 0;
+    spokenRef.current = null;
+  };
+
   // End-of-set report card (null = hidden). Captured when "Finish set" is tapped.
   const [setReport, setSetReport] = useState<SetReport | null>(null);
+  // The coach's one-line verdict for that report — spoken AND rendered.
+  const [setVerdict, setSetVerdict] = useState<string | null>(null);
 
   const finishSet = () => {
     const engine = engineRef.current;
     if (!engine) return;
     const r = buildReport(engine.reps, categoryRef.current);
-    if (r.reps < 1) return;
-    setSetReport(r);
-    // Coach speaks a one-line verdict in their voice.
-    const worstFlaw = Object.entries(r.flawCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-    const verdict =
-      r.avgScore >= 85 ? `${r.reps} clean reps. That's the standard — keep it there.`
-      : worstFlaw === 'shallow' ? `${r.reps} reps, but ${r.flawCounts.shallow} were shallow. Hit full depth every rep.`
-      : worstFlaw === 'rushed' ? `${r.reps} reps — too fast. Control the eccentric, own the tempo.`
-      : worstFlaw === 'uneven' ? `${r.reps} reps, but you're leaning to one side. Even it out.`
-      : worstFlaw === 'grindy' ? `${r.reps} hard reps. Grind's fine near failure — watch the form.`
-      : `${r.reps} solid reps. Small tweaks and these are perfect.`;
-    try { voice.cue('form_issue', { issue: verdict }); } catch { /* ignore */ }
-    // A finished set is a finished measurement: reps, coaching evidence and the
-    // body scale all start again for the next one.
-    engine.reset();
+    if (r.reps < 1) {
+      // Tapping Finish with nothing banked used to do nothing at all, which
+      // read as a broken button. Say what a rep is instead.
+      setSetReport(r);
+      setSetVerdict(NO_REPS_COPY);
+    } else {
+      // Coach speaks a one-line verdict in their voice.
+      const worstFlaw = Object.entries(r.flawCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+      const verdict =
+        r.avgScore >= 85 ? `${r.reps} clean reps. That's the standard — keep it there.`
+        : worstFlaw === 'shallow' ? `${r.reps} reps, but ${r.flawCounts.shallow} were shallow. Hit full depth every rep.`
+        : worstFlaw === 'rushed' ? `${r.reps} reps — too fast. Control the eccentric, own the tempo.`
+        : worstFlaw === 'uneven' ? `${r.reps} reps, but you're leaning to one side. Even it out.`
+        : worstFlaw === 'grindy' ? `${r.reps} hard reps. Grind's fine near failure — watch the form.`
+        : `${r.reps} solid reps. Small tweaks and these are perfect.`;
+      setSetReport(r);
+      setSetVerdict(verdict);
+      try { voice.cue('form_issue', { issue: verdict }); } catch { /* ignore */ }
+      track('form_check_set_graded', {
+        exercise: categoryRef.current ?? 'unknown',
+        reps: r.reps,
+        avg_score: r.avgScore,
+      });
+    }
+    // A finished set is a finished measurement: reps and coaching evidence
+    // start again for the next one. The body scale does NOT — the lifter's
+    // torso is the same length for set three as for set two, and re-measuring
+    // it is what made READY flap back to CALIBRATING between sets.
+    engine.resetSet();
     visionRef.current = null;
+    resetRepReadout();
+    resetRetrigger();
     setAnalysisTick((t) => t + 1);
   };
 
@@ -502,6 +530,14 @@ export default function FormCoach() {
   useEffect(() => {
     if (!hasPermission) requestPermission();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Tutorial memory is consulted SYNCHRONOUSLY from the rep callback
+  // (getEntry), which returns null for everything until this has resolved.
+  // Kicked off at mount so the cache is warm long before the third rep; a
+  // still-cold cache just means one set without a re-trigger, never a crash.
+  useEffect(() => {
+    void loadTutorialMemory();
   }, []);
 
   // MLKit pose runs natively in the frame processor — there's no model file to
@@ -531,13 +567,20 @@ export default function FormCoach() {
     // 'general' (checks: []) and the coach watched in silence. null = we have no
     // profile for this movement and must say so rather than pretend.
     categoryRef.current = visionCategoryFor(formLibraryData) ?? undefined;
+    // Memory key from the library, never a slug built here: the technique
+    // screen writes under the same function's output, and two spellings of
+    // one exercise would split its history.
+    formKeyRef.current = getExerciseFormKey(exerciseName ?? '');
     // setCategory rebuilds the rep machine (new exercise = new set) but KEEPS
     // the body scale on purpose: the lifter's torso is the same length, and
     // re-measuring it would blank the coach for another second for nothing.
     engineRef.current?.setCategory(categoryRef.current);
     visionRef.current = null;
+    // New exercise = new set: nothing measured under the old one carries over.
+    resetRepReadout();
+    resetRetrigger();
     setAnalysisTick((t) => t + 1);
-  }, [formLibraryData]);
+  }, [formLibraryData, exerciseName]);
 
   // Screen mount: start from a clean engine — no stale calibration, no reps
   // banked before this screen existed.
@@ -581,6 +624,11 @@ export default function FormCoach() {
     visionRef.current = null;
     lastSpokenLineRef.current = null;
     voiceRef.current.stop();   // nobody in frame — stop talking to the room
+    // The abandoned rep's evidence goes with it; banked reps (recentRepsRef)
+    // and the per-rep score survive a dropout, exactly as the rep count does.
+    curRepFindingsRef.current = new Set();
+    spokenRef.current = null;
+    jointTiersRef.current = null;
     lastTickAtRef.current = Date.now();
     setAnalysisTick((t) => t + 1);
   }, []);
@@ -617,6 +665,9 @@ export default function FormCoach() {
       const now = Date.now();
       if (force || now - lastTickAtRef.current >= 120) {
         lastTickAtRef.current = now;
+        // Checklist tiers ride the same ~8Hz clock as the rest of the engine's
+        // readings, from the ANALYSED pose — see computeJointTiers.
+        jointTiersRef.current = computeJointTiers(targetKptsRef.current);
         setAnalysisTick((t) => t + 1);
       }
     };
@@ -747,13 +798,39 @@ export default function FormCoach() {
       if (speak.message === lastSpokenLineRef.current) voiceRef.current.stop();
       lastSpokenLineRef.current = speak.message;
       voiceRef.current.cue('form_issue', { issue: speak.message });
+      // Latch the elected line for the on-screen correction (see spokenRef).
+      spokenRef.current = { finding: speak, atMs: Date.now() };
     }
+
+    // Every confirmed finding this frame is evidence against the rep in flight.
+    // Ids, not messages: the re-trigger rule matches on check identity.
+    for (const f of res.verdict.findings) curRepFindingsRef.current.add(f.id);
 
     if (res.completedRep) {
       const r = res.completedRep;
       repLog('REP #' + r.index + ' bottom=' + Math.round(r.bottomAngle) +
              ' rom=' + Math.round(r.rom) + ' dur=' + Math.round(r.totalMs) + 'ms' +
              ' cat=' + (categoryRef.current ?? 'none'));
+      // Bank the per-rep score the readout shows between reps.
+      const graded = toRepData(r, categoryRef.current);
+      lastRepScoreRef.current = graded.score;
+      repIndexRef.current = graded.index;
+      // Close the rep's evidence and ask whether the pattern warrants a
+      // walkthrough. getEntry is null until memory has hydrated; the rule
+      // treats that as "never prompted", which is the safe reading.
+      recentRepsRef.current.push([...curRepFindingsRef.current]);
+      if (recentRepsRef.current.length > RECENT_REPS_CAP) recentRepsRef.current.shift();
+      curRepFindingsRef.current = new Set();
+      const key = formKeyRef.current;
+      const hit = shouldRetrigger(
+        recentRepsRef.current, getEntry(key), Date.now(), promptedThisSetRef.current,
+      );
+      if (hit) {
+        promptedThisSetRef.current = true;
+        void recordRetrigger(key);
+        track('technique_retrigger_shown', { exercise: key, check: hit.checkId });
+        setRetriggerCheckId(hit.checkId);
+      }
     }
 
     // One compact line per sample: why the screen is showing what it is showing.
@@ -878,6 +955,16 @@ export default function FormCoach() {
 
   const canCallCue = Date.now() - lastCallAt.current >= CUE_COOLDOWN_MS;
 
+  // The technique walkthrough in review mode (preview only, ends with back).
+  // Persona goes across as the canonical PersonaId; technique normalises
+  // whatever it gets, but there is no reason to hand it a program id here.
+  const openTechniqueReview = useCallback(() => {
+    router.push({
+      pathname: '/technique',
+      params: { exerciseName: exerciseName ?? '', persona: personaTheme.id, mode: 'review' },
+    } as any);
+  }, [router, exerciseName, personaTheme.id]);
+
   // ── Engine state, published to the UI by the ~8Hz analysisTick ─────────────
   // Read from refs on purpose: the values change at detection rate and this
   // screen re-renders far less often than that. `analysisTick` is what makes
@@ -888,7 +975,36 @@ export default function FormCoach() {
   const calibrating = vision?.calibrating ?? false;
   const canJudge    = quality?.canJudge ?? false;
   const repCount    = engineRef.current?.repCount ?? 0;
-  const topFinding  = verdict?.findings[0] ?? null;
+  // The ONE correction on screen. The line the coach just SAID wins for the
+  // decider's own window, so eye and ear agree; otherwise the worst confirmed
+  // finding (the engine orders findings worst-first).
+  const spoken      = spokenRef.current;
+  const topFinding: Finding | null =
+    spoken && Date.now() - spoken.atMs < SPOKEN_HOLD_MS
+      ? spoken.finding
+      : verdict?.findings[0] ?? null;
+  // Per-REP readout state. `awaiting` until the first rep lands (the dash is
+  // explained as "First rep sets your score", never blamed on the camera);
+  // `tracking` while a rep is in flight; `scored` between reps.
+  const inRep       = phaseInRep(vision?.phase);
+  const readoutState: FormReadoutState =
+    repCount === 0 ? 'awaiting' : inRep ? 'tracking' : 'scored';
+  const lastRepScore = repCount > 0 ? lastRepScoreRef.current : null;
+  const readoutRep   = inRep ? repIndexRef.current + 1 : repIndexRef.current;
+  // Calibration edge → timestamp, so the pill can say POSITION GOOD briefly.
+  // Written during render on purpose: the value is only ever read by this same
+  // render path, and an effect would land one tick late.
+  if (calibrating) calibratedAtRef.current = 0;
+  else if (calibratedAtRef.current === 0 && vision) calibratedAtRef.current = Date.now();
+  const positionGood =
+    canJudge && repCount === 0 && !calibrating &&
+    calibratedAtRef.current > 0 && Date.now() - calibratedAtRef.current < POSITION_GOOD_MS;
+  const jointTiers  = jointTiersRef.current ?? undefined;
+  // Re-trigger prompt copy: the library's human label for the check, else the
+  // raw id so a check the library has not named still reads as SOMETHING.
+  const retriggerLabel = retriggerCheckId
+    ? formLibraryData?.detectedFaults?.find((f) => f.checkId === retriggerCheckId)?.label ?? retriggerCheckId
+    : null;
   // `canJudge` is a claim about the CAMERA; `judged` is a claim about the
   // JUDGEMENT, and they are not the same fact. Pose quality asks each joint
   // group for one usable member, so it is satisfied by a shoulder seen on the
@@ -901,13 +1017,14 @@ export default function FormCoach() {
   // about the lifter's form gates on this, not on canJudge.
   const judged      = verdict?.score != null;
 
-  // Joints a confirmed finding actually implicated. The decision layer's finding
-  // type declares only `joint?: string`, but the engine deliberately passes the
-  // biomechanics layer's `joints` index array through untouched so overlays can
-  // highlight exactly the landmarks the check used.
+  // Joints the DISPLAYED finding implicated — only that one, so the highlighted
+  // chain and the correction sheet make the same claim. The decision layer's
+  // finding type declares only `joint?: string`, but the engine deliberately
+  // passes the biomechanics layer's `joints` index array through untouched so
+  // overlays can highlight exactly the landmarks the check used.
   const flaggedJoints = new Set<number>();
-  for (const f of verdict?.findings ?? []) {
-    const idxs = (f as unknown as { joints?: number[] }).joints;
+  {
+    const idxs = (topFinding as unknown as { joints?: number[] } | null)?.joints;
     if (Array.isArray(idxs)) for (const i of idxs) flaggedJoints.add(i);
   }
 
@@ -916,16 +1033,25 @@ export default function FormCoach() {
   // medium, absent = low — so the overlay can never imply we are tracking a limb
   // that is out of shot. Same tier function the gate itself uses, so the picture
   // and the judgement cannot drift apart.
+  //
+  // The whole skeleton is now a quiet reference layer; only the flagged chain
+  // is drawn at full strength, so the eye lands on the fault, not the figure.
   const conf = (idx: number): number => displayKpts?.[idx]?.[2] ?? 0;
   const tier = (idx: number) => jointConfidenceTier(conf(idx));
   const boneVisible = (a: number, b: number): boolean =>
     tier(a) !== 'low' && tier(b) !== 'low';
+  // A bone is part of the flagged chain only when BOTH ends are: one flagged
+  // knee should not light every bone that happens to touch it.
+  const boneFlagged = (a: number, b: number): boolean =>
+    flaggedJoints.has(a) && flaggedJoints.has(b);
   const boneColor = (a: number, b: number): string =>
-    flaggedJoints.has(a) || flaggedJoints.has(b) ? stage.danger : stageAccent;
+    boneFlagged(a, b) ? stage.danger : stageAccent;
   const boneOpacity = (a: number, b: number): number =>
-    tier(a) === 'high' && tier(b) === 'high' ? 0.9 : 0.38;
+    boneFlagged(a, b) ? 0.95 : tier(a) === 'high' && tier(b) === 'high' ? 0.32 : 0.16;
   const jointColor = (idx: number): string =>
     flaggedJoints.has(idx) ? stage.danger : stageAccent;
+  const jointOpacity = (idx: number, solid: boolean, isFace: boolean): number =>
+    flaggedJoints.has(idx) ? 0.95 : solid ? (isFace ? 0.3 : 0.35) : 0.2;
 
   // Tracked-joint count for the readout: exactly the joints being drawn, so the
   // number on screen and the picture on screen are the same claim.
@@ -986,15 +1112,19 @@ export default function FormCoach() {
     // a null score. LIVE here would be the pill making the very claim this
     // comment promises it never makes.
     !judged                     ? 'NO CLEAR VIEW' :
+    // Calibration just completed and nothing has been lifted: answer the
+    // question the lifter is actually asking ("am I set up?"), briefly.
+    positionGood                ? 'POSITION GOOD' :
     // 'setup' means armed but not lifting. Calling that LIVE would claim a live
     // judgement of a rep nobody has started.
-    vision?.phase === 'setup'   ? 'STANDBY · WAITING' :
+    vision?.phase === 'setup'   ? 'READY' :
                                   'LIVE · ' + (vision?.phase ?? 'setup').toUpperCase();
   const statusColor =
     modelError                  ? stage.danger :
     !isTracking                 ? stage.crownTextDim :
     calibrating || !canJudge    ? stage.warning :
     !judged                     ? stage.warning :
+    positionGood                ? stage.success :
     vision?.phase === 'setup'   ? stage.warning :
                                   stage.crownText;
 
@@ -1028,6 +1158,18 @@ export default function FormCoach() {
             {exerciseName ?? 'Form Coach'}
           </Text>
         </View>
+        {/* Back to the walkthrough without leaving the set: a PUSH, so the
+            camera screen (and its banked reps) is still here on return. */}
+        <PressableScale
+          onPress={openTechniqueReview}
+          haptic="light"
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Review technique"
+          style={styles.headTextBtn}
+        >
+          <Text style={styles.headTextBtnText}>Technique</Text>
+        </PressableScale>
         <PressableScale
           onPress={() => setFacing((f) => (f === 'back' ? 'front' : 'back'))}
           haptic="light"
@@ -1041,11 +1183,17 @@ export default function FormCoach() {
       </View>
 
       <View style={[styles.stage, { height: cameraHeight }]}>
+        {/* Focus-gated: the Technique button and REVIEW NOW push /technique on
+            top of this screen, and VisionCamera does not stop the session for a
+            covered screen — MLKit at 15 fps, the 30 fps skeleton renders and the
+            voice cues would all keep running under the clip player. Going
+            inactive stops detections, so the stale watchdog runs loseTracking
+            (voice off, in-flight rep dropped); banked reps survive the trip. */}
         <Camera
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={true}
+          isActive={screenFocused}
           frameProcessor={frameProcessor}
           pixelFormat="yuv"
         />
@@ -1105,9 +1253,9 @@ export default function FormCoach() {
                     key={`k-${i}`}
                     cx={cx} cy={cy} r={isFace ? 4 : 6}
                     fill={jointColor(i)}
-                    fillOpacity={solid ? (isFace ? 0.85 : 0.95) : 0.4}
+                    fillOpacity={jointOpacity(i, solid, isFace)}
                     stroke={stage.crown} strokeWidth={1.5}
-                    strokeOpacity={solid ? 1 : 0.5}
+                    strokeOpacity={flaggedJoints.has(i) ? 1 : solid ? 0.5 : 0.25}
                   />
                 );
               })}
@@ -1138,29 +1286,19 @@ export default function FormCoach() {
               <Text style={styles.sheetText} numberOfLines={2}>{topFinding.message}</Text>
             </View>
           )}
-          {/* Nothing wrong AND the lifter is actually working. Gated on a phase
-              past 'setup' so praise is never handed out for standing still —
-              the engine's 'setup' is the STANDBY case below, not a clean rep.
-              And gated on `judged`, not `canJudge`: this line ASSERTS good form,
-              so it may only appear when the engine actually graded the frame. An
-              empty findings list from a refusal to judge reads identically to a
-              clean one, which is how praise got printed over an unreadable body.
-              When the engine declines, the readout's dash + advice is the whole
-              message. */}
-          {isTracking && !calibrating && judged && !topFinding && vision && vision.phase !== 'setup' && (
-            <View style={styles.sheet}>
-              <View style={[styles.sheetBar, { backgroundColor: stageAccent }]} />
-              <Check size={14} color={stageAccent} strokeWidth={3} />
-              <Text style={styles.sheetText}>Form looks solid — keep going</Text>
-            </View>
-          )}
+          {/* No mid-set praise sheet, by design. Nothing replaces it: the engine
+              only ever emits fault findings ('info' is a mild fault, not praise),
+              so a clean rep is silent. Its positive channels are the per-rep
+              score above and the end-of-set verdict. A "form looks solid" plate
+              under a live number was two channels asserting the same judgement,
+              and it hid the readout. */}
           {/* Visible and judgeable, but no rep has begun: the engine reports
               'setup'. Say so rather than coaching a body that isn't lifting. */}
           {isTracking && !calibrating && canJudge && vision?.phase === 'setup' && (
             <View style={styles.sheet}>
               <View style={[styles.sheetBar, { backgroundColor: stage.crownTextDim }]} />
               <Pause size={14} color={stage.crownTextDim} />
-              <Text style={styles.sheetText}>Standby — start your set to begin form check</Text>
+              <Text style={styles.sheetText}>Start your set when you&apos;re ready</Text>
             </View>
           )}
           {!isTracking && !modelLoading && !modelError && (
@@ -1172,9 +1310,39 @@ export default function FormCoach() {
                   torso and arms in shot. */}
               <Text style={styles.sheetText}>
                 {categoryRef.current === 'press' || categoryRef.current === 'curl' || categoryRef.current === 'pull'
-                  ? 'Move back — head, torso and both arms in frame'
+                  ? 'Step into frame — head, torso and both arms'
                   : 'Step into frame — full body visible'}
               </Text>
+            </View>
+          )}
+          {/* The same fault in 3 of the last 4 reps: offer the walkthrough ONCE
+              per set. Buttons are PressableScale — this container is box-none,
+              so a plain View would not take the tap. */}
+          {retriggerCheckId && (
+            <View style={styles.retriggerSheet}>
+              <View style={[styles.sheetBar, { backgroundColor: stage.warning }]} />
+              <Text style={styles.retriggerTitle}>REVIEW TECHNIQUE</Text>
+              <Text style={styles.retriggerText}>
+                {retriggerLabel} in 3 of your last 4 reps
+              </Text>
+              <View style={styles.retriggerRow}>
+                <PressableScale
+                  style={[styles.retriggerBtn, { backgroundColor: stageAccent }]}
+                  onPress={() => { setRetriggerCheckId(null); openTechniqueReview(); }}
+                  haptic="medium"
+                  accessibilityRole="button"
+                >
+                  <Text style={[styles.retriggerBtnText, { color: stage.accentInk }]}>REVIEW NOW</Text>
+                </PressableScale>
+                <PressableScale
+                  style={styles.retriggerBtnGhost}
+                  onPress={() => setRetriggerCheckId(null)}
+                  haptic="light"
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.retriggerBtnText}>CONTINUE SET</Text>
+                </PressableScale>
+              </View>
             </View>
           )}
           {modelLoading && (
@@ -1198,19 +1366,28 @@ export default function FormCoach() {
               problem instead of a score. This panel is the whole point of the
               rebuild — it replaces a number the camera never earned. */}
           {isTracking && !calibrating && !modelError && quality && !canJudge && (
-            <CameraCoach quality={quality} category={categoryRef.current} />
+            <CameraCoach
+              quality={quality}
+              category={categoryRef.current}
+              joints={jointTiers}
+              variant="checklist"
+            />
           )}
 
-          {/* Judgeable: the live readout. `score` is null whenever the engine
-              refuses to judge, and FormReadout renders that as an em dash — it
-              is never coerced to a number here. */}
+          {/* Judgeable: the live readout. The number is the LAST COMPLETED REP's
+              grade, null until one lands — a per-frame score over a moving body
+              was a frozen number nobody could act on. `advice` still carries
+              the engine's camera guidance for the dash when it refuses to judge. */}
           {isTracking && !calibrating && !modelError && canJudge && verdict && (
             <FormReadout
-              score={verdict.score}
+              score={lastRepScore}
               confidence={verdict.confidence}
               trackedJoints={trackedJoints}
               totalJoints={DRAW_POINTS.length}
               advice={verdict.advice}
+              state={readoutState}
+              repIndex={readoutRep}
+              debug={showAlign}
             />
           )}
 
@@ -1221,8 +1398,12 @@ export default function FormCoach() {
             <PressableScale
               style={styles.repRow}
               onLongPress={() => {
+                // The FULL reset, calibration included — this is the lifter
+                // saying "start over", not the end of a set.
                 engineRef.current?.reset();
                 visionRef.current = null;
+                resetRepReadout();
+                resetRetrigger();
                 setAnalysisTick((t) => t + 1);
               }}
               haptic="light"
@@ -1357,67 +1538,113 @@ export default function FormCoach() {
       </ScrollView>
 
       {/* ── END-OF-SET REPORT CARD ─────────────────────────────────────────── */}
-      {setReport && (
+      {setReport && setReport.reps < 1 && (
         <View style={styles.reportOverlay}>
           <View style={styles.reportCard}>
-            <Text style={styles.reportEyebrow}>{claudePersonaLabel} · SET REPORT</Text>
+            <Text style={styles.reportEyebrow}>{personaTheme.shortName} · SET REPORT</Text>
+            <Text style={styles.reportGrade}>No reps detected</Text>
+            <Text style={styles.reportSentence}>{setVerdict ?? NO_REPS_COPY}</Text>
+            <PressableScale
+              style={styles.reportDone}
+              onPress={() => { setSetReport(null); setSetVerdict(null); }}
+              haptic="medium"
+              accessibilityRole="button"
+            >
+              <Text style={styles.reportDoneText}>Done</Text>
+            </PressableScale>
+          </View>
+        </View>
+      )}
+      {setReport && setReport.reps >= 1 && (
+        <View style={styles.reportOverlay}>
+          {/* The card is bounded to the overlay and its BODY scrolls; Done sits
+              outside the scroll, pinned to the card's foot. With ≥6 reps the
+              content runs ~740dp, more than a 640–760dp budget Android has,
+              and a centred non-scrolling card clipped BOTH ends — the only
+              dismiss went off-screen with them. */}
+          <View style={styles.reportCard}>
+            <ScrollView
+              style={styles.reportBody}
+              contentContainerStyle={styles.reportBodyContent}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+            >
+              <Text style={styles.reportEyebrow}>{personaTheme.shortName} · SET REPORT</Text>
 
-            <View style={styles.reportHero}>
-              <HeroNumber value={setReport.avgScore} color={pageAccent.accentText} size={74} />
-              <Text style={styles.reportHeroUnit}>/100</Text>
-            </View>
-            <Text style={styles.reportScoreLabel}>Average quality</Text>
-            <Text style={styles.reportGrade}>
-              {setReport.avgScore >= 90 ? 'A · Excellent'
-                : setReport.avgScore >= 80 ? 'B · Strong'
-                : setReport.avgScore >= 70 ? 'C · Solid'
-                : setReport.avgScore >= 55 ? 'D · Work on it'
-                : 'Keep grinding'}
-            </Text>
-
-            <StatRow style={styles.reportStats}>
-              <BigStat value={setReport.reps} label="Reps" size={30} />
-              <BigStat
-                value={Number((setReport.avgTempoMs / 1000).toFixed(1))}
-                unit="s"
-                decimals={1}
-                label="Avg tempo"
-                size={30}
-              />
-              <BigStat
-                value={setReport.bestRep ? Math.round(setReport.bestRep.bottomDeg) : '—'}
-                unit="°"
-                label="Best depth"
-                size={30}
-              />
-            </StatRow>
-
-            {/* Per-rep bars — one per rep, clean / flawed / poor at a glance */}
-            <View style={styles.reportDots}>
-              {setReport.data.map((r) => (
-                <View
-                  key={r.index}
-                  style={[
-                    styles.reportDot,
-                    { backgroundColor: r.score >= 80 ? tokens.success : r.score >= 60 ? tokens.warning : tokens.danger },
-                  ]}
-                />
-              ))}
-            </View>
-
-            {Object.keys(setReport.flawCounts).length > 0 ? (
-              <Text style={styles.reportFlaws}>
-                {Object.entries(setReport.flawCounts)
-                  .map(([f, n]) => `${n} ${f}`)
-                  .join(' · ')}
+              <View style={styles.reportHero}>
+                <HeroNumber value={setReport.avgScore} color={pageAccent.accentText} size={74} />
+                <Text style={styles.reportHeroUnit}>/100</Text>
+              </View>
+              <Text style={styles.reportScoreLabel}>Average quality</Text>
+              <Text style={styles.reportGrade}>
+                {setReport.avgScore >= 90 ? 'A · Excellent'
+                  : setReport.avgScore >= 80 ? 'B · Strong'
+                  : setReport.avgScore >= 70 ? 'C · Solid'
+                  : setReport.avgScore >= 55 ? 'D · Work on it'
+                  : 'Keep grinding'}
               </Text>
-            ) : (
-              <Text style={styles.reportFlaws}>Every rep clean — nothing to fix.</Text>
-            )}
+
+              <StatRow style={styles.reportStats}>
+                <BigStat value={setReport.reps} label="Reps" size={30} />
+                <BigStat
+                  value={Number((setReport.avgTempoMs / 1000).toFixed(1))}
+                  unit="s"
+                  decimals={1}
+                  label="Avg tempo"
+                  size={30}
+                />
+                <BigStat
+                  value={setReport.bestRep ? Math.round(setReport.bestRep.bottomDeg) : '—'}
+                  unit="°"
+                  label="Best depth"
+                  size={30}
+                />
+              </StatRow>
+
+              {/* One row per rep: REP n · score · ✓ clean or ! its dominant flaw.
+                  A plain list — the card body is the one scroll surface, so a
+                  20-rep set scrolls the whole report rather than a list inside it.
+                  Each row is one accessibility node: the ✓ is an unlabeled SVG and
+                  the ! a bare glyph, so without a label TalkBack read 'REP 3',
+                  '71', 'shallow' as fragments and a clean row had no marker at all. */}
+              <View style={styles.reportRows}>
+                {setReport.data.map((r, i) => (
+                  <View key={r.index}>
+                    {i > 0 && <Hairline />}
+                    <View
+                      style={styles.reportRow}
+                      accessible
+                      accessibilityLabel={`Rep ${r.index}, ${r.score} out of 100, ${r.flaw ?? 'clean'}`}
+                    >
+                      <Text style={styles.reportRowRep}>REP {r.index}</Text>
+                      <Text style={styles.reportRowScore}>{r.score}</Text>
+                      {r.flaw ? (
+                        <View style={styles.reportRowFlagWrap}>
+                          <Text style={[styles.reportRowFlag, { color: tokens.warning }]}>!</Text>
+                          <Text style={styles.reportRowFlaw}>{r.flaw}</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.reportRowFlagWrap}>
+                          <Check size={13} color={tokens.success} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* The coach's one sentence — the same line that was spoken. */}
+              {setVerdict && (
+                <View style={styles.reportCrown}>
+                  <Text style={styles.reportCrownEyebrow}>{claudePersonaLabel}</Text>
+                  <Text style={styles.reportCrownText}>{setVerdict}</Text>
+                </View>
+              )}
+            </ScrollView>
 
             <PressableScale
               style={styles.reportDone}
-              onPress={() => setSetReport(null)}
+              onPress={() => { setSetReport(null); setSetVerdict(null); }}
               haptic="medium"
               accessibilityRole="button"
             >
@@ -1481,14 +1708,28 @@ function makeStyles(t: SemanticTokens) {
       alignItems: 'center', justifyContent: 'center',
       borderWidth: 1, borderColor: stage.crownLine,
     },
-    headTitleWrap: { flex: 1, alignItems: 'center' },
+    // Left-aligned on purpose. The row is [X][title][Technique][flip], so a
+    // centred title sat visibly off-centre; a balancing spacer would leave a
+    // 360dp phone ~36dp for the exercise name.
+    headTitleWrap: { flex: 1, alignItems: 'flex-start' },
     headEyebrow: {
       fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
       textTransform: 'uppercase', color: stage.crownTextDim,
     },
     headTitle: {
       fontFamily: Fonts.displayBold, fontSize: 20, letterSpacing: -0.9,
-      color: stage.crownText, textAlign: 'center', marginTop: 5,
+      color: stage.crownText, textAlign: 'left', marginTop: 5,
+    },
+    // A word, not an icon: "Technique" has no glyph a lifter would read at a
+    // glance, and headBtn is a 38px circle that cannot hold one.
+    headTextBtn: {
+      height: 38, paddingHorizontal: 12, borderRadius: 19,
+      alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: stage.crownLine,
+    },
+    headTextBtnText: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: stage.crownText,
     },
 
     // ── Camera stage — the hero; every overlay floats, none is boxed ─────────
@@ -1532,6 +1773,34 @@ function makeStyles(t: SemanticTokens) {
     sheetText: {
       flex: 1, fontFamily: Fonts.bodyMedium, fontSize: 13, lineHeight: 18,
       color: stage.crownText,
+    },
+
+    // Re-trigger prompt: the same plate as `sheet`, stacked (title, line,
+    // two buttons) instead of a single row.
+    retriggerSheet: {
+      paddingLeft: 18, paddingRight: 16, paddingVertical: 16, gap: 6,
+      borderRadius: 22, backgroundColor: stage.overlay, overflow: 'hidden',
+    },
+    retriggerTitle: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: stage.warning,
+    },
+    retriggerText: {
+      fontFamily: Fonts.bodyMedium, fontSize: 13, lineHeight: 18, color: stage.crownText,
+    },
+    retriggerRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+    retriggerBtn: {
+      flex: 1, paddingVertical: 12, borderRadius: 999,
+      alignItems: 'center', justifyContent: 'center',
+    },
+    retriggerBtnGhost: {
+      flex: 1, paddingVertical: 12, borderRadius: 999,
+      alignItems: 'center', justifyContent: 'center',
+      borderWidth: 1, borderColor: stage.crownLine,
+    },
+    retriggerBtnText: {
+      fontFamily: Fonts.legacyMono, fontSize: 9.5, letterSpacing: 1.8,
+      textTransform: 'uppercase', color: stage.crownText,
     },
 
     // The dramatic pairing: an oversized numeral straight onto an 8px mono
@@ -1621,12 +1890,18 @@ function makeStyles(t: SemanticTokens) {
       backgroundColor: t.scrim,
     },
     reportCard: {
-      width: '100%', maxWidth: 380, borderRadius: 30, padding: 26,
+      // Bounded to the overlay's inner height so the body ScrollView (flexShrink)
+      // gives way on short phones instead of the card overflowing the screen.
+      width: '100%', maxWidth: 380, maxHeight: '100%', borderRadius: 30, padding: 26,
       backgroundColor: t.surface,
       // Depth from shadow, never an outline.
       shadowColor: t.crown, shadowOpacity: 0.24, shadowRadius: 34,
       shadowOffset: { width: 0, height: 18 }, elevation: 16,
     },
+    // The scrolling body. flexGrow 0 keeps a short card content-sized; flexShrink
+    // 1 is what lets it yield to the maxHeight above. Done lives OUTSIDE it.
+    reportBody: { flexGrow: 0, flexShrink: 1 },
+    reportBodyContent: { paddingBottom: 2 },
     reportEyebrow: {
       fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
       textTransform: 'uppercase', color: t.textTertiary,
@@ -1642,11 +1917,37 @@ function makeStyles(t: SemanticTokens) {
       color: t.text, marginTop: 14,
     },
     reportStats: { marginTop: 26 },
-    reportDots: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 28 },
-    reportDot: { width: 6, height: 24, borderRadius: 3 },
-    reportFlaws: {
-      fontFamily: Fonts.body, fontSize: 14, lineHeight: 21, color: t.textSecondary,
-      textTransform: 'capitalize', marginTop: 18,
+    // Per-rep rows. No cap: the card body scrolls as one surface (see reportBody).
+    reportRows: { marginTop: 22 },
+    reportRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 9 },
+    reportRowRep: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.6,
+      textTransform: 'uppercase', color: t.textTertiary, minWidth: 44,
+    },
+    reportRowScore: {
+      fontFamily: Fonts.displayBold, fontVariant: ['tabular-nums'], fontSize: 17,
+      letterSpacing: -0.5, color: t.text, minWidth: 34,
+    },
+    reportRowFlagWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 7 },
+    reportRowFlag: { fontFamily: Fonts.displayBold, fontSize: 15, lineHeight: 18 },
+    reportRowFlaw: {
+      fontFamily: Fonts.body, fontSize: 13.5, color: t.textSecondary,
+      textTransform: 'capitalize',
+    },
+    // The coach's sentence in a dark crown block — the one place on the card
+    // that speaks in a voice rather than a number.
+    reportCrown: { marginTop: 18, borderRadius: 20, padding: 18, backgroundColor: t.crown },
+    reportCrownEyebrow: {
+      fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
+      textTransform: 'uppercase', color: t.crownTextDim,
+    },
+    reportCrownText: {
+      fontFamily: Fonts.bodyMedium, fontSize: 14.5, lineHeight: 22,
+      color: t.crownText, marginTop: 8,
+    },
+    // Plain sentence for the 0-rep card (no capitalize: it is a sentence).
+    reportSentence: {
+      fontFamily: Fonts.body, fontSize: 14, lineHeight: 21, color: t.textSecondary, marginTop: 14,
     },
     // Neutral ink fill — the emerald is already spent on the hero numeral.
     reportDone: {
