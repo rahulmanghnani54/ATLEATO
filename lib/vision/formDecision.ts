@@ -71,7 +71,7 @@ export interface FormVerdict {
   score: number | null;
   /** 0..100 — how much to trust `score`. Reported separately, always. */
   confidence: number;
-  /** Findings that survived temporal confirmation this frame. */
+  /** Findings that survived temporal confirmation this frame; ordered worst-first. */
   findings: FormFinding[];
   /** The ONE finding worth saying right now, or null to stay silent. */
   speak: FormFinding | null;
@@ -231,6 +231,15 @@ export class FormDecider {
       this.spokenWeight.set(speak.id, this.tracks.get(speak.id)?.weight ?? 0);
       this.lastSpeechMs = now;
     }
+
+    // The screen shows findings[0] as THE correction. Until now the list came
+    // out in Map insertion order — whichever fault the checks emitted first —
+    // so a minor cue could sit above an injury-risk one for as long as both
+    // persisted. Rank it the way speech is ranked, so what is displayed and what
+    // would be said agree. Sorted after pickSpeech so speech election, which
+    // walks this array in place, is untouched; `confirmed()` returns a fresh
+    // array, so sorting in place disturbs nothing else.
+    confirmed.sort((a, b) => (this.outranks(a, b) ? -1 : this.outranks(b, a) ? 1 : 0));
 
     return {
       score,
