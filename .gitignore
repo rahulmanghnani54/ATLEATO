@@ -65,3 +65,4 @@ build.log
 **/.env
 *.env
 **/*.env
+scripts/technique-clips/out/
