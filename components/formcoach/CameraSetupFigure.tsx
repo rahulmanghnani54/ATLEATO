@@ -70,6 +70,22 @@ interface Pt {
   y: number;
 }
 
+/** A horizontal stroke the sight-line must not run into. */
+interface Bar {
+  y: number;
+  x1: number;
+  x2: number;
+}
+
+/** The bench top, shared by the lying figure and the sight-line clamp. */
+const BENCH: Bar = { y: 95, x1: 66, x2: 168 };
+/**
+ * How far below a bar a sight-line rising from the viewer's side must stop:
+ * the bar's half-stroke plus the dash's round cap (together one stroke), and
+ * a visible gap between them.
+ */
+const BAR_CLEARANCE = STROKE + 2;
+
 /**
  * Where on the floor arc the phone stands, in degrees: 0 = the arc's right end
  * (beside the lifter), 90 = its bottom (nearest the viewer). The standing
@@ -99,14 +115,28 @@ function ringPoint(deg: number): Pt {
   return { x: FLOOR.cx + FLOOR.rx * Math.cos(rad), y: FLOOR.cy + FLOOR.ry * Math.sin(rad) };
 }
 
-function sightLine(from: Pt, to: Pt): { x1: number; y1: number; x2: number; y2: number } {
+/**
+ * The dashed segment from the phone toward `to`, kept off the body and, when
+ * a `bar` is given, off that bar: a line rising from below it stops a
+ * clearance short of its underside if it would cross the bar's span rather
+ * than pass beyond one end. Only the lying figure's "side" position (phone
+ * nearest the viewer, aiming up at a torso lying ON the bench) trips this;
+ * the other two lying positions pass the bench's foot end.
+ */
+function sightLine(from: Pt, to: Pt, bar?: Bar): { x1: number; y1: number; x2: number; y2: number } {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const dist = Math.hypot(dx, dy);
   const ux = dx / dist;
   const uy = dy / dist;
   const start = SIGHT_GAP;
-  const end = Math.min(SIGHT_GAP + SIGHT_LEN, dist - SIGHT_MARGIN);
+  let end = Math.min(SIGHT_GAP + SIGHT_LEN, dist - SIGHT_MARGIN);
+  if (bar && uy < 0 && from.y > bar.y) {
+    const stopY = bar.y + BAR_CLEARANCE;
+    const t = (from.y - stopY) / -uy;
+    const xAtStop = from.x + ux * t;
+    if (xAtStop >= bar.x1 && xAtStop <= bar.x2) end = Math.min(end, t);
+  }
   return {
     x1: from.x + ux * start,
     y1: from.y + uy * start,
@@ -142,9 +172,9 @@ function LyingFigure(): JSX.Element {
   return (
     <>
       {/* bench: top + two legs down to the floor line */}
-      <Line x1={66} y1={95} x2={168} y2={95} />
-      <Line x1={80} y1={95} x2={80} y2={112} />
-      <Line x1={140} y1={95} x2={140} y2={112} />
+      <Line x1={BENCH.x1} y1={BENCH.y} x2={BENCH.x2} y2={BENCH.y} />
+      <Line x1={80} y1={BENCH.y} x2={80} y2={112} />
+      <Line x1={140} y1={BENCH.y} x2={140} y2={112} />
       {/* body along the bench */}
       <Circle cx={76} cy={86} r={8} />
       <Line x1={88} y1={88} x2={130} y2={88} />
@@ -170,7 +200,7 @@ export function CameraSetupFigure({
   const foot = ringPoint(RING_ANGLE[orientation][cameraAngle]);
   // The phone stands ON the arc: its bottom edge is the ring point.
   const phone: Pt = { x: foot.x, y: foot.y - PHONE_H / 2 };
-  const sight = sightLine(phone, AIM[orientation]);
+  const sight = sightLine(phone, AIM[orientation], orientation === 'lying' ? BENCH : undefined);
 
   return (
     <Svg

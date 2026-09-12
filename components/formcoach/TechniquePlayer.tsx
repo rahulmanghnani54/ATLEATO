@@ -18,7 +18,7 @@ import { useCallback, useEffect, useRef, useState, type JSX, type ReactNode } fr
 import { StyleSheet, View } from 'react-native';
 import { ResizeMode, Video } from 'expo-av';
 import { Skeleton } from '@/components/ui/motion';
-import { ensureClipCached } from '@/lib/tutorialClips';
+import { ensureClipCached, evictClip } from '@/lib/tutorialClips';
 
 export interface TechniquePlayerProps {
   /** Object name inside the tutorial bucket; NULL means "no clip for this exercise". */
@@ -63,6 +63,15 @@ export function TechniquePlayer({
     onErrorRef.current?.();
   }, []);
 
+  // A file that downloaded fine but will not decode is the same to the user
+  // as no file at all — and it must not stay a cache hit, or every later
+  // visit fails the same way. Eviction is fire-and-forget: it never throws,
+  // and the poster is already the outcome either way.
+  const failDecode = useCallback(() => {
+    if (objectPath !== null) void evictClip(objectPath);
+    fail();
+  }, [objectPath, fail]);
+
   useEffect(() => {
     errorFired.current = false;
     setLayer(objectPath === null ? 'poster' : 'loading');
@@ -105,9 +114,7 @@ export function TechniquePlayer({
           resizeMode={ResizeMode.COVER}
           useNativeControls={false}
           style={[styles.video, { height }]}
-          // A file that downloaded fine but will not decode is the same to the
-          // user as no file at all.
-          onError={fail}
+          onError={failDecode}
         />
       ) : null}
     </View>

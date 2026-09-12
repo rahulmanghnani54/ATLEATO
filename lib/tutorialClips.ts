@@ -11,6 +11,9 @@
  * Object names carry the content version (`bench_press_v1.mp4`) because public
  * objects are CDN-cached — overwriting in place serves stale bytes.
  *
+ * The cache path doubles as the hit test, so it is only ever written by a
+ * rename after a complete 200 body is on disk — see `ensureClipCached`.
+ *
  * This module reads the project URL from the build-time env directly rather
  * than importing `lib/supabase`: the clip path must stay reachable from a
  * presentational component without dragging the auth client along with it.
@@ -28,6 +31,15 @@ const CACHE_FOLDER = `${TUTORIAL_BUCKET}/`;
  * up is cheap.
  */
 const DEFAULT_TIMEOUT_MS = 8000;
+
+/**
+ * Per-process counter folded into every temp file name. Two calls in the same
+ * millisecond (StrictMode's double effect, a fast remount) must not share a
+ * download target: on Android the second `downloadAsync` would unlink the
+ * first's file mid-write and the first's promote would then rename the
+ * second's half-written body into place.
+ */
+let tempSeq = 0;
 
 /** `bench_press_v1.mp4` — the object name inside the bucket. */
 export function clipObjectPath(formId: string, version: number): string {
@@ -48,11 +60,27 @@ export function clipCachePath(cacheDir: string, objectPath: string): string {
 /**
  * Resolves to a `file://` uri for the clip, downloading it on first use.
  *
+ * A file at the cache path is the hit test, so nothing may write there until
+ * the bytes are known to be good. `downloadAsync` cannot promise that: on
+ * Android it deletes its target and streams the body straight into it in
+ * 8 KiB segments, so the target exists — non-empty — for the whole transfer,
+ * and it lands a 404 JSON body there just as readily as a video. Downloading
+ * to the final name would therefore turn an overlapping second call, a
+ * process killed mid-transfer, or a timeout followed by a late 404 into a
+ * permanent hit that the decoder can never play.
+ *
+ * So each call downloads to its own `*.part` name and promotes it with a
+ * rename only after a 200 is confirmed. The rename (`File.renameTo` on
+ * Android, remove-then-move on iOS) takes the cache path from absent to a
+ * complete body in one step and replaces an existing complete file cleanly,
+ * which is what two overlapping calls that both succeed end up doing.
+ *
  * Rejects when the project URL is not configured, when storage answers with
- * anything but 200 (a missing object comes back as a 404 JSON body, which
- * `downloadAsync` writes to disk as if it were the video), or when the
- * download outlives the timeout. On every failure the destination is removed
- * so a truncated or bogus file can never masquerade as a cache hit.
+ * anything but 200, when the download outlives the timeout, or when the
+ * promote fails. Every failure removes the temp file (best effort) and leaves
+ * the cache path untouched. On Android the timeout's delete unlinks the file
+ * under the still-running writer, so a slow first attempt does not warm the
+ * cache — the poster covers that visit and the next one retries.
  */
 export async function ensureClipCached(
   objectPath: string,
@@ -68,13 +96,16 @@ export async function ensureClipCached(
 
   const dest = clipCachePath(cacheDir, objectPath);
 
-  // A process killed mid-download leaves a truncated file at the final path,
-  // so `exists` alone is not a hit — an empty file is re-fetched.
+  // Only the promote below ever creates this file, so existence alone means
+  // "a complete 200 body". A file the decoder still rejects is removed by
+  // `evictClip` so the next visit re-downloads rather than failing forever.
   const info = await FileSystem.getInfoAsync(dest);
-  if (info.exists && info.size > 0) return dest;
+  if (info.exists) return dest;
 
   // `intermediates` also makes this a no-op when the folder is already there.
   await FileSystem.makeDirectoryAsync(`${cacheDir}${CACHE_FOLDER}`, { intermediates: true });
+
+  const tmp = `${dest}.${Date.now().toString(36)}-${(tempSeq++).toString(36)}.part`;
 
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -84,16 +115,32 @@ export async function ensureClipCached(
 
   try {
     const res = await Promise.race([
-      FileSystem.downloadAsync(clipPublicUrl(supabaseUrl, objectPath), dest),
+      FileSystem.downloadAsync(clipPublicUrl(supabaseUrl, objectPath), tmp),
       timeout,
     ]);
     if (res.status !== 200) throw new Error(`tutorial clip: HTTP ${res.status}`);
+    await FileSystem.moveAsync({ from: tmp, to: dest });
     return dest;
   } catch (e) {
     // Best effort: the failure being reported is the download, not the cleanup.
-    await FileSystem.deleteAsync(dest, { idempotent: true }).catch(() => {});
+    await FileSystem.deleteAsync(tmp, { idempotent: true }).catch(() => {});
     throw e;
   } finally {
     clearTimeout(timer);
   }
+}
+
+/**
+ * Drops a cached clip so the next `ensureClipCached` fetches it again. For
+ * the player's decoder-error path: the file made it through the 200 check
+ * and the promote, yet will not play, and without this it would be served as
+ * a hit on every visit until the OS evicts the cache. Never throws — a failed
+ * eviction is the same to the caller as no cache at all.
+ */
+export async function evictClip(objectPath: string): Promise<void> {
+  const cacheDir = FileSystem.cacheDirectory;
+  if (!cacheDir) return;
+  await FileSystem.deleteAsync(clipCachePath(cacheDir, objectPath), { idempotent: true }).catch(
+    () => {},
+  );
 }
