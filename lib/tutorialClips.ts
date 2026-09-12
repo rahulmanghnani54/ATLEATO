@@ -76,11 +76,18 @@ export function clipCachePath(cacheDir: string, objectPath: string): string {
  * which is what two overlapping calls that both succeed end up doing.
  *
  * Rejects when the project URL is not configured, when storage answers with
- * anything but 200, when the download outlives the timeout, or when the
- * promote fails. Every failure removes the temp file (best effort) and leaves
- * the cache path untouched. On Android the timeout's delete unlinks the file
- * under the still-running writer, so a slow first attempt does not warm the
- * cache — the poster covers that visit and the next one retries.
+ * anything but 200, when the promote fails, or when the download outlives the
+ * timeout. The timeout only decides what the CALLER hears; it never touches
+ * the file system. `downloadAsync` creates its target from inside the response
+ * callback on Android and moves its own temp into place on completion on iOS,
+ * so a delete fired by the timer while the request is still waiting on
+ * headers — the usual slow-link case — would run before the `.part` file
+ * exists and orphan it. The outcome is therefore chained onto the download
+ * itself, the one party that knows when the temp file is real: a 200 promotes,
+ * anything else removes the temp file (best effort), and both happen whether
+ * or not the caller has already given up. A late 200 warms the cache for the
+ * next visit at no extra cost; a late 404 still leaves nothing behind. The
+ * cache path is never written by anything but the promote.
  */
 export async function ensureClipCached(
   objectPath: string,
@@ -113,18 +120,26 @@ export async function ensureClipCached(
     timer = setTimeout(() => reject(new Error('tutorial clip: download timed out')), timeoutMs);
   });
 
+  // Promote-or-clean rides on the download, not on the timer (see above), so
+  // it runs when the native side knows what the temp file holds — including
+  // after the caller has stopped listening.
+  const settled = FileSystem.downloadAsync(clipPublicUrl(supabaseUrl, objectPath), tmp)
+    .then(async (res) => {
+      if (res.status !== 200) throw new Error(`tutorial clip: HTTP ${res.status}`);
+      await FileSystem.moveAsync({ from: tmp, to: dest });
+      return dest;
+    })
+    .catch(async (e: unknown) => {
+      // Best effort: the failure being reported is the download, not the cleanup.
+      await FileSystem.deleteAsync(tmp, { idempotent: true }).catch(() => {});
+      throw e;
+    });
+  // A failure that lands after the timeout was already reported has nobody
+  // left to hear it; keep it from surfacing as an unhandled rejection.
+  settled.catch(() => {});
+
   try {
-    const res = await Promise.race([
-      FileSystem.downloadAsync(clipPublicUrl(supabaseUrl, objectPath), tmp),
-      timeout,
-    ]);
-    if (res.status !== 200) throw new Error(`tutorial clip: HTTP ${res.status}`);
-    await FileSystem.moveAsync({ from: tmp, to: dest });
-    return dest;
-  } catch (e) {
-    // Best effort: the failure being reported is the download, not the cleanup.
-    await FileSystem.deleteAsync(tmp, { idempotent: true }).catch(() => {});
-    throw e;
+    return await Promise.race([settled, timeout]);
   } finally {
     clearTimeout(timer);
   }

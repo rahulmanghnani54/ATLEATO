@@ -52,6 +52,30 @@ function tempPathOf(call = 0): string {
   return target;
 }
 
+/**
+ * A download whose outcome the test decides — typically after the caller has
+ * already timed out and moved on. Only resolution is offered: `downloadAsync`
+ * resolves for every HTTP status, so a rejection would model a transport
+ * failure, which the non-200 path already covers.
+ */
+function deferredDownload() {
+  let resolve!: (result: FileSystem.FileSystemDownloadResult) => void;
+  downloadAsync.mockReturnValue(
+    new Promise<FileSystem.FileSystemDownloadResult>((res) => {
+      resolve = res;
+    }),
+  );
+  return { resolve };
+}
+
+/**
+ * Lets the download's own then/catch chain run after the test settles it. A
+ * macrotask, not a microtask, so the assertion also sits past the point where
+ * Node would have reported an unhandled rejection — which jest-circus turns
+ * into a failure of the running test.
+ */
+const flush = () => new Promise<void>((r) => setTimeout(r, 0));
+
 // `process.env` is shared by every test file a jest worker runs; only the
 // module registry is per-file. Put the variable back the way it was found.
 const ORIGINAL_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -144,10 +168,40 @@ describe('ensureClipCached', () => {
     expect(deleteAsync).toHaveBeenCalledWith(tempPathOf(), { idempotent: true });
   });
 
-  it('rejects when the download outlives the timeout and removes the temp file', async () => {
-    downloadAsync.mockReturnValue(new Promise(() => {}));
+  it('rejects when the download outlives the timeout without touching the temp file', async () => {
+    // The timer decides what the caller hears and nothing else. On both
+    // platforms the native side creates the temp file only once the response
+    // arrives, so a delete fired here — usually while still waiting on
+    // headers over a slow link — would run before the file exists and leave
+    // an orphan behind when it did. Cleanup belongs to the download.
+    deferredDownload();
 
     await expect(ensureClipCached(OBJECT, { timeoutMs: 5 })).rejects.toThrow(/timed out/);
+
+    expect(moveAsync).not.toHaveBeenCalled();
+    expect(deleteAsync).not.toHaveBeenCalled();
+  });
+
+  it('promotes a 200 that lands after the timeout, so the next visit is a hit', async () => {
+    // The caller has already settled for the poster, but the full body still
+    // arrived. Throwing it away would make a slow link pay for the whole clip
+    // on every visit and never get to play it.
+    const download = deferredDownload();
+    await expect(ensureClipCached(OBJECT, { timeoutMs: 5 })).rejects.toThrow(/timed out/);
+
+    download.resolve({ status: 200, uri: tempPathOf(), headers: {}, mimeType: 'video/mp4' });
+    await flush();
+
+    expect(moveAsync).toHaveBeenCalledWith({ from: tempPathOf(), to: CACHED });
+    expect(deleteAsync).not.toHaveBeenCalled();
+  });
+
+  it('still removes the temp file when a non-200 lands after the timeout', async () => {
+    const download = deferredDownload();
+    await expect(ensureClipCached(OBJECT, { timeoutMs: 5 })).rejects.toThrow(/timed out/);
+
+    download.resolve({ status: 404, uri: tempPathOf(), headers: {}, mimeType: 'application/json' });
+    await flush();
 
     expect(moveAsync).not.toHaveBeenCalled();
     expect(deleteAsync).toHaveBeenCalledTimes(1);
@@ -222,5 +276,43 @@ describe('evictClip', () => {
     deleteAsync.mockRejectedValue(new Error('EACCES'));
 
     await expect(evictClip(OBJECT)).resolves.toBeUndefined();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// No cache directory
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('without a cache directory', () => {
+  // `cacheDirectory` is null where the platform has none (web). Neither entry
+  // point may reach the file system then. The property is swapped on the live
+  // mock object rather than by loading the module against a second mock: an
+  // already-instantiated mock wins over any new factory even inside
+  // `isolateModules`, so a second copy would silently be this same one. The
+  // module reads `cacheDirectory` per call (as the product code must, since
+  // the value is per platform, not per process), which is what makes this
+  // swap observable.
+  let replaced: jest.ReplaceProperty<string | null>;
+
+  beforeEach(() => {
+    const live = jest.requireMock<{ cacheDirectory: string | null }>('expo-file-system/legacy');
+    replaced = jest.replaceProperty(live, 'cacheDirectory', null);
+  });
+
+  afterEach(() => {
+    replaced.restore();
+  });
+
+  it('ensureClipCached rejects before looking for or fetching anything', async () => {
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow(/cache directory/);
+
+    expect(getInfoAsync).not.toHaveBeenCalled();
+    expect(downloadAsync).not.toHaveBeenCalled();
+  });
+
+  it('evictClip is a no-op', async () => {
+    await expect(evictClip(OBJECT)).resolves.toBeUndefined();
+
+    expect(deleteAsync).not.toHaveBeenCalled();
   });
 });

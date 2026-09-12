@@ -33,8 +33,14 @@ export interface TechniquePlayerProps {
   testID?: string;
 }
 
-/** What sits on top of the poster right now. */
-type Layer = 'poster' | 'loading' | { uri: string };
+/**
+ * What sits on top of the poster right now. The playing layer carries the
+ * object it was built from: for the one render between an `objectPath` prop
+ * change and the effect resetting to 'loading', the previous clip's <Video>
+ * is still mounted, and a decoder error in that window must evict THAT file
+ * rather than whatever the props name by then.
+ */
+type Layer = 'poster' | 'loading' | { source: { uri: string }; objectPath: string };
 
 export function TechniquePlayer({
   objectPath,
@@ -66,11 +72,15 @@ export function TechniquePlayer({
   // A file that downloaded fine but will not decode is the same to the user
   // as no file at all — and it must not stay a cache hit, or every later
   // visit fails the same way. Eviction is fire-and-forget: it never throws,
-  // and the poster is already the outcome either way.
-  const failDecode = useCallback(() => {
-    if (objectPath !== null) void evictClip(objectPath);
-    fail();
-  }, [objectPath, fail]);
+  // and the poster is already the outcome either way. The path comes from
+  // the layer, not the props (see `Layer`).
+  const failDecode = useCallback(
+    (rejected: string) => {
+      void evictClip(rejected);
+      fail();
+    },
+    [fail],
+  );
 
   useEffect(() => {
     errorFired.current = false;
@@ -83,7 +93,7 @@ export function TechniquePlayer({
     ensureClipCached(objectPath).then(
       (fileUri) => {
         if (!alive) return;
-        setLayer({ uri: fileUri });
+        setLayer({ source: { uri: fileUri }, objectPath });
         onReadyRef.current?.();
       },
       () => {
@@ -107,14 +117,14 @@ export function TechniquePlayer({
 
       {typeof layer === 'object' ? (
         <Video
-          source={layer}
+          source={layer.source}
           isLooping
           shouldPlay
           isMuted
           resizeMode={ResizeMode.COVER}
           useNativeControls={false}
           style={[styles.video, { height }]}
-          onError={failDecode}
+          onError={() => failDecode(layer.objectPath)}
         />
       ) : null}
     </View>
