@@ -1183,11 +1183,17 @@ export default function FormCoach() {
       </View>
 
       <View style={[styles.stage, { height: cameraHeight }]}>
+        {/* Focus-gated: the Technique button and REVIEW NOW push /technique on
+            top of this screen, and VisionCamera does not stop the session for a
+            covered screen — MLKit at 15 fps, the 30 fps skeleton renders and the
+            voice cues would all keep running under the clip player. Going
+            inactive stops detections, so the stale watchdog runs loseTracking
+            (voice off, in-flight rep dropped); banked reps survive the trip. */}
         <Camera
           ref={cameraRef}
           style={StyleSheet.absoluteFill}
           device={device}
-          isActive={true}
+          isActive={screenFocused}
           frameProcessor={frameProcessor}
           pixelFormat="yuv"
         />
@@ -1280,10 +1286,12 @@ export default function FormCoach() {
               <Text style={styles.sheetText} numberOfLines={2}>{topFinding.message}</Text>
             </View>
           )}
-          {/* No mid-set praise sheet: a clean rep is praised in the coach's
-              VOICE (the engine still elects those lines) and shown as the per-rep
-              score. A second "form looks solid" plate under a live number was
-              two channels asserting the same judgement, and it hid the readout. */}
+          {/* No mid-set praise sheet, by design. Nothing replaces it: the engine
+              only ever emits fault findings ('info' is a mild fault, not praise),
+              so a clean rep is silent. Its positive channels are the per-rep
+              score above and the end-of-set verdict. A "form looks solid" plate
+              under a live number was two channels asserting the same judgement,
+              and it hid the readout. */}
           {/* Visible and judgeable, but no rep has begun: the engine reports
               'setup'. Say so rather than coaching a body that isn't lifting. */}
           {isTracking && !calibrating && canJudge && vision?.phase === 'setup' && (
@@ -1533,7 +1541,7 @@ export default function FormCoach() {
       {setReport && setReport.reps < 1 && (
         <View style={styles.reportOverlay}>
           <View style={styles.reportCard}>
-            <Text style={styles.reportEyebrow}>{claudePersonaLabel} · SET REPORT</Text>
+            <Text style={styles.reportEyebrow}>{personaTheme.shortName} · SET REPORT</Text>
             <Text style={styles.reportGrade}>No reps detected</Text>
             <Text style={styles.reportSentence}>{setVerdict ?? NO_REPS_COPY}</Text>
             <PressableScale
@@ -1549,75 +1557,90 @@ export default function FormCoach() {
       )}
       {setReport && setReport.reps >= 1 && (
         <View style={styles.reportOverlay}>
+          {/* The card is bounded to the overlay and its BODY scrolls; Done sits
+              outside the scroll, pinned to the card's foot. With ≥6 reps the
+              content runs ~740dp, more than a 640–760dp budget Android has,
+              and a centred non-scrolling card clipped BOTH ends — the only
+              dismiss went off-screen with them. */}
           <View style={styles.reportCard}>
-            <Text style={styles.reportEyebrow}>{claudePersonaLabel} · SET REPORT</Text>
-
-            <View style={styles.reportHero}>
-              <HeroNumber value={setReport.avgScore} color={pageAccent.accentText} size={74} />
-              <Text style={styles.reportHeroUnit}>/100</Text>
-            </View>
-            <Text style={styles.reportScoreLabel}>Average quality</Text>
-            <Text style={styles.reportGrade}>
-              {setReport.avgScore >= 90 ? 'A · Excellent'
-                : setReport.avgScore >= 80 ? 'B · Strong'
-                : setReport.avgScore >= 70 ? 'C · Solid'
-                : setReport.avgScore >= 55 ? 'D · Work on it'
-                : 'Keep grinding'}
-            </Text>
-
-            <StatRow style={styles.reportStats}>
-              <BigStat value={setReport.reps} label="Reps" size={30} />
-              <BigStat
-                value={Number((setReport.avgTempoMs / 1000).toFixed(1))}
-                unit="s"
-                decimals={1}
-                label="Avg tempo"
-                size={30}
-              />
-              <BigStat
-                value={setReport.bestRep ? Math.round(setReport.bestRep.bottomDeg) : '—'}
-                unit="°"
-                label="Best depth"
-                size={30}
-              />
-            </StatRow>
-
-            {/* One row per rep: REP n · score · ✓ clean or ! its dominant flaw.
-                Scrolls past ~6 rows so a 20-rep set cannot push Done off screen. */}
             <ScrollView
-              style={styles.reportRows}
-              contentContainerStyle={styles.reportRowsContent}
+              style={styles.reportBody}
+              contentContainerStyle={styles.reportBodyContent}
               showsVerticalScrollIndicator={false}
-              nestedScrollEnabled
+              bounces={false}
             >
-              {setReport.data.map((r, i) => (
-                <View key={r.index}>
-                  {i > 0 && <Hairline />}
-                  <View style={styles.reportRow}>
-                    <Text style={styles.reportRowRep}>REP {r.index}</Text>
-                    <Text style={styles.reportRowScore}>{r.score}</Text>
-                    {r.flaw ? (
-                      <View style={styles.reportRowFlagWrap}>
-                        <Text style={[styles.reportRowFlag, { color: tokens.warning }]}>!</Text>
-                        <Text style={styles.reportRowFlaw}>{r.flaw}</Text>
-                      </View>
-                    ) : (
-                      <View style={styles.reportRowFlagWrap}>
-                        <Check size={13} color={tokens.success} strokeWidth={3} />
-                      </View>
-                    )}
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
+              <Text style={styles.reportEyebrow}>{personaTheme.shortName} · SET REPORT</Text>
 
-            {/* The coach's one sentence — the same line that was spoken. */}
-            {setVerdict && (
-              <View style={styles.reportCrown}>
-                <Text style={styles.reportCrownEyebrow}>{claudePersonaLabel}</Text>
-                <Text style={styles.reportCrownText}>{setVerdict}</Text>
+              <View style={styles.reportHero}>
+                <HeroNumber value={setReport.avgScore} color={pageAccent.accentText} size={74} />
+                <Text style={styles.reportHeroUnit}>/100</Text>
               </View>
-            )}
+              <Text style={styles.reportScoreLabel}>Average quality</Text>
+              <Text style={styles.reportGrade}>
+                {setReport.avgScore >= 90 ? 'A · Excellent'
+                  : setReport.avgScore >= 80 ? 'B · Strong'
+                  : setReport.avgScore >= 70 ? 'C · Solid'
+                  : setReport.avgScore >= 55 ? 'D · Work on it'
+                  : 'Keep grinding'}
+              </Text>
+
+              <StatRow style={styles.reportStats}>
+                <BigStat value={setReport.reps} label="Reps" size={30} />
+                <BigStat
+                  value={Number((setReport.avgTempoMs / 1000).toFixed(1))}
+                  unit="s"
+                  decimals={1}
+                  label="Avg tempo"
+                  size={30}
+                />
+                <BigStat
+                  value={setReport.bestRep ? Math.round(setReport.bestRep.bottomDeg) : '—'}
+                  unit="°"
+                  label="Best depth"
+                  size={30}
+                />
+              </StatRow>
+
+              {/* One row per rep: REP n · score · ✓ clean or ! its dominant flaw.
+                  A plain list — the card body is the one scroll surface, so a
+                  20-rep set scrolls the whole report rather than a list inside it.
+                  Each row is one accessibility node: the ✓ is an unlabeled SVG and
+                  the ! a bare glyph, so without a label TalkBack read 'REP 3',
+                  '71', 'shallow' as fragments and a clean row had no marker at all. */}
+              <View style={styles.reportRows}>
+                {setReport.data.map((r, i) => (
+                  <View key={r.index}>
+                    {i > 0 && <Hairline />}
+                    <View
+                      style={styles.reportRow}
+                      accessible
+                      accessibilityLabel={`Rep ${r.index}, ${r.score} out of 100, ${r.flaw ?? 'clean'}`}
+                    >
+                      <Text style={styles.reportRowRep}>REP {r.index}</Text>
+                      <Text style={styles.reportRowScore}>{r.score}</Text>
+                      {r.flaw ? (
+                        <View style={styles.reportRowFlagWrap}>
+                          <Text style={[styles.reportRowFlag, { color: tokens.warning }]}>!</Text>
+                          <Text style={styles.reportRowFlaw}>{r.flaw}</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.reportRowFlagWrap}>
+                          <Check size={13} color={tokens.success} strokeWidth={3} />
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* The coach's one sentence — the same line that was spoken. */}
+              {setVerdict && (
+                <View style={styles.reportCrown}>
+                  <Text style={styles.reportCrownEyebrow}>{claudePersonaLabel}</Text>
+                  <Text style={styles.reportCrownText}>{setVerdict}</Text>
+                </View>
+              )}
+            </ScrollView>
 
             <PressableScale
               style={styles.reportDone}
@@ -1685,14 +1708,17 @@ function makeStyles(t: SemanticTokens) {
       alignItems: 'center', justifyContent: 'center',
       borderWidth: 1, borderColor: stage.crownLine,
     },
-    headTitleWrap: { flex: 1, alignItems: 'center' },
+    // Left-aligned on purpose. The row is [X][title][Technique][flip], so a
+    // centred title sat visibly off-centre; a balancing spacer would leave a
+    // 360dp phone ~36dp for the exercise name.
+    headTitleWrap: { flex: 1, alignItems: 'flex-start' },
     headEyebrow: {
       fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
       textTransform: 'uppercase', color: stage.crownTextDim,
     },
     headTitle: {
       fontFamily: Fonts.displayBold, fontSize: 20, letterSpacing: -0.9,
-      color: stage.crownText, textAlign: 'center', marginTop: 5,
+      color: stage.crownText, textAlign: 'left', marginTop: 5,
     },
     // A word, not an icon: "Technique" has no glyph a lifter would read at a
     // glance, and headBtn is a 38px circle that cannot hold one.
@@ -1864,12 +1890,18 @@ function makeStyles(t: SemanticTokens) {
       backgroundColor: t.scrim,
     },
     reportCard: {
-      width: '100%', maxWidth: 380, borderRadius: 30, padding: 26,
+      // Bounded to the overlay's inner height so the body ScrollView (flexShrink)
+      // gives way on short phones instead of the card overflowing the screen.
+      width: '100%', maxWidth: 380, maxHeight: '100%', borderRadius: 30, padding: 26,
       backgroundColor: t.surface,
       // Depth from shadow, never an outline.
       shadowColor: t.crown, shadowOpacity: 0.24, shadowRadius: 34,
       shadowOffset: { width: 0, height: 18 }, elevation: 16,
     },
+    // The scrolling body. flexGrow 0 keeps a short card content-sized; flexShrink
+    // 1 is what lets it yield to the maxHeight above. Done lives OUTSIDE it.
+    reportBody: { flexGrow: 0, flexShrink: 1 },
+    reportBodyContent: { paddingBottom: 2 },
     reportEyebrow: {
       fontFamily: Fonts.legacyMono, fontSize: 8, letterSpacing: 1.9,
       textTransform: 'uppercase', color: t.textTertiary,
@@ -1885,9 +1917,8 @@ function makeStyles(t: SemanticTokens) {
       color: t.text, marginTop: 14,
     },
     reportStats: { marginTop: 26 },
-    // Per-rep rows. Capped at ~6 rows tall; longer sets scroll inside.
-    reportRows: { marginTop: 22, maxHeight: 6 * 38 },
-    reportRowsContent: { paddingBottom: 2 },
+    // Per-rep rows. No cap: the card body scrolls as one surface (see reportBody).
+    reportRows: { marginTop: 22 },
     reportRow: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 9 },
     reportRowRep: {
       fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 1.6,
