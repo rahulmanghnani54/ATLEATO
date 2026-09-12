@@ -360,7 +360,10 @@ const bench_press: ExerciseForm = {
   // some side component — hence the offset rather than straight-on.
   cameraAngle: 'front_45',
   cameraNote: 'Phone 30–45° from the foot of the bench, at bench height, both arms in frame',
-  tutorial: null,
+  // v2: v1 was a colour test pattern used to prove the pipeline, and devices
+  // that fetched it hold it in cache under that name forever (the cache path
+  // is the hit test). Never overwrite a version; bump it.
+  tutorial: { version: 2, durationSec: 10 },
   detectedFaults: [
     { checkId: 'press.elbow_flare', label: 'Elbow flare' },
     { checkId: 'press.wrist_stack', label: 'Wrist stack' },

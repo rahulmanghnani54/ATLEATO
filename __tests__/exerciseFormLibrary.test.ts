@@ -123,12 +123,17 @@ describe('library content', () => {
   );
 
   it.each(EXERCISE_FORM_LIBRARY.map((f) => [f.id, f] as const))(
-    '%s: ships key points, a camera angle and a placeholder tutorial', (_id, form) => {
+    '%s: ships key points, a camera angle and a sane clip descriptor', (_id, form) => {
       expect(form.keyPoints?.length ?? 0).toBeGreaterThanOrEqual(3);
       expect(form.keyPoints?.length ?? 0).toBeLessThanOrEqual(5);
       expect(['side', 'front', 'front_45']).toContain(form.cameraAngle);
       expect(form.cameraNote?.trim().length ?? 0).toBeGreaterThan(0);
-      expect(form.tutorial).toBeNull();
+      // null = convention (`<id>_v1.mp4`); a descriptor may only ever move the
+      // version FORWARD — v1 is taken by whatever was uploaded first.
+      if (form.tutorial !== null) {
+        expect(Number.isInteger(form.tutorial?.version)).toBe(true);
+        expect(form.tutorial!.version).toBeGreaterThanOrEqual(2);
+      }
     },
   );
 
