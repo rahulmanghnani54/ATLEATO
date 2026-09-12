@@ -376,6 +376,26 @@ export class VisionEngine {
     this.lastT = 0;
   }
 
+  /**
+   * Set finished; the lifter is about to start another. Clears the rep count,
+   * the coaching evidence and cooldowns, the skeleton lock and the frame clock,
+   * but KEEPS the calibrator.
+   *
+   * Calibration is body geometry — torso length, shoulder width, limb lengths —
+   * and none of that changes between set two and set three. `reset()` throws it
+   * away too, which is right when the engine is being torn down or the exercise
+   * changes hands, but between sets it meant every graded set was followed by
+   * ~1 s of CALIBRATING with the coach blanked: the status pill flapped
+   * READY -> CALIBRATING -> READY for nothing. Same reasoning as setCategory,
+   * which also keeps the scale across an exercise switch.
+   */
+  resetSet(): void {
+    this.machine.reset();
+    this.decider.reset();
+    this.lock.reset();
+    this.lastT = 0;
+  }
+
   get repCount(): number {
     return this.machine.count;
   }
