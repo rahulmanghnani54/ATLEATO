@@ -455,6 +455,24 @@ export default function Technique() {
         meta="You've done this one before."
         onBack={() => router.back()}
       />
+
+      {/* Not an empty page: the returning lifter still gets the loop and the
+          key points while choosing, and the clip is a cache hit by now. */}
+      <TechniquePlayer
+        objectPath={objectPath}
+        poster={renderFigure(playerH, false)}
+        height={playerH}
+        onReady={() => setClipReady(true)}
+        onError={() => setClipFailed(true)}
+        accessibilityLabel={`${exerciseName} technique clip, looping`}
+        testID="technique-player-ready"
+      />
+
+      <SafeAreaView edges={['left', 'right']} style={styles.body}>
+        <Section label="Key points">
+          <KeyPointsList points={points} accent={pa.accentText} />
+        </Section>
+      </SafeAreaView>
     </Frame>
   );
 }
