@@ -17,13 +17,19 @@
  * camera permission in the same commit, so a free user got the permission
  * prompt on top of the paywall. Nothing on the uncovered path is paid.
  *
+ * The OS camera permission is asked ONCE, on CAMERA READY, where the page has
+ * just explained what the camera is for. form-coach never auto-prompts: if
+ * permission is missing when it mounts it shows its own gate with a retry
+ * button, so a refusal here is never followed by a second dialog on landing
+ * (the second "deny" on Android is the permanent one).
+ *
  * Root-level Stack sibling of `form-coach`, never under `(tabs)/` — the
  * handoff is a REPLACE, and a replace from inside the tab group would swap
  * out the whole tab navigator. Step machine in-file, as `physique-checkin`.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, Switch, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCameraPermission } from 'react-native-vision-camera';
@@ -31,13 +37,14 @@ import { useCameraPermission } from 'react-native-vision-camera';
 import { CameraSetupFigure } from '@/components/formcoach/CameraSetupFigure';
 import { KeyPointsList } from '@/components/formcoach/KeyPointsList';
 import { TechniquePlayer } from '@/components/formcoach/TechniquePlayer';
-import { CanvasScreen, Crown, Hairline, Section } from '@/components/ui/canvas';
+import { CanvasScreen, Crown, Section } from '@/components/ui/canvas';
 import { PressableScale, Skeleton, SkeletonLines } from '@/components/ui/motion';
 import {
   getExerciseForm,
   getExerciseFormKey,
   hasVisionCoverage,
   keyPointsFor,
+  visionCategoryFor,
 } from '@/constants/exerciseFormLibrary';
 import { Fonts } from '@/constants/theme';
 import { useTutorialMemory } from '@/hooks/useTutorialMemory';
@@ -59,28 +66,49 @@ const BODY_PAD = 22;
 /** Form ids whose lifter is on a bench, so the setup figure lies down. */
 const LYING_FORM_IDS = new Set(['bench_press', 'incline_db_press']);
 
+/** Engine categories judged from the waist up — framing asks for less body. */
+type BodyRegion = 'upper' | 'lower';
+const UPPER_CATEGORIES = new Set<string>(['press', 'curl', 'pull']);
+
 /**
  * The six camera-setup rows. The engine cannot measure the camera angle, so
  * these instructions are the only thing standing between the user and a set
- * judged from a view the checks were never written for. Rows 5 and 6 restate
- * what the live pose-quality advice asks for once the camera is open
- * (lighting, a clear background) so the user hears it before, not after.
+ * judged from a view the checks were never written for.
+ *
+ * Rows 1–3 are DERIVED from the entry (angle, bench or floor, upper or lower
+ * body) so they agree with the cameraNote printed above them and with the
+ * SETTING UP checklist the camera will run: a bench press is framed from the
+ * foot of the bench and needs shoulders/elbows/wrists, a deadlift from the
+ * side with hips/knees/ankles. One generic list contradicted both. Height is
+ * the cameraNote's job (it names knee/hip/bench height per lift), so no row
+ * repeats it. Rows 4–6 restate what the live pose-quality advice asks for
+ * once the camera is open, so the user hears it before, not after.
  */
-function setupRows(angle: CameraAngle, orientation: Orientation): string[] {
-  const place: Record<CameraAngle, string> = {
-    side: 'Put it directly to your side, square to the movement.',
-    front: 'Put it straight in front of you.',
-    front_45: 'Put it in front of you, 30–45° off to one side.',
+function setupRows(angle: CameraAngle, orientation: Orientation, region: BodyRegion): string[] {
+  const placement: Record<Orientation, Record<CameraAngle, string>> = {
+    lying: {
+      front_45: 'Put the phone at the foot of the bench, 30–45° off to one side.',
+      side: 'Put the phone directly to your side, level with the bench.',
+      front: 'Put the phone at the foot of the bench, straight on.',
+    },
+    standing: {
+      side: 'Put the phone directly to your side, square to the movement.',
+      front: 'Put the phone straight in front of you.',
+      front_45: 'Put the phone in front of you, 30–45° off to one side.',
+    },
   };
+  const upper = region === 'upper';
   return [
-    'Stand your phone upright on something steady — a bench, a bag, a bottle.',
-    place[angle],
-    orientation === 'lying'
-      ? 'Keep it at bench height, level — not looking down at you.'
-      : 'Keep it level with your torso — not tilted up or down at you.',
-    'Step back until your whole body fits in the frame.',
-    'Face the light: a window or lamp behind the phone, not behind you.',
-    'Clear the background — one person in frame, nothing moving behind you.',
+    placement[orientation][angle],
+    upper
+      ? 'Keep your head, torso and both arms in the frame.'
+      : 'Keep your whole body in the frame, head to feet.',
+    upper
+      ? 'Shoulders, elbows and wrists must all stay visible.'
+      : 'Hips, knees and ankles must all stay visible.',
+    'Face the light — a window or lamp behind the phone, not behind you.',
+    "Stand the phone on something steady; don't hold it.",
+    'Not too close — step back until there is room around you in the frame.',
   ];
 }
 
@@ -112,9 +140,18 @@ export default function Technique() {
   const points = keyPointsFor(exerciseName);
   const cameraAngle: CameraAngle = form?.cameraAngle ?? 'side';
   const orientation: Orientation = form && LYING_FORM_IDS.has(form.id) ? 'lying' : 'standing';
+  const category = visionCategoryFor(form);
+  const region: BodyRegion = category && UPPER_CATEGORIES.has(category) ? 'upper' : 'lower';
   const objectPath = form?.tutorial ? clipObjectPath(form.id, form.tutorial.version) : null;
 
-  const { loaded, entry, fastPath, watched, skipped, setKnown, setupSeen } = useTutorialMemory(key);
+  const { loaded, entry, fastPath, watched, skipped, setupSeen } = useTutorialMemory(key);
+
+  // Every exit here awaits a memory write (or the OS permission dialog) before
+  // navigating, and the write must land before the handoff. If the user
+  // hardware-backs during that await this screen is already gone, and a
+  // trailing router.back() would pop the screen UNDER it as well.
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
 
   useEffect(() => {
     if (covered && !canAccess('ai_form_coach')) {
@@ -161,14 +198,17 @@ export default function Technique() {
     if (busy) return;
     setBusy(true);
     await watched();
+    if (!alive.current) return;
     track('tutorial_completed', {
       exercise: key,
       trigger: triggerRef.current ?? 'manual',
       watched_count: (entry?.watched ?? 0) + 1,
     });
     setBusy(false);
-    // Opened from inside Form Check: the camera is already under us.
-    if (review) { router.back(); return; }
+    // Opened from inside Form Check: the camera is already under us. An
+    // uncovered exercise has no camera at all, so its DONE ends here too —
+    // it must never reach the "ready to check your form?" step.
+    if (review || !covered) { router.back(); return; }
     setChosen('done');
   };
 
@@ -183,8 +223,9 @@ export default function Technique() {
     // Read setupSeen BEFORE the write replaces the entry.
     const firstSetup = !entry?.setupSeen;
     await skipped();
+    if (!alive.current) return;
     setBusy(false);
-    if (review || !covered) { router.back(); return; }
+    if (!covered) { router.back(); return; }
     if (firstSetup) { goSetup('preview'); return; }
     handoff();
   };
@@ -196,7 +237,9 @@ export default function Technique() {
     // camera screen mounts. A refusal is not fatal: form-coach shows its own
     // permission gate with a retry.
     try { await requestPermission(); } catch { /* handled on the next screen */ }
+    if (!alive.current) return;
     await setupSeen();
+    if (!alive.current) return;
     handoff();
   };
 
@@ -248,12 +291,17 @@ export default function Technique() {
   // "1 of 3" is only true on the full covered flow. A how-to card for an
   // uncovered exercise and a review from inside the camera have no steps.
   const stepped = covered && !review;
+  // SETUP is numbered only when it follows DONE. Reached from READY or via
+  // SKIP, steps 1–2 were never shown, so "3 of 3" would count phantom steps.
+  const setupEyebrow = stepped && setupReturn === 'done' ? 'STEP 3 OF 3' : 'CAMERA SETUP';
 
   // The poster doubles as the loading state and, for most exercises, the only
   // state there is until a clip is uploaded. The figure's viewBox is 240×132,
-  // so its width is derived from the slab height it has to fit inside.
+  // so its width is derived from the slab height it has to fit inside. The
+  // PREVIEW poster is the lifter alone: the phone and sight-line belong to the
+  // SETUP step, and a how-to card for an uncovered exercise has no such step.
   const playerH = Math.round((width * 9) / 16);
-  const renderFigure = (height: number) => (
+  const renderFigure = (height: number, showPhone: boolean) => (
     <View style={[styles.slab, { height }]}>
       <CameraSetupFigure
         orientation={orientation}
@@ -261,6 +309,7 @@ export default function Technique() {
         accent={pa.accentText}
         ink={tokens.text}
         width={Math.min(Math.round(height * (240 / 132) * 0.92), width - BODY_PAD * 2)}
+        showPhone={showPhone}
       />
     </View>
   );
@@ -270,7 +319,7 @@ export default function Technique() {
   if (!loaded) {
     return (
       <CanvasScreen tabBar={false} bottomSpace={32}>
-        <Crown eyebrow="Technique" title={title} onBack={() => router.back()} />
+        <Crown eyebrow="TECHNIQUE" title={title} onBack={() => router.back()} />
         <Skeleton height={playerH} radius={0} />
         <SafeAreaView edges={['left', 'right']} style={styles.body}>
           <Section label="Key points">
@@ -283,19 +332,22 @@ export default function Technique() {
 
   if (step === 'preview') {
     const hasClip = objectPath !== null && !clipFailed;
+    // An uncovered exercise's how-to card ends here: DONE, no camera claim.
+    const primary = !covered ? 'DONE' : hasClip ? 'WATCH TECHNIQUE' : 'CONTINUE';
     return (
       <CanvasScreen tabBar={false} bottomSpace={32}>
         <Crown
-          eyebrow={stepped ? 'TECHNIQUE · STEP 1 OF 3' : 'Technique'}
+          eyebrow={stepped ? 'STEP 1 OF 3' : 'TECHNIQUE'}
           title={title}
           onBack={() => router.back()}
         />
 
         <TechniquePlayer
           objectPath={objectPath}
-          poster={renderFigure(playerH)}
+          poster={renderFigure(playerH, false)}
           height={playerH}
           onError={() => setClipFailed(true)}
+          accessibilityLabel={`${exerciseName} technique clip, looping`}
           testID="technique-player"
         />
 
@@ -305,8 +357,12 @@ export default function Technique() {
           </Section>
 
           <View style={styles.ctaBlock}>
-            {renderCta(hasClip ? 'WATCH TECHNIQUE' : 'CONTINUE', onWatched, busy)}
-            {renderTextBtn('I KNOW THIS — SKIP', onSkipped)}
+            {renderCta(primary, onWatched, busy)}
+            {/* In review mode the lifter ASKED for this page; leaving it is not
+                a skip and must not count toward the fast path. */}
+            {review
+              ? renderTextBtn('BACK TO CAMERA', () => router.back())
+              : renderTextBtn('I KNOW THIS — SKIP', onSkipped)}
           </View>
         </SafeAreaView>
       </CanvasScreen>
@@ -317,7 +373,7 @@ export default function Technique() {
     return (
       <CanvasScreen tabBar={false} bottomSpace={32}>
         <Crown
-          eyebrow={stepped ? 'STEP 2 OF 3' : 'Technique'}
+          eyebrow="STEP 2 OF 3"
           title="READY TO CHECK YOUR FORM?"
           meta={exerciseName}
           onBack={() => setChosen('preview')}
@@ -329,9 +385,7 @@ export default function Technique() {
           </Section>
 
           <View style={styles.ctaBlock}>
-            {covered
-              ? renderCta('START FORM CHECK', () => (entry?.setupSeen ? handoff() : goSetup('done')))
-              : renderCta('DONE', () => router.back())}
+            {renderCta('START FORM CHECK', () => (entry?.setupSeen ? handoff() : goSetup('done')))}
             {renderSecondary('WATCH AGAIN', () => setChosen('preview'))}
           </View>
         </SafeAreaView>
@@ -343,19 +397,19 @@ export default function Technique() {
     return (
       <CanvasScreen tabBar={false} bottomSpace={32}>
         <Crown
-          eyebrow="STEP 3 OF 3"
+          eyebrow={setupEyebrow}
           title="SET UP YOUR CAMERA"
           meta={exerciseName}
           onBack={() => setChosen(setupReturn)}
         />
 
-        {renderFigure(Math.round(playerH * 0.8))}
+        {renderFigure(Math.round(playerH * 0.8), true)}
 
         <SafeAreaView edges={['left', 'right']} style={styles.body}>
           {form?.cameraNote ? <Text style={styles.cameraNote}>{form.cameraNote}</Text> : null}
 
           <Section label="Setup">
-            <KeyPointsList points={setupRows(cameraAngle, orientation)} accent={pa.accentText} />
+            <KeyPointsList points={setupRows(cameraAngle, orientation, region)} accent={pa.accentText} />
           </Section>
 
           <View style={styles.ctaBlock}>
@@ -367,11 +421,14 @@ export default function Technique() {
     );
   }
 
-  // ready — the fast path. Two taps from the Form chip to the camera.
+  // ready — the fast path. Two taps from the Form chip to the camera. No
+  // "mark as known" control: anyone who sees this step already satisfies the
+  // fast-path rule (watched ≥ 1 or skipped ≥ 2), so a switch could not
+  // restore the walkthrough — VIEW TECHNIQUE is how it is re-opened.
   return (
     <CanvasScreen tabBar={false} bottomSpace={32}>
       <Crown
-        eyebrow="Technique"
+        eyebrow="TECHNIQUE"
         title={title}
         meta="You've done this one before."
         onBack={() => router.back()}
@@ -382,21 +439,6 @@ export default function Technique() {
           {renderCta('START FORM CHECK', handoff)}
           {renderSecondary('VIEW TECHNIQUE', () => setChosen('preview'))}
           {renderTextBtn('CAMERA SETUP', () => goSetup('ready'))}
-        </View>
-
-        <Hairline style={styles.knownRule} />
-        <View style={styles.knownRow}>
-          <View style={styles.knownText}>
-            <Text style={styles.knownTitle}>Mark as known</Text>
-            <Text style={styles.knownSub}>Skip the walkthrough for this exercise.</Text>
-          </View>
-          <Switch
-            value={entry?.knowsIt ?? false}
-            onValueChange={(v) => { void setKnown(v); }}
-            trackColor={{ false: tokens.borderStrong, true: pa.accent }}
-            thumbColor={tokens.surface}
-            accessibilityLabel="Mark as known"
-          />
         </View>
       </SafeAreaView>
     </CanvasScreen>
@@ -460,28 +502,6 @@ const makeStyles = (t: SemanticTokens) => StyleSheet.create({
     fontSize: 9,
     letterSpacing: 1.9,
     textTransform: 'uppercase',
-    color: t.textSecondary,
-  },
-
-  // ── Mark as known ──────────────────────────────────────────────────────────
-  knownRule: { marginTop: 28 },
-  knownRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingVertical: 15,
-  },
-  knownText: { flex: 1, gap: 3 },
-  knownTitle: {
-    fontFamily: Fonts.bodySemi,
-    fontSize: 15,
-    letterSpacing: -0.2,
-    color: t.text,
-  },
-  knownSub: {
-    fontFamily: Fonts.body,
-    fontSize: 12.5,
-    lineHeight: 17,
     color: t.textSecondary,
   },
 });

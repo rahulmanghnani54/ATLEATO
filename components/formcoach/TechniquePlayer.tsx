@@ -30,6 +30,11 @@ export interface TechniquePlayerProps {
   onReady?: () => void;
   /** Fired at most once per clip: the poster is now the final state. */
   onError?: () => void;
+  /**
+   * Spoken name for the <Video> once it is playing. Without it TalkBack has
+   * only the poster's label to read, which describes a still figure.
+   */
+  accessibilityLabel?: string;
   testID?: string;
 }
 
@@ -48,6 +53,7 @@ export function TechniquePlayer({
   height,
   onReady,
   onError,
+  accessibilityLabel,
   testID,
 }: TechniquePlayerProps): JSX.Element {
   const [layer, setLayer] = useState<Layer>(objectPath === null ? 'poster' : 'loading');
@@ -123,6 +129,8 @@ export function TechniquePlayer({
           isMuted
           resizeMode={ResizeMode.COVER}
           useNativeControls={false}
+          accessible={accessibilityLabel !== undefined}
+          accessibilityLabel={accessibilityLabel}
           style={[styles.video, { height }]}
           onError={() => failDecode(layer.objectPath)}
         />

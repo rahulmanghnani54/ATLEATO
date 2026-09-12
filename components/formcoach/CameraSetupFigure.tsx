@@ -35,6 +35,13 @@ export interface CameraSetupFigureProps {
   /** Page ink — figure, bench, floor and sight-line. */
   ink: string;
   width: number;
+  /**
+   * Draw the phone and its sight-line (default true). Off, the same scene is
+   * just the lifter on the floor — the technique PREVIEW's poster, which must
+   * not describe a camera setup the page has not reached (or, for an
+   * exercise the engine cannot judge, will never offer).
+   */
+  showPhone?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -104,10 +111,28 @@ const AIM: Record<FigureOrientation, Pt> = {
   lying: { x: 112, y: 80 },
 };
 
-const ACCESSIBILITY_LABEL: Record<FigureCameraAngle, string> = {
-  side: 'Phone to your side, pointed at your torso.',
-  front: 'Phone in front of you, pointed at your torso.',
-  front_45: 'Phone in front of you, about 45 degrees to the side, pointed at your torso.',
+/**
+ * Spoken placement, per orientation: the same words as the setup rows and the
+ * entries' cameraNotes ("30–45°", "foot of the bench"), so a screen-reader
+ * user hears one instruction, not a paraphrase of it.
+ */
+const ACCESSIBILITY_LABEL: Record<FigureOrientation, Record<FigureCameraAngle, string>> = {
+  standing: {
+    side: 'Phone to your side, pointed at your torso.',
+    front: 'Phone in front of you, pointed at your torso.',
+    front_45: 'Phone in front of you, 30 to 45 degrees off to one side, pointed at your torso.',
+  },
+  lying: {
+    side: 'Phone to your side, level with the bench, pointed at your torso.',
+    front: 'Phone at the foot of the bench, pointed at your torso.',
+    front_45: 'Phone at the foot of the bench, 30 to 45 degrees to one side, pointed at your torso.',
+  },
+};
+
+/** The poster's label when there is no phone in the picture. */
+const FIGURE_ONLY_LABEL: Record<FigureOrientation, string> = {
+  standing: 'Standing figure.',
+  lying: 'Figure lying on a bench.',
 };
 
 function ringPoint(deg: number): Pt {
@@ -194,6 +219,7 @@ export function CameraSetupFigure({
   accent,
   ink,
   width,
+  showPhone = true,
 }: CameraSetupFigureProps): JSX.Element {
   const height = Math.round((width * VB_H) / VB_W);
 
@@ -202,6 +228,10 @@ export function CameraSetupFigure({
   const phone: Pt = { x: foot.x, y: foot.y - PHONE_H / 2 };
   const sight = sightLine(phone, AIM[orientation], orientation === 'lying' ? BENCH : undefined);
 
+  const label = showPhone
+    ? `${orientation === 'lying' ? 'Lying on a bench.' : 'Standing.'} ${ACCESSIBILITY_LABEL[orientation][cameraAngle]}`
+    : FIGURE_ONLY_LABEL[orientation];
+
   return (
     <Svg
       width={width}
@@ -209,34 +239,40 @@ export function CameraSetupFigure({
       viewBox={VIEW_BOX}
       accessible
       accessibilityRole="image"
-      accessibilityLabel={`${orientation === 'lying' ? 'Lying on a bench.' : 'Standing.'} ${ACCESSIBILITY_LABEL[cameraAngle]}`}
+      accessibilityLabel={label}
     >
       <G stroke={ink} strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" fill="none">
         <Path d={FLOOR_ARC} strokeOpacity={0.28} />
         {orientation === 'lying' ? <LyingFigure /> : <StandingFigure />}
         {/* Round caps grow each 3-unit dash by 1.5 at both ends: 6 on, 4 off. */}
-        <Line
-          x1={sight.x1}
-          y1={sight.y1}
-          x2={sight.x2}
-          y2={sight.y2}
-          strokeDasharray="3 7"
-          strokeOpacity={0.55}
-        />
+        {showPhone ? (
+          <Line
+            x1={sight.x1}
+            y1={sight.y1}
+            x2={sight.x2}
+            y2={sight.y2}
+            strokeDasharray="3 7"
+            strokeOpacity={0.55}
+          />
+        ) : null}
       </G>
 
       {/* The phone — the only accent in the picture. */}
-      <Rect
-        x={phone.x - PHONE_W / 2}
-        y={phone.y - PHONE_H / 2}
-        width={PHONE_W}
-        height={PHONE_H}
-        rx={2.5}
-        stroke={accent}
-        strokeWidth={STROKE}
-        fill="none"
-      />
-      <Circle cx={phone.x} cy={phone.y - LENS_OFFSET} r={1.5} fill={accent} />
+      {showPhone ? (
+        <>
+          <Rect
+            x={phone.x - PHONE_W / 2}
+            y={phone.y - PHONE_H / 2}
+            width={PHONE_W}
+            height={PHONE_H}
+            rx={2.5}
+            stroke={accent}
+            strokeWidth={STROKE}
+            fill="none"
+          />
+          <Circle cx={phone.x} cy={phone.y - LENS_OFFSET} r={1.5} fill={accent} />
+        </>
+      ) : null}
     </Svg>
   );
 }
