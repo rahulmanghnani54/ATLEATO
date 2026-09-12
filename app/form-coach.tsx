@@ -43,8 +43,10 @@ import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/th
 import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { BigStat, CanvasScreen, Hairline, Section, StatRow } from '@/components/ui/canvas';
 import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
-import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
-import { getExerciseForm, getExerciseFormKey, getCoachCue, visionCategoryFor } from '@/constants/exerciseFormLibrary';
+import {
+  getExerciseForm, getExerciseFormKey, getCoachCue, tipsForExercise, visionCategoryFor,
+  type VisionCategory,
+} from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { canAccess } from '@/lib/featureGates';
 import {
@@ -155,23 +157,14 @@ type Finding = FormVerdict['findings'][number];
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function programIdToPersona(programId: string): string {
-  if (programId.startsWith('cbum'))        return 'cbum';
-  if (programId.startsWith('arnold'))      return 'arnold';
-  if (programId.startsWith('nippard'))     return 'nippard';
-  if (programId.startsWith('ct_fletcher')) return 'ct_fletcher';
-  if (programId.startsWith('dr_mike'))     return 'dr_mike';
-  return 'cbum';
-}
+// Persona normalisation and the tips fallback both come from the shared
+// libraries (personaFromProgramId, tipsForExercise): this file used to carry
+// its own copies, which matched fewer spellings than the technique screen's
+// and could show a different fallback for the same exercise name.
 
-function getTipsForExercise(exerciseName: string): string[] {
-  for (const group of EXERCISE_LIBRARY) {
-    const ex = group.exercises.find(
-      (e) => e.name.toLowerCase() === exerciseName?.toLowerCase()
-    );
-    if (ex) return ex.tips;
-  }
-  return ['Focus on controlled tempo.', 'Mind-muscle connection is key.'];
+/** Engine categories judged from the waist up — the camera needs less body. */
+function isUpperBody(category: VisionCategory | string | undefined): boolean {
+  return category === 'press' || category === 'curl' || category === 'pull';
 }
 
 /**
@@ -265,8 +258,15 @@ const SPOKEN_HOLD_MS = 9_000;
 const RECENT_REPS_CAP = 4;
 
 // Copy shown by the report card when Finish set is tapped with nothing banked.
-const NO_REPS_COPY =
-  'No complete reps were detected — a full rep is down and back up with the whole upper body in frame';
+// Category-aware for the same reason as the not-tracking sheet: a squat is
+// counted from hips/knees/ankles, so telling a squatter to keep the "upper
+// body" in frame is the wrong instruction, and a press cannot show a full body.
+// Movement-neutral wording — a pull-up's rep is UP and back down.
+function noRepsCopy(category: string | undefined): string {
+  return isUpperBody(category)
+    ? 'No complete reps were detected. A full rep is a complete lower-and-return with your head, torso and both arms in frame.'
+    : 'No complete reps were detected. A full rep is a complete lower-and-return with your whole body in frame.';
+}
 
 // BlazePose landmark pairs behind each checklist row. The gate asks for one
 // usable member per group; the CHECKLIST asks whether the PAIR is measurable,
@@ -368,8 +368,6 @@ export default function FormCoach() {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const cameraHeight = Math.round(screenHeight * 0.62);
 
-  const persona            = programIdToPersona(personaParam ?? 'cbum_evolved');
-
   const { tokens, scheme } = useTheme();
   const insets = useSafeAreaInsets();
   const styles = useThemedStyles(makeStyles);
@@ -388,6 +386,9 @@ export default function FormCoach() {
   const stage = TOKENS.dark;
   const personaTheme = personaFromProgramId(personaParam ?? 'cbum_evolved');
   const stageAccent  = personaAccent(personaTheme, 'dark').accent;   // over video
+  // Text on a persona-accent fill is the persona's OWN ink (as technique.tsx
+  // does with pa.ink), not the emerald button ink, which only happens to work.
+  const stageAccentInk = personaAccent(personaTheme, 'dark').ink;
   const pageAccent   = personaAccent(personaTheme, scheme);           // on the page
   // One source for the coach's name. shortName is the uppercase eyebrow form
   // ("THE SCULPTOR"), fullName the title-case sentence form ("The Sculptor").
@@ -484,28 +485,38 @@ export default function FormCoach() {
     const r = buildReport(engine.reps, categoryRef.current);
     if (r.reps < 1) {
       // Tapping Finish with nothing banked used to do nothing at all, which
-      // read as a broken button. Say what a rep is instead.
+      // read as a broken button. Say what a rep is instead — but leave the
+      // ENGINE alone, as the old early return did: there is no measurement to
+      // finish, and resetSet() would drop the skeleton lock for ~5 frames and
+      // flap the pill over a lifter who is standing in frame, ready to go.
       setSetReport(r);
-      setSetVerdict(NO_REPS_COPY);
-    } else {
-      // Coach speaks a one-line verdict in their voice.
-      const worstFlaw = Object.entries(r.flawCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
-      const verdict =
-        r.avgScore >= 85 ? `${r.reps} clean reps. That's the standard — keep it there.`
-        : worstFlaw === 'shallow' ? `${r.reps} reps, but ${r.flawCounts.shallow} were shallow. Hit full depth every rep.`
-        : worstFlaw === 'rushed' ? `${r.reps} reps — too fast. Control the eccentric, own the tempo.`
-        : worstFlaw === 'uneven' ? `${r.reps} reps, but you're leaning to one side. Even it out.`
-        : worstFlaw === 'grindy' ? `${r.reps} hard reps. Grind's fine near failure — watch the form.`
-        : `${r.reps} solid reps. Small tweaks and these are perfect.`;
-      setSetReport(r);
-      setSetVerdict(verdict);
-      try { voice.cue('form_issue', { issue: verdict }); } catch { /* ignore */ }
-      track('form_check_set_graded', {
-        exercise: categoryRef.current ?? 'unknown',
-        reps: r.reps,
-        avg_score: r.avgScore,
-      });
+      setSetVerdict(noRepsCopy(categoryRef.current));
+      resetRepReadout();
+      resetRetrigger();
+      setAnalysisTick((t) => t + 1);
+      return;
     }
+    // Coach speaks a one-line verdict in their voice.
+    const worstFlaw = Object.entries(r.flawCounts).sort((a, b) => b[1] - a[1])[0]?.[0];
+    const verdict =
+      r.avgScore >= 85 ? `${r.reps} clean reps. That's the standard — keep it there.`
+      : worstFlaw === 'shallow' ? `${r.reps} reps, but ${r.flawCounts.shallow} were shallow. Hit full depth every rep.`
+      : worstFlaw === 'rushed' ? `${r.reps} reps — too fast. Control the eccentric, own the tempo.`
+      : worstFlaw === 'uneven' ? `${r.reps} reps, but you're leaning to one side. Even it out.`
+      : worstFlaw === 'grindy' ? `${r.reps} hard reps. Grind's fine near failure — watch the form.`
+      : `${r.reps} solid reps. Small tweaks and these are perfect.`;
+    setSetReport(r);
+    setSetVerdict(verdict);
+    try { voice.cue('form_issue', { issue: verdict }); } catch { /* ignore */ }
+    // `exercise` is the SAME key the technique screen sends (getExerciseFormKey)
+    // so tutorial_shown → form_check_started → set_graded → retrigger join on
+    // one vocabulary; the engine category rides along as its own prop.
+    track('form_check_set_graded', {
+      exercise: formKeyRef.current,
+      category: categoryRef.current ?? 'unknown',
+      reps: r.reps,
+      avg_score: r.avgScore,
+    });
     // A finished set is a finished measurement: reps and coaching evidence
     // start again for the next one. The body scale does NOT — the lifter's
     // torso is the same length for set three as for set two, and re-measuring
@@ -523,14 +534,18 @@ export default function FormCoach() {
       return;
     }
     // Only counted once the gate has let them through — otherwise every blocked
-    // free user would register as having started a form check.
-    track('form_check_started', { exercise: exerciseName ?? null });
+    // free user would register as having started a form check. The form key
+    // (not the display name) so it joins technique's tutorial_* events.
+    // Computed here rather than read from formKeyRef: that ref is filled by a
+    // later effect in the same commit.
+    track('form_check_started', { exercise: getExerciseFormKey(exerciseName ?? '') });
   }, []);
 
-  useEffect(() => {
-    if (!hasPermission) requestPermission();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // No mount-time permission prompt. The technique screen asks on CAMERA
+  // READY, where the page has explained why; a refusal there must not be
+  // followed by a second OS dialog the moment this screen mounts (Android's
+  // second deny is "don't ask again", which would make the gate below inert).
+  // If permission is missing, the gate renders with its own retry button.
 
   // Tutorial memory is consulted SYNCHRONOUSLY from the rep callback
   // (getEntry), which returns null for everything until this has resolved.
@@ -591,7 +606,7 @@ export default function FormCoach() {
   const libraryCheckpoints = formLibraryData?.checkpoints ?? [];
   const libraryMistakes    = formLibraryData?.commonMistakes ?? [];
   const libraryBreathing   = formLibraryData?.breathingCue ?? null;
-  const tips = formLibraryData ? [] : getTipsForExercise(exerciseName ?? '');
+  const tips = formLibraryData ? [] : tipsForExercise(exerciseName ?? '');
 
   // Voice cues — the coach speaks ONLY what the engine elects to say.
   const voice = useVoiceCues();
@@ -934,7 +949,7 @@ export default function FormCoach() {
     if (Date.now() - lastCallAt.current < CUE_COOLDOWN_MS) return;
     lastCallAt.current = Date.now();
     const form = getExerciseForm(exerciseName ?? '');
-    const cue = form ? getCoachCue(form, persona) : 'Focus on controlled tempo and full range of motion.';
+    const cue = form ? getCoachCue(form, personaTheme.id) : 'Focus on controlled tempo and full range of motion.';
     setAiFeedback(cue);
     let remaining = Math.ceil(CUE_COOLDOWN_MS / 1000);
     setCooldownLeft(remaining);
@@ -947,7 +962,7 @@ export default function FormCoach() {
         cooldownTimer.current = null;
       }
     }, 1_000);
-  }, [exerciseName, persona]);
+  }, [exerciseName, personaTheme.id]);
 
   useEffect(() => {
     return () => { if (cooldownTimer.current) clearInterval(cooldownTimer.current); };
@@ -1000,11 +1015,17 @@ export default function FormCoach() {
     canJudge && repCount === 0 && !calibrating &&
     calibratedAtRef.current > 0 && Date.now() - calibratedAtRef.current < POSITION_GOOD_MS;
   const jointTiers  = jointTiersRef.current ?? undefined;
-  // Re-trigger prompt copy: the library's human label for the check, else the
-  // raw id so a check the library has not named still reads as SOMETHING.
+  // Re-trigger prompt copy: the library's human label for the check. Labels
+  // are check NAMES ("Depth", "Lockout"), not faults, so the sentence is built
+  // around "flagged" to read right for every one of them. A check the library
+  // has not named falls back to a neutral line — never a raw id like
+  // "squat.depth" on the stage.
   const retriggerLabel = retriggerCheckId
-    ? formLibraryData?.detectedFaults?.find((f) => f.checkId === retriggerCheckId)?.label ?? retriggerCheckId
+    ? formLibraryData?.detectedFaults?.find((f) => f.checkId === retriggerCheckId)?.label ?? null
     : null;
+  const retriggerCopy = retriggerLabel
+    ? `${retriggerLabel} flagged in 3 of your last 4 reps`
+    : 'Same issue flagged in 3 of your last 4 reps';
   // `canJudge` is a claim about the CAMERA; `judged` is a claim about the
   // JUDGEMENT, and they are not the same fact. Pose quality asks each joint
   // group for one usable member, so it is satisfied by a shoulder seen on the
@@ -1106,7 +1127,10 @@ export default function FormCoach() {
     modelLoading                ? 'LOADING AI…' :
     !isTracking                 ? 'STEP INTO FRAME' :
     calibrating                 ? 'CALIBRATING' :
-    !canJudge                   ? 'CAN\'T SEE YOU' :
+    // The SETTING UP checklist is on screen for exactly this state, naming
+    // the joints still missing. The pill tells the same story, in the same
+    // words, rather than a second tone for one moment.
+    !canJudge                   ? 'SETTING UP' :
     // Pose quality is satisfied but no single limb chain reads end-to-end (a
     // shoulder on the left, an elbow only on the right), so the engine returned
     // a null score. LIVE here would be the pill making the very claim this
@@ -1309,7 +1333,7 @@ export default function FormCoach() {
                   for one is impossible advice. Upper-body lifts only need the
                   torso and arms in shot. */}
               <Text style={styles.sheetText}>
-                {categoryRef.current === 'press' || categoryRef.current === 'curl' || categoryRef.current === 'pull'
+                {isUpperBody(categoryRef.current)
                   ? 'Step into frame — head, torso and both arms'
                   : 'Step into frame — full body visible'}
               </Text>
@@ -1322,9 +1346,7 @@ export default function FormCoach() {
             <View style={styles.retriggerSheet}>
               <View style={[styles.sheetBar, { backgroundColor: stage.warning }]} />
               <Text style={styles.retriggerTitle}>REVIEW TECHNIQUE</Text>
-              <Text style={styles.retriggerText}>
-                {retriggerLabel} in 3 of your last 4 reps
-              </Text>
+              <Text style={styles.retriggerText}>{retriggerCopy}</Text>
               <View style={styles.retriggerRow}>
                 <PressableScale
                   style={[styles.retriggerBtn, { backgroundColor: stageAccent }]}
@@ -1332,7 +1354,7 @@ export default function FormCoach() {
                   haptic="medium"
                   accessibilityRole="button"
                 >
-                  <Text style={[styles.retriggerBtnText, { color: stage.accentInk }]}>REVIEW NOW</Text>
+                  <Text style={[styles.retriggerBtnText, { color: stageAccentInk }]}>REVIEW NOW</Text>
                 </PressableScale>
                 <PressableScale
                   style={styles.retriggerBtnGhost}
@@ -1376,15 +1398,17 @@ export default function FormCoach() {
 
           {/* Judgeable: the live readout. The number is the LAST COMPLETED REP's
               grade, null until one lands — a per-frame score over a moving body
-              was a frozen number nobody could act on. `advice` still carries
-              the engine's camera guidance for the dash when it refuses to judge. */}
+              was a frozen number nobody could act on. `advice` is the engine's
+              camera guidance, passed only while it REFUSES to judge (the pill
+              reads NO CLEAR VIEW), so a held rep number mid-set still explains
+              itself; once a score is judged the slot stays clean. */}
           {isTracking && !calibrating && !modelError && canJudge && verdict && (
             <FormReadout
               score={lastRepScore}
               confidence={verdict.confidence}
               trackedJoints={trackedJoints}
               totalJoints={DRAW_POINTS.length}
-              advice={verdict.advice}
+              advice={judged ? null : verdict.advice}
               state={readoutState}
               repIndex={readoutRep}
               debug={showAlign}
@@ -1543,7 +1567,7 @@ export default function FormCoach() {
           <View style={styles.reportCard}>
             <Text style={styles.reportEyebrow}>{personaTheme.shortName} · SET REPORT</Text>
             <Text style={styles.reportGrade}>No reps detected</Text>
-            <Text style={styles.reportSentence}>{setVerdict ?? NO_REPS_COPY}</Text>
+            <Text style={styles.reportSentence}>{setVerdict ?? noRepsCopy(categoryRef.current)}</Text>
             <PressableScale
               style={styles.reportDone}
               onPress={() => { setSetReport(null); setSetVerdict(null); }}

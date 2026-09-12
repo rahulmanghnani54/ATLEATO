@@ -64,7 +64,10 @@ export type AnalyticsEvent =
   // poll window. Not a failure — but the gap between completed and pending is
   // the only read we have on how often paying users see a delay.
   | 'purchase_pending'
-  // Technique walkthrough opened (trigger: first_time | smart | manual).
+  // Technique walkthrough opened (trigger: first_time | manual). A re-trigger
+  // opens it in review mode, which reports as 'manual'; the re-trigger itself
+  // is counted by technique_retrigger_shown below. `exercise` on every
+  // tutorial_* / form_check_* event is the form key (getExerciseFormKey).
   | 'tutorial_shown'
   // "I know this — skip" tapped; two of these per exercise unlock the fast path.
   | 'tutorial_skipped'

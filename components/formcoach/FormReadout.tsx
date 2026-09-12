@@ -56,7 +56,12 @@ export interface FormReadoutProps {
   trackedJoints: number;
   /** Landmarks the detector emits, e.g. 33. */
   totalJoints: number;
-  /** Camera guidance from the engine; shown only while `score` is null. */
+  /**
+   * Camera guidance from the engine. Explains the dash before rep 1, and in
+   * `scored` state sits under the held rep number — so when the engine stops
+   * judging mid-set (NO CLEAR VIEW) the last score is not left unexplained.
+   * Callers pass it only while the engine is refusing to judge.
+   */
   advice?: string | null;
   /**
    * Which shape to render. Omitted → derived from `score` (`scored` when a
@@ -154,7 +159,7 @@ export const FormReadout = memo(function FormReadout({
   if (mode === 'tracking') {
     a11y = `${repNo ? `Rep ${repNo} in progress` : 'Rep in progress'}, tracking.${debugLabel}`;
   } else if (judged) {
-    a11y = `${repNo ? `Rep ${repNo}. ` : ''}Form ${Math.round(clampPct(score as number))}.${debugLabel}`;
+    a11y = `${repNo ? `Rep ${repNo}. ` : ''}Form ${Math.round(clampPct(score as number))}.${advice ? ` ${advice}` : ''}${debugLabel}`;
   } else if (advice) {
     a11y = `Form score unavailable. ${advice}${debugLabel}`;
   } else if (mode === 'awaiting') {
@@ -210,9 +215,12 @@ export const FormReadout = memo(function FormReadout({
         </View>
       ) : null}
 
-      {/* The pairing that carries the whole fix: no score, and the reason why. */}
-      {mode !== 'tracking' && !judged && explanation ? (
-        <Text style={advice ? styles.advice : styles.helper}>{explanation}</Text>
+      {/* The pairing that carries the whole fix: no score, and the reason why.
+          A judged number keeps the slot too, but only for camera advice: the
+          held rep score is the LAST rep's, and if the engine has since stopped
+          judging the lifter should read why under it, not a bare number. */}
+      {mode !== 'tracking' && (judged ? advice : explanation) ? (
+        <Text style={advice ? styles.advice : styles.helper}>{judged ? advice : explanation}</Text>
       ) : null}
 
       {debug ? (
