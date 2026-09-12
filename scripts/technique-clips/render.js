@@ -417,7 +417,7 @@ const EXERCISES = [
     view: 'side',
     keys: [
       { at: 0, ...STAND, lean: 4, wristRel: [-0.24, 0.08], elbowDir: 1 },
-      { at: 1, hip: [-0.3, 0.5], lean: 32, ankleN: [0, 0], ankleF: [0, 0], wristRel: [-0.24, 0.08], elbowDir: 1 },
+      { at: 1, hip: [-0.28, 0.4], lean: 32, ankleN: [0, 0], ankleF: [0, 0], wristRel: [-0.24, 0.08], elbowDir: 1 }, // hip crease below the knee (knee y ≈ 0.51)
     ],
     // The plate sits behind the body here: the true side view puts it over the
     // neck, which buries the head — a pictogram keeps the silhouette.
@@ -445,7 +445,9 @@ const EXERCISES = [
     id: 'deadlift',
     view: 'side',
     keys: [
-      { at: 0, hip: [-0.62, 0.64], lean: 48, headTilt: -14, ankleN: [0, 0], ankleF: [0, 0], armsHang: true },
+      // Hinge start: hips ~0.17 above the knees, torso ~32° above horizontal, bar ~0.3 in front of the shin —
+      // hip/lean chosen so the plate ring still sits on the floor (wrist y ≈ 0.25 = plate r + floor line).
+      { at: 0, hip: [-0.55, 0.77], lean: 58, headTilt: -14, ankleN: [0, 0], ankleF: [0, 0], armsHang: true },
       { at: 1, ...STAND, headTilt: 0, armsHang: true },
     ],
     equipment: (J) => ({ front: barbellSide(J) }),
@@ -502,6 +504,9 @@ const EXERCISES = [
     view: 'side',
     keys: [
       { at: 0, ...STAND, lean: -3, headTilt: -6, wristRel: [0.3, -0.1], elbowDir: -1 },
+      // Mid key keeps the wrist over/in front of the elbow (forearm ≤ 30° from vertical) instead of the
+      // straight-line path, which put the elbow forward of the bar mid-rep.
+      { at: 0.5, ...STAND, lean: -1, headTilt: 3, wristRel: [0.3, 0.65], elbowDir: -1 },
       { at: 1, ...STAND, lean: 0, headTilt: 12, wristRel: [-0.05, 1.045], elbowDir: -1 },
     ],
     equipment: (J) => ({ front: barbellSide(J, PLATE_R_SMALL) }),
