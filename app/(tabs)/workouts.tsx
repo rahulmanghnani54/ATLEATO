@@ -100,21 +100,22 @@ function MuscleGroupRow({
       {open && (
         <View style={styles.groupBody}>
           {group.exercises.map((ex, i) => {
-            // Only offer Form Check where a biomechanical profile actually exists.
-            // Opening a camera that watches in silence is worse than not offering it.
+            // Every exercise opens Technique (key points fall back to its own
+            // tips). The FORM CHECK tag stays an honest claim: only where a
+            // biomechanical profile exists, and only there does Technique
+            // offer the camera. A camera that watches in silence is worse
+            // than none.
             const analysable = hasVisionCoverage(ex.name);
             return (
               <ListRow
                 key={ex.name}
                 title={ex.name}
                 last={i === group.exercises.length - 1}
-                onPress={analysable
-                  ? () =>
-                    router.push({
-                      pathname: '/form-coach' as any,
-                      params: { exerciseName: ex.name, persona: personaId },
-                    })
-                  : undefined}
+                onPress={() =>
+                  router.push({
+                    pathname: '/technique' as any,
+                    params: { exerciseName: ex.name, persona: personaId },
+                  })}
                 right={analysable
                   ? <Text style={[styles.tag, { color: accentText }]}>FORM CHECK</Text>
                   : undefined}
@@ -274,13 +275,13 @@ export default function Workouts() {
                       subtitle={`${ex.sets} sets · ${ex.reps} · ${ex.restSeconds}s rest`}
                       value={String(i + 1).padStart(2, '0')}
                       last={i === todayWorkout!.exercises.length - 1}
-                      onPress={hasVisionCoverage(ex.name)
-                        ? () =>
-                          router.push({
-                            pathname: '/form-coach' as any,
-                            params: { exerciseName: ex.name, persona: persona.id },
-                          })
-                        : undefined}
+                      // Technique decides what it can honestly offer (camera
+                      // or how-to), so every row opens it.
+                      onPress={() =>
+                        router.push({
+                          pathname: '/technique' as any,
+                          params: { exerciseName: ex.name, persona: persona.id },
+                        })}
                     />
                   ))}
                 </Section>

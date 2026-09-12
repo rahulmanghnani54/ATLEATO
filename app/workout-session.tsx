@@ -31,12 +31,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Camera, Check, Play } from 'lucide-react-native';
+import { BookOpen, Camera, Check, Play } from 'lucide-react-native';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 
 import { Crown, Hairline, Section } from '@/components/ui/canvas';
 import { PressableScale } from '@/components/ui/motion';
 import { ProgressionBadge } from '@/components/workout/ProgressionBadge';
+import { hasVisionCoverage } from '@/constants/exerciseFormLibrary';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { Fonts } from '@/constants/theme';
 import { clearActiveSession, getActiveSession, saveActiveSession, WORKOUT_SESSION_NOTIF_ID, type ActiveSession } from '@/lib/activeSession';
@@ -613,6 +614,8 @@ export default function WorkoutSession() {
               const exSets = sets[exIdx] ?? [];
               const exDone = exSets.length > 0 && exSets.every((s) => s.done);
               const isCurrent = exIdx === currentIdx && !exDone;
+              // Drives the Technique chip's label and icon below.
+              const covered = hasVisionCoverage(ex.name);
               return (
                 <View key={ex.name} style={styles.card}>
                   <View style={styles.cardHead}>
@@ -641,15 +644,23 @@ export default function WorkoutSession() {
                   )}
 
                   <View style={styles.chipRow}>
+                    {/* Every exercise opens Technique (key points, then the
+                        camera where the engine can honestly judge it). Never
+                        hidden: gating on coverage would strip the chip from
+                        Rack Pull, the default program's Day-1 opener. The
+                        label is the honest claim — "Form" only where a
+                        biomechanical profile exists, "How-to" elsewhere. */}
                     <PressableScale
                       haptic="light"
                       accessibilityRole="button"
-                      accessibilityLabel={`Form coach for ${ex.name}`}
+                      accessibilityLabel={`${covered ? 'Form coach' : 'How-to'} for ${ex.name}`}
                       style={styles.chip}
-                      onPress={() => router.push({ pathname: '/form-coach', params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved' } } as any)}
+                      onPress={() => router.push({ pathname: '/technique', params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved' } } as any)}
                     >
-                      <Camera size={13} color={tokens.textSecondary} />
-                      <Text style={[styles.chipText, { color: tokens.textSecondary }]}>Form</Text>
+                      {covered
+                        ? <Camera size={13} color={tokens.textSecondary} />
+                        : <BookOpen size={13} color={tokens.textSecondary} />}
+                      <Text style={[styles.chipText, { color: tokens.textSecondary }]}>{covered ? 'Form' : 'How-to'}</Text>
                     </PressableScale>
 
                     {/* Watch pro demo on YouTube. Neutral, not persona-accented:
