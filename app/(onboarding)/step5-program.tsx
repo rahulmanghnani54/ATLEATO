@@ -46,7 +46,7 @@ import {
   type PersonaId,
   type PersonaTheme,
 } from '@/lib/personaTheme';
-import { getMaxCoaches } from '@/lib/featureGates';
+import { getMaxCoaches, getCoachTier, coachFeatureKey } from '@/lib/featureGates';
 import { syncAppIconToCoach } from '@/lib/appIcon';
 import { track } from '@/lib/analytics';
 
@@ -154,7 +154,9 @@ export default function Step5Program() {
     if (!user) return;
     const maxCoaches = getMaxCoaches();
     if (pageIndex >= maxCoaches) {
-      router.push(`/paywall?feature=ai_form_coach` as any);
+      // Name the tier that unlocks THIS coach — coaches 4 and 5 are legend,
+      // and a "Pro" pitch there sells a plan that leaves them locked.
+      router.push(`/paywall?feature=${coachFeatureKey(pageIndex)}` as any);
       return;
     }
     setLoading(true);
@@ -377,7 +379,7 @@ function PersonaCard({ card, index, width }: { card: ProgramCard; index: number;
       {isLocked && (
         <View style={styles.lockWrap} pointerEvents="none">
           <Lock size={26} color={pa.accentText} strokeWidth={2.2} />
-          <Text style={styles.lockTier}>{maxCoaches === 1 ? 'PRO' : 'LEGEND'} ONLY</Text>
+          <Text style={styles.lockTier}>{getCoachTier(index).toUpperCase()} ONLY</Text>
           <Text style={styles.lockHint}>Upgrade to unlock this coach</Text>
         </View>
       )}

@@ -22,7 +22,12 @@ export type FeatureKey =
   | 'snooze_recalls'
   | 'video_review'
   | 'voice_customization'
-  | 'food_scan';
+  | 'food_scan'
+  // Coach-deck locks. Two keys, not one, because the deck has two thresholds
+  // (COACH_LIMITS) and the paywall header must name the tier that actually
+  // unlocks the coach the user tapped.
+  | 'pro_coaches'
+  | 'all_coaches';
 
 type Tier = 'free' | 'pro' | 'legend';
 
@@ -38,6 +43,8 @@ const FEATURE_TIER: Record<FeatureKey, Tier> = {
   physique_photos:     'pro',
   unlimited_freezes:   'pro',
   food_scan:           'pro',
+  pro_coaches:         'pro',
+  all_coaches:         'legend',
   // Ringtone sits with voice_customization: together they are "make the coach
   // sound like yours", which is legend's pitch. Cosmetic, so pro loses little.
   custom_ringtone:     'legend',
@@ -55,6 +62,8 @@ const FEATURE_LABELS: Record<FeatureKey, string> = {
   // The old label promised something a paying user disproves in a week.
   unlimited_freezes:   '3 Streak Freezes',
   food_scan:           'AI Food Scanner',
+  pro_coaches:         '3 Legend Coaches',
+  all_coaches:         'All 5 Legend Coaches',
   snooze_recalls:      '5-Min Snooze Re-Calls',
   video_review:        'Advanced Form AI & Video Review',
   voice_customization: 'Coach Voice Customization',
@@ -68,6 +77,23 @@ export function canAccess(feature: FeatureKey): boolean {
 
 export function getMaxCoaches(): number {
   return COACH_LIMITS[_getTier()];
+}
+
+/**
+ * The tier that unlocks the coach at deck position `index` (0-based, in the
+ * onboarding deck's order). Derived from COACH_LIMITS so a lock badge can never
+ * disagree with the gate — the old badge read the USER's tier and told free
+ * users every locked coach was "PRO ONLY", including the two that are legend.
+ */
+export function getCoachTier(index: number): Tier {
+  if (index < COACH_LIMITS.free) return 'free';
+  if (index < COACH_LIMITS.pro) return 'pro';
+  return 'legend';
+}
+
+/** The paywall key for a locked coach, so the header names the right tier. */
+export function coachFeatureKey(index: number): FeatureKey {
+  return getCoachTier(index) === 'legend' ? 'all_coaches' : 'pro_coaches';
 }
 
 export function getRequiredTier(feature: FeatureKey): Tier {

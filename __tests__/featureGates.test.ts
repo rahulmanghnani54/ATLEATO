@@ -8,6 +8,8 @@ import {
   canAccess,
   getFeatureLabel,
   getMaxCoaches,
+  getCoachTier,
+  coachFeatureKey,
   getRequiredTier,
   getUserTier,
   type FeatureKey,
@@ -27,6 +29,7 @@ const PRO_FEATURES: FeatureKey[] = [
   'physique_photos',
   'unlimited_freezes',
   'food_scan',
+  'pro_coaches',
 ];
 
 // custom_ringtone moved up from pro: it pairs with voice_customization as
@@ -37,6 +40,7 @@ const LEGEND_FEATURES: FeatureKey[] = [
   'snooze_recalls',
   'video_review',
   'voice_customization',
+  'all_coaches',
 ];
 
 const ALL_FEATURES: FeatureKey[] = [...PRO_FEATURES, ...LEGEND_FEATURES];
@@ -169,5 +173,37 @@ describe('featureGates — paywall copy', () => {
       expect(typeof getFeatureLabel(feature)).toBe('string');
       expect(getFeatureLabel(feature).length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe('featureGates — coach deck locks', () => {
+  // The onboarding deck has five coaches in a fixed order. The badge on a locked
+  // card must name the tier that unlocks THAT card, whatever tier the viewer is
+  // on — the old badge read the viewer's tier and told free users the two
+  // legend coaches were "PRO ONLY".
+  it('positions map to free / pro / pro / legend / legend', () => {
+    expect([0, 1, 2, 3, 4].map(getCoachTier)).toEqual(['free', 'pro', 'pro', 'legend', 'legend']);
+  });
+
+  it.each(['free', 'pro', 'legend'] as const)(
+    'as %s, every position at or beyond the limit is exactly the ones the badge calls locked',
+    (tier) => {
+      asTier(tier);
+      const rank = { free: 0, pro: 1, legend: 2 } as const;
+      for (let i = 0; i < 5; i++) {
+        const locked = i >= getMaxCoaches();
+        // Locked  ⇔  the card needs a higher tier than the viewer has.
+        expect(locked).toBe(rank[getCoachTier(i)] > rank[tier]);
+      }
+    },
+  );
+
+  it('a locked coach opens the paywall for the tier that unlocks it', () => {
+    expect(coachFeatureKey(1)).toBe('pro_coaches');
+    expect(coachFeatureKey(2)).toBe('pro_coaches');
+    expect(coachFeatureKey(3)).toBe('all_coaches');
+    expect(coachFeatureKey(4)).toBe('all_coaches');
+    expect(getRequiredTier('pro_coaches')).toBe('pro');
+    expect(getRequiredTier('all_coaches')).toBe('legend');
   });
 });
