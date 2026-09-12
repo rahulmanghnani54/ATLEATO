@@ -17,7 +17,6 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   ScrollView,
   StyleSheet,
@@ -31,7 +30,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { BookOpen, Camera, Check, Play } from 'lucide-react-native';
+import { BookOpen, Camera, Check } from 'lucide-react-native';
 import notifee, { AndroidImportance } from '@notifee/react-native';
 
 import { Crown, Hairline, Section } from '@/components/ui/canvas';
@@ -43,7 +42,6 @@ import { Fonts } from '@/constants/theme';
 import { clearActiveSession, getActiveSession, saveActiveSession, WORKOUT_SESSION_NOTIF_ID, type ActiveSession } from '@/lib/activeSession';
 import { useExerciseHistory } from '@/hooks/useProgression';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
-import { getProDemoLabel, getProDemoUrl, programIdToPersona } from '@/lib/exerciseDemoUrls';
 import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { detectAndSavePRs } from '@/lib/prDetector';
 import { analyzeProgression, parseRepsRange } from '@/lib/progressionEngine';
@@ -663,26 +661,6 @@ export default function WorkoutSession() {
                       <Text style={[styles.chipText, { color: tokens.textSecondary }]}>{covered ? 'Form' : 'How-to'}</Text>
                     </PressableScale>
 
-                    {/* Watch pro demo on YouTube. Neutral, not persona-accented:
-                        these two chips repeat on every exercise card, so tinting
-                        them spent the emerald a dozen times over and left the
-                        completion state — the one thing that must read at a
-                        glance mid-set — competing with navigation furniture. */}
-                    <PressableScale
-                      haptic="light"
-                      accessibilityRole="link"
-                      accessibilityLabel={getProDemoLabel(programIdToPersona(programId))}
-                      style={styles.chip}
-                      onPress={() => {
-                        const personaSlug = programIdToPersona(programId);
-                        Linking.openURL(getProDemoUrl(ex.name, personaSlug));
-                      }}
-                    >
-                      <Play size={11} color={tokens.textSecondary} fill={tokens.textSecondary} />
-                      <Text style={[styles.chipText, { color: tokens.textSecondary }]} numberOfLines={1}>
-                        {getProDemoLabel(programIdToPersona(programId))}
-                      </Text>
-                    </PressableScale>
                   </View>
 
                   <ExerciseProgression exerciseName={ex.name} reps={ex.reps} />

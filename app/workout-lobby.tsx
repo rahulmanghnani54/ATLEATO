@@ -8,8 +8,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Linking } from 'react-native';
-import { getProDemoUrl, getProDemoLabel, programIdToPersona } from '@/lib/exerciseDemoUrls';
+import { View, Text, StyleSheet } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useTodayRecovery } from '@/hooks/useRecoveryCheckin';
 import { useExerciseHistory } from '@/hooks/useProgression';
@@ -239,21 +238,23 @@ export default function WorkoutLobby() {
                     )}
                   </Text>
                   <WeightSuggestion exerciseName={ex.name} reps={ex.reps} />
+                  {/* Our own technique clip, in-app — replaces the old YouTube
+                      search link. Review mode: preview only, BACK returns here. */}
                   <PressableScale
                     haptic="light"
                     scaleTo={0.96}
                     accessibilityRole="button"
-                    accessibilityLabel={getProDemoLabel(programIdToPersona(programId))}
+                    accessibilityLabel={`Watch ${ex.name} technique`}
                     style={styles.demoLink}
-                    onPress={() => {
-                      const personaSlug = programIdToPersona(programId);
-                      Linking.openURL(getProDemoUrl(ex.name, personaSlug));
-                    }}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/technique',
+                        params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved', mode: 'review' },
+                      } as any)
+                    }
                   >
-                    <Play size={9} color={tokens.danger} fill={tokens.danger} />
-                    <Text style={styles.demoLinkText}>
-                      {getProDemoLabel(programIdToPersona(programId))}
-                    </Text>
+                    <Play size={9} color={tokens.text} fill={tokens.text} />
+                    <Text style={styles.demoLinkText}>WATCH TECHNIQUE</Text>
                   </PressableScale>
                 </View>
                 <Hairline />
