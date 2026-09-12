@@ -242,7 +242,20 @@ export function CameraSetupFigure({
       accessibilityLabel={label}
     >
       <G stroke={ink} strokeWidth={STROKE} strokeLinecap="round" strokeLinejoin="round" fill="none">
-        <Path d={FLOOR_ARC} strokeOpacity={0.28} />
+        {/* The arc is the dial the phone stands on. Without a phone it read as
+            a stray curve under the lifter, so the figure-only poster gets a
+            flat ground line at the same height instead. */}
+        {showPhone ? (
+          <Path d={FLOOR_ARC} strokeOpacity={0.28} />
+        ) : (
+          <Line
+            x1={FLOOR.cx - FLOOR.rx}
+            y1={FLOOR.cy}
+            x2={FLOOR.cx + FLOOR.rx}
+            y2={FLOOR.cy}
+            strokeOpacity={0.28}
+          />
+        )}
         {orientation === 'lying' ? <LyingFigure /> : <StandingFigure />}
         {/* Round caps grow each 3-unit dash by 1.5 at both ends: 6 on, 4 off. */}
         {showPhone ? (

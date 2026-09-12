@@ -28,7 +28,7 @@
  * out the whole tab navigator. Step machine in-file, as `physique-checkin`.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -335,7 +335,18 @@ export default function Technique() {
     // An uncovered exercise's how-to card ends here: DONE, no camera claim.
     const primary = !covered ? 'DONE' : hasClip ? 'WATCH TECHNIQUE' : 'CONTINUE';
     return (
-      <CanvasScreen tabBar={false} bottomSpace={32}>
+      <Frame
+        footer={
+          <>
+            {renderCta(primary, onWatched, busy)}
+            {/* In review mode the lifter ASKED for this page; leaving it is not
+                a skip and must not count toward the fast path. */}
+            {review
+              ? renderTextBtn('BACK TO CAMERA', () => router.back())
+              : renderTextBtn('I KNOW THIS — SKIP', onSkipped)}
+          </>
+        }
+      >
         <Crown
           eyebrow={stepped ? 'STEP 1 OF 3' : 'TECHNIQUE'}
           title={title}
@@ -355,23 +366,21 @@ export default function Technique() {
           <Section label="Key points">
             <KeyPointsList points={points} accent={pa.accentText} />
           </Section>
-
-          <View style={styles.ctaBlock}>
-            {renderCta(primary, onWatched, busy)}
-            {/* In review mode the lifter ASKED for this page; leaving it is not
-                a skip and must not count toward the fast path. */}
-            {review
-              ? renderTextBtn('BACK TO CAMERA', () => router.back())
-              : renderTextBtn('I KNOW THIS — SKIP', onSkipped)}
-          </View>
         </SafeAreaView>
-      </CanvasScreen>
+      </Frame>
     );
   }
 
   if (step === 'done') {
     return (
-      <CanvasScreen tabBar={false} bottomSpace={32}>
+      <Frame
+        footer={
+          <>
+            {renderCta('START FORM CHECK', () => (entry?.setupSeen ? handoff() : goSetup('done')))}
+            {renderSecondary('WATCH AGAIN', () => setChosen('preview'))}
+          </>
+        }
+      >
         <Crown
           eyebrow="STEP 2 OF 3"
           title="READY TO CHECK YOUR FORM?"
@@ -383,19 +392,21 @@ export default function Technique() {
           <Section label="Key points">
             <KeyPointsList points={points} accent={pa.accentText} />
           </Section>
-
-          <View style={styles.ctaBlock}>
-            {renderCta('START FORM CHECK', () => (entry?.setupSeen ? handoff() : goSetup('done')))}
-            {renderSecondary('WATCH AGAIN', () => setChosen('preview'))}
-          </View>
         </SafeAreaView>
-      </CanvasScreen>
+      </Frame>
     );
   }
 
   if (step === 'setup') {
     return (
-      <CanvasScreen tabBar={false} bottomSpace={32}>
+      <Frame
+        footer={
+          <>
+            {renderCta('CAMERA READY', onCameraReady, busy)}
+            {renderSecondary('BACK', () => setChosen(setupReturn))}
+          </>
+        }
+      >
         <Crown
           eyebrow={setupEyebrow}
           title="SET UP YOUR CAMERA"
@@ -411,13 +422,8 @@ export default function Technique() {
           <Section label="Setup">
             <KeyPointsList points={setupRows(cameraAngle, orientation, region)} accent={pa.accentText} />
           </Section>
-
-          <View style={styles.ctaBlock}>
-            {renderCta('CAMERA READY', onCameraReady, busy)}
-            {renderSecondary('BACK', () => setChosen(setupReturn))}
-          </View>
         </SafeAreaView>
-      </CanvasScreen>
+      </Frame>
     );
   }
 
@@ -426,27 +432,62 @@ export default function Technique() {
   // fast-path rule (watched ≥ 1 or skipped ≥ 2), so a switch could not
   // restore the walkthrough — VIEW TECHNIQUE is how it is re-opened.
   return (
-    <CanvasScreen tabBar={false} bottomSpace={32}>
+    <Frame
+      footer={
+        <>
+          {renderCta('START FORM CHECK', handoff)}
+          {renderSecondary('VIEW TECHNIQUE', () => setChosen('preview'))}
+          {renderTextBtn('CAMERA SETUP', () => goSetup('ready'))}
+        </>
+      }
+    >
       <Crown
         eyebrow="TECHNIQUE"
         title={title}
         meta="You've done this one before."
         onBack={() => router.back()}
       />
+    </Frame>
+  );
+}
 
-      <SafeAreaView edges={['left', 'right']} style={styles.body}>
-        <View style={styles.ctaBlock}>
-          {renderCta('START FORM CHECK', handoff)}
-          {renderSecondary('VIEW TECHNIQUE', () => setChosen('preview'))}
-          {renderTextBtn('CAMERA SETUP', () => goSetup('ready'))}
-        </View>
+/**
+ * Scrolling page with the actions PINNED under it. On a tall phone the crown,
+ * the 16:9 poster and five key points already fill the viewport, which put
+ * CONTINUE and — worse — "I KNOW THIS — SKIP" below the fold: the one control
+ * an experienced lifter is promised is the one they had to scroll to find.
+ * CanvasScreen keeps the crown/status-bar behaviour; the footer sits outside
+ * its ScrollView so it never scrolls, and takes the bottom inset itself.
+ */
+function Frame({ children, footer }: { children: ReactNode; footer: ReactNode }) {
+  const { tokens } = useTheme();
+  const styles = useThemedStyles(makeStyles);
+  return (
+    <View style={[styles.fill, { backgroundColor: tokens.bg }]}>
+      <CanvasScreen tabBar={false} bottomSpace={0} contentStyle={styles.scrollContent}>
+        {children}
+      </CanvasScreen>
+      <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.footer}>
+        {footer}
       </SafeAreaView>
-    </CanvasScreen>
+    </View>
   );
 }
 
 const makeStyles = (t: SemanticTokens) => StyleSheet.create({
+  fill: { flex: 1 },
   body: { paddingHorizontal: BODY_PAD },
+  // Overrides CanvasScreen's own bottom inset padding — the footer owns it.
+  scrollContent: { paddingBottom: 20 },
+  footer: {
+    paddingHorizontal: BODY_PAD,
+    paddingTop: 12,
+    paddingBottom: 10,
+    gap: 10,
+    backgroundColor: t.bg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: t.border,
+  },
 
   // ── Poster / figure ────────────────────────────────────────────────────────
   slab: {
@@ -465,7 +506,6 @@ const makeStyles = (t: SemanticTokens) => StyleSheet.create({
   },
 
   // ── Actions ────────────────────────────────────────────────────────────────
-  ctaBlock: { marginTop: 34, gap: 10 },
   cta: {
     borderRadius: 26,
     borderWidth: 1,
