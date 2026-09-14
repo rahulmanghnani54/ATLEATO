@@ -67,6 +67,11 @@ function persistMissing(): void {
   AsyncStorage.setItem(MISSING_KEY, JSON.stringify(missing)).catch(() => {});
 }
 
+/** The HTTP statuses that mean "no such object" on this endpoint (see the call site). */
+export function isMissingStatus(status: number): boolean {
+  return status === 404 || status === 400;
+}
+
 /** True while a recent 404 for this object is on record. */
 export async function isClipKnownMissing(objectPath: string, now: number = Date.now()): Promise<boolean> {
   const map = await loadMissing();
@@ -207,7 +212,10 @@ export async function ensureClipCached(
       if (res.status !== 200) {
         // Only "not there" is worth remembering. A 5xx or a captive portal is
         // transient; treating it as missing would hide a clip for an hour.
-        if (res.status === 404) void markClipMissing(objectPath);
+        // Supabase Storage answers a missing PUBLIC object with HTTP 400 and a
+        // JSON body whose statusCode is "404" (verified against the live
+        // bucket) — so 400 is "not there" here as much as 404 is.
+        if (isMissingStatus(res.status)) void markClipMissing(objectPath);
         throw new Error(`tutorial clip: HTTP ${res.status}`);
       }
       await FileSystem.moveAsync({ from: tmp, to: dest });

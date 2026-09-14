@@ -366,6 +366,15 @@ describe('remembered 404s', () => {
     await expect(isClipKnownMissing(OBJECT)).resolves.toBe(false);
   });
 
+  it('a 400 is remembered too — Supabase serves a missing public object as HTTP 400', async () => {
+    settled(400);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 400');
+    await flush();
+    await expect(isClipKnownMissing(OBJECT)).resolves.toBe(true);
+    await expect(ensureClipCached(OBJECT)).rejects.toThrow(CLIP_MISSING_MESSAGE);
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+  });
+
   it('a 5xx is NOT remembered — transient failures must not hide a clip for an hour', async () => {
     settled(503);
     await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 503');
