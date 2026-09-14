@@ -12,6 +12,8 @@ import {
   EXERCISE_FORM_LIBRARY,
   getExerciseForm,
   getExerciseFormKey,
+  getOwnExerciseForm,
+  hasOwnTechniqueContent,
   getCoachCue,
   hasVisionCoverage,
   keyPointsFor,
@@ -182,9 +184,17 @@ describe('getCoachCue', () => {
 });
 
 describe('getExerciseFormKey', () => {
-  it('uses the form id when the exercise matches an entry', () => {
+  it('uses the form id only when the entry IS the exercise', () => {
     expect(getExerciseFormKey('Barbell Bench Press')).toBe('bench_press');
-    expect(getExerciseFormKey('Step-Up')).toBe('lunge');
+    expect(getExerciseFormKey('Walking Lunge')).toBe('lunge');
+  });
+
+  it('gives a variant its own key even though it shares the engine profile', () => {
+    // Step-Up is judged by the lunge profile but is not the lunge: its memory
+    // and any future clip must not be the lunge's.
+    expect(getExerciseFormKey('Step-Up')).toBe('step_up');
+    expect(getExerciseFormKey('Decline Bench Press')).toBe('decline_bench_press');
+    expect(hasVisionCoverage('Step-Up')).toBe(true);
   });
 
   it('slugs the name when there is no entry', () => {
@@ -226,5 +236,67 @@ describe('keyPointsFor / tipsForExercise', () => {
   it('is empty, not a placeholder, for an unknown exercise', () => {
     expect(tipsForExercise('Underwater Basket Weaving')).toEqual([]);
     expect(keyPointsFor('Underwater Basket Weaving')).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Own content vs family match. The first device run showed Lat Pulldown
+// playing the pull-up clip under "chin over bar", Incline BARBELL Press
+// telling the lifter to lower the DUMBBELLS, Decline Bench with the flat
+// bench clip and Machine Shoulder Press with a standing barbell. A variant
+// may share an entry's engine profile; it may never borrow its technique.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('own technique content is exact-name only', () => {
+  it.each([
+    ['Barbell Bench Press', 'bench_press'],
+    ['Flat Barbell Press', 'bench_press'],
+    ['Incline Dumbbell Press', 'incline_db_press'],
+    ['Overhead Press (Barbell)', 'overhead_press'],
+    ['Pull-Up', 'pullup'],
+    ['Wide-Grip Pull-Up', 'pullup'],
+    ['Barbell Squat', 'barbell_squat'],
+    ['EZ-Bar Curl', 'bicep_curl'],
+    ['Cable Pushdown', 'tricep_pushdown'],
+    ['Lying Leg Curl', 'leg_curl'],
+  ])('%s owns %s', (name, id) => {
+    expect(getOwnExerciseForm(name)?.id).toBe(id);
+    expect(hasOwnTechniqueContent(name)).toBe(true);
+  });
+
+  it.each([
+    ['Lat Pulldown', 'pull'],
+    ['Close-Grip Lat Pulldown', 'pull'],
+    ['Incline Barbell Press', 'press'],
+    ['Decline Bench Press', 'press'],
+    ['Close-Grip Bench Press', 'press'],
+    ['Machine Shoulder Press', 'press'],
+    ['Seated Dumbbell Press', 'press'],
+    ['Hack Squat', 'squat'],
+    ['Bulgarian Split Squat', 'lunge'],
+    ['Sumo Deadlift', 'deadlift'],
+    ['Hammer Curl', 'curl'],
+    ['Seated Leg Curl', null],
+  ])('%s is a family match: engine profile %s, no borrowed clip or key points', (name, category) => {
+    expect(getOwnExerciseForm(name)).toBeNull();
+    expect(hasOwnTechniqueContent(name)).toBe(false);
+    expect(visionCategoryFor(getExerciseForm(name))).toBe(category);
+    // Whatever the card shows must be this exercise's own text (library tips),
+    // never the family entry's checkpoints.
+    const family = getExerciseForm(name)!;
+    const borrowed = new Set([...(family.keyPoints ?? []), ...family.checkpoints.map((c) => c.description)]);
+    for (const line of keyPointsFor(name)) expect(borrowed.has(line)).toBe(false);
+  });
+
+  it('Lat Pulldown never sees "chin over bar"', () => {
+    expect(keyPointsFor('Lat Pulldown').join(' ')).not.toMatch(/chin over bar|dead hang/i);
+  });
+
+  it('every alias resolves back to its own entry and to no other', () => {
+    for (const form of EXERCISE_FORM_LIBRARY) {
+      for (const alias of [form.exerciseName, ...form.aliases]) {
+        expect(getOwnExerciseForm(alias)?.id).toBe(form.id);
+      }
+    }
   });
 });

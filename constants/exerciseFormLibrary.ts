@@ -45,6 +45,14 @@ export interface ExerciseForm {
    *  Keys tutorial memory and clip filenames, so it must never change once shipped. */
   id: string;
   exerciseName: string;
+  /**
+   * Display names this entry IS — the clip and key points are shown only for
+   * these (compared normalised; exerciseName is always included). Keywords
+   * below are looser: they route a VARIANT to the same engine profile (Decline
+   * Bench → the press checks) without lending it this entry's technique
+   * content. Lat Pulldown must never play the pull-up clip.
+   */
+  aliases: string[];
   keywords: string[];             // matched against the normalised exercise name (see getExerciseForm)
   // Do NOT add values here: CATEGORY_TO_VISION is a Record over this union. Per-entry
   // engine routing that differs from the category default goes in `visionCategory`.
@@ -85,6 +93,7 @@ export interface ExerciseForm {
 const barbell_squat: ExerciseForm = {
   id: 'barbell_squat',
   exerciseName: 'Barbell Back Squat',
+  aliases: ['Barbell Squat', 'Back Squat', 'High-Bar Squat', 'Low-Bar Squat'],
   keywords: ['squat', 'back squat', 'barbell squat'],
   category: 'squat',
   keyPoints: [
@@ -156,6 +165,7 @@ const barbell_squat: ExerciseForm = {
 const goblet_squat: ExerciseForm = {
   id: 'goblet_squat',
   exerciseName: 'Goblet Squat',
+  aliases: ['Dumbbell Goblet Squat', 'Kettlebell Goblet Squat'],
   keywords: ['goblet squat', 'goblet'],
   category: 'squat',
   keyPoints: [
@@ -199,6 +209,7 @@ const goblet_squat: ExerciseForm = {
 const lunge: ExerciseForm = {
   id: 'lunge',
   exerciseName: 'Lunge',
+  aliases: ['Walking Lunge', 'Reverse Lunge', 'Forward Lunge', 'Dumbbell Lunge'],
   keywords: ['lunge', 'split squat', 'bulgarian', 'step up'],
   category: 'squat',
   // The squat profile's depth check compares both hips to both knees, which
@@ -251,6 +262,7 @@ const lunge: ExerciseForm = {
 const deadlift: ExerciseForm = {
   id: 'deadlift',
   exerciseName: 'Deadlift',
+  aliases: ['Conventional Deadlift', 'Barbell Deadlift'],
   keywords: ['deadlift', 'conventional deadlift', 'sumo', 'trap bar'],
   category: 'hinge',
   keyPoints: [
@@ -296,6 +308,7 @@ const deadlift: ExerciseForm = {
 const romanian_deadlift: ExerciseForm = {
   id: 'romanian_deadlift',
   exerciseName: 'Romanian Deadlift',
+  aliases: ['RDL', 'Barbell Romanian Deadlift'],
   // 'romanian deadlift' outranks deadlift's bare 'deadlift' on length; on the
   // old 'romanian' (same length as 'deadlift') the tie went to array order and
   // every RDL was coached as a conventional pull.
@@ -346,6 +359,7 @@ const romanian_deadlift: ExerciseForm = {
 const bench_press: ExerciseForm = {
   id: 'bench_press',
   exerciseName: 'Bench Press',
+  aliases: ['Barbell Bench Press', 'Flat Barbell Press', 'Flat Bench Press', 'Flat Barbell Bench Press'],
   // 'flat dumbbell press' must outrank overhead_press's 'dumbbell press'.
   keywords: ['bench press', 'bench', 'barbell press', 'chest press', 'flat dumbbell press'],
   category: 'push',
@@ -396,6 +410,7 @@ const bench_press: ExerciseForm = {
 const incline_db_press: ExerciseForm = {
   id: 'incline_db_press',
   exerciseName: 'Incline Dumbbell Press',
+  aliases: ['Incline DB Press', 'Incline Dumbbell Bench Press'],
   // 'incline barbell press' must outrank bench_press's 'barbell press'. The bare
   // 'incline' stays as a last resort, which is why bicep_curl carries explicit
   // 'incline curl' keywords — otherwise an incline curl lands here.
@@ -443,6 +458,7 @@ const incline_db_press: ExerciseForm = {
 const overhead_press: ExerciseForm = {
   id: 'overhead_press',
   exerciseName: 'Overhead Press',
+  aliases: ['Overhead Press (Barbell)', 'Barbell Overhead Press', 'Standing Barbell Press', 'Military Press', 'Standing Overhead Press'],
   // Seated pressing is overhead pressing: 'seated barbell press' used to fall to
   // bench via 'barbell press', and the dumbbell variants matched nothing at all,
   // which is why the default program's day-openers had no Form Check.
@@ -494,6 +510,7 @@ const overhead_press: ExerciseForm = {
 const lateral_raise: ExerciseForm = {
   id: 'lateral_raise',
   exerciseName: 'Lateral Raise',
+  aliases: ['Dumbbell Lateral Raise', 'Side Lateral Raise'],
   keywords: ['lateral raise', 'side raise', 'side lateral'],
   category: 'isolation',
   // The elbow stays at ~130–170° for the whole rep (see angleChecks), which is
@@ -540,6 +557,7 @@ const lateral_raise: ExerciseForm = {
 const pullup: ExerciseForm = {
   id: 'pullup',
   exerciseName: 'Pull-Up',
+  aliases: ['Pull Up', 'Pullup', 'Wide-Grip Pull-Up', 'Wide Grip Pull-Up'],
   keywords: ['pull-up', 'pullup', 'pull up', 'chin-up', 'chinup', 'lat pulldown'],
   category: 'pull',
   keyPoints: [
@@ -584,6 +602,7 @@ const pullup: ExerciseForm = {
 const barbell_row: ExerciseForm = {
   id: 'barbell_row',
   exerciseName: 'Barbell Row',
+  aliases: ['Bent-Over Barbell Row', 'Bent Over Barbell Row', 'Bent-Over Row', 'Bent Over Row'],
   keywords: ['barbell row', 'bent over row', 'bb row', 'pendlay row'],
   category: 'pull',
   keyPoints: [
@@ -633,6 +652,7 @@ const barbell_row: ExerciseForm = {
 const bicep_curl: ExerciseForm = {
   id: 'bicep_curl',
   exerciseName: 'Bicep Curl',
+  aliases: ['Barbell Curl', 'Barbell Bicep Curl', 'EZ Bar Curl', 'EZ-Bar Curl', 'Standing Barbell Curl'],
   // The two 'incline …' keywords exist to beat incline_db_press's 'incline' /
   // 'incline dumbbell' on length; without them an incline curl was graded as a
   // press.
@@ -684,6 +704,7 @@ const bicep_curl: ExerciseForm = {
 const tricep_pushdown: ExerciseForm = {
   id: 'tricep_pushdown',
   exerciseName: 'Tricep Pushdown',
+  aliases: ['Cable Pushdown', 'Triceps Pushdown', 'Cable Tricep Pushdown', 'Straight-Bar Pushdown'],
   // No 'tricep extension' keyword: it dragged the OVERHEAD extension in here,
   // where the curl profile's elbow_drift reads an elbow above the shoulder as a
   // critical fault on every rep. Better no match than a wrong one.
@@ -729,6 +750,7 @@ const tricep_pushdown: ExerciseForm = {
 const leg_curl: ExerciseForm = {
   id: 'leg_curl',
   exerciseName: 'Leg Curl',
+  aliases: ['Lying Leg Curl', 'Leg Curl (Lying)', 'Prone Leg Curl'],
   // Specific 'leg curl' / 'hamstring curl' keywords so this wins over the
   // bicep_curl bare 'curl' keyword (the matcher prefers the longest match).
   keywords: ['leg curl', 'lying leg curl', 'seated leg curl', 'standing leg curl', 'hamstring curl'],
@@ -828,13 +850,36 @@ export function getExerciseForm(exerciseName: string): ExerciseForm | null {
 }
 
 /**
- * The stable key an exercise's tutorial memory and clips live under: the form
- * id when we have an entry, else a slug of the name so uncovered exercises
- * (Rack Pull, Leg Press…) still remember "seen it".
+ * The entry that IS this exercise — exact title or alias only. This is the
+ * gate for showing an entry's clip and key points. `getExerciseForm` above is
+ * the looser family match used for the engine profile and coach cues; the two
+ * were one function once, and that is how Lat Pulldown ended up playing the
+ * pull-up clip under a "chin over bar" key point.
+ */
+export function getOwnExerciseForm(exerciseName: string): ExerciseForm | null {
+  const name = normaliseName(exerciseName);
+  if (!name) return null;
+  return (
+    EXERCISE_FORM_LIBRARY.find(
+      (ef) => normaliseName(ef.exerciseName) === name || ef.aliases.some((a) => normaliseName(a) === name),
+    ) ?? null
+  );
+}
+
+/** True when the technique card can show a clip and key points that are genuinely this exercise's. */
+export function hasOwnTechniqueContent(exerciseName: string): boolean {
+  return getOwnExerciseForm(exerciseName) !== null;
+}
+
+/**
+ * The stable key an exercise's tutorial memory and clips live under: the OWN
+ * form id when the entry is this exercise, else a slug of the name — so a
+ * variant (Decline Bench) keeps its own memory instead of sharing the flat
+ * bench's, and uncovered exercises (Rack Pull) still remember "seen it".
  */
 export function getExerciseFormKey(exerciseName: string): string {
-  const form = getExerciseForm(exerciseName);
-  if (form) return form.id;
+  const own = getOwnExerciseForm(exerciseName);
+  if (own) return own.id;
   return (exerciseName ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
 
@@ -883,16 +928,31 @@ export function tipsForExercise(exerciseName: string): string[] {
 }
 
 /**
- * KEY POINTS for the technique card. Authored key points → checkpoint text →
- * the exercise's own tips, so every exercise the user can tap has something to
- * read even when we have no form entry for it.
+ * KEY POINTS for the technique card: the entry's authored key points when the
+ * entry IS this exercise, else the exercise's own tips from the workout
+ * library, else nothing. Never a family entry's text — a variant's card shows
+ * less rather than another lift's instructions.
  */
 export function keyPointsFor(exerciseName: string): string[] {
-  const form = getExerciseForm(exerciseName);
-  if (form?.keyPoints?.length) return form.keyPoints;
-  if (form?.checkpoints?.length) return form.checkpoints.map((c) => c.description);
+  const own = getOwnExerciseForm(exerciseName);
+  if (own?.keyPoints?.length) return own.keyPoints;
+  if (own?.checkpoints?.length) return own.checkpoints.map((c) => c.description);
   return tipsForExercise(exerciseName);
 }
+
+/**
+ * Where the phone goes for a family match, per engine profile. Own entries
+ * carry their own cameraAngle/cameraNote; a variant only shares the checks, so
+ * it gets the guidance those checks need and nothing more specific.
+ */
+export const GENERIC_CAMERA: Record<VisionCategory, { angle: 'side' | 'front' | 'front_45'; note: string }> = {
+  press:    { angle: 'front_45', note: 'Phone 30–45° off to one side, at chest height, both arms in frame' },
+  pull:     { angle: 'side',     note: 'Phone to your side, at chest height, both arms in frame' },
+  curl:     { angle: 'side',     note: 'Phone to your side, at elbow height, shoulders to hands in frame' },
+  squat:    { angle: 'front_45', note: 'Phone 30–45° off your front, at hip height, whole body in frame' },
+  deadlift: { angle: 'side',     note: 'Phone directly to your side, at hip height, whole body in frame' },
+  lunge:    { angle: 'side',     note: 'Phone directly to your side, at hip height, whole body in frame' },
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VISION COVERAGE

@@ -40,8 +40,10 @@ import { TechniquePlayer } from '@/components/formcoach/TechniquePlayer';
 import { CanvasScreen, Crown, Section } from '@/components/ui/canvas';
 import { PressableScale, Skeleton, SkeletonLines } from '@/components/ui/motion';
 import {
+  GENERIC_CAMERA,
   getExerciseForm,
   getExerciseFormKey,
+  getOwnExerciseForm,
   hasVisionCoverage,
   keyPointsFor,
   visionCategoryFor,
@@ -134,19 +136,28 @@ export default function Technique() {
   const personaId = personaTheme.id;
   const pa = personaAccent(personaTheme, scheme);
 
-  const form = getExerciseForm(exerciseName);
+  // Two different questions about one exercise:
+  //   family — which engine profile judges it (Decline Bench → the press checks)
+  //   own    — is there technique content that is genuinely THIS exercise
+  // Only `own` may supply a clip, key points or a camera note. A variant with
+  // a family match gets Form Check plus "clip coming soon" and its own tips;
+  // lending it the flat bench's clip is how Lat Pulldown played a pull-up.
+  const family = getExerciseForm(exerciseName);
+  const own = getOwnExerciseForm(exerciseName);
   const key = getExerciseFormKey(exerciseName);
   const covered = hasVisionCoverage(exerciseName);
   const points = keyPointsFor(exerciseName);
-  const cameraAngle: CameraAngle = form?.cameraAngle ?? 'side';
-  const orientation: Orientation = form && LYING_FORM_IDS.has(form.id) ? 'lying' : 'standing';
-  const category = visionCategoryFor(form);
+  const category = visionCategoryFor(family);
+  const generic = category ? GENERIC_CAMERA[category] : null;
+  const cameraAngle: CameraAngle = own?.cameraAngle ?? generic?.angle ?? 'side';
+  const cameraNote = own?.cameraNote ?? generic?.note ?? null;
+  const orientation: Orientation = own && LYING_FORM_IDS.has(own.id) ? 'lying' : 'standing';
   const region: BodyRegion = category && UPPER_CATEGORIES.has(category) ? 'upper' : 'lower';
-  // By convention, not by flag: every exercise with a form entry asks the
-  // bucket for `<id>_v<version>.mp4` (version 1 unless the entry says
-  // otherwise). Uploading a clip is therefore the whole release process; the
-  // player answers a 404 with the poster and lib/tutorialClips remembers it.
-  const objectPath = form ? clipObjectPath(form.id, form.tutorial?.version ?? 1) : null;
+  // By convention, not by flag: an exercise with its OWN entry asks the bucket
+  // for `<id>_v<version>.mp4` (version 1 unless the entry says otherwise).
+  // Uploading a clip is therefore the whole release process; the player
+  // answers a 404 with the poster and lib/tutorialClips remembers it.
+  const objectPath = own ? clipObjectPath(own.id, own.tutorial?.version ?? 1) : null;
 
   const { loaded, entry, fastPath, watched, skipped, setupSeen } = useTutorialMemory(key);
 
@@ -308,16 +319,23 @@ export default function Technique() {
   // PREVIEW poster is the lifter alone: the phone and sight-line belong to the
   // SETUP step, and a how-to card for an uncovered exercise has no such step.
   const playerH = Math.round((width * 9) / 16);
-  const renderFigure = (height: number, showPhone: boolean) => (
+  const renderFigure = (height: number, showPhone: boolean, comingSoon = false) => (
     <View style={[styles.slab, { height }]}>
-      <CameraSetupFigure
-        orientation={orientation}
-        cameraAngle={cameraAngle}
-        accent={pa.accentText}
-        ink={tokens.text}
-        width={Math.min(Math.round(height * (240 / 132) * 0.92), width - BODY_PAD * 2)}
-        showPhone={showPhone}
-      />
+      <View style={comingSoon ? styles.soonFigure : undefined}>
+        <CameraSetupFigure
+          orientation={orientation}
+          cameraAngle={cameraAngle}
+          accent={pa.accentText}
+          ink={tokens.text}
+          width={Math.min(Math.round(height * (240 / 132) * 0.92), width - BODY_PAD * 2)}
+          showPhone={showPhone}
+        />
+      </View>
+      {comingSoon ? (
+        <View style={styles.soonPill} accessibilityRole="text">
+          <Text style={styles.soonPillText}>{covered ? 'CLIP COMING SOON' : 'COMING SOON'}</Text>
+        </View>
+      ) : null}
     </View>
   );
 
@@ -355,14 +373,15 @@ export default function Technique() {
         }
       >
         <Crown
-          eyebrow={stepped ? 'STEP 1 OF 3' : 'TECHNIQUE'}
+          eyebrow={!covered ? 'COMING SOON' : stepped ? 'STEP 1 OF 3' : 'TECHNIQUE'}
           title={title}
+          meta={!covered ? 'Live form check for this exercise is coming soon.' : undefined}
           onBack={() => router.back()}
         />
 
         <TechniquePlayer
           objectPath={objectPath}
-          poster={renderFigure(playerH, false)}
+          poster={renderFigure(playerH, false, !own)}
           height={playerH}
           onReady={() => setClipReady(true)}
           onError={() => setClipFailed(true)}
@@ -425,7 +444,7 @@ export default function Technique() {
         {renderFigure(Math.round(playerH * 0.8), true)}
 
         <SafeAreaView edges={['left', 'right']} style={styles.body}>
-          {form?.cameraNote ? <Text style={styles.cameraNote}>{form.cameraNote}</Text> : null}
+          {cameraNote ? <Text style={styles.cameraNote}>{cameraNote}</Text> : null}
 
           <Section label="Setup">
             <KeyPointsList points={setupRows(cameraAngle, orientation, region)} accent={pa.accentText} />
@@ -460,7 +479,7 @@ export default function Technique() {
           key points while choosing, and the clip is a cache hit by now. */}
       <TechniquePlayer
         objectPath={objectPath}
-        poster={renderFigure(playerH, false)}
+        poster={renderFigure(playerH, false, !own)}
         height={playerH}
         onReady={() => setClipReady(true)}
         onError={() => setClipFailed(true)}
@@ -521,6 +540,24 @@ const makeStyles = (t: SemanticTokens) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: t.surfaceAlt,
+  },
+  // "Coming soon" poster: the figure recedes, one quiet label says why.
+  soonFigure: { opacity: 0.32 },
+  soonPill: {
+    position: 'absolute',
+    bottom: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: t.borderStrong,
+    backgroundColor: t.bg,
+  },
+  soonPillText: {
+    fontFamily: Fonts.legacyMono,
+    fontSize: 9,
+    letterSpacing: 1.9,
+    color: t.textSecondary,
   },
   cameraNote: {
     fontFamily: Fonts.bodySemi,

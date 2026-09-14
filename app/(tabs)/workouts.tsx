@@ -118,7 +118,7 @@ function MuscleGroupRow({
                   })}
                 right={analysable
                   ? <Text style={[styles.tag, { color: accentText }]}>FORM CHECK</Text>
-                  : undefined}
+                  : <Text style={[styles.tag, { color: tokens.textSecondary }]}>COMING SOON</Text>}
               />
             );
           })}
