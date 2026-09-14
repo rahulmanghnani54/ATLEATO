@@ -7,7 +7,8 @@
  * on READY instead and is two taps from the camera.
  *
  * Every exercise opens here, not only the camera-covered ones: Rack Pull, Leg
- * Press and friends get the same key points (falling back to their tips), but
+ * Press and friends get their own technique card (falling back to their tips
+ * if a name is in no table), but
  * only an exercise with an honest engine profile (`hasVisionCoverage`) is ever
  * offered START FORM CHECK or the camera-setup step. Opening a camera that
  * watches in silence is worse than offering nothing.
@@ -41,12 +42,11 @@ import { CanvasScreen, Crown, Section } from '@/components/ui/canvas';
 import { PressableScale, Skeleton, SkeletonLines } from '@/components/ui/motion';
 import {
   GENERIC_CAMERA,
-  getExerciseForm,
   getExerciseFormKey,
-  getOwnExerciseForm,
+  getOwnTechnique,
   hasVisionCoverage,
   keyPointsFor,
-  visionCategoryFor,
+  visionCategoryForName,
 } from '@/constants/exerciseFormLibrary';
 import { Fonts } from '@/constants/theme';
 import { useTutorialMemory } from '@/hooks/useTutorialMemory';
@@ -65,8 +65,8 @@ type Trigger = 'first_time' | 'manual';
 // Matches Crown's own horizontal inset so the body lines up under the hero.
 const BODY_PAD = 22;
 
-/** Form ids whose lifter is on a bench, so the setup figure lies down. */
-const LYING_FORM_IDS = new Set(['bench_press', 'incline_db_press']);
+/** Postures whose lifter is on a bench or the floor, so the setup figure lies down. */
+const LYING_POSTURES = new Set<string>(['lying', 'prone']);
 
 /** Engine categories judged from the waist up — framing asks for less body. */
 type BodyRegion = 'upper' | 'lower';
@@ -137,27 +137,31 @@ export default function Technique() {
   const pa = personaAccent(personaTheme, scheme);
 
   // Two different questions about one exercise:
-  //   family — which engine profile judges it (Decline Bench → the press checks)
-  //   own    — is there technique content that is genuinely THIS exercise
-  // Only `own` may supply a clip, key points or a camera note. A variant with
-  // a family match gets Form Check plus "clip coming soon" and its own tips;
-  // lending it the flat bench's clip is how Lat Pulldown played a pull-up.
-  const family = getExerciseForm(exerciseName);
-  const own = getOwnExerciseForm(exerciseName);
+  //   category — which engine profile judges it, decided BY NAME: the own
+  //              technique's honest call first, else the keyword family match
+  //   own      — is there technique content that is genuinely THIS exercise
+  //              (an ExerciseForm entry or a TechniqueCard — one shape here)
+  // Only `own` may supply a clip, key points or a camera note; a name nobody
+  // catalogued gets the generic camera guidance for its profile and its tips.
+  // Lending a family entry's clip is how Lat Pulldown once played a pull-up.
+  const own = getOwnTechnique(exerciseName);
   const key = getExerciseFormKey(exerciseName);
   const covered = hasVisionCoverage(exerciseName);
   const points = keyPointsFor(exerciseName);
-  const category = visionCategoryFor(family);
+  const category = visionCategoryForName(exerciseName);
   const generic = category ? GENERIC_CAMERA[category] : null;
   const cameraAngle: CameraAngle = own?.cameraAngle ?? generic?.angle ?? 'side';
   const cameraNote = own?.cameraNote ?? generic?.note ?? null;
-  const orientation: Orientation = own && LYING_FORM_IDS.has(own.id) ? 'lying' : 'standing';
+  const orientation: Orientation = own && LYING_POSTURES.has(own.posture) ? 'lying' : 'standing';
   const region: BodyRegion = category && UPPER_CATEGORIES.has(category) ? 'upper' : 'lower';
-  // By convention, not by flag: an exercise with its OWN entry asks the bucket
-  // for `<id>_v<version>.mp4` (version 1 unless the entry says otherwise).
-  // Uploading a clip is therefore the whole release process; the player
-  // answers a 404 with the poster and lib/tutorialClips remembers it.
-  const objectPath = own ? clipObjectPath(own.id, own.tutorial?.version ?? 1) : null;
+  // By convention, not by flag: an exercise with its OWN technique asks the
+  // bucket for `<id>_v<version>.mp4` (version 1 unless the entry says
+  // otherwise). Uploading a clip is therefore the whole release process; the
+  // player answers a 404 with the poster and lib/tutorialClips remembers it.
+  // Every catalogued name has an own technique now, so the no-clip "coming
+  // soon" poster below should be unreachable — the path stays for a name
+  // that is not in any table.
+  const objectPath = own ? clipObjectPath(own.id, own.tutorialVersion) : null;
 
   const { loaded, entry, fastPath, watched, skipped, setupSeen } = useTutorialMemory(key);
 

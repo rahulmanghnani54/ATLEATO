@@ -10,9 +10,11 @@
  */
 import {
   EXERCISE_FORM_LIBRARY,
+  detectedFaultsFor,
   getExerciseForm,
   getExerciseFormKey,
   getOwnExerciseForm,
+  getOwnTechnique,
   hasOwnTechniqueContent,
   getCoachCue,
   hasVisionCoverage,
@@ -20,9 +22,13 @@ import {
   requiredLandmarksFor,
   tipsForExercise,
   visionCategoryFor,
+  visionCategoryForName,
   type ExerciseForm,
   type VisionCategory,
 } from '@/constants/exerciseFormLibrary';
+import { getTechniqueCard } from '@/constants/techniqueCards';
+import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
+import { EXPERT_PROGRAMS } from '@/constants/experts';
 import { getProfile } from '@/lib/vision/biomechanics';
 
 // Library order. The id doubles as the tutorial-memory and clip-file key, so
@@ -191,16 +197,24 @@ describe('getExerciseFormKey', () => {
 
   it('gives a variant its own key even though it shares the engine profile', () => {
     // Step-Up is judged by the lunge profile but is not the lunge: its memory
-    // and any future clip must not be the lunge's.
+    // and any future clip must not be the lunge's. Both now own a technique
+    // card, so the key is the card id — which the catalog spelled as the slug.
     expect(getExerciseFormKey('Step-Up')).toBe('step_up');
     expect(getExerciseFormKey('Decline Bench Press')).toBe('decline_bench_press');
     expect(hasVisionCoverage('Step-Up')).toBe(true);
   });
 
-  it('slugs the name when there is no entry', () => {
+  it('uses the technique card id, so a labelled variant shares its card memory', () => {
+    // 'Leg Extension (Warmup)' is an alias of the leg_extension card: one clip,
+    // one "seen it", not a phantom 'leg_extension_warmup' key.
     expect(getExerciseFormKey('Rack Pull')).toBe('rack_pull');
-    expect(getExerciseFormKey('Leg Extension (Warmup)')).toBe('leg_extension_warmup');
+    expect(getExerciseFormKey('Leg Extension (Warmup)')).toBe('leg_extension');
     expect(getExerciseFormKey('  T-Bar Row ')).toBe('t_bar_row');
+  });
+
+  it('slugs the name when no table owns it', () => {
+    expect(getExerciseFormKey('Underwater Basket Weaving')).toBe('underwater_basket_weaving');
+    expect(getExerciseFormKey('  Odd  Lift (Test) ')).toBe('odd_lift_test');
   });
 });
 
@@ -222,10 +236,12 @@ describe('keyPointsFor / tipsForExercise', () => {
     expect(keyPointsFor('Barbell Bench Press')).toEqual(formOrFail('Bench Press').keyPoints);
   });
 
-  it('falls back to the exercise library tips when no form matches', () => {
-    const tips = keyPointsFor('Rack Pull');
-    expect(tips.length).toBeGreaterThan(0);
-    expect(tips).toEqual(tipsForExercise('Rack Pull'));
+  it('uses the technique card when no form entry owns the name', () => {
+    // Rack Pull has no ExerciseForm; its card's key points are its own text.
+    const points = keyPointsFor('Rack Pull');
+    expect(points.length).toBeGreaterThanOrEqual(3);
+    expect(points).toEqual(getTechniqueCard('Rack Pull')!.keyPoints);
+    expect(points).toEqual(getOwnTechnique('Rack Pull')!.keyPoints);
   });
 
   it('reaches expert-program tips for exercises the library does not list', () => {
@@ -264,38 +280,208 @@ describe('own technique content is exact-name only', () => {
     expect(hasOwnTechniqueContent(name)).toBe(true);
   });
 
+  // name → [family form id, family engine profile, own card id, card's engine profile].
+  // These were once bare family matches (Form Check + "clip coming soon" + tips).
+  // Batch 2 gave each its own TechniqueCard, so they are OWN content now — but
+  // the card's, never the family form's: the borrowed-text check still holds.
   it.each([
-    ['Lat Pulldown', 'pull'],
-    ['Close-Grip Lat Pulldown', 'pull'],
-    ['Incline Barbell Press', 'press'],
-    ['Decline Bench Press', 'press'],
-    ['Close-Grip Bench Press', 'press'],
-    ['Machine Shoulder Press', 'press'],
-    ['Seated Dumbbell Press', 'press'],
-    ['Hack Squat', 'squat'],
-    ['Bulgarian Split Squat', 'lunge'],
-    ['Sumo Deadlift', 'deadlift'],
-    ['Hammer Curl', 'curl'],
-    ['Seated Leg Curl', null],
-  ])('%s is a family match: engine profile %s, no borrowed clip or key points', (name, category) => {
-    expect(getOwnExerciseForm(name)).toBeNull();
-    expect(hasOwnTechniqueContent(name)).toBe(false);
-    expect(visionCategoryFor(getExerciseForm(name))).toBe(category);
-    // Whatever the card shows must be this exercise's own text (library tips),
-    // never the family entry's checkpoints.
-    const family = getExerciseForm(name)!;
-    const borrowed = new Set([...(family.keyPoints ?? []), ...family.checkpoints.map((c) => c.description)]);
-    for (const line of keyPointsFor(name)) expect(borrowed.has(line)).toBe(false);
-  });
+    ['Lat Pulldown',            'pullup',           'pull',     'lat_pulldown',           'pull'],
+    ['Close-Grip Lat Pulldown', 'pullup',           'pull',     'lat_pulldown',           'pull'],
+    ['Incline Barbell Press',   'incline_db_press', 'press',    'incline_barbell_press',  'press'],
+    ['Decline Bench Press',     'bench_press',      'press',    'decline_bench_press',    'press'],
+    ['Close-Grip Bench Press',  'bench_press',      'press',    'close_grip_bench_press', 'press'],
+    ['Machine Shoulder Press',  'overhead_press',   'press',    'machine_shoulder_press', 'press'],
+    ['Seated Dumbbell Press',   'overhead_press',   'press',    'seated_dumbbell_press',  'press'],
+    ['Hack Squat',              'barbell_squat',    'squat',    'hack_squat',             null],
+    ['Bulgarian Split Squat',   'lunge',            'lunge',    'bulgarian_split_squat',  'lunge'],
+    ['Sumo Deadlift',           'deadlift',         'deadlift', 'sumo_deadlift',          'deadlift'],
+    ['Hammer Curl',             'bicep_curl',       'curl',     'hammer_curl',            'curl'],
+    ['Seated Leg Curl',         'leg_curl',         null,       'seated_leg_curl',        null],
+  ] as Array<[string, string, VisionCategory | null, string, VisionCategory | null]>)(
+    '%s: family %s (%s) but OWN card %s (%s) — no borrowed text',
+    (name, familyId, familyCategory, cardId, cardCategory) => {
+      // The family match is unchanged — it still names the profile a variant
+      // would share and the coach cues it borrows.
+      const family = getExerciseForm(name)!;
+      expect(family.id).toBe(familyId);
+      expect(visionCategoryFor(family)).toBe(familyCategory);
+      // No ExerciseForm owns the name; its TechniqueCard does.
+      expect(getOwnExerciseForm(name)).toBeNull();
+      const own = getOwnTechnique(name)!;
+      expect(own.id).toBe(cardId);
+      expect(hasOwnTechniqueContent(name)).toBe(true);
+      expect(getExerciseFormKey(name)).toBe(cardId);
+      // The card's honest engine decision wins BY NAME, even over a family
+      // match that would have routed it somewhere (Hack Squat: squat → null).
+      expect(own.visionCategory).toBe(cardCategory);
+      expect(visionCategoryForName(name)).toBe(cardCategory);
+      expect(hasVisionCoverage(name)).toBe(cardCategory !== null);
+      // Key points are the card's, never the family entry's authored text.
+      const borrowed = new Set([...(family.keyPoints ?? []), ...family.checkpoints.map((c) => c.description)]);
+      expect(keyPointsFor(name)).toEqual(own.keyPoints);
+      for (const line of own.keyPoints) expect(borrowed.has(line)).toBe(false);
+    },
+  );
 
   it('Lat Pulldown never sees "chin over bar"', () => {
+    const own = getOwnTechnique('Lat Pulldown')!;
+    expect(own.id).toBe('lat_pulldown');
+    expect(visionCategoryForName('Lat Pulldown')).toBe('pull');
+    expect(hasVisionCoverage('Lat Pulldown')).toBe(true);
     expect(keyPointsFor('Lat Pulldown').join(' ')).not.toMatch(/chin over bar|dead hang/i);
+    expect(own.keyPoints.join(' ')).not.toMatch(/chin over bar|dead hang/i);
+  });
+
+  it('Leg Press owns a card but no profile: how-to only, no camera', () => {
+    const own = getOwnTechnique('Leg Press')!;
+    expect(own.id).toBe('leg_press');
+    expect(own.visionCategory).toBeNull();
+    expect(visionCategoryForName('Leg Press')).toBeNull();
+    expect(hasVisionCoverage('Leg Press')).toBe(false);
+    expect(own.detectedFaults).toEqual([]);
+    expect(detectedFaultsFor('Leg Press')).toEqual([]);
+  });
+
+  it('Seated Cable Row is a pull by its card, though no keyword ever matched it', () => {
+    expect(getExerciseForm('Seated Cable Row')).toBeNull();
+    expect(getOwnTechnique('Seated Cable Row')?.id).toBe('seated_cable_row');
+    expect(visionCategoryForName('Seated Cable Row')).toBe('pull');
+    expect(hasVisionCoverage('Seated Cable Row')).toBe(true);
   });
 
   it('every alias resolves back to its own entry and to no other', () => {
     for (const form of EXERCISE_FORM_LIBRARY) {
       for (const alias of [form.exerciseName, ...form.aliases]) {
         expect(getOwnExerciseForm(alias)?.id).toBe(form.id);
+        expect(getOwnTechnique(alias)?.id).toBe(form.id);
+      }
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getOwnTechnique — one shape over both tables. Screens derive the clip path,
+// the setup figure and the camera note from it and never see which table
+// answered, so the form-entry projection is pinned field by field here.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('getOwnTechnique', () => {
+  it('projects a form entry: id, authored key points, camera, profile, faults, clip version', () => {
+    const form = getOwnExerciseForm('Bench Press')!;
+    const own = getOwnTechnique('Barbell Bench Press')!;
+    expect(own.id).toBe('bench_press');
+    expect(own.exerciseName).toBe(form.exerciseName);
+    expect(own.keyPoints).toEqual(form.keyPoints);
+    expect(own.cameraAngle).toBe(form.cameraAngle);
+    expect(own.cameraNote).toBe(form.cameraNote);
+    expect(own.visionCategory).toBe('press');
+    expect(own.detectedFaults).toEqual(form.detectedFaults ?? []);
+    // bench_press is the one entry re-shot: version 2, so the clip path moves.
+    expect(own.tutorialVersion).toBe(form.tutorial?.version ?? 1);
+    expect(own.tutorialVersion).toBe(2);
+  });
+
+  it('gives bench entries a lying posture, leg curl prone, everything else standing', () => {
+    expect(getOwnTechnique('Bench Press')?.posture).toBe('lying');
+    expect(getOwnTechnique('Incline Dumbbell Press')?.posture).toBe('lying');
+    expect(getOwnTechnique('Leg Curl')?.posture).toBe('prone');
+    for (const form of EXERCISE_FORM_LIBRARY) {
+      if (['bench_press', 'incline_db_press', 'leg_curl'].includes(form.id)) continue;
+      expect(getOwnTechnique(form.exerciseName)?.posture).toBe('standing');
+    }
+  });
+
+  it('claims no detected faults for a form entry with no profile', () => {
+    expect(getOwnTechnique('Lateral Raise')?.visionCategory).toBeNull();
+    expect(getOwnTechnique('Lateral Raise')?.detectedFaults).toEqual([]);
+    expect(detectedFaultsFor('Lateral Raise')).toEqual([]);
+  });
+
+  it('projects a card verbatim, with tutorialVersion defaulting to 1', () => {
+    const card = getTechniqueCard('T-Bar Row')!;
+    const own = getOwnTechnique('T-Bar Row')!;
+    expect(own).toEqual({
+      id: card.id,
+      exerciseName: card.exerciseName,
+      keyPoints: card.keyPoints,
+      cameraAngle: card.cameraAngle,
+      cameraNote: card.cameraNote,
+      posture: card.posture,
+      visionCategory: card.visionCategory,
+      detectedFaults: card.detectedFaults ?? [],
+      tutorialVersion: card.tutorial?.version ?? 1,
+    });
+    expect(own.tutorialVersion).toBe(1);
+  });
+
+  it('is null for an empty or unknown name', () => {
+    expect(getOwnTechnique('')).toBeNull();
+    expect(getOwnTechnique('Underwater Basket Weaving')).toBeNull();
+  });
+});
+
+describe('detectedFaultsFor', () => {
+  it('returns the own technique list, with ids the engine profile declares', () => {
+    for (const name of ['Bench Press', 'Lat Pulldown', 'Hammer Curl', 'Sumo Deadlift', 'Step-Up']) {
+      const faults = detectedFaultsFor(name);
+      const category = visionCategoryForName(name)!;
+      expect(category).not.toBeNull();
+      expect(faults.length).toBeGreaterThan(0);
+      const checkIds = new Set(getProfile(category).checks.map((c) => c.id));
+      for (const f of faults) {
+        expect(checkIds.has(f.checkId)).toBe(true);
+        expect(f.label.trim().length).toBeGreaterThan(0);
+      }
+    }
+  });
+
+  it('is empty when nothing owns the name and no family matches', () => {
+    expect(detectedFaultsFor('Underwater Basket Weaving')).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Coverage. Every exercise a user can tap — the workout library and every
+// expert program — must land on its own technique: the 14 form entries or one
+// of the technique cards. A miss here means a "coming soon" poster on the
+// device for a name the catalog was supposed to cover.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('own-technique coverage', () => {
+  const allNames = (): string[] => {
+    const names = new Set<string>();
+    for (const group of EXERCISE_LIBRARY) for (const ex of group.exercises) names.add(ex.name);
+    for (const program of Object.values(EXPERT_PROGRAMS)) {
+      for (const day of program.schedule) for (const ex of day.exercises) names.add(ex.name);
+    }
+    return [...names].sort();
+  };
+
+  it('every EXERCISE_LIBRARY and EXPERT_PROGRAMS exercise resolves to an own technique', () => {
+    const names = allNames();
+    expect(names.length).toBeGreaterThan(50);
+    const misses = names.filter((n) => getOwnTechnique(n) === null);
+    if (misses.length) {
+      // Printed so the failing names are in the log, not just a count.
+      console.error(`No own technique for ${misses.length} exercise(s):\n  ${misses.join('\n  ')}`);
+    }
+    expect(misses).toEqual([]);
+  });
+
+  it('every covered name has 3–5 key points, a camera note and a usable clip stem', () => {
+    for (const name of allNames()) {
+      const own = getOwnTechnique(name)!;
+      expect(own.keyPoints.length).toBeGreaterThanOrEqual(3);
+      expect(own.keyPoints.length).toBeLessThanOrEqual(5);
+      expect(own.cameraNote).toBeTruthy();
+      expect(own.id).toMatch(/^[a-z0-9_]+$/);
+      expect(own.tutorialVersion).toBeGreaterThanOrEqual(1);
+      // A name without a profile never advertises detections or a camera.
+      if (own.visionCategory === null) {
+        expect(own.detectedFaults).toEqual([]);
+        expect(hasVisionCoverage(name)).toBe(false);
+      } else {
+        expect(hasVisionCoverage(name)).toBe(true);
       }
     }
   });

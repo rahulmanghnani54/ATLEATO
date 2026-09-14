@@ -44,7 +44,7 @@ import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { BigStat, CanvasScreen, Hairline, Section, StatRow } from '@/components/ui/canvas';
 import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
 import {
-  getExerciseForm, getExerciseFormKey, getCoachCue, tipsForExercise, visionCategoryFor,
+  detectedFaultsFor, getExerciseForm, getExerciseFormKey, getCoachCue, tipsForExercise, visionCategoryForName,
   type VisionCategory,
 } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
@@ -580,8 +580,10 @@ export default function FormCoach() {
     // Translate the library's vocabulary into the engine's. These grew apart:
     // 'push'/'isolation'/'hinge' matched no profile, so getProfile() fell back to
     // 'general' (checks: []) and the coach watched in silence. null = we have no
-    // profile for this movement and must say so rather than pretend.
-    categoryRef.current = visionCategoryFor(formLibraryData) ?? undefined;
+    // profile for this movement and must say so rather than pretend. Resolved
+    // BY NAME so an own technique card's honest call (Hack Squat: null) beats
+    // the keyword family match that would have routed it to the squat checks.
+    categoryRef.current = visionCategoryForName(exerciseName ?? '') ?? undefined;
     // Memory key from the library, never a slug built here: the technique
     // screen writes under the same function's output, and two spellings of
     // one exercise would split its history.
@@ -1021,7 +1023,7 @@ export default function FormCoach() {
   // has not named falls back to a neutral line — never a raw id like
   // "squat.depth" on the stage.
   const retriggerLabel = retriggerCheckId
-    ? formLibraryData?.detectedFaults?.find((f) => f.checkId === retriggerCheckId)?.label ?? null
+    ? detectedFaultsFor(exerciseName ?? '').find((f) => f.checkId === retriggerCheckId)?.label ?? null
     : null;
   const retriggerCopy = retriggerLabel
     ? `${retriggerLabel} flagged in 3 of your last 4 reps`

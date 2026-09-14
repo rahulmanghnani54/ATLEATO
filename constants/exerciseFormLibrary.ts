@@ -16,6 +16,9 @@ import type { PersonaId } from '@/lib/personaTheme';
 import { getProfile } from '@/lib/vision/biomechanics';
 import { EXERCISE_LIBRARY } from '@/constants/exerciseLibrary';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
+// techniqueCards imports only a TYPE from this module, so the dependency is
+// one-way at runtime — keep it that way (no value import back from here).
+import { getTechniqueCard } from '@/constants/techniqueCards';
 
 export interface CoachCue {
   // The canonical PersonaId, so a cue lookup can never drift from the ids the
@@ -868,17 +871,17 @@ export function getOwnExerciseForm(exerciseName: string): ExerciseForm | null {
 
 /** True when the technique card can show a clip and key points that are genuinely this exercise's. */
 export function hasOwnTechniqueContent(exerciseName: string): boolean {
-  return getOwnExerciseForm(exerciseName) !== null;
+  return getOwnTechnique(exerciseName) !== null;
 }
 
 /**
  * The stable key an exercise's tutorial memory and clips live under: the OWN
- * form id when the entry is this exercise, else a slug of the name — so a
- * variant (Decline Bench) keeps its own memory instead of sharing the flat
- * bench's, and uncovered exercises (Rack Pull) still remember "seen it".
+ * technique id (form entry or technique card) when one IS this exercise, else
+ * a slug of the name — so a variant keeps its own memory instead of sharing
+ * its family's, and an exercise nobody has catalogued still remembers "seen it".
  */
 export function getExerciseFormKey(exerciseName: string): string {
-  const own = getOwnExerciseForm(exerciseName);
+  const own = getOwnTechnique(exerciseName);
   if (own) return own.id;
   return (exerciseName ?? '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
 }
@@ -928,16 +931,14 @@ export function tipsForExercise(exerciseName: string): string[] {
 }
 
 /**
- * KEY POINTS for the technique card: the entry's authored key points when the
- * entry IS this exercise, else the exercise's own tips from the workout
- * library, else nothing. Never a family entry's text — a variant's card shows
- * less rather than another lift's instructions.
+ * KEY POINTS for the technique card: the own technique's authored key points
+ * (form entry or technique card) when one IS this exercise, else the
+ * exercise's own tips from the workout library, else nothing. Never a family
+ * entry's text — a variant's card shows less rather than another lift's
+ * instructions.
  */
 export function keyPointsFor(exerciseName: string): string[] {
-  const own = getOwnExerciseForm(exerciseName);
-  if (own?.keyPoints?.length) return own.keyPoints;
-  if (own?.checkpoints?.length) return own.checkpoints.map((c) => c.description);
-  return tipsForExercise(exerciseName);
+  return getOwnTechnique(exerciseName)?.keyPoints ?? tipsForExercise(exerciseName);
 }
 
 /**
@@ -1004,6 +1005,19 @@ export function requiredLandmarksFor(form: ExerciseForm | null): number[] {
 }
 
 /**
+ * The engine category for an exercise BY NAME. An own technique's decision
+ * wins outright — including an explicit `null` (Hack Squat's card says the
+ * squat profile cannot honestly judge a machine, even though the keyword
+ * matcher would route it there). Only a name nobody catalogued falls through
+ * to the family match.
+ */
+export function visionCategoryForName(exerciseName: string): VisionCategory | null {
+  const own = getOwnTechnique(exerciseName);
+  if (own) return own.visionCategory;
+  return visionCategoryFor(getExerciseForm(exerciseName));
+}
+
+/**
  * Can the Form Coach genuinely analyse this exercise?
  *
  * The honest gate for showing a FORM CHECK affordance. False means the app has
@@ -1011,5 +1025,87 @@ export function requiredLandmarksFor(form: ExerciseForm | null): number[] {
  * open a camera that watches and says nothing useful.
  */
 export function hasVisionCoverage(exerciseName: string): boolean {
-  return visionCategoryFor(getExerciseForm(exerciseName)) !== null;
+  return visionCategoryForName(exerciseName) !== null;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OWN TECHNIQUE
+//
+// One shape for "the technique content that IS this exercise", whichever table
+// it lives in. The 14 ExerciseForm entries carry a joint-angle table and coach
+// cues on top; a TechniqueCard (constants/techniqueCards.ts) carries only what
+// the technique screen shows. Screens read this and never care which it was.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type OwnTechnique = {
+  /** Clip stem and tutorial-memory key (`<id>_v<tutorialVersion>.mp4`). */
+  id: string;
+  exerciseName: string;
+  keyPoints: string[];
+  cameraAngle: 'side' | 'front' | 'front_45';
+  cameraNote: string | null;
+  /** Drives the setup figure. Same union as techniqueCards' CardPosture. */
+  posture: 'standing' | 'seated' | 'lying' | 'prone' | 'hanging' | 'kneeling' | 'hinged';
+  /** The engine profile that grades it — null means the camera must not be offered. */
+  visionCategory: VisionCategory | null;
+  /** Empty whenever visionCategory is null: nothing is "detected" without a profile. */
+  detectedFaults: Array<{ checkId: string; label: string }>;
+  tutorialVersion: number;
+};
+
+/** Form entries whose lifter is not upright; every other form entry stands. */
+const FORM_POSTURE: Record<string, OwnTechnique['posture']> = {
+  bench_press:      'lying',
+  incline_db_press: 'lying',
+  leg_curl:         'prone',
+};
+
+/**
+ * The technique content that IS this exercise: the ExerciseForm entry when one
+ * owns the name (exact title or alias), else its TechniqueCard, else null.
+ * Exact-name only on both tables — a family match never lends its clip, key
+ * points or camera note (that is how Lat Pulldown once played a pull-up).
+ */
+export function getOwnTechnique(exerciseName: string): OwnTechnique | null {
+  const form = getOwnExerciseForm(exerciseName);
+  if (form) {
+    const visionCategory = visionCategoryFor(form);
+    const generic = visionCategory ? GENERIC_CAMERA[visionCategory] : null;
+    return {
+      id: form.id,
+      exerciseName: form.exerciseName,
+      keyPoints: form.keyPoints?.length ? form.keyPoints : form.checkpoints.map((c) => c.description),
+      cameraAngle: form.cameraAngle ?? generic?.angle ?? 'side',
+      cameraNote: form.cameraNote ?? generic?.note ?? null,
+      posture: FORM_POSTURE[form.id] ?? 'standing',
+      visionCategory,
+      detectedFaults: visionCategory ? (form.detectedFaults ?? []) : [],
+      tutorialVersion: form.tutorial?.version ?? 1,
+    };
+  }
+  const card = getTechniqueCard(exerciseName);
+  if (!card) return null;
+  return {
+    id: card.id,
+    exerciseName: card.exerciseName,
+    keyPoints: card.keyPoints,
+    cameraAngle: card.cameraAngle,
+    cameraNote: card.cameraNote,
+    posture: card.posture,
+    visionCategory: card.visionCategory,
+    detectedFaults: card.visionCategory ? (card.detectedFaults ?? []) : [],
+    tutorialVersion: card.tutorial?.version ?? 1,
+  };
+}
+
+/**
+ * The checks the camera can genuinely flag for this exercise, with their human
+ * labels: the own technique's list, else the family entry's (a variant shares
+ * the engine profile, and the profile's check ids with it), else nothing.
+ */
+export function detectedFaultsFor(exerciseName: string): Array<{ checkId: string; label: string }> {
+  const own = getOwnTechnique(exerciseName);
+  if (own) return own.detectedFaults;
+  const family = getExerciseForm(exerciseName);
+  return family && visionCategoryFor(family) ? (family.detectedFaults ?? []) : [];
 }
