@@ -44,7 +44,8 @@ import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { BigStat, CanvasScreen, Hairline, Section, StatRow } from '@/components/ui/canvas';
 import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
 import {
-  detectedFaultsFor, getExerciseForm, getExerciseFormKey, getCoachCue, tipsForExercise, visionCategoryForName,
+  detectedFaultsFor, getExerciseForm, getExerciseFormKey, getCoachCue, getOwnExerciseForm, keyPointsFor,
+  visionCategoryForName,
   type VisionCategory,
 } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
@@ -158,7 +159,7 @@ type Finding = FormVerdict['findings'][number];
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Persona normalisation and the tips fallback both come from the shared
-// libraries (personaFromProgramId, tipsForExercise): this file used to carry
+// libraries (personaFromProgramId, keyPointsFor): this file used to carry
 // its own copies, which matched fewer spellings than the technique screen's
 // and could show a different fallback for the same exercise name.
 
@@ -605,10 +606,16 @@ export default function FormCoach() {
     engineRef.current?.reset();
   }, []);
 
-  const libraryCheckpoints = formLibraryData?.checkpoints ?? [];
-  const libraryMistakes    = formLibraryData?.commonMistakes ?? [];
-  const libraryBreathing   = formLibraryData?.breathingCue ?? null;
-  const tips = formLibraryData ? [] : tipsForExercise(exerciseName ?? '');
+  // The cue panel shows content that is THIS exercise's only. formLibraryData
+  // above is the FAMILY match (it picks the engine profile: Lat Pulldown runs
+  // the pull checks); its checkpoints belong to the pull-up and must not be
+  // printed under a pulldown. Own ExerciseForm → its checkpoints/mistakes/
+  // breathing; otherwise the own technique card's key points, then the tips.
+  const ownForm = useMemo(() => getOwnExerciseForm(exerciseName ?? ''), [exerciseName]);
+  const libraryCheckpoints = ownForm?.checkpoints ?? [];
+  const libraryMistakes    = ownForm?.commonMistakes ?? [];
+  const libraryBreathing   = ownForm?.breathingCue ?? null;
+  const tips = ownForm ? [] : keyPointsFor(exerciseName ?? '');
 
   // Voice cues — the coach speaks ONLY what the engine elects to say.
   const voice = useVoiceCues();
@@ -950,7 +957,9 @@ export default function FormCoach() {
   const handleGetCoachCue = useCallback(() => {
     if (Date.now() - lastCallAt.current < CUE_COOLDOWN_MS) return;
     lastCallAt.current = Date.now();
-    const form = getExerciseForm(exerciseName ?? '');
+    // Persona cue lines are written per entry; only an entry that IS this
+    // exercise may speak for it (a pull-up line on a pulldown is wrong).
+    const form = getOwnExerciseForm(exerciseName ?? '');
     const cue = form ? getCoachCue(form, personaTheme.id) : 'Focus on controlled tempo and full range of motion.';
     setAiFeedback(cue);
     let remaining = Math.ceil(CUE_COOLDOWN_MS / 1000);
