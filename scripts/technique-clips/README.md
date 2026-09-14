@@ -101,15 +101,24 @@ Units: torso = 1, floor at y = 0, y is UP. Fields the cameras understand:
 | `torso: k` | both | torso length multiplier (default 1) — foreshortens a leaning front-view figure |
 | `shoulderHalf: u` | front | half shoulder width (default 0.4) |
 | `hipHalf: u` | front | legs leave the pelvis this far either side of `hip` (default 0; draws a pelvis bar) |
+| `neck: u` | front | visible neck length, neck base → head ring (default 0.12); the head follows it up or down |
+| `headDrop: u` | front | lowers the head centre by this much (default 0). + = down toward / below the shoulder line, overlapping the torso is allowed — a hinged lifter seen from the front reads as looking at the floor. The neck stroke shortens first and vanishes once `headDrop ≥ neck` |
 | `wristN/F` (side) `wristR/L` (front) `[x,y]` | both | absolute IK target for the hand |
 | `wristRel: [x,y]` | both | IK target for BOTH hands relative to the shoulder |
 | `armsHang: true` | both | both arms straight down |
 | `arm` or `armN/F/R/L: [upperDeg, forearmDeg]` | both | absolute angles from straight down, + toward +x (front view: mirrored for L) — use for arcs (curl, raise) |
 | `elbowDir: ±1` or `{N,F,R,L: ±1}` | both | which side of the shoulder→wrist line the elbow bends to |
+| `armScale: k` or `armScaleN/F/R/L: k` | both | foreshortening: the drawn upper-arm AND forearm are `k ×` their length (0.35–1, default 1; clamped). The IK solves on the scaled bones, so a `wrist*` target keeps working — an arm reaching toward the camera (front view) is simply drawn shorter. Per-side wins over `armScale`; interpolated like any number |
 | `ankleN/F` / `ankleR/L: [x,y]` | both | absolute IK target for the ankle |
 | `leg` or `legN/F/R/L: [thighDeg, shinDeg]` | both | absolute angles from straight down |
 | `kneeDir` | both | as `elbowDir`, for the knee |
 | `toeN/F: [x,y]` | side | toe position (default: perpendicular to the shin, 0.24 long; kneeling/prone poses should set it) |
+
+Depth cues in front view are opt-in and default to the plain figure: a
+bent-over row from the front might use `headDrop: 0.3` at the bottom of the
+hinge so the head hangs at shoulder height, and `armScale: 0.6` while the
+hands come toward the viewer so the arms do not read as too long. Leaving the
+fields out renders exactly as before (the clip md5s are a regression check).
 
 Side view: `N` = near side (drawn on top), `F` = far side (drawn lighter and
 nudged 0.045 back). Front view: `R` is at +x. `lib/figure.js` exports `STAND`

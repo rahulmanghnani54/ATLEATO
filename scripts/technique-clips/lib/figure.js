@@ -16,12 +16,17 @@
  *   torso      k      torso length multiplier (default 1; foreshortens a leaning front-view figure)
  *   shoulderHalf u    front view: half shoulder width (default 0.4)
  *   hipHalf    u      front view: legs leave the pelvis this far either side of `hip` (default 0)
+ *   neck       u      front view: visible neck length, neck base → head (default 0.12)
+ *   headDrop   u      front view: lowers the head centre (and shortens the neck) by this much;
+ *                     + = down toward / below the shoulder line, may overlap the torso (default 0)
  * Limbs, per side (side view: N = near, F = far; front view: R = +x, L = -x):
  *   wristN/F/R/L [x,y]   absolute IK target for the hand
  *   wristRel     [x,y]   IK target for BOTH hands relative to the shoulder
  *   armsHang     true    both arms straight down from the shoulder
  *   armN/F/R/L | arm  [upperDeg, forearmDeg]  absolute angles from straight DOWN, + toward +x
  *   elbowDir     ±1 | {N,F,R,L: ±1}  which side of the shoulder→wrist line the elbow bends to
+ *   armScaleN/F/R/L | armScale  k  foreshortening: drawn upper-arm AND forearm lengths × k
+ *                     (0.35–1, default 1); IK solves on the scaled bones
  *   ankleN/F/R/L [x,y]   absolute IK target for the ankle
  *   legN/F/R/L | leg  [thighDeg, shinDeg]     absolute angles from straight DOWN
  *   kneeDir      ±1 | {…}  bend side for the knee IK
@@ -34,6 +39,8 @@ const { INK, STROKE_PX, FAR_ALPHA, cap, ring } = require('./raster');
 const L = { torso: 1.0, neck: 0.1, head: 0.22, ua: 0.55, fa: 0.5, th: 0.6, sh: 0.6, foot: 0.24 };
 const SHOULDER_HALF = 0.4; // front view
 const FAR_DX = -0.045; // far-side limbs nudged back a touch so depth reads
+const NECK_VISIBLE = L.neck + 0.02; // 0.12 — the drawn neck stroke tucks 0.02 into the head ring
+const ARM_SCALE_MIN = 0.35; // shortest an arm may be foreshortened to
 
 /** Standing upright at the origin, both feet on the floor (side view). */
 const STAND = { hip: [0, 1.18], lean: 0, ankleN: [0, 0], ankleF: [0, 0] };
@@ -136,25 +143,34 @@ const TIMING = { down: 0.44, hold1: 0.06, up: 0.44 };
  *  - `wristRel`: IK target relative to the shoulder (both arms)
  *  - `arm*` / `leg*`: [proximal, distal] absolute angles
  *  - `armsHang`: arms straight down from the shoulder
+ *  - `armScale<side>` / `armScale`: foreshortening — both bones × k (0.35–1, default 1)
  * `sgn` mirrors the angle convention for the left side in front view.
  */
+function armScale(pose, side) {
+  const k = pose['armScale' + side] != null ? pose['armScale' + side] : pose.armScale != null ? pose.armScale : 1;
+  return Math.min(1, Math.max(ARM_SCALE_MIN, k));
+}
+
 function resolveArm(pose, side, shoulder, sgn) {
   const bend = (pose.elbowDir && pose.elbowDir[side]) || pose.elbowDir || 1;
+  const k = armScale(pose, side);
+  const ua = L.ua * k;
+  const fa = L.fa * k;
   if (pose.armsHang) {
-    const elbow = add(shoulder, [0, -L.ua]);
-    return { elbow, wrist: add(shoulder, [0, -(L.ua + L.fa)]) };
+    const elbow = add(shoulder, [0, -ua]);
+    return { elbow, wrist: add(shoulder, [0, -(ua + fa)]) };
   }
   const target = pose['wrist' + side] || (pose.wristRel && add(shoulder, pose.wristRel));
   if (target) {
-    const r = ik(shoulder, target, L.ua, L.fa, typeof bend === 'number' ? bend : 1);
+    const r = ik(shoulder, target, ua, fa, typeof bend === 'number' ? bend : 1);
     return { elbow: r.mid, wrist: r.end };
   }
   const ang = pose['arm' + side] || pose.arm;
   if (!ang) throw new Error(`pose has no arm for side ${side} (need wrist${side}, wristRel, armsHang, arm${side} or arm)`);
   const e = fromDown(ang[0]);
   const f = fromDown(ang[1]);
-  const elbow = add(shoulder, [sgn * e[0], e[1]], L.ua);
-  return { elbow, wrist: add(elbow, [sgn * f[0], f[1]], L.fa) };
+  const elbow = add(shoulder, [sgn * e[0], e[1]], ua);
+  return { elbow, wrist: add(elbow, [sgn * f[0], f[1]], fa) };
 }
 
 function resolveLeg(pose, side, hip, sgn) {
@@ -234,8 +250,14 @@ function buildFront(pose, spec = {}) {
   const shY = neckBase[1] - 0.05;
   const half = pose.shoulderHalf || SHOULDER_HALF;
   const hipHalf = pose.hipHalf || 0;
-  const head = add(neckBase, [0, L.neck + L.head]);
-  const neckEnd = add(neckBase, [0, L.neck + 0.02]);
+  // Head placement: `neck` lengthens/shortens the visible neck (head follows);
+  // `headDrop` lowers the head toward/below the shoulders (hinged lifter looking
+  // at the floor) and swallows the neck stroke first. Written as deltas from
+  // the defaults so a pose without the fields is bit-identical to before.
+  const dNeck = (pose.neck != null ? pose.neck : NECK_VISIBLE) - NECK_VISIBLE;
+  const drop = pose.headDrop || 0;
+  const head = add(neckBase, [0, L.neck + L.head + dNeck - drop]);
+  const neckEnd = add(neckBase, [0, Math.max(0, L.neck + 0.02 + dNeck - drop)]);
   const J = { hip, head, neckEnd, neckBase, shoulderR: [half, shY], shoulderL: [-half, shY] };
   for (const [side, sgn] of [['R', 1], ['L', -1]]) {
     const h = hipHalf ? add(hip, [sgn * hipHalf, 0]) : hip;
@@ -271,7 +293,7 @@ function build(pose, spec) {
 }
 
 module.exports = {
-  L, SHOULDER_HALF, FAR_DX, STAND, STAND_FRONT,
+  L, SHOULDER_HALF, FAR_DX, NECK_VISIBLE, ARM_SCALE_MIN, STAND, STAND_FRONT,
   rad, fromDown, fromUp, add, sub, norm, dist, ccw, cw, lerp, ik,
   lerpDeep, poseAt, smooth, cycle, TIMING,
   resolveArm, resolveLeg, buildSide, buildFront, build,
