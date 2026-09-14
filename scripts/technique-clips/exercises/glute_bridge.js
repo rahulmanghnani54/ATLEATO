@@ -22,7 +22,8 @@ module.exports = {
   keys: [
     // Shoulders and head stay on the floor; arms lie along the floor by the sides.
     { at: 0, ...base([0, 0.22], -90, 18, [0.03, 0.07]) },
-    { at: 1, ...base([0, 0.6], -115, 43, [0.13, 0.07]) },
+    // Peak: shoulder, hip and knee collinear (knee resolves to ~[0.59, 0.59]; hip 0.6 / lean -115 arched 26° past the line).
+    { at: 1, ...base([0, 0.46], -103, 31, [0.13, 0.07]) },
   ],
   equipment: () => ({}),
 };
