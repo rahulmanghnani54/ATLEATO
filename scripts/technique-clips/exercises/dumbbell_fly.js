@@ -28,8 +28,8 @@ module.exports = {
   view: 'front',
   floor: false,
   keys: [
-    { at: 0, ...BASE, wristR: [0.13, 2.55], wristL: [-0.13, 2.55] }, // dumbbells together over the chest
-    { at: 0.5, ...BASE, wristR: [1.08, 2.3], wristL: [-1.08, 2.3] }, // on the arc, not the chord
+    { at: 0, ...BASE, wristR: [0.18, 2.32], wristL: [-0.18, 2.32] }, // contraction: elbows bowed out, dumbbells meet ~0.7 above the shoulders (full reach read as a press lockout; lower puts them on the face — the rig cannot foreshorten the arms)
+    { at: 0.5, ...BASE, wristR: [1.02, 2.2], wristL: [-1.02, 2.2] }, // on the arc (arm ~45°, same soft bend), not the chord
     { at: 1, ...BASE, wristR: [1.36, 1.62], wristL: [-1.36, 1.62] }, // stretch, soft elbows
   ],
   equipment: (J) => ({
