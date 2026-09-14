@@ -49,6 +49,7 @@ const CATALOG: Record<string, Expected> = {
   skull_crusher:             { posture: 'lying',    view: 'side',     vision: null },
   overhead_tricep_extension: { posture: 'standing', view: 'side',     vision: null },
   tricep_kickback:           { posture: 'hinged',   view: 'side',     vision: null },
+  glute_cable_kickback:      { posture: 'standing', view: 'side',     vision: null },
   hammer_curl:               { posture: 'standing', view: 'side',     vision: 'curl' },
   cable_curl:                { posture: 'standing', view: 'side',     vision: 'curl' },
   preacher_curl:             { posture: 'seated',   view: 'side',     vision: null },
@@ -103,9 +104,9 @@ function cardNames(card: TechniqueCard): string[] {
 }
 
 describe('TECHNIQUE_CARDS — the catalog, row by row', () => {
-  it('has exactly 58 cards with unique ids, in catalog order', () => {
-    expect(CATALOG_IDS).toHaveLength(58);
-    expect(TECHNIQUE_CARDS).toHaveLength(58);
+  it('has exactly 59 cards with unique ids, in catalog order', () => {
+    expect(CATALOG_IDS).toHaveLength(59);
+    expect(TECHNIQUE_CARDS).toHaveLength(59);
     const ids = TECHNIQUE_CARDS.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(CATALOG_IDS);
@@ -195,6 +196,14 @@ describe('getTechniqueCard — exact name/alias match only', () => {
     expect(getTechniqueCard('push up')?.id).toBe('push_up');
     expect(getTechniqueCard('PUSH_UP')?.id).toBe('push_up');
     expect(getTechniqueCard('cable row (seated)')?.id).toBe('seated_cable_row');
+  });
+
+  it('routes the kickbacks to the right muscle: cable = glutes, dumbbell = triceps', () => {
+    expect(getTechniqueCard('Cable Kickback')?.id).toBe('glute_cable_kickback');
+    expect(getTechniqueCard('Cable Kickback')?.id).not.toBe('tricep_kickback');
+    expect(getTechniqueCard('Glute Kickback')?.id).toBe('glute_cable_kickback');
+    expect(getTechniqueCard('Dumbbell Kickback')?.id).toBe('tricep_kickback');
+    expect(getTechniqueCard('Tricep Kickback')?.id).toBe('tricep_kickback');
   });
 
   it('never keyword-matches: a variant with no card of its own returns null', () => {
