@@ -651,7 +651,7 @@ export default function WorkoutSession() {
                     <PressableScale
                       haptic="light"
                       accessibilityRole="button"
-                      accessibilityLabel={`${covered ? 'Form coach' : 'Form check coming soon'} for ${ex.name}`}
+                      accessibilityLabel={`${covered ? 'Form check' : 'Form check coming soon'} for ${ex.name}`}
                       style={styles.chip}
                       onPress={() => router.push({ pathname: '/technique', params: { exerciseName: ex.name, persona: programId ?? 'cbum_evolved' } } as any)}
                     >

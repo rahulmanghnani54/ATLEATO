@@ -116,13 +116,17 @@ function setupRows(angle: CameraAngle, orientation: Orientation, region: BodyReg
 
 export default function Technique() {
   const router = useRouter();
-  const { exerciseName: nameParam, persona: personaParam, mode } = useLocalSearchParams<{
+  const { exerciseName: nameParam, persona: personaParam, mode, from } = useLocalSearchParams<{
     exerciseName: string;
     persona?: string;
     mode?: string;
+    from?: string;
   }>();
   const exerciseName = nameParam ?? '';
   const review = mode === 'review';
+  // Review mode is opened from two places: the lobby (no camera) and the
+  // Technique button inside Form Check. Only the latter may promise a camera.
+  const fromCamera = review && from === 'camera';
 
   const { tokens, scheme } = useTheme();
   const styles = useThemedStyles(makeStyles);
@@ -194,7 +198,10 @@ export default function Technique() {
   useEffect(() => () => { alive.current = false; }, []);
 
   useEffect(() => {
-    if (covered && !canAccess('ai_form_coach')) {
+    // Only the path that can reach the camera is paid. Review mode (opened
+    // from the lobby or from inside the camera) ends with router.back() and
+    // never hands off to form-coach, so a free lifter may read it.
+    if (covered && !review && !canAccess('ai_form_coach')) {
       router.replace('/paywall?feature=ai_form_coach' as any);
     }
     // Mount-only, like every other feature gate in the app.
@@ -394,7 +401,7 @@ export default function Technique() {
                 exercise has nothing to skip TO — DONE and SKIP would both just
                 go back, so it gets DONE alone. */}
             {review
-              ? renderTextBtn('BACK TO CAMERA', () => router.back())
+              ? renderTextBtn(fromCamera ? 'BACK TO CAMERA' : 'BACK', () => router.back())
               : covered
                 ? renderTextBtn('I KNOW THIS — SKIP', onSkipped)
                 : null}
@@ -412,7 +419,7 @@ export default function Technique() {
           objectPath={objectPath}
           poster={renderFigure(playerH, false, !own)}
           height={playerH}
-          onReady={() => setClipReady(true)}
+          onReady={() => { setClipReady(true); setClipFailed(false); }}
           onError={() => setClipFailed(true)}
           accessibilityLabel={`${exerciseName} technique clip, looping`}
           testID="technique-player"
@@ -433,7 +440,9 @@ export default function Technique() {
         footer={
           <>
             {renderCta('START FORM CHECK', () => (entry?.setupSeen ? handoff() : goSetup('done')))}
-            {renderSecondary('WATCH AGAIN', () => setChosen('preview'))}
+            {/* Nothing to watch again when the preview was poster-only (the
+                CTA there read CONTINUE); the key points are on this page. */}
+            {clipReady ? renderSecondary('WATCH AGAIN', () => setChosen('preview')) : null}
           </>
         }
       >
@@ -510,7 +519,7 @@ export default function Technique() {
         objectPath={objectPath}
         poster={renderFigure(playerH, false, !own)}
         height={playerH}
-        onReady={() => setClipReady(true)}
+        onReady={() => { setClipReady(true); setClipFailed(false); }}
         onError={() => setClipFailed(true)}
         accessibilityLabel={`${exerciseName} technique clip, looping`}
         testID="technique-player-ready"
