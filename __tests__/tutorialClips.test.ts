@@ -35,6 +35,7 @@ import {
   MANIFEST_TTL_MS,
   MISSING_TTL_MS,
   TUTORIAL_BUCKET,
+  _resetClipDownloadsForTests,
   _resetClipManifestForTests,
   _resetClipMissingForTests,
   clipCachePath,
@@ -98,6 +99,7 @@ beforeEach(async () => {
   jest.clearAllMocks();
   _resetClipMissingForTests();
   _resetClipManifestForTests();
+  _resetClipDownloadsForTests();
   await AsyncStorage.clear();
   process.env.EXPO_PUBLIC_SUPABASE_URL = SUPABASE_URL;
   getInfoAsync.mockResolvedValue({ exists: false, uri: CACHED, isDirectory: false });
@@ -247,23 +249,43 @@ describe('ensureClipCached', () => {
     for (const [path] of deleteAsync.mock.calls) expect(path).not.toBe(CACHED);
   });
 
-  it('gives overlapping calls distinct temp names', async () => {
+  it('overlapping calls for one object share a single download', async () => {
     // Two mounts inside one download window (WATCH AGAIN while the shimmer is
-    // up, StrictMode's double effect) must not share a target: on Android the
-    // second download would unlink the first's file mid-write, and the first's
-    // promote would then rename the second's half-written body into place.
+    // up, StrictMode's double effect) used to stream the whole clip twice into
+    // two temp files. The second caller now waits on the first's download and
+    // both resolve to the one promoted file.
+    let release!: () => void;
+    downloadAsync.mockImplementation((_url, target) => new Promise((resolve) => {
+      release = () => resolve({ status: 200, uri: target, headers: {}, mimeType: 'video/mp4' });
+    }));
+
+    const both = Promise.all([ensureClipCached(OBJECT), ensureClipCached(OBJECT)]);
+    await flush();
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+    release();
+
+    await expect(both).resolves.toEqual([CACHED, CACHED]);
+    expect(moveAsync).toHaveBeenCalledTimes(1);
+    expect(moveAsync).toHaveBeenCalledWith({ from: tempPathOf(0), to: CACHED });
+  });
+
+  it('a joined caller keeps its own timeout', async () => {
+    downloadAsync.mockImplementation(() => new Promise(() => {})); // never settles
+    const first = ensureClipCached(OBJECT, { timeoutMs: 50 });
+    first.catch(() => {});
+    await flush();
+    await expect(ensureClipCached(OBJECT, { timeoutMs: 5 })).rejects.toThrow(/timed out/);
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('a finished download is forgotten, so the next miss downloads again', async () => {
     downloadAsync.mockImplementation(async (_url, target) => ({
       status: 200, uri: target, headers: {}, mimeType: 'video/mp4',
     }));
-
-    await Promise.all([ensureClipCached(OBJECT), ensureClipCached(OBJECT)]);
-
-    const [first, second] = [tempPathOf(0), tempPathOf(1)];
-    expect(first).toMatch(TEMP);
-    expect(second).toMatch(TEMP);
-    expect(first).not.toBe(second);
-    expect(moveAsync).toHaveBeenCalledWith({ from: first, to: CACHED });
-    expect(moveAsync).toHaveBeenCalledWith({ from: second, to: CACHED });
+    await ensureClipCached(OBJECT);
+    getInfoAsync.mockResolvedValue({ exists: false } as any); // e.g. evicted by the OS
+    await ensureClipCached(OBJECT);
+    expect(downloadAsync).toHaveBeenCalledTimes(2);
   });
 
   it('rejects without touching the network when the project URL is not configured', async () => {

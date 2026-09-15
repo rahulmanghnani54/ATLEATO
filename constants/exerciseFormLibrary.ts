@@ -614,17 +614,16 @@ const barbell_row: ExerciseForm = {
     'Bar touches body, squeeze scapulae together hard',
     'Lower with control — 2 seconds — maintain hinge position',
   ],
-  // torso_swing self-silences once hinged; full_stretch is an elbow angle that
-  // only the side view resolves.
+  // The pull profile is a VERTICAL-pull profile: its rep gate wants the hand
+  // above the elbow at extension (hands hang below a hinged torso), and
+  // elbow_drive / shoulder_pack read the bent-over position as a fault on
+  // every rep. No honest row profile exists yet, so no live analysis is
+  // offered — the card, clip and key points stand on their own.
+  visionCategory: null,
   cameraAngle: 'side',
   cameraNote: 'Phone directly to your side, at hip height, bar and torso in frame',
   tutorial: null,
-  detectedFaults: [
-    { checkId: 'pull.elbow_drive',   label: 'Elbow drive' },
-    { checkId: 'pull.shoulder_pack', label: 'Shrugged shoulders' },
-    { checkId: 'pull.torso_swing',   label: 'Body swing' },
-    { checkId: 'pull.full_stretch',  label: 'Full stretch' },
-  ],
+  detectedFaults: [],
   targetMuscles: ['Lats', 'Rhomboids', 'Rear Delts', 'Biceps', 'Erectors'],
   angleChecks: [
     { joint: 'left_elbow', label: 'L. Elbow', minDeg: 30, maxDeg: 80, tooLowMsg: 'INCOMPLETE ROW — pull bar all the way to lower chest', tooHighMsg: 'Arms barely bent — row is incomplete', goodMsg: 'Full row — good range' },

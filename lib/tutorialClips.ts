@@ -295,6 +295,18 @@ const DEFAULT_TIMEOUT_MS = 8000;
  * second's half-written body into place.
  */
 let tempSeq = 0;
+/**
+ * The one download in flight per object, shared by overlapping callers: the
+ * player unmounts between steps and remounts inside the download window
+ * (WATCH AGAIN, StrictMode), and without this each mount streamed the whole
+ * clip again. The manifest fetch has the same guard (`manifestFetch`).
+ */
+const inflight = new Map<string, Promise<string>>();
+
+/** Test hook: forget in-flight downloads between cases. */
+export function _resetClipDownloadsForTests(): void {
+  inflight.clear();
+}
 
 /** `bench_press_v1.mp4` — the object name inside the bucket. */
 export function clipObjectPath(formId: string, version: number): string {
@@ -367,22 +379,34 @@ export async function ensureClipCached(
   // A recent 404 is an answer, not a failure to retry on every open.
   if (await isClipKnownMissing(objectPath)) throw new Error(CLIP_MISSING_MESSAGE);
 
-  // `intermediates` also makes this a no-op when the folder is already there.
-  await FileSystem.makeDirectoryAsync(`${cacheDir}${CACHE_FOLDER}`, { intermediates: true });
-
-  const tmp = `${dest}.${Date.now().toString(36)}-${(tempSeq++).toString(36)}.part`;
-
   const timeoutMs = opts?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error('tutorial clip: download timed out')), timeoutMs);
   });
 
+  // Someone is already fetching this object: wait on THEIR download (with our
+  // own timeout) instead of starting a second stream into a second temp file.
+  // The lookup and the registration below sit in one synchronous stretch, so
+  // two callers arriving together cannot both miss.
+  const joined = inflight.get(objectPath);
+  if (joined) {
+    try {
+      return await Promise.race([joined, timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   // Promote-or-clean rides on the download, not on the timer (see above), so
   // it runs when the native side knows what the temp file holds — including
   // after the caller has stopped listening.
-  const settled = FileSystem.downloadAsync(clipPublicUrl(supabaseUrl, objectPath), tmp)
-    .then(async (res) => {
+  const settled = (async () => {
+    // `intermediates` also makes this a no-op when the folder is already there.
+    await FileSystem.makeDirectoryAsync(`${cacheDir}${CACHE_FOLDER}`, { intermediates: true });
+    const tmp = `${dest}.${Date.now().toString(36)}-${(tempSeq++).toString(36)}.part`;
+    try {
+      const res = await FileSystem.downloadAsync(clipPublicUrl(supabaseUrl, objectPath), tmp);
       if (res.status !== 200) {
         // Only "not there" is worth remembering. A 5xx or a captive portal is
         // transient; treating it as missing would hide a clip for an hour.
@@ -395,15 +419,19 @@ export async function ensureClipCached(
       await FileSystem.moveAsync({ from: tmp, to: dest });
       void clearClipMissing(objectPath);
       return dest;
-    })
-    .catch(async (e: unknown) => {
+    } catch (e) {
       // Best effort: the failure being reported is the download, not the cleanup.
       await FileSystem.deleteAsync(tmp, { idempotent: true }).catch(() => {});
       throw e;
-    });
+    }
+  })();
   // A failure that lands after the timeout was already reported has nobody
   // left to hear it; keep it from surfacing as an unhandled rejection.
   settled.catch(() => {});
+  inflight.set(objectPath, settled);
+  settled.finally(() => {
+    if (inflight.get(objectPath) === settled) inflight.delete(objectPath);
+  }).catch(() => {});
 
   try {
     return await Promise.race([settled, timeout]);

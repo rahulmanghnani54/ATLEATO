@@ -342,11 +342,21 @@ describe('own technique content is exact-name only', () => {
     expect(detectedFaultsFor('Leg Press')).toEqual([]);
   });
 
-  it('Seated Cable Row is a pull by its card, though no keyword ever matched it', () => {
-    expect(getExerciseForm('Seated Cable Row')).toBeNull();
-    expect(getOwnTechnique('Seated Cable Row')?.id).toBe('seated_cable_row');
-    expect(visionCategoryForName('Seated Cable Row')).toBe('pull');
-    expect(hasVisionCoverage('Seated Cable Row')).toBe(true);
+  it('Rotating DB Press is a press by its card, though no keyword ever matched it', () => {
+    expect(getExerciseForm('Rotating DB Press')).toBeNull();
+    expect(getOwnTechnique('Rotating DB Press')?.id).toBe('rotating_db_press');
+    expect(visionCategoryForName('Rotating DB Press')).toBe('press');
+    expect(hasVisionCoverage('Rotating DB Press')).toBe(true);
+  });
+
+  it('a horizontal row is COMING SOON: the pull profile is a vertical-pull profile', () => {
+    // Its rep gate wants the hand above the elbow at extension and elbow_drive
+    // reads a level or hinged elbow as a fault — see the cards' comments.
+    for (const name of ['Seated Cable Row', 'T-Bar Row', 'Chest-Supported Row', 'Barbell Row', 'Push-Up', 'Tricep Dip']) {
+      expect(getOwnTechnique(name)).not.toBeNull();
+      expect(visionCategoryForName(name)).toBeNull();
+      expect(hasVisionCoverage(name)).toBe(false);
+    }
   });
 
   it('every alias resolves back to its own entry and to no other', () => {

@@ -109,8 +109,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
       'Elbows tight to body.',
       'Full stretch at front — reach with the shoulders, keep the torso upright.',
     ],
-    visionCategory: 'pull',
-    detectedFaults: PULL_FAULTS,
+    // No honest profile yet — horizontal pull: elbow_drive reads a level elbow as a fault on every rep. The pull profile is a vertical-pull
+    // profile and the press profile a bench/overhead one (lib/vision/index.ts
+    // defaultShapeGate, biomechanics.ts pull.elbow_drive).
+    visionCategory: null,
   },
   {
     id: 'chest_supported_row',
@@ -125,8 +127,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
       'Pause at peak contraction.',
       'No body English — lower to a full hang every rep.',
     ],
-    visionCategory: 'pull',
-    detectedFaults: PULL_FAULTS,
+    // No honest profile yet — hinged pull: hands hang below the elbows at extension, so no rep is ever credited. The pull profile is a vertical-pull
+    // profile and the press profile a bench/overhead one (lib/vision/index.ts
+    // defaultShapeGate, biomechanics.ts pull.elbow_drive).
+    visionCategory: null,
   },
   {
     id: 't_bar_row',
@@ -141,8 +145,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
       'Full range of motion — lower to straight arms without losing the hinge.',
       'Use chest pad for stability if your machine has one.',
     ],
-    visionCategory: 'pull',
-    detectedFaults: PULL_FAULTS,
+    // No honest profile yet — hinged pull: hands hang below the elbows at extension, so no rep is ever credited. The pull profile is a vertical-pull
+    // profile and the press profile a bench/overhead one (lib/vision/index.ts
+    // defaultShapeGate, biomechanics.ts pull.elbow_drive).
+    visionCategory: null,
   },
   {
     id: 'single_arm_db_row',
@@ -157,8 +163,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
       'Row the dumbbell to the hip, not the shoulder.',
       'Full range: lower to a complete stretch without twisting the torso.',
     ],
-    visionCategory: 'pull',
-    detectedFaults: PULL_FAULTS,
+    // No honest profile yet — hinged pull: hands hang below the elbows at extension, so no rep is ever credited. The pull profile is a vertical-pull
+    // profile and the press profile a bench/overhead one (lib/vision/index.ts
+    // defaultShapeGate, biomechanics.ts pull.elbow_drive).
+    visionCategory: null,
   },
 
   // ── Chest / presses ────────────────────────────────────────────────────────
@@ -234,8 +242,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
     exerciseName: 'Seated Dumbbell Press',
     aliases: ['Seated DB Press', 'Dumbbell Shoulder Press', 'Seated Dumbbell Shoulder Press'],
     posture: 'seated',
-    cameraAngle: 'side',
-    cameraNote: 'Phone to your side, at chest height, head to hips in frame',
+    // Frontal: elbow_flare and wrist_stack are x-offsets across the shoulder
+    // line, invisible from the side (see the overhead_press entry).
+    cameraAngle: 'front',
+    cameraNote: 'Phone straight in front, at chest height, head to hips in frame',
     keyPoints: [
       'Sit with your back on the upright pad, dumbbells at ear height.',
       'Press overhead to a full lockout without arching the lower back.',
@@ -250,8 +260,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
     exerciseName: 'Machine Shoulder Press',
     aliases: ['Seated Machine Press', 'Shoulder Press Machine'],
     posture: 'seated',
-    cameraAngle: 'side',
-    cameraNote: 'Phone to your side, at chest height, head to hips in frame',
+    // Frontal: elbow_flare and wrist_stack are x-offsets across the shoulder
+    // line, invisible from the side (see the overhead_press entry).
+    cameraAngle: 'front',
+    cameraNote: 'Phone straight in front, at chest height, head to hips in frame',
     keyPoints: [
       'Set the seat so the handles start at shoulder height.',
       'Keep your back on the pad and press to lockout.',
@@ -266,8 +278,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
     exerciseName: 'Seated Barbell Press',
     aliases: ['Seated Overhead Press', 'Seated Military Press'],
     posture: 'seated',
-    cameraAngle: 'side',
-    cameraNote: 'Phone to your side, at chest height, head to hips in frame',
+    // Frontal: elbow_flare and wrist_stack are x-offsets across the shoulder
+    // line, invisible from the side (see the overhead_press entry).
+    cameraAngle: 'front',
+    cameraNote: 'Phone straight in front, at chest height, head to hips in frame',
     keyPoints: [
       'Sit tall with the bar at the upper chest and the wrists stacked over the elbows.',
       'Strict form — no bounce from the legs or the lower back.',
@@ -308,8 +322,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
       'Full chest-to-floor range.',
       'Press back to straight arms without letting the hips sag.',
     ],
-    visionCategory: 'press',
-    detectedFaults: PRESS_FAULTS,
+    // No honest profile yet — hands on the floor: the press gate wants the wrist above the elbow at lockout. The pull profile is a vertical-pull
+    // profile and the press profile a bench/overhead one (lib/vision/index.ts
+    // defaultShapeGate, biomechanics.ts pull.elbow_drive).
+    visionCategory: null,
   },
   {
     id: 'diamond_push_up',
@@ -324,8 +340,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
       'Lower the chest to your hands with the body straight from head to heels.',
       'Press to a full lockout on every rep.',
     ],
-    visionCategory: 'press',
-    detectedFaults: PRESS_FAULTS,
+    // No honest profile yet — hands on the floor: the press gate wants the wrist above the elbow at lockout. The pull profile is a vertical-pull
+    // profile and the press profile a bench/overhead one (lib/vision/index.ts
+    // defaultShapeGate, biomechanics.ts pull.elbow_drive).
+    visionCategory: null,
   },
   {
     id: 'tricep_dip',
@@ -340,8 +358,10 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
       'Lower until the upper arms are parallel with the floor.',
       'Full lockout at top.',
     ],
-    visionCategory: 'press',
-    detectedFaults: PRESS_FAULTS,
+    // No honest profile yet — hands on the bars below the elbows at lockout: the press gate rejects every rep. The pull profile is a vertical-pull
+    // profile and the press profile a bench/overhead one (lib/vision/index.ts
+    // defaultShapeGate, biomechanics.ts pull.elbow_drive).
+    visionCategory: null,
   },
 
   // ── Triceps isolation ──────────────────────────────────────────────────────
