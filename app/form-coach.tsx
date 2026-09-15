@@ -29,7 +29,7 @@
  * inline analysis stack that used to live here is gone.
  */
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { StatusBar, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
+import { Linking, StatusBar, View, Text, StyleSheet, ScrollView, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useKeepAwake } from 'expo-keep-awake';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -397,6 +397,11 @@ export default function FormCoach() {
   const coachName          = personaTheme.fullName;
 
   const { hasPermission, requestPermission } = useCameraPermission();
+  // True once a request came back denied: the OS will not ask again, so the
+  // gate's button switches from re-asking to opening Settings.
+  const [permissionRefused, setPermissionRefused] = useState(false);
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
   const [facing, setFacing] = useState<'front' | 'back'>('back');
   const device = useCameraDevice(facing);
   const cameraRef = useRef<Camera>(null);
@@ -453,6 +458,10 @@ export default function FormCoach() {
   const curRepFindingsRef  = useRef<Set<string>>(new Set());
   const recentRepsRef      = useRef<string[][]>([]);
   const promptedThisSetRef = useRef(false);
+  // The machine's phase on the previous sample, to catch a rep-in-flight that
+  // ended WITHOUT a completedRep (rejected cycle, landmark gap) and drop its
+  // evidence instead of handing it to the next accepted rep.
+  const prevPhaseRef       = useRef<RepPhase | undefined>(undefined);
   // Which check the prompt is about (null = no prompt). The label is looked up
   // at render time from the form's detectedFaults.
   const [retriggerCheckId, setRetriggerCheckId] = useState<string | null>(null);
@@ -465,6 +474,7 @@ export default function FormCoach() {
     curRepFindingsRef.current = new Set();
     recentRepsRef.current = [];
     promptedThisSetRef.current = false;
+    prevPhaseRef.current = undefined;
     setRetriggerCheckId(null);
   };
 
@@ -651,6 +661,7 @@ export default function FormCoach() {
     // The abandoned rep's evidence goes with it; banked reps (recentRepsRef)
     // and the per-rep score survive a dropout, exactly as the rep count does.
     curRepFindingsRef.current = new Set();
+    prevPhaseRef.current = undefined;
     spokenRef.current = null;
     jointTiersRef.current = null;
     lastTickAtRef.current = Date.now();
@@ -826,9 +837,21 @@ export default function FormCoach() {
       spokenRef.current = { finding: speak, atMs: Date.now() };
     }
 
-    // Every confirmed finding this frame is evidence against the rep in flight.
-    // Ids, not messages: the re-trigger rule matches on check identity.
-    for (const f of res.verdict.findings) curRepFindingsRef.current.add(f.id);
+    // A cycle the machine threw away — shape gate, under 700 ms, too shallow,
+    // or a >400 ms landmark gap — ends with no completedRep. Its evidence goes
+    // with it, or the next accepted rep inherits faults it never produced.
+    if (phaseInRep(prevPhaseRef.current) && !phaseInRep(res.phase) && !res.completedRep) {
+      curRepFindingsRef.current = new Set();
+    }
+    prevPhaseRef.current = res.phase;
+
+    // Every finding the checks EMITTED this frame is evidence against the rep
+    // in flight. Not `findings`: that list keeps a track alive for the
+    // decider's 400 ms stale window, which on the completion frame would credit
+    // the last of rep N's faults to rep N+1 and fire the 3-of-4 walkthrough
+    // after two flawed reps. Ids, not messages: the re-trigger rule matches on
+    // check identity.
+    for (const id of res.verdict.freshIds) curRepFindingsRef.current.add(id);
 
     if (res.completedRep) {
       const r = res.completedRep;
@@ -987,7 +1010,7 @@ export default function FormCoach() {
   const openTechniqueReview = useCallback(() => {
     router.push({
       pathname: '/technique',
-      params: { exerciseName: exerciseName ?? '', persona: personaTheme.id, mode: 'review' },
+      params: { exerciseName: exerciseName ?? '', persona: personaTheme.id, mode: 'review', from: 'camera' },
     } as any);
   }, [router, exerciseName, personaTheme.id]);
 
@@ -1013,14 +1036,24 @@ export default function FormCoach() {
   // explained as "First rep sets your score", never blamed on the camera);
   // `tracking` while a rep is in flight; `scored` between reps.
   const inRep       = phaseInRep(vision?.phase);
+  // In-flight wins over "no rep yet": rep 1 must read "REP 1 · Tracking", not
+  // a frozen dash over a moving body — that is the whole point of the state.
   const readoutState: FormReadoutState =
-    repCount === 0 ? 'awaiting' : inRep ? 'tracking' : 'scored';
+    inRep ? 'tracking' : repCount === 0 ? 'awaiting' : 'scored';
   const lastRepScore = repCount > 0 ? lastRepScoreRef.current : null;
   const readoutRep   = inRep ? repIndexRef.current + 1 : repIndexRef.current;
-  // Calibration edge → timestamp, so the pill can say POSITION GOOD briefly.
-  // Written during render on purpose: the value is only ever read by this same
-  // render path, and an effect would land one tick late.
-  if (calibrating) calibratedAtRef.current = 0;
+  // 'setup' (nothing seen yet) and 'start' (armed at extension, no rep begun)
+  // are both "standing ready". A lifter at lockout is in 'start' from the first
+  // calibrated frame, so a pill keyed on 'setup' alone would call that LIVE.
+  const standing    = vision?.phase === 'setup' || vision?.phase === 'start';
+  // Judgeable edge → timestamp, so the pill can say POSITION GOOD briefly.
+  // Judgeable, not merely calibrated: calibration needs only a torso, while
+  // the checklist may still be asking for feet or wrists — stamping there let
+  // the 1.5 s window expire while the lifter was still stepping back, so the
+  // confirmation the checklist led up to never appeared. Written during render
+  // on purpose: the value is only ever read by this same render path, and an
+  // effect would land one tick late.
+  if (calibrating || !canJudge) calibratedAtRef.current = 0;
   else if (calibratedAtRef.current === 0 && vision) calibratedAtRef.current = Date.now();
   const positionGood =
     canJudge && repCount === 0 && !calibrating &&
@@ -1092,21 +1125,36 @@ export default function FormCoach() {
     : 0;
 
   if (!hasPermission) {
+    // After a second refusal Android stops showing the dialog and the request
+    // resolves false at once, so a button that only re-asks is dead. The only
+    // way back is Settings; VisionCamera's AppState listener picks the grant
+    // up when the user returns, and this gate unmounts on its own.
     return (
       <CanvasScreen scroll={false} tabBar={false} topInset contentStyle={styles.gateBody}>
         <Text style={styles.gateEyebrow}>Form check</Text>
         <Text style={styles.gateTitle}>Point the{'\n'}camera at{'\n'}yourself.</Text>
         <Text style={styles.gateText}>
-          Camera access is required for live form coaching.
+          {permissionRefused
+            ? 'Camera access is off for Evulto. Turn it on in Settings, then come back here.'
+            : 'Camera access is required for live form coaching.'}
         </Text>
         <PressableScale
           style={styles.gateBtn}
-          onPress={requestPermission}
+          onPress={
+            permissionRefused
+              ? () => { void Linking.openSettings(); }
+              : async () => {
+                  const granted = await requestPermission();
+                  if (!granted && alive.current) setPermissionRefused(true);
+                }
+          }
           haptic="heavy"
           accessibilityRole="button"
         >
           <CameraIcon size={15} color={tokens.accentInk} />
-          <Text style={styles.gateBtnText}>Grant camera access</Text>
+          <Text style={styles.gateBtnText}>
+            {permissionRefused ? 'Open settings' : 'Grant camera access'}
+          </Text>
         </PressableScale>
       </CanvasScreen>
     );
@@ -1150,9 +1198,9 @@ export default function FormCoach() {
     // Calibration just completed and nothing has been lifted: answer the
     // question the lifter is actually asking ("am I set up?"), briefly.
     positionGood                ? 'POSITION GOOD' :
-    // 'setup' means armed but not lifting. Calling that LIVE would claim a live
-    // judgement of a rep nobody has started.
-    vision?.phase === 'setup'   ? 'READY' :
+    // Standing ready ('setup' or 'start') is not lifting. Calling that LIVE
+    // would claim a live judgement of a rep nobody has started.
+    standing                    ? 'READY' :
                                   'LIVE · ' + (vision?.phase ?? 'setup').toUpperCase();
   const statusColor =
     modelError                  ? stage.danger :
@@ -1160,7 +1208,7 @@ export default function FormCoach() {
     calibrating || !canJudge    ? stage.warning :
     !judged                     ? stage.warning :
     positionGood                ? stage.success :
-    vision?.phase === 'setup'   ? stage.warning :
+    standing                    ? stage.warning :
                                   stage.crownText;
 
   return (
@@ -1328,8 +1376,9 @@ export default function FormCoach() {
               under a live number was two channels asserting the same judgement,
               and it hid the readout. */}
           {/* Visible and judgeable, but no rep has begun: the engine reports
-              'setup'. Say so rather than coaching a body that isn't lifting. */}
-          {isTracking && !calibrating && canJudge && vision?.phase === 'setup' && (
+              'setup' or 'start'. Say so rather than coaching a body that isn't
+              lifting. */}
+          {isTracking && !calibrating && canJudge && standing && (
             <View style={styles.sheet}>
               <View style={[styles.sheetBar, { backgroundColor: stage.crownTextDim }]} />
               <Pause size={14} color={stage.crownTextDim} />

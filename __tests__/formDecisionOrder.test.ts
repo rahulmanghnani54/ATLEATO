@@ -91,3 +91,36 @@ describe('FormDecider.update — findings are ordered worst-first', () => {
     expect(gated.findings).toEqual([]);
   });
 });
+
+describe('FormDecider.update — freshIds names only the findings emitted this frame', () => {
+  // `findings` deliberately keeps a confirmed track alive for STALE_MS (400 ms)
+  // after its last emission so a one-frame dropout does not blank the screen.
+  // Rep attribution must not inherit that grace: the completion frame moves the
+  // machine to 'top', the concentric checks stop, and for the next ~400 ms the
+  // stale ids would otherwise be credited to the NEXT rep.
+  it('a confirmed finding that stops being emitted stays in findings but leaves freshIds', () => {
+    const decider = new FormDecider();
+    const last = persist(decider, [finding('squat.knee_valgus', 'major')]);
+    expect(last.findings.map((f) => f.id)).toEqual(['squat.knee_valgus']);
+    expect(last.freshIds).toEqual(['squat.knee_valgus']);
+
+    // Next frame: the check emits nothing (phase moved on). Still inside STALE_MS.
+    const t = FRAMES * FRAME_MS;
+    const quiet = decider.update(clearView, [], 'top', t);
+    expect(quiet.findings.map((f) => f.id)).toEqual(['squat.knee_valgus']); // display grace
+    expect(quiet.freshIds).toEqual([]);                                     // no new evidence
+
+    // Past STALE_MS the track is pruned from both.
+    const gone = decider.update(clearView, [], 'top', t + 401);
+    expect(gone.findings).toEqual([]);
+    expect(gone.freshIds).toEqual([]);
+  });
+
+  it('freshIds is empty on an un-judgeable frame', () => {
+    const decider = new FormDecider();
+    persist(decider, [finding('press.elbow_flare', 'major')]);
+    const blind = decider.update({ overall: 20, canJudge: false, advice: null }, [], 'top', FRAMES * FRAME_MS);
+    expect(blind.freshIds).toEqual([]);
+    expect(blind.findings).toEqual([]);
+  });
+});

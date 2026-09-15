@@ -73,6 +73,14 @@ export interface FormVerdict {
   confidence: number;
   /** Findings that survived temporal confirmation this frame; ordered worst-first. */
   findings: FormFinding[];
+  /**
+   * Ids of the confirmed findings the checks actually EMITTED on this frame.
+   * `findings` also keeps a track alive for STALE_MS after its last emission
+   * (so a one-frame dropout does not blank the screen); anything attributing
+   * evidence to a specific rep must use this list, or the last ~400 ms of rep
+   * N's faults land on rep N+1.
+   */
+  freshIds: string[];
   /** The ONE finding worth saying right now, or null to stay silent. */
   speak: FormFinding | null;
   /** Camera/positioning advice when quality is too low to coach. */
@@ -214,6 +222,7 @@ export class FormDecider {
         score: null,
         confidence: overall,
         findings: [],
+        freshIds: [],
         speak: null,
         advice: quality.advice ?? 'Step back so your whole body is in frame.',
       };
@@ -245,6 +254,7 @@ export class FormDecider {
       score,
       confidence,
       findings: confirmed.map((t) => t.finding),
+      freshIds: confirmed.filter((t) => t.lastSeenMs === now).map((t) => t.finding.id),
       speak,
       // Quality is judgeable but marginal: still worth telling the user how to
       // give the camera a better look, without hiding the score.

@@ -126,7 +126,10 @@ const ADVICE_OUT_OF_FRAME = 'Step into the camera view so your body is visible.'
 const ADVICE_TOO_FAR = 'Move closer until you fill more of the frame.';
 const ADVICE_TOO_CLOSE = 'Move back so your whole body fits in the frame.';
 const ADVICE_LOW_CONFIDENCE = 'Improve the lighting or clear the background so the camera can see you clearly.';
-const ADVICE_NOT_A_BODY = 'Point the camera at your whole upper body and step back into view.';
+// Names the body the lift actually needs: a squat told to show its "upper
+// body" would contradict the setup rows ("head to feet") it just read.
+const ADVICE_NOT_A_BODY_UPPER = 'Point the camera at your whole upper body and step back into view.';
+const ADVICE_NOT_A_BODY_FULL = 'Point the camera at your whole body and step back into view.';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Anatomical plausibility — "are these numbers a BODY?"
@@ -533,7 +536,7 @@ export function assessPoseQuality(
     } else if (!bodyLike || (!trusted && visibleRequired > 0)) {
       // Deliberately ahead of the framing advice: telling someone to "move
       // closer" when the camera is not pointed at them is worse than useless.
-      advice = ADVICE_NOT_A_BODY;
+      advice = required === REQUIRED_LOWER ? ADVICE_NOT_A_BODY_FULL : ADVICE_NOT_A_BODY_UPPER;
     } else if (framing === 'out_of_frame') {
       advice = ADVICE_OUT_OF_FRAME;
     } else if (framing === 'too_far') {
