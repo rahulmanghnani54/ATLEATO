@@ -55,7 +55,26 @@ export interface FormCheck {
   id: string;
   /** Only runs during these phases. */
   phases: RepPhase[];
+  /**
+   * A statement about an UPRIGHT lifter ("shoulders over hips", "no body
+   * swing"). `runChecks` skips it outright when the caller knows the lifter is
+   * lying or prone; the check's own per-frame image test is the fallback for
+   * a name nobody catalogued.
+   */
+  uprightOnly?: boolean;
   run(kpts: Kpt[], cal: BodyCalibration, phase: RepPhase): FormFinding | null;
+}
+
+/** What the caller knows about the lifter that the landmarks cannot settle. */
+export interface CheckContext {
+  /**
+   * The exercise is performed lying or prone (bench, incline, floor press…).
+   * Upright-only checks are skipped rather than left to the image test: from
+   * the foot of the bench an INCLINED torso projects taller than wide, so the
+   * test read a 30–45° incline as an upright lifter leaning 0.5 torso lengths
+   * and fired a critical "shoulders over hips" on every rep.
+   */
+  lying?: boolean;
 }
 
 export interface ExerciseProfile {
@@ -324,11 +343,13 @@ const shiftBySpan = ([a, b]: Kpt[], f: Frame) => Math.abs(a[0] - b[0]) / f.sw;
  *  unconditional form: a torso past 45deg there IS the fault. */
 const torsoStack = (
   id: string, phases: RepPhase[], band: Band, message: string, uprightOnly = false,
-) =>
-  bodyCheck(id, phases, [L.sh, L.hip], ([sh, hip], f) => {
+): FormCheck => ({
+  ...bodyCheck(id, phases, [L.sh, L.hip], ([sh, hip], f) => {
     if (uprightOnly && Math.abs(sh[0] - hip[0]) >= Math.abs(sh[1] - hip[1])) return NaN;
     return leanBy([sh, hip], f);
-  }, band, message);
+  }, band, message),
+  uprightOnly,
+});
 
 // ── Profiles ─────────────────────────────────────────────────────────────────
 
@@ -571,6 +592,7 @@ export function runChecks(
   kpts: Kpt[],
   cal: BodyCalibration,
   phase: RepPhase,
+  ctx: CheckContext = {},
 ): FormFinding[] {
   if (!profile || !Array.isArray(profile.checks) || !Array.isArray(kpts) || kpts.length === 0) {
     return [];
@@ -579,6 +601,9 @@ export function runChecks(
   const out: FormFinding[] = [];
   for (const check of profile.checks) {
     if (!check.phases.includes(phase)) continue;
+    // The card said "lying": there is no stack to keep, whatever the camera
+    // angle makes the torso look like.
+    if (ctx.lying && check.uprightOnly) continue;
     const f = check.run(kpts, cal, phase);
     if (f) out.push(f);
   }

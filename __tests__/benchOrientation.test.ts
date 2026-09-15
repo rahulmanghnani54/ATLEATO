@@ -98,3 +98,46 @@ describe('squat.torso_pitch keeps the unconditional form', () => {
     expect(f?.severity).toBe('critical');
   });
 });
+
+describe('press.torso_stack honours the card posture over the image test', () => {
+  // The image test decides "upright" by |dx| >= |dy| of the shoulder–hip line.
+  // From the foot of the bench (front_45) a 45° INCLINE projects roughly
+  // dx = L·cos45·sin45 = 0.5L against dy = L·sin45 = 0.71L: taller than wide,
+  // so the test calls it an upright lifter leaning half a torso length —
+  // past critAt 0.38 — on every rep. The card knows the lifter is lying.
+  const incline45FromFootOfBench = (): Kpt[] => {
+    const k = skeleton(0);
+    const hipX = 400, hipY = 600;
+    const shX = hipX + TORSO_PX * 0.5, shY = hipY - TORSO_PX * 0.71;
+    const put = (i: number, x: number, y: number) => { k[i] = [x, y, 0.95]; };
+    put(L_SH, shX - SHOULDER_PX / 2, shY); put(R_SH, shX + SHOULDER_PX / 2, shY);
+    return k;
+  };
+
+  it('the image test alone fires critical on a 45° incline seen from front_45', () => {
+    const f = runChecks(press, incline45FromFootOfBench(), cal, 'top')
+      .find((x) => x.id === 'press.torso_stack');
+    expect(f?.severity).toBe('critical');
+  });
+
+  it('lying: true skips the check entirely for the same frame', () => {
+    const f = runChecks(press, incline45FromFootOfBench(), cal, 'top', { lying: true })
+      .find((x) => x.id === 'press.torso_stack');
+    expect(f).toBeUndefined();
+  });
+
+  it('lying: true leaves the non-posture checks running', () => {
+    // Same frame, but with a flared elbow: elbow_flare is not upright-only.
+    const k = incline45FromFootOfBench();
+    k[R_EL] = [k[R_SH][0] + SHOULDER_PX * 0.9, k[R_SH][1] - 20, 0.95];
+    const ids = runChecks(press, k, cal, 'bottom', { lying: true }).map((x) => x.id);
+    expect(ids).not.toContain('press.torso_stack');
+    expect(press.checks.filter((c) => c.uprightOnly).map((c) => c.id)).toEqual(['press.torso_stack']);
+  });
+
+  it('an overhead press (lying: false) still gets the check', () => {
+    const f = runChecks(press, skeleton(25), cal, 'top', { lying: false })
+      .find((x) => x.id === 'press.torso_stack');
+    expect(f?.severity).toBe('critical');
+  });
+});

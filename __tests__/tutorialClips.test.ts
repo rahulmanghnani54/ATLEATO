@@ -279,13 +279,30 @@ describe('ensureClipCached', () => {
   });
 
   it('a finished download is forgotten, so the next miss downloads again', async () => {
+    // getInfoAsync keeps answering "not on disk" (the suite default), standing
+    // in for an OS eviction between the two visits; only the in-flight map
+    // could make the second call skip the network.
     downloadAsync.mockImplementation(async (_url, target) => ({
       status: 200, uri: target, headers: {}, mimeType: 'video/mp4',
     }));
     await ensureClipCached(OBJECT);
-    getInfoAsync.mockResolvedValue({ exists: false } as any); // e.g. evicted by the OS
     await ensureClipCached(OBJECT);
     expect(downloadAsync).toHaveBeenCalledTimes(2);
+  });
+
+  it('a join that times out releases the entry, so the next visit downloads afresh', async () => {
+    downloadAsync.mockImplementation(() => new Promise(() => {})); // dead socket
+    const first = ensureClipCached(OBJECT, { timeoutMs: 50 });
+    first.catch(() => {});
+    await flush();
+    await expect(ensureClipCached(OBJECT, { timeoutMs: 5 })).rejects.toThrow(/timed out/);
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+    // Third visit: no longer queued behind the dead transfer.
+    const third = ensureClipCached(OBJECT, { timeoutMs: 5 });
+    third.catch(() => {});
+    await flush();
+    expect(downloadAsync).toHaveBeenCalledTimes(2);
+    await expect(third).rejects.toThrow(/timed out/);
   });
 
   it('rejects without touching the network when the project URL is not configured', async () => {

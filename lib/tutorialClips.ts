@@ -393,6 +393,13 @@ export async function ensureClipCached(
   if (joined) {
     try {
       return await Promise.race([joined, timeout]);
+    } catch (e) {
+      // A download that outlives a whole second timeout is a dead socket, not
+      // a slow one. Stop queueing behind it: the next visit starts afresh
+      // (its own temp name, so the two can never collide) while this one is
+      // left to promote or clean up on its own if it ever settles.
+      if (inflight.get(objectPath) === joined) inflight.delete(objectPath);
+      throw e;
     } finally {
       clearTimeout(timer);
     }

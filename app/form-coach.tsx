@@ -44,8 +44,8 @@ import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { BigStat, CanvasScreen, Hairline, Section, StatRow } from '@/components/ui/canvas';
 import { CountUp, PressableScale, Skeleton } from '@/components/ui/motion';
 import {
-  detectedFaultsFor, getExerciseForm, getExerciseFormKey, getCoachCue, getOwnExerciseForm, keyPointsFor,
-  visionCategoryForName,
+  detectedFaultsFor, getExerciseForm, getExerciseFormKey, getCoachCue, getOwnExerciseForm, getOwnTechnique,
+  keyPointsFor, visionCategoryForName,
   type VisionCategory,
 } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
@@ -603,6 +603,11 @@ export default function FormCoach() {
     // the body scale on purpose: the lifter's torso is the same length, and
     // re-measuring it would blank the coach for another second for nothing.
     engineRef.current?.setCategory(categoryRef.current);
+    // The card's posture, not the camera's guess: lying/prone lifters have no
+    // "shoulders over hips" to keep, and from the foot of the bench an incline
+    // projects taller than wide — the image test alone called that a lean.
+    const posture = getOwnTechnique(exerciseName ?? '')?.posture;
+    engineRef.current?.setLying(posture === 'lying' || posture === 'prone');
     visionRef.current = null;
     // New exercise = new set: nothing measured under the old one carries over.
     resetRepReadout();
@@ -1035,6 +1040,18 @@ export default function FormCoach() {
   // Per-REP readout state. `awaiting` until the first rep lands (the dash is
   // explained as "First rep sets your score", never blamed on the camera);
   // `tracking` while a rep is in flight; `scored` between reps.
+  // `canJudge` is a claim about the CAMERA; `judged` is a claim about the
+  // JUDGEMENT, and they are not the same fact. Pose quality asks each joint
+  // group for one usable member, so it is satisfied by a shoulder seen on the
+  // left and an elbow seen only on the right — a pose from which no limb chain
+  // can be measured. The engine then refuses to judge and returns a null score
+  // with an empty findings list. Read as "canJudge && no findings", that empty
+  // list is indistinguishable from flawless form, which is how "Form looks
+  // solid" ends up printed over a body the engine explicitly declined to grade.
+  // A null score is the engine's refusal, so anything that ASSERTS something
+  // about the lifter's form gates on this, not on canJudge.
+  const judged      = verdict?.score != null;
+
   const inRep       = phaseInRep(vision?.phase);
   // In-flight wins over "no rep yet": rep 1 must read "REP 1 · Tracking", not
   // a frozen dash over a moving body — that is the whole point of the state.
@@ -1046,14 +1063,15 @@ export default function FormCoach() {
   // are both "standing ready". A lifter at lockout is in 'start' from the first
   // calibrated frame, so a pill keyed on 'setup' alone would call that LIVE.
   const standing    = vision?.phase === 'setup' || vision?.phase === 'start';
-  // Judgeable edge → timestamp, so the pill can say POSITION GOOD briefly.
-  // Judgeable, not merely calibrated: calibration needs only a torso, while
-  // the checklist may still be asking for feet or wrists — stamping there let
-  // the 1.5 s window expire while the lifter was still stepping back, so the
-  // confirmation the checklist led up to never appeared. Written during render
-  // on purpose: the value is only ever read by this same render path, and an
-  // effect would land one tick late.
-  if (calibrating || !canJudge) calibratedAtRef.current = 0;
+  // Judged edge → timestamp, so the pill can say POSITION GOOD briefly.
+  // Judged, not merely calibrated: calibration needs only a torso, while the
+  // checklist may still be asking for feet or wrists, and canJudge can hold
+  // while no limb chain reads (NO CLEAR VIEW) — stamping earlier let the 1.5 s
+  // window expire while the lifter was still adjusting, so the confirmation
+  // the checklist led up to never appeared. Written during render on purpose:
+  // the value is only ever read by this same render path, and an effect would
+  // land one tick late.
+  if (calibrating || !canJudge || !judged) calibratedAtRef.current = 0;
   else if (calibratedAtRef.current === 0 && vision) calibratedAtRef.current = Date.now();
   const positionGood =
     canJudge && repCount === 0 && !calibrating &&
@@ -1070,17 +1088,6 @@ export default function FormCoach() {
   const retriggerCopy = retriggerLabel
     ? `${retriggerLabel} flagged in 3 of your last 4 reps`
     : 'Same issue flagged in 3 of your last 4 reps';
-  // `canJudge` is a claim about the CAMERA; `judged` is a claim about the
-  // JUDGEMENT, and they are not the same fact. Pose quality asks each joint
-  // group for one usable member, so it is satisfied by a shoulder seen on the
-  // left and an elbow seen only on the right — a pose from which no limb chain
-  // can be measured. The engine then refuses to judge and returns a null score
-  // with an empty findings list. Read as "canJudge && no findings", that empty
-  // list is indistinguishable from flawless form, which is how "Form looks
-  // solid" ends up printed over a body the engine explicitly declined to grade.
-  // A null score is the engine's refusal, so anything that ASSERTS something
-  // about the lifter's form gates on this, not on canJudge.
-  const judged      = verdict?.score != null;
 
   // Joints the DISPLAYED finding implicated — only that one, so the highlighted
   // chain and the correction sheet make the same claim. The decision layer's

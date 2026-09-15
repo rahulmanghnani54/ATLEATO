@@ -233,6 +233,8 @@ export class VisionEngine {
   private autoGate: ShapeGate | null;
   /** Last usable timestamp, so a malformed frame clock cannot rewind the engine. */
   private lastT = 0;
+  /** Caller-supplied posture: lying/prone skips the upright-only checks. */
+  private lying = false;
 
   constructor(category: string | undefined, shapeGate?: ShapeGate) {
     this.category = category;
@@ -254,6 +256,17 @@ export class VisionEngine {
     this.machine = this.buildMachine();
     this.autoGate = defaultShapeGate(c);
     this.decider.reset();
+  }
+
+  /**
+   * Whether the lifter is lying or prone for this exercise (bench, incline,
+   * decline, floor press…). The technique card knows; the landmarks do not
+   * reliably: from the foot of the bench an inclined torso projects taller
+   * than wide, which the per-frame image test reads as an upright lifter
+   * leaning half a torso length. Upright-only checks are skipped instead.
+   */
+  setLying(lying: boolean): void {
+    this.lying = lying;
   }
 
   process(kpts: Kpt[], tMs: number, viewW: number, viewH: number): VisionFrameResult {
@@ -324,7 +337,9 @@ export class VisionEngine {
     const phase = this.machine.phase;
 
     // ── 5. Phase-scoped biomechanics, only on a body we can actually see. ──
-    const findings = judgeable ? runChecks(this.profile, safe, calibration, phase) : [];
+    const findings = judgeable
+      ? runChecks(this.profile, safe, calibration, phase, { lying: this.lying })
+      : [];
 
     // ── 6. Confidence-gated decision: what, if anything, to say. ──────────
     //

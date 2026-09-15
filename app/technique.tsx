@@ -442,7 +442,7 @@ export default function Technique() {
             {renderCta('START FORM CHECK', () => (entry?.setupSeen ? handoff() : goSetup('done')))}
             {/* Nothing to watch again when the preview was poster-only (the
                 CTA there read CONTINUE); the key points are on this page. */}
-            {clipReady ? renderSecondary('WATCH AGAIN', () => setChosen('preview')) : null}
+            {clipReady && !clipFailed ? renderSecondary('WATCH AGAIN', () => setChosen('preview')) : null}
           </>
         }
       >
