@@ -167,7 +167,7 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
     exerciseName: 'Incline Barbell Press',
     aliases: ['Incline Bench Press', 'Incline Barbell Bench Press'],
     posture: 'lying',
-    cameraAngle: 'side',
+    cameraAngle: 'front_45',
     cameraNote: 'Phone 30–45° from the foot of the bench, at bench height, both arms in frame',
     keyPoints: [
       'Set a 30–45° incline and pull your shoulder blades back and down.',
@@ -183,7 +183,7 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
     exerciseName: 'Decline Bench Press',
     aliases: ['Decline Barbell Press'],
     posture: 'lying',
-    cameraAngle: 'side',
+    cameraAngle: 'front_45',
     cameraNote: 'Phone 30–45° from the foot of the bench, at bench height, both arms in frame',
     keyPoints: [
       'Hook your feet under the rollers and set your shoulder blades on the bench.',
@@ -199,7 +199,7 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
     exerciseName: 'Close-Grip Bench Press',
     aliases: ['Close Grip Bench', 'Close-Grip Bench'],
     posture: 'lying',
-    cameraAngle: 'side',
+    cameraAngle: 'front_45',
     cameraNote: 'Phone 30–45° from the foot of the bench, at bench height, both arms in frame',
     keyPoints: [
       'Shoulder-width grip.',
@@ -216,7 +216,7 @@ export const TECHNIQUE_CARDS: TechniqueCard[] = [
     exerciseName: 'Flat Dumbbell Press',
     aliases: ['Dumbbell Bench Press', 'Flat DB Press'],
     posture: 'lying',
-    cameraAngle: 'side',
+    cameraAngle: 'front_45',
     cameraNote: 'Phone 30–45° from the foot of the bench, at bench height, both arms in frame',
     keyPoints: [
       'Lie flat with the feet planted and the shoulder blades pulled back.',

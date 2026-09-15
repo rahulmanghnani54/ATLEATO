@@ -390,10 +390,14 @@ export default function Technique() {
           <>
             {renderCta(primary, onWatched, busy)}
             {/* In review mode the lifter ASKED for this page; leaving it is not
-                a skip and must not count toward the fast path. */}
+                a skip and must not count toward the fast path. An uncovered
+                exercise has nothing to skip TO — DONE and SKIP would both just
+                go back, so it gets DONE alone. */}
             {review
               ? renderTextBtn('BACK TO CAMERA', () => router.back())
-              : renderTextBtn('I KNOW THIS — SKIP', onSkipped)}
+              : covered
+                ? renderTextBtn('I KNOW THIS — SKIP', onSkipped)
+                : null}
           </>
         }
       >
