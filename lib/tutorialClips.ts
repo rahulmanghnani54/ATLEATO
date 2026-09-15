@@ -103,6 +103,150 @@ export function _resetClipMissingForTests(): void {
   missingLoad = null;
 }
 
+/**
+ * Which VERSION of a clip to ask for comes from a manifest in the same bucket,
+ * so replacing a clip (say, an illustrated placeholder with licensed footage)
+ * is an upload of `<id>_v2.mp4` plus a one-line manifest edit — no release.
+ *
+ *   manifest.json  →  {"version":1,"clips":{"bench_press":2,"squat":1}}
+ *
+ * The manifest can only move a clip FORWARD: the resolved version is the
+ * larger of the manifest's number and the one compiled into the app
+ * (`resolveClipVersion`). An app that ships knowing about v3 never asks for
+ * v2 because a stale CDN copy of the manifest still says so, and a manifest
+ * that goes missing or unparseable simply leaves every clip where the code
+ * put it. A public object like any other, the manifest is CDN-cached too,
+ * which is another reason to remember it for MANIFEST_TTL_MS rather than
+ * fetch it on every open: within that window the CDN would answer the same
+ * bytes anyway. Same memory + AsyncStorage shape as the 404 record above.
+ *
+ * `loadClipManifest` never throws. Anything short of a 200 with a parseable
+ * body returns the last good copy (however old) or `{}` — the caller's
+ * fallback version is always a valid answer.
+ */
+export const CLIP_MANIFEST_OBJECT = 'manifest.json';
+export const MANIFEST_TTL_MS = 60 * 60 * 1000;
+const MANIFEST_KEY = 'tutorial_clips:manifest:v1';
+/** Shorter than the clip download's: nothing waits behind a slow manifest but the poster. */
+const MANIFEST_TIMEOUT_MS = 4000;
+
+type ClipManifest = { fetchedAt: number; clips: Record<string, number> };
+
+let manifest: ClipManifest | null = null;
+let manifestLoad: Promise<ClipManifest | null> | null = null;
+/** The one network fetch in flight, shared by overlapping callers (StrictMode, two players). */
+let manifestFetch: Promise<Record<string, number>> | null = null;
+
+/** Keeps only `<string>: <integer ≥ 1>` pairs; everything else in the body is noise. */
+function coerceClipVersions(raw: unknown): Record<string, number> {
+  const out: Record<string, number> = {};
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+  for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v === 'number' && Number.isInteger(v) && v >= 1) out[k] = v;
+  }
+  return out;
+}
+
+/** The on-disk copy, read once per process; `null` when absent or unreadable. */
+function loadStoredManifest(): Promise<ClipManifest | null> {
+  if (manifest) return Promise.resolve(manifest);
+  if (!manifestLoad) {
+    manifestLoad = AsyncStorage.getItem(MANIFEST_KEY)
+      .then((raw): ClipManifest | null => {
+        const parsed: unknown = raw ? JSON.parse(raw) : null;
+        if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+        const { fetchedAt, clips } = parsed as Record<string, unknown>;
+        if (typeof fetchedAt !== 'number' || !Number.isFinite(fetchedAt)) return null;
+        return { fetchedAt, clips: coerceClipVersions(clips) };
+      })
+      .catch(() => null)
+      .then((stored) => {
+        // A fetch that finished while the disk read was pending wins.
+        if (stored && !manifest) manifest = stored;
+        return manifest;
+      });
+  }
+  return manifestLoad;
+}
+
+function persistManifest(): void {
+  if (!manifest) return;
+  AsyncStorage.setItem(MANIFEST_KEY, JSON.stringify(manifest)).catch(() => {});
+}
+
+/**
+ * `{ "<form.id>": <version> }` from the bucket's manifest. Fresh cache → no
+ * network. Stale or absent → one fetch with a timeout; on ANY failure the
+ * stale copy (if any) or `{}`. Never rejects.
+ */
+export async function loadClipManifest(opts?: {
+  timeoutMs?: number;
+  now?: number;
+}): Promise<Record<string, number>> {
+  const now = opts?.now ?? Date.now();
+  const cached = await loadStoredManifest();
+  if (cached) {
+    const age = now - cached.fetchedAt;
+    if (age >= 0 && age < MANIFEST_TTL_MS) return cached.clips;
+  }
+  const stale = cached?.clips ?? {};
+
+  if (!manifestFetch) {
+    manifestFetch = fetchManifest(opts?.timeoutMs ?? MANIFEST_TIMEOUT_MS)
+      .then((clips) => {
+        if (clips === null) return stale;
+        manifest = { fetchedAt: now, clips };
+        persistManifest();
+        return clips;
+      })
+      .finally(() => {
+        manifestFetch = null;
+      });
+  }
+  return manifestFetch;
+}
+
+/** One attempt at the network; `null` for every way it can go wrong. */
+async function fetchManifest(timeoutMs: number): Promise<Record<string, number> | null> {
+  // Literal member access on purpose — see `ensureClipCached`.
+  const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return null;
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(clipPublicUrl(supabaseUrl, CLIP_MANIFEST_OBJECT), {
+      signal: controller.signal,
+      headers: { accept: 'application/json' },
+    });
+    if (res.status !== 200) return null;
+    const body: unknown = await res.json();
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
+    return coerceClipVersions((body as Record<string, unknown>).clips);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * The version of `formId` to ask the bucket for: the manifest's, unless the
+ * app already knows a newer one. Forward only — the manifest can never send
+ * a device back to an older object than the code was built with.
+ */
+export async function resolveClipVersion(formId: string, fallback: number): Promise<number> {
+  const clips = await loadClipManifest();
+  return Math.max(clips[formId] ?? 0, fallback);
+}
+
+/** Test seam: forget the manifest, its disk read and any fetch in flight. */
+export function _resetClipManifestForTests(): void {
+  manifest = null;
+  manifestLoad = null;
+  manifestFetch = null;
+}
+
 /** Folder under the cache directory that holds every downloaded clip. */
 const CACHE_FOLDER = `${TUTORIAL_BUCKET}/`;
 

@@ -54,7 +54,7 @@ import { track } from '@/lib/analytics';
 import { canAccess } from '@/lib/featureGates';
 import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
-import { clipObjectPath } from '@/lib/tutorialClips';
+import { clipObjectPath, resolveClipVersion } from '@/lib/tutorialClips';
 
 type Step = 'ready' | 'preview' | 'done' | 'setup';
 type CameraAngle = 'side' | 'front' | 'front_45';
@@ -155,13 +155,34 @@ export default function Technique() {
   const orientation: Orientation = own && LYING_POSTURES.has(own.posture) ? 'lying' : 'standing';
   const region: BodyRegion = category && UPPER_CATEGORIES.has(category) ? 'upper' : 'lower';
   // By convention, not by flag: an exercise with its OWN technique asks the
-  // bucket for `<id>_v<version>.mp4` (version 1 unless the entry says
-  // otherwise). Uploading a clip is therefore the whole release process; the
+  // bucket for `<id>_v<version>.mp4`. The version is the bucket's manifest
+  // entry or the one compiled into the entry, whichever is higher, so both
+  // uploading a first clip and replacing one are done without a release; the
   // player answers a 404 with the poster and lib/tutorialClips remembers it.
+  // `null` while the manifest is being consulted, which the player shows as
+  // the poster — exactly what a missing clip looks like, so nothing flashes.
   // Every catalogued name has an own technique now, so the no-clip "coming
   // soon" poster below should be unreachable — the path stays for a name
   // that is not in any table.
-  const objectPath = own ? clipObjectPath(own.id, own.tutorialVersion) : null;
+  const ownId = own?.id;
+  const ownVersion = own?.tutorialVersion;
+  const [objectPath, setObjectPath] = useState<string | null>(null);
+  useEffect(() => {
+    if (ownId === undefined || ownVersion === undefined) {
+      setObjectPath(null);
+      return;
+    }
+    // The resolve outlives neither this screen nor a change of exercise: a
+    // late answer for the previous `own` must not point the player at it.
+    let current = true;
+    setObjectPath(null);
+    resolveClipVersion(ownId, ownVersion).then((version) => {
+      if (current) setObjectPath(clipObjectPath(ownId, version));
+    });
+    return () => {
+      current = false;
+    };
+  }, [ownId, ownVersion]);
 
   const { loaded, entry, fastPath, watched, skipped, setupSeen } = useTutorialMemory(key);
 

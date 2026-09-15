@@ -29,9 +29,12 @@ jest.mock('expo-file-system/legacy', () => ({
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  CLIP_MANIFEST_OBJECT,
   CLIP_MISSING_MESSAGE,
+  MANIFEST_TTL_MS,
   MISSING_TTL_MS,
   TUTORIAL_BUCKET,
+  _resetClipManifestForTests,
   _resetClipMissingForTests,
   clipCachePath,
   clipObjectPath,
@@ -39,6 +42,8 @@ import {
   ensureClipCached,
   evictClip,
   isClipKnownMissing,
+  loadClipManifest,
+  resolveClipVersion,
 } from '@/lib/tutorialClips';
 
 const getInfoAsync = jest.mocked(FileSystem.getInfoAsync);
@@ -91,6 +96,7 @@ const ORIGINAL_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
 beforeEach(async () => {
   jest.clearAllMocks();
   _resetClipMissingForTests();
+  _resetClipManifestForTests();
   await AsyncStorage.clear();
   process.env.EXPO_PUBLIC_SUPABASE_URL = SUPABASE_URL;
   getInfoAsync.mockResolvedValue({ exists: false, uri: CACHED, isDirectory: false });
@@ -400,5 +406,234 @@ describe('remembered 404s', () => {
     await expect(ensureClipCached(OBJECT)).rejects.toThrow('HTTP 404');
     await flush();
     await expect(isClipKnownMissing('barbell_squat_v1.mp4')).resolves.toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Manifest — which VERSION of a clip to ask for. Replacing a clip must never
+// need a release, and a broken or missing manifest must never cost a clip the
+// app already knows about.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('clip manifest', () => {
+  const MANIFEST_URL = clipPublicUrl(SUPABASE_URL, CLIP_MANIFEST_OBJECT);
+  const MANIFEST_KEY = 'tutorial_clips:manifest:v1';
+  const ORIGINAL_FETCH = global.fetch;
+  let fetchMock: jest.Mock;
+
+  /** A response with a JSON body — the happy path for `fetch`. */
+  const ok = (body: unknown, status = 200) =>
+    ({ status, json: async () => body }) as unknown as Response;
+  /** A body that is not JSON: `res.json()` rejects exactly like the real thing. */
+  const notJson = () =>
+    ({
+      status: 200,
+      json: async () => {
+        throw new SyntaxError('Unexpected token <');
+      },
+    }) as unknown as Response;
+
+  beforeEach(() => {
+    fetchMock = jest.fn();
+    global.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterAll(() => {
+    global.fetch = ORIGINAL_FETCH;
+  });
+
+  it('cold: fetches the public manifest object, returns its clips and caches them', async () => {
+    fetchMock.mockResolvedValue(ok({ version: 1, clips: { bench_press: 2, squat: 1 } }));
+
+    await expect(loadClipManifest({ now: 1_000 })).resolves.toEqual({ bench_press: 2, squat: 1 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      MANIFEST_URL,
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+    // Cached in memory: a second call within the TTL is silent...
+    await expect(loadClipManifest({ now: 2_000 })).resolves.toEqual({ bench_press: 2, squat: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // ...and on disk, with the time it was fetched, for the next launch.
+    await expect(AsyncStorage.getItem(MANIFEST_KEY)).resolves.toBe(
+      JSON.stringify({ fetchedAt: 1_000, clips: { bench_press: 2, squat: 1 } }),
+    );
+  });
+
+  it('fresh on-disk cache: no network at all', async () => {
+    await AsyncStorage.setItem(MANIFEST_KEY, JSON.stringify({ fetchedAt: 5_000, clips: { squat: 3 } }));
+
+    await expect(loadClipManifest({ now: 5_000 + MANIFEST_TTL_MS - 1 })).resolves.toEqual({ squat: 3 });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('stale cache + network failure: the stale clips are returned, not {}', async () => {
+    // An hour-old manifest is a far better answer than none: it still moves
+    // clips forward to versions this app build may not know about.
+    await AsyncStorage.setItem(MANIFEST_KEY, JSON.stringify({ fetchedAt: 5_000, clips: { squat: 3 } }));
+    fetchMock.mockRejectedValue(new TypeError('Network request failed'));
+
+    await expect(loadClipManifest({ now: 5_000 + MANIFEST_TTL_MS })).resolves.toEqual({ squat: 3 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('stale cache + a fresh 200 replaces the cached copy', async () => {
+    await AsyncStorage.setItem(MANIFEST_KEY, JSON.stringify({ fetchedAt: 5_000, clips: { squat: 3 } }));
+    fetchMock.mockResolvedValue(ok({ version: 1, clips: { squat: 4, deadlift: 1 } }));
+
+    const now = 5_000 + MANIFEST_TTL_MS + 1;
+    await expect(loadClipManifest({ now })).resolves.toEqual({ squat: 4, deadlift: 1 });
+    await expect(AsyncStorage.getItem(MANIFEST_KEY)).resolves.toBe(
+      JSON.stringify({ fetchedAt: now, clips: { squat: 4, deadlift: 1 } }),
+    );
+  });
+
+  it('non-200: {} when nothing is cached, and nothing is written to disk', async () => {
+    // Supabase answers a missing public object with 400 — that must read as
+    // "no manifest yet", not as an empty manifest worth remembering for an hour.
+    fetchMock.mockResolvedValue(ok({ statusCode: '404', error: 'not_found' }, 400));
+
+    await expect(loadClipManifest()).resolves.toEqual({});
+
+    await expect(AsyncStorage.getItem(MANIFEST_KEY)).resolves.toBeNull();
+  });
+
+  it('non-200 with a stale copy on disk: the stale copy wins', async () => {
+    await AsyncStorage.setItem(MANIFEST_KEY, JSON.stringify({ fetchedAt: 0, clips: { squat: 2 } }));
+    fetchMock.mockResolvedValue(ok('gateway timeout', 504));
+
+    await expect(loadClipManifest({ now: MANIFEST_TTL_MS * 2 })).resolves.toEqual({ squat: 2 });
+  });
+
+  it('bad JSON: {}', async () => {
+    // A captive portal's login page arrives as a 200 with an HTML body.
+    fetchMock.mockResolvedValue(notJson());
+    await expect(loadClipManifest()).resolves.toEqual({});
+
+    // Valid JSON of the wrong shape is no better.
+    _resetClipManifestForTests();
+    fetchMock.mockResolvedValue(ok([1, 2, 3]));
+    await expect(loadClipManifest()).resolves.toEqual({});
+
+    _resetClipManifestForTests();
+    fetchMock.mockResolvedValue(ok({ version: 1, clips: 'bench_press' }));
+    await expect(loadClipManifest()).resolves.toEqual({});
+  });
+
+  it('timeout: aborts the request and resolves {} instead of hanging the screen', async () => {
+    // The manifest gates the FIRST frame of the clip, so a slow answer is
+    // worse than none: the fallback version is always a valid one to ask for.
+    fetchMock.mockImplementation(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_, reject) => {
+          init?.signal?.addEventListener('abort', () =>
+            reject(new DOMException('Aborted', 'AbortError')),
+          );
+        }),
+    );
+
+    await expect(loadClipManifest({ timeoutMs: 5 })).resolves.toEqual({});
+
+    const signal = (fetchMock.mock.calls[0]?.[1] as RequestInit | undefined)?.signal;
+    expect(signal?.aborted).toBe(true);
+  });
+
+  it('coercion keeps only integer versions ≥ 1', async () => {
+    fetchMock.mockResolvedValue(
+      ok({
+        version: 1,
+        clips: {
+          keep_one: 1,
+          keep_big: 12,
+          float: 1.5,
+          zero: 0,
+          negative: -2,
+          string: '3',
+          nan: Number.NaN,
+          infinity: Number.POSITIVE_INFINITY,
+          nested: { version: 2 },
+          nothing: null,
+          flag: true,
+        },
+      }),
+    );
+
+    await expect(loadClipManifest()).resolves.toEqual({ keep_one: 1, keep_big: 12 });
+  });
+
+  it('coercion is applied to what comes back from disk too', async () => {
+    // A hand-edited or corrupted record must not smuggle a non-version through.
+    await AsyncStorage.setItem(
+      MANIFEST_KEY,
+      JSON.stringify({ fetchedAt: 5_000, clips: { squat: 2, bench_press: '9', row: 0.5 } }),
+    );
+
+    await expect(loadClipManifest({ now: 5_000 })).resolves.toEqual({ squat: 2 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('an unreadable disk record is treated as absent', async () => {
+    await AsyncStorage.setItem(MANIFEST_KEY, '{not json');
+    fetchMock.mockResolvedValue(ok({ version: 1, clips: { squat: 1 } }));
+
+    await expect(loadClipManifest()).resolves.toEqual({ squat: 1 });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('missing project URL: {} without touching the network', async () => {
+    delete process.env.EXPO_PUBLIC_SUPABASE_URL;
+
+    await expect(loadClipManifest()).resolves.toEqual({});
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('shares one in-flight fetch between overlapping callers', async () => {
+    // StrictMode's double effect and the preview + ready players both ask at
+    // once; the bucket should hear about it once.
+    fetchMock.mockResolvedValue(ok({ version: 1, clips: { squat: 2 } }));
+
+    const results = await Promise.all([loadClipManifest(), loadClipManifest(), loadClipManifest()]);
+
+    expect(results).toEqual([{ squat: 2 }, { squat: 2 }, { squat: 2 }]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  describe('resolveClipVersion', () => {
+    it('takes the manifest version when it is ahead of the code', async () => {
+      fetchMock.mockResolvedValue(ok({ version: 1, clips: { bench_press: 3 } }));
+
+      await expect(resolveClipVersion('bench_press', 1)).resolves.toBe(3);
+    });
+
+    it('never goes below the fallback — the manifest only moves a clip forward', async () => {
+      // A stale CDN copy of the manifest, or an operator typo, must not send
+      // a newer app back to an object that may already have been removed.
+      fetchMock.mockResolvedValue(ok({ version: 1, clips: { bench_press: 1 } }));
+
+      await expect(resolveClipVersion('bench_press', 2)).resolves.toBe(2);
+    });
+
+    it('returns the fallback for a clip the manifest does not list', async () => {
+      fetchMock.mockResolvedValue(ok({ version: 1, clips: { squat: 5 } }));
+
+      await expect(resolveClipVersion('bench_press', 1)).resolves.toBe(1);
+    });
+
+    it('returns the fallback when the manifest cannot be loaded at all', async () => {
+      fetchMock.mockRejectedValue(new TypeError('Network request failed'));
+
+      await expect(resolveClipVersion('bench_press', 2)).resolves.toBe(2);
+    });
+
+    it('agrees with clipObjectPath on the resulting object name', async () => {
+      fetchMock.mockResolvedValue(ok({ version: 1, clips: { bench_press: 2 } }));
+
+      const version = await resolveClipVersion('bench_press', 1);
+      expect(clipObjectPath('bench_press', version)).toBe('bench_press_v2.mp4');
+    });
   });
 });
