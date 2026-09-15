@@ -250,6 +250,45 @@ app can fall back and old builds keep working:
    pictogram stays at `_v1` for the others). Never overwrite `_v1` in place —
    clients cache by URL.
 
+## Stock footage
+
+`stock/` is the hand-run pipeline for replacing pictograms with bought
+footage. Zero dependencies: node built-ins, the repo's own `typescript` (to
+read the constants), ffmpeg/ffprobe and the Supabase CLI. Run everything from
+the repo root.
+
+```
+scripts/technique-clips/stock/
+  shotlist.js   internal/STOCK_FOOTAGE_SHOTLIST.md from constants/exerciseFormLibrary.ts + techniqueCards.ts
+  prep.js       <id> <input> [--start S] [--end S] [--version N] [--crop W:H:X:Y] [--upload] → out/stock/<id>_v<N>.mp4 + sheets/<id>_v<N>.png
+  manifest.js   [--publish] — bucket listing → out/stock/manifest.json {"version":1,"generatedAt","clips":{id:N}}
+  lib.js        ffmpeg/ffprobe/supabase plumbing, bucket parsing, id loader
+  tsload.js     require hook: transpiles .ts via node_modules/typescript, resolves '@/…'
+  __tests__/    node node_modules/jest-cli/bin/jest.js --roots=scripts/technique-clips/stock -- scripts/technique-clips/stock/__tests__/stock.test.js
+```
+
+1. Buy against [`internal/STOCK_FOOTAGE_SHOTLIST.md`](../../internal/STOCK_FOOTAGE_SHOTLIST.md)
+   (one row per id: view, posture, framing, what to look for, target file,
+   licence checkbox) and its LICENSE CHECKLIST. Regenerate it after editing the
+   constants: `node scripts/technique-clips/stock/shotlist.js` (a test fails
+   when the committed file is stale).
+2. `node scripts/technique-clips/stock/prep.js deadlift raw.mp4 --start 3.2 --end 12.8`
+   — trims to 8–12 s, crops to 16:9 (centre, or `--crop`), 1280×720 @ 30 fps,
+   no audio, the production recipe above (CRF 26 → 28 → 30 until ≤ 1.8 MB),
+   ffprobe verification, 6×2 contact sheet. Check the sheet: tiles 1 and 12 must
+   both be the top position.
+3. Add `--upload`: the version defaults to the bucket's highest + 1, an existing
+   object name is refused (versions are immutable), the clip is uploaded with the
+   relative path the CLI needs, then `manifest.js --publish` runs. Without
+   `--upload` the version defaults to 2. `--dry-run` prints the CLI commands.
+4. `node scripts/technique-clips/stock/manifest.js` alone rewrites the local
+   manifest and prints the diff against the previous one; `--publish` overwrites
+   `ss:///tutorial-clips/manifest.json` — the one mutable object in the bucket.
+
+`out/stock/` is gitignored with the rest of `out/`. Keep the licence receipts
+and `out/stock/LICENSES.csv` (id, provider, item id, license type, date) backed
+up next to the source files.
+
 ## Ids
 
 `node scripts/technique-clips/render.js --list` prints them (one per
