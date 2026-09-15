@@ -31,6 +31,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   CLIP_MANIFEST_OBJECT,
   CLIP_MISSING_MESSAGE,
+  MANIFEST_RETRY_MS,
   MANIFEST_TTL_MS,
   MISSING_TTL_MS,
   TUTORIAL_BUCKET,
@@ -476,18 +477,50 @@ describe('clip manifest', () => {
     fetchMock.mockRejectedValue(new TypeError('Network request failed'));
 
     await expect(loadClipManifest({ now: 5_000 + MANIFEST_TTL_MS })).resolves.toEqual({ squat: 3 });
-
+    await flush();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('stale cache + a fresh 200 replaces the cached copy', async () => {
+  it('stale cache answers immediately and the refresh lands for the NEXT call', async () => {
+    // Stale-while-revalidate: a card with an hour-old answer must not wait on
+    // the network; the fresh copy is simply what the next open sees.
     await AsyncStorage.setItem(MANIFEST_KEY, JSON.stringify({ fetchedAt: 5_000, clips: { squat: 3 } }));
-    fetchMock.mockResolvedValue(ok({ version: 1, clips: { squat: 4, deadlift: 1 } }));
+    let release!: (r: Response) => void;
+    fetchMock.mockReturnValue(new Promise<Response>((r) => { release = r; }));
 
     const now = 5_000 + MANIFEST_TTL_MS + 1;
-    await expect(loadClipManifest({ now })).resolves.toEqual({ squat: 4, deadlift: 1 });
+    await expect(loadClipManifest({ now })).resolves.toEqual({ squat: 3 }); // did not wait
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    release(ok({ version: 1, clips: { squat: 4, deadlift: 1 } }));
+    await flush();
+    await expect(loadClipManifest({ now: now + 1 })).resolves.toEqual({ squat: 4, deadlift: 1 });
     await expect(AsyncStorage.getItem(MANIFEST_KEY)).resolves.toBe(
       JSON.stringify({ fetchedAt: now, clips: { squat: 4, deadlift: 1 } }),
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the second call was served from the refreshed cache
+  });
+
+  it('after a failed fetch, no retry until the cooldown has passed', async () => {
+    fetchMock.mockRejectedValue(new TypeError('Network request failed'));
+    await expect(loadClipManifest({ now: 1_000 })).resolves.toEqual({});
+    await expect(loadClipManifest({ now: 1_000 + MANIFEST_RETRY_MS - 1 })).resolves.toEqual({});
+    expect(fetchMock).toHaveBeenCalledTimes(1); // cooling down: no second attempt, no 4 s wait
+
+    fetchMock.mockResolvedValue(ok({ version: 1, clips: { squat: 2 } }));
+    await expect(loadClipManifest({ now: 1_000 + MANIFEST_RETRY_MS })).resolves.toEqual({ squat: 2 });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('a 200 without a clips map is a failed publish: the cached copy survives', async () => {
+    await AsyncStorage.setItem(MANIFEST_KEY, JSON.stringify({ fetchedAt: 5_000, clips: { squat: 3 } }));
+    fetchMock.mockResolvedValue(ok({ version: 1 }));
+    const now = 5_000 + MANIFEST_TTL_MS + 1;
+    await loadClipManifest({ now });
+    await flush();
+    await expect(loadClipManifest({ now: now + 1 })).resolves.toEqual({ squat: 3 });
+    await expect(AsyncStorage.getItem(MANIFEST_KEY)).resolves.toBe(
+      JSON.stringify({ fetchedAt: 5_000, clips: { squat: 3 } }),
     );
   });
 

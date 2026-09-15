@@ -1058,6 +1058,7 @@ const FORM_POSTURE: Record<string, OwnTechnique['posture']> = {
   bench_press:      'lying',
   incline_db_press: 'lying',
   leg_curl:         'prone',
+  pullup:           'hanging',
 };
 
 /**

@@ -54,7 +54,7 @@ function writeManifest(manifest) {
 
 function publishManifest({ dryRun = false } = {}) {
   const rel = relFromRoot(MANIFEST_FILE);
-  const r = supabase(['storage', 'cp', rel, `${BUCKET_URI}manifest.json`, '--experimental', '--content-type', 'application/json'], { dryRun });
+  const r = supabase(['storage', 'cp', rel, `${BUCKET_URI}manifest.json`, '--experimental', '--content-type', 'application/json', '--cache-control', 'public, max-age=60'], { dryRun });
   if (r.status !== 0) throw new Error(`manifest upload failed (${r.status}): ${(r.stderr || r.stdout).trim()}`);
   return `${BUCKET_URI}manifest.json`;
 }

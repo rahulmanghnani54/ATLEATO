@@ -126,6 +126,12 @@ export function _resetClipMissingForTests(): void {
  */
 export const CLIP_MANIFEST_OBJECT = 'manifest.json';
 export const MANIFEST_TTL_MS = 60 * 60 * 1000;
+/**
+ * After a failed fetch, no retry for this long. Without it a stale cache on a
+ * flaky link re-tried on every card open, and a device with no cache at all
+ * sat on the poster for the full timeout every single time.
+ */
+export const MANIFEST_RETRY_MS = 10 * 60 * 1000;
 const MANIFEST_KEY = 'tutorial_clips:manifest:v1';
 /** Shorter than the clip download's: nothing waits behind a slow manifest but the poster. */
 const MANIFEST_TIMEOUT_MS = 4000;
@@ -136,6 +142,8 @@ let manifest: ClipManifest | null = null;
 let manifestLoad: Promise<ClipManifest | null> | null = null;
 /** The one network fetch in flight, shared by overlapping callers (StrictMode, two players). */
 let manifestFetch: Promise<Record<string, number>> | null = null;
+/** When the last fetch failed (0 = never), for the retry cooldown. */
+let manifestFailedAt = 0;
 
 /** Keeps only `<string>: <integer ≥ 1>` pairs; everything else in the body is noise. */
 function coerceClipVersions(raw: unknown): Record<string, number> {
@@ -175,9 +183,16 @@ function persistManifest(): void {
 }
 
 /**
- * `{ "<form.id>": <version> }` from the bucket's manifest. Fresh cache → no
- * network. Stale or absent → one fetch with a timeout; on ANY failure the
- * stale copy (if any) or `{}`. Never rejects.
+ * `{ "<form.id>": <version> }` from the bucket's manifest. Never rejects.
+ *
+ *   fresh cache  → returned, no network
+ *   stale cache  → returned IMMEDIATELY; a refresh runs in the background and
+ *                  the next call sees it (stale-while-revalidate — a card must
+ *                  never wait on the network when it already has an answer)
+ *   no cache     → one fetch with a timeout, then `{}` on failure
+ *
+ * A failed fetch starts a MANIFEST_RETRY_MS cooldown during which no new
+ * fetch is attempted, so a flaky link costs one wait, not one per open.
  */
 export async function loadClipManifest(opts?: {
   timeoutMs?: number;
@@ -190,11 +205,16 @@ export async function loadClipManifest(opts?: {
     if (age >= 0 && age < MANIFEST_TTL_MS) return cached.clips;
   }
   const stale = cached?.clips ?? {};
+  const coolingDown = manifestFailedAt > 0 && now - manifestFailedAt < MANIFEST_RETRY_MS;
 
-  if (!manifestFetch) {
+  if (!manifestFetch && !coolingDown) {
     manifestFetch = fetchManifest(opts?.timeoutMs ?? MANIFEST_TIMEOUT_MS)
       .then((clips) => {
-        if (clips === null) return stale;
+        if (clips === null) {
+          manifestFailedAt = now;
+          return stale;
+        }
+        manifestFailedAt = 0;
         manifest = { fetchedAt: now, clips };
         persistManifest();
         return clips;
@@ -203,7 +223,12 @@ export async function loadClipManifest(opts?: {
         manifestFetch = null;
       });
   }
-  return manifestFetch;
+  // With a stale copy in hand, answer now and let the refresh land for later.
+  if (cached) {
+    if (manifestFetch) manifestFetch.catch(() => {});
+    return stale;
+  }
+  return manifestFetch ?? stale;
 }
 
 /** One attempt at the network; `null` for every way it can go wrong. */
@@ -222,7 +247,11 @@ async function fetchManifest(timeoutMs: number): Promise<Record<string, number> 
     if (res.status !== 200) return null;
     const body: unknown = await res.json();
     if (!body || typeof body !== 'object' || Array.isArray(body)) return null;
-    return coerceClipVersions((body as Record<string, unknown>).clips);
+    // A 200 whose body has no clips map is a broken publish, not "no clips":
+    // treating it as success would overwrite a good cached copy with {}.
+    const clips = (body as Record<string, unknown>).clips;
+    if (!clips || typeof clips !== 'object' || Array.isArray(clips)) return null;
+    return coerceClipVersions(clips);
   } catch {
     return null;
   } finally {
@@ -242,6 +271,7 @@ export async function resolveClipVersion(formId: string, fallback: number): Prom
 
 /** Test seam: forget the manifest, its disk read and any fetch in flight. */
 export function _resetClipManifestForTests(): void {
+  manifestFailedAt = 0;
   manifest = null;
   manifestLoad = null;
   manifestFetch = null;

@@ -381,12 +381,13 @@ describe('getOwnTechnique', () => {
     expect(own.tutorialVersion).toBe(2);
   });
 
-  it('gives bench entries a lying posture, leg curl prone, everything else standing', () => {
+  it('gives bench entries a lying posture, leg curl prone, pull-up hanging, everything else standing', () => {
     expect(getOwnTechnique('Bench Press')?.posture).toBe('lying');
     expect(getOwnTechnique('Incline Dumbbell Press')?.posture).toBe('lying');
     expect(getOwnTechnique('Leg Curl')?.posture).toBe('prone');
+    expect(getOwnTechnique('Pull-Up')?.posture).toBe('hanging');
     for (const form of EXERCISE_FORM_LIBRARY) {
-      if (['bench_press', 'incline_db_press', 'leg_curl'].includes(form.id)) continue;
+      if (['bench_press', 'incline_db_press', 'leg_curl', 'pullup'].includes(form.id)) continue;
       expect(getOwnTechnique(form.exerciseName)?.posture).toBe('standing');
     }
   });

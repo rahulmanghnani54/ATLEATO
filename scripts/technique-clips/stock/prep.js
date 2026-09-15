@@ -235,10 +235,13 @@ function main() {
   // 5. version + immutability
   let version = o.version;
   let bucket = null;
-  if (o.upload && !o.dryRun) {
+  if (o.upload) {
+    // Listing is read-only, so a dry run does it too: the version it prints
+    // and the immutability check must be the ones the real run would use.
     bucket = listBucket();
     const versions = versionsFromNames(bucket);
-    if (version == null) version = Math.max(1, versions[o.id] ?? 1) + 1;
+    // Next version after the highest in the bucket; an id with no clip yet starts at v1.
+    if (version == null) version = versions[o.id] ? versions[o.id] + 1 : 1;
     const objectName = `${o.id}_v${version}.mp4`;
     if (bucket.includes(objectName)) {
       console.error(`refusing to overwrite ${BUCKET_URI}${objectName} — versions are immutable; highest in bucket is v${versions[o.id]}, use --version ${versions[o.id] + 1} or omit --version`);
