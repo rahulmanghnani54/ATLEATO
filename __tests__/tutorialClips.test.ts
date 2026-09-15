@@ -290,11 +290,29 @@ describe('ensureClipCached', () => {
     expect(downloadAsync).toHaveBeenCalledTimes(2);
   });
 
-  it('a join that times out releases the entry, so the next visit downloads afresh', async () => {
-    downloadAsync.mockImplementation(() => new Promise(() => {})); // dead socket
-    const first = ensureClipCached(OBJECT, { timeoutMs: 50 });
+  it('a joiner that times out while the download is still young leaves it in place', async () => {
+    // A StrictMode remount joins milliseconds after the originator, so its
+    // timer expires on a transfer that is merely slow. Condemning it there
+    // would start the second parallel download this map exists to prevent.
+    downloadAsync.mockImplementation(() => new Promise(() => {})); // slow, not dead
+    const first = ensureClipCached(OBJECT, { timeoutMs: 500 });
     first.catch(() => {});
     await flush();
+    await expect(ensureClipCached(OBJECT, { timeoutMs: 5 })).rejects.toThrow(/timed out/);
+    // Third visit: still queued behind the one transfer.
+    const third = ensureClipCached(OBJECT, { timeoutMs: 5 });
+    third.catch(() => {});
+    await flush();
+    expect(downloadAsync).toHaveBeenCalledTimes(1);
+    await expect(third).rejects.toThrow(/timed out/);
+  });
+
+  it('a joiner that times out after the download outlived two budgets releases it', async () => {
+    downloadAsync.mockImplementation(() => new Promise(() => {})); // dead socket
+    const first = ensureClipCached(OBJECT, { timeoutMs: 10 });
+    first.catch(() => {});
+    await flush();
+    await new Promise((r) => setTimeout(r, 40)); // well past 2 × 10 ms
     await expect(ensureClipCached(OBJECT, { timeoutMs: 5 })).rejects.toThrow(/timed out/);
     expect(downloadAsync).toHaveBeenCalledTimes(1);
     // Third visit: no longer queued behind the dead transfer.

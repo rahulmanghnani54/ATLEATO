@@ -128,10 +128,15 @@ describe('press.torso_stack honours the card posture over the image test', () =>
 
   it('lying: true leaves the non-posture checks running', () => {
     // Same frame, but with a flared elbow: elbow_flare is not upright-only.
+    // elbow_flare runs at 'bottom' and torso_stack at 'top', so each phase is
+    // asserted where its check is actually in play — otherwise a blanket
+    // "skip everything when lying" would pass this test with an empty list.
     const k = incline45FromFootOfBench();
     k[R_EL] = [k[R_SH][0] + SHOULDER_PX * 0.9, k[R_SH][1] - 20, 0.95];
-    const ids = runChecks(press, k, cal, 'bottom', { lying: true }).map((x) => x.id);
-    expect(ids).not.toContain('press.torso_stack');
+    const atBottom = runChecks(press, k, cal, 'bottom', { lying: true }).map((x) => x.id);
+    expect(atBottom).toContain('press.elbow_flare');
+    const atTop = runChecks(press, k, cal, 'top', { lying: true }).map((x) => x.id);
+    expect(atTop).not.toContain('press.torso_stack');
     expect(press.checks.filter((c) => c.uprightOnly).map((c) => c.id)).toEqual(['press.torso_stack']);
   });
 

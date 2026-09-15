@@ -244,9 +244,9 @@ function lerpKpts(current: Kpt[], target: Kpt[], t: number): Kpt[] {
 // lib/vision/repScore.ts, where it is unit-tested. This screen owns NO
 // analysis: it banks what the engine reports and renders what the curve says.
 
-// How long the pill says POSITION GOOD once calibration completes before it
-// settles to READY. Long enough to be read as an answer to "am I set up?",
-// short enough that it is gone before the first rep.
+// How long the pill says POSITION GOOD once the pose first judges before it
+// settles to READY. Long enough to be read as an answer to "am I set up?";
+// `standing` in the positionGood gate keeps it off a rep already in flight.
 const POSITION_GOOD_MS = 1_500;
 
 // How long a line the engine ELECTED to speak stays the on-screen correction,
@@ -437,8 +437,8 @@ export default function FormCoach() {
   const repIndexRef     = useRef(0);
 
   // ── Position-good window ──────────────────────────────────────────────────
-  // When calibration last completed (0 = calibrating / never). The pill says
-  // POSITION GOOD for POSITION_GOOD_MS after this, then READY.
+  // When the pose first judged after calibration (0 = not yet / calibrating).
+  // The pill says POSITION GOOD for POSITION_GOOD_MS after this, then READY.
   const calibratedAtRef = useRef(0);
 
   // ── On-screen correction latch ────────────────────────────────────────────
@@ -1063,18 +1063,23 @@ export default function FormCoach() {
   // are both "standing ready". A lifter at lockout is in 'start' from the first
   // calibrated frame, so a pill keyed on 'setup' alone would call that LIVE.
   const standing    = vision?.phase === 'setup' || vision?.phase === 'start';
-  // Judged edge → timestamp, so the pill can say POSITION GOOD briefly.
+  // First judged frame → timestamp, so the pill can say POSITION GOOD briefly.
   // Judged, not merely calibrated: calibration needs only a torso, while the
   // checklist may still be asking for feet or wrists, and canJudge can hold
   // while no limb chain reads (NO CLEAR VIEW) — stamping earlier let the 1.5 s
   // window expire while the lifter was still adjusting, so the confirmation
-  // the checklist led up to never appeared. Written during render on purpose:
-  // the value is only ever read by this same render path, and an effect would
-  // land one tick late.
-  if (calibrating || !canJudge || !judged) calibratedAtRef.current = 0;
-  else if (calibratedAtRef.current === 0 && vision) calibratedAtRef.current = Date.now();
+  // the checklist led up to never appeared. Only "start over" zeroes it
+  // (calibrating, or the camera lost the joints): `judged` is a per-frame
+  // chain read with no hysteresis, so a one-frame NO CLEAR VIEW blip must not
+  // re-open the window — least of all during rep 1, where the rep machine
+  // rides out the same blip and the pill would flash green over a moving
+  // body. `standing` in the gate closes that door outright. Written during
+  // render on purpose: the value is only ever read by this same render path,
+  // and an effect would land one tick late.
+  if (calibrating || !canJudge) calibratedAtRef.current = 0;
+  else if (calibratedAtRef.current === 0 && judged && vision) calibratedAtRef.current = Date.now();
   const positionGood =
-    canJudge && repCount === 0 && !calibrating &&
+    judged && standing && repCount === 0 && !calibrating &&
     calibratedAtRef.current > 0 && Date.now() - calibratedAtRef.current < POSITION_GOOD_MS;
   const jointTiers  = jointTiersRef.current ?? undefined;
   // Re-trigger prompt copy: the library's human label for the check. Labels
@@ -1202,8 +1207,9 @@ export default function FormCoach() {
     // a null score. LIVE here would be the pill making the very claim this
     // comment promises it never makes.
     !judged                     ? 'NO CLEAR VIEW' :
-    // Calibration just completed and nothing has been lifted: answer the
-    // question the lifter is actually asking ("am I set up?"), briefly.
+    // The pose has just judged for the first time and nothing has been
+    // lifted: answer the question the lifter is actually asking ("am I set
+    // up?"), briefly.
     positionGood                ? 'POSITION GOOD' :
     // Standing ready ('setup' or 'start') is not lifting. Calling that LIVE
     // would claim a live judgement of a rep nobody has started.

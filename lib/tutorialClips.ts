@@ -301,7 +301,14 @@ let tempSeq = 0;
  * (WATCH AGAIN, StrictMode), and without this each mount streamed the whole
  * clip again. The manifest fetch has the same guard (`manifestFetch`).
  */
-const inflight = new Map<string, Promise<string>>();
+type InflightDownload = {
+  promise: Promise<string>;
+  /** When the originator started it — the joiner's own timer says nothing about the transfer's age. */
+  startedAt: number;
+  /** The originator's timeout budget; a joiner condemns the transfer only past two of these. */
+  budgetMs: number;
+};
+const inflight = new Map<string, InflightDownload>();
 
 /** Test hook: forget in-flight downloads between cases. */
 export function _resetClipDownloadsForTests(): void {
@@ -392,13 +399,23 @@ export async function ensureClipCached(
   const joined = inflight.get(objectPath);
   if (joined) {
     try {
-      return await Promise.race([joined, timeout]);
+      return await Promise.race([joined.promise, timeout]);
     } catch (e) {
-      // A download that outlives a whole second timeout is a dead socket, not
-      // a slow one. Stop queueing behind it: the next visit starts afresh
-      // (its own temp name, so the two can never collide) while this one is
-      // left to promote or clean up on its own if it ever settles.
-      if (inflight.get(objectPath) === joined) inflight.delete(objectPath);
+      // Our timer beat the transfer. That alone does not condemn it: a
+      // StrictMode remount or a quick BACK → CONTINUE joins milliseconds after
+      // the originator, so its budget expires on a transfer that is merely
+      // slow, and releasing there would start the duplicate parallel download
+      // this map exists to prevent. Only a download that has outlived TWO of
+      // its own budgets is a dead socket rather than a slow one; then the
+      // next visit starts afresh (its own temp name, so the two can never
+      // collide) while this one is left to promote or clean up on its own if
+      // it ever settles.
+      if (
+        inflight.get(objectPath) === joined &&
+        Date.now() - joined.startedAt >= 2 * joined.budgetMs
+      ) {
+        inflight.delete(objectPath);
+      }
       throw e;
     } finally {
       clearTimeout(timer);
@@ -435,9 +452,10 @@ export async function ensureClipCached(
   // A failure that lands after the timeout was already reported has nobody
   // left to hear it; keep it from surfacing as an unhandled rejection.
   settled.catch(() => {});
-  inflight.set(objectPath, settled);
+  const entry: InflightDownload = { promise: settled, startedAt: Date.now(), budgetMs: timeoutMs };
+  inflight.set(objectPath, entry);
   settled.finally(() => {
-    if (inflight.get(objectPath) === settled) inflight.delete(objectPath);
+    if (inflight.get(objectPath) === entry) inflight.delete(objectPath);
   }).catch(() => {});
 
   try {
