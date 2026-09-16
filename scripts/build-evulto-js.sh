@@ -37,8 +37,12 @@ echo "java=$("$JAVA_HOME/bin/java" -version 2>&1 | head -1)" >> "$LOG"
 
 # Force a fresh JS bundle without the ~45min full clean. Killing a build can
 # otherwise leave the bundle task UP-TO-DATE and package STALE JavaScript.
+# The incremental packager keeps state about the APK it wrote last time; with
+# $APKDIR gone that state is a lie and :app:packageRelease can fail inside
+# IncrementalSplitterRunnable with no message (seen 2026-09-16). Wipe it too.
 rm -rf "$PROJ/android/app/build/generated/assets/createBundleReleaseJsAndAssets" \
        "$PROJ/android/app/build/generated/res/createBundleReleaseJsAndAssets" \
+       "$PROJ/android/app/build/intermediates/incremental/packageRelease" \
        "$APKDIR" >> "$LOG" 2>&1
 
 cd "$PROJ/android" || { echo "CD_FAILED" >> "$LOG"; exit 1; }
