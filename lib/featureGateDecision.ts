@@ -12,12 +12,13 @@
  * "Unlock AI Form Coach". A false negative here locks a paying customer out of
  * what they bought, so the gate waits for the tier to be hydrated first.
  *
- * "Hydrated" means the CACHED entitlement has been read (see
- * whenTierHydrated), not that the server has answered — a fresh install with
- * no cache is still 'free' until syncEntitlement lands, exactly as it is for
- * in-app navigation today. The timeout keeps the gate fail-closed: if boot
- * never gets as far as initBilling, the screen is gated on whatever tier is
- * present rather than left open forever.
+ * "Hydrated" (see whenTierHydrated in subscriptionManager) means either the
+ * cache vouches for a paid tier on its own, or the server has answered — a
+ * cache that merely reads 'free' does not count, because that is also what an
+ * expired-but-renewed subscription looks like before its first sync. The
+ * timeout keeps the gate fail-closed: if the server never answers (offline,
+ * signed out, boot never reached initBilling), the screen is gated on whatever
+ * tier is present rather than left open forever.
  */
 import { canAccess, type FeatureKey } from './featureGates';
 import { whenTierHydrated } from './subscriptionManager';

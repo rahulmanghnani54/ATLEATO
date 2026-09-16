@@ -104,13 +104,23 @@ let paidUntil: number | null = null;
 let referralProUntil: number | null = null; // epoch ms, or null
 const listeners: Set<TierListener> = new Set();
 
-// "Hydrated" = initBilling() has installed the tier provider AND read the
-// cached entitlement, so canAccess() answers from what this device last knew
-// rather than from the 'free' default. Gated screens await this before
-// deciding (lib/featureGateDecision.ts): on a cold start straight into a paid
-// screen the mount effect otherwise fires before boot reaches initBilling and
-// a paying customer is shown the paywall. Resolved once per process; never
-// rejected — a failed cache read still counts as "we know what we know".
+// "Hydrated" = canAccess() can be trusted with a paywall decision. Gated
+// screens await this before deciding (lib/featureGateDecision.ts): on a cold
+// start straight into a paid screen the mount effect otherwise fires before
+// boot reaches initBilling and a paying customer is shown the paywall.
+//
+// Two things resolve it, whichever comes first:
+//   - initBilling() reading a cache that can vouch for a PAID tier by itself
+//     (a live subscription, a comp grant with no expiry, an active referral
+//     pass). Instant, works offline.
+//   - applyEntitlement() — the first server answer, whatever it says.
+// A cache that reads 'free' does NOT count: a missing cache is a fresh install,
+// and an EXPIRED cache is every subscriber between a renewal and their next
+// sync — the server row has already moved on while paidTier() still calls them
+// 'free'. Deciding there would paywall a paying customer once per billing
+// period. The gate's own timeout bounds the wait when the server never
+// answers (offline, signed out), and the outcome then is what the cache says.
+// Resolved once per process; never rejected.
 let tierHydrated = false;
 let resolveTierHydrated: () => void = () => {};
 const tierHydratedPromise = new Promise<void>((resolve) => {
@@ -303,6 +313,8 @@ function applyEntitlement(row: EntitlementRow): void {
   }
 
   notify();
+  // The server has spoken: whatever it said, a gate may now decide on it.
+  markTierHydrated();
 }
 
 /**
@@ -411,9 +423,10 @@ export async function initBilling(): Promise<void> {
     }
   } catch {}
 
-  // The cache is what this device knows; gates may decide on it now. The
-  // server sync below refines it but must not hold the UI hostage.
-  markTierHydrated();
+  // A cache that vouches for a paid tier is enough to decide on right now; a
+  // cache that reads 'free' (absent, or expired since the last sync) has to
+  // wait for the server's word — see the note on tierHydrated.
+  if (effectiveTier() !== 'free') markTierHydrated();
 
   // Best-effort server sync — this is what turns the cache above into the
   // server's current word (grants a just-earned reward on the way).
