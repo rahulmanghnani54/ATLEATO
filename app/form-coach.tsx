@@ -50,6 +50,7 @@ import {
 } from '@/constants/exerciseFormLibrary';
 import { useVoiceCues } from '@/hooks/useVoiceCues';
 import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import {
   VisionEngine, anatomyPlausible, jointConfidenceTier,
   type FormVerdict, type RepPhase, type VisionFrameResult,
@@ -539,18 +540,14 @@ export default function FormCoach() {
     setAnalysisTick((t) => t + 1);
   };
 
-  useEffect(() => {
-    if (!canAccess('ai_form_coach')) {
-      router.replace('/paywall?feature=ai_form_coach' as any);
-      return;
-    }
+  useFeatureGate('ai_form_coach', {
     // Only counted once the gate has let them through — otherwise every blocked
     // free user would register as having started a form check. The form key
     // (not the display name) so it joins technique's tutorial_* events.
     // Computed here rather than read from formKeyRef: that ref is filled by a
     // later effect in the same commit.
-    track('form_check_started', { exercise: getExerciseFormKey(exerciseName ?? '') });
-  }, []);
+    onAllow: () => track('form_check_started', { exercise: getExerciseFormKey(exerciseName ?? '') }),
+  });
 
   // No mount-time permission prompt. The technique screen asks on CAMERA
   // READY, where the page has explained why; a refusal there must not be

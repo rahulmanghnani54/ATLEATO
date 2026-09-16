@@ -104,6 +104,29 @@ let paidUntil: number | null = null;
 let referralProUntil: number | null = null; // epoch ms, or null
 const listeners: Set<TierListener> = new Set();
 
+// "Hydrated" = initBilling() has installed the tier provider AND read the
+// cached entitlement, so canAccess() answers from what this device last knew
+// rather than from the 'free' default. Gated screens await this before
+// deciding (lib/featureGateDecision.ts): on a cold start straight into a paid
+// screen the mount effect otherwise fires before boot reaches initBilling and
+// a paying customer is shown the paywall. Resolved once per process; never
+// rejected — a failed cache read still counts as "we know what we know".
+let tierHydrated = false;
+let resolveTierHydrated: () => void = () => {};
+const tierHydratedPromise = new Promise<void>((resolve) => {
+  resolveTierHydrated = resolve;
+});
+function markTierHydrated(): void {
+  tierHydrated = true;
+  resolveTierHydrated();
+}
+export function isTierHydrated(): boolean {
+  return tierHydrated;
+}
+export function whenTierHydrated(): Promise<void> {
+  return tierHydratedPromise;
+}
+
 const DEV_TIER_OVERRIDE = __DEV__
   ? (process.env.EXPO_PUBLIC_DEV_TIER as Tier | undefined)
   : undefined;
@@ -352,6 +375,7 @@ export async function initBilling(): Promise<void> {
   if (DEV_TIER_OVERRIDE) {
     console.log(`[subscription] DEV override → ${DEV_TIER_OVERRIDE}`);
     currentTier = DEV_TIER_OVERRIDE;
+    markTierHydrated();
     return;
   }
 
@@ -386,6 +410,10 @@ export async function initBilling(): Promise<void> {
       if (Number.isFinite(n)) referralProUntil = n;
     }
   } catch {}
+
+  // The cache is what this device knows; gates may decide on it now. The
+  // server sync below refines it but must not hold the UI hostage.
+  markTierHydrated();
 
   // Best-effort server sync — this is what turns the cache above into the
   // server's current word (grants a just-earned reward on the way).

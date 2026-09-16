@@ -10,7 +10,7 @@
  * paywall gate are untouched — this file changed shape, not behaviour.
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, Alert, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,7 +20,7 @@ import { useSubmitCheckin } from '@/hooks/usePhysiqueCheckins';
 import { Fonts } from '@/constants/theme';
 import { useAuthStore } from '@/stores/authStore';
 import { EXPERT_PROGRAMS } from '@/constants/experts';
-import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import {
   CanvasScreen,
@@ -51,11 +51,7 @@ export default function PhysiqueCheckin() {
   const { scheme } = useTheme();
   const styles = useThemedStyles(makeStyles);
 
-  useEffect(() => {
-    if (!canAccess('physique_photos')) {
-      router.replace('/paywall?feature=physique_photos' as any);
-    }
-  }, []);
+  useFeatureGate('physique_photos');
 
   const [step, setStep] = useState<Step>('cadence');
   const [cadence, setCadence] = useState<Cadence>('biweekly');

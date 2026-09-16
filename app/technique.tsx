@@ -51,7 +51,7 @@ import {
 import { Fonts } from '@/constants/theme';
 import { useTutorialMemory } from '@/hooks/useTutorialMemory';
 import { track } from '@/lib/analytics';
-import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { personaAccent, personaFromProgramId } from '@/lib/personaTheme';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { clipObjectPath, resolveClipVersion } from '@/lib/tutorialClips';
@@ -197,16 +197,10 @@ export default function Technique() {
   const alive = useRef(true);
   useEffect(() => () => { alive.current = false; }, []);
 
-  useEffect(() => {
-    // Only the path that can reach the camera is paid. Review mode (opened
-    // from the lobby or from inside the camera) ends with router.back() and
-    // never hands off to form-coach, so a free lifter may read it.
-    if (covered && !review && !canAccess('ai_form_coach')) {
-      router.replace('/paywall?feature=ai_form_coach' as any);
-    }
-    // Mount-only, like every other feature gate in the app.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Only the path that can reach the camera is paid. Review mode (opened
+  // from the lobby or from inside the camera) ends with router.back() and
+  // never hands off to form-coach, so a free lifter may read it.
+  useFeatureGate('ai_form_coach', { enabled: covered && !review });
 
   // `chosen` is null until the user moves; before that the step is derived
   // from memory, which is exactly what lets us skip the preview for a lifter

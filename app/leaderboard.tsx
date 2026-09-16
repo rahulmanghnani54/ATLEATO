@@ -5,13 +5,12 @@
  * carries each row; the user's own row is the single accent moment and stays
  * pinned at the bottom if they're outside the top.
  */
-import { useEffect } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Crown, CrownSlot, Hairline, Section, useCrownStatusBar } from '@/components/ui/canvas';
 import { PressableScale, Skeleton } from '@/components/ui/motion';
-import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useGlobalLeaderboard, type LeaderboardRow } from '@/hooks/useGlobalLeaderboard';
 import { useAuthStore } from '@/stores/authStore';
 import { personaAccent, personaFromProgramId, styleText } from '@/lib/personaTheme';
@@ -27,11 +26,7 @@ export default function LeaderboardScreen() {
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
 
-  useEffect(() => {
-    if (!canAccess('reward_chests')) {
-      router.replace('/paywall?feature=reward_chests' as any);
-    }
-  }, []);
+  useFeatureGate('reward_chests');
   const persona = personaFromProgramId(profile?.selected_program);
   const { data: rows = [], isLoading, refetch, isFetching, isError } = useGlobalLeaderboard(100);
 

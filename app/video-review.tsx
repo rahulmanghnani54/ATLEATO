@@ -21,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Camera as CameraIcon, Check, RefreshCw, X as XIcon } from 'lucide-react-native';
-import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { Fonts } from '@/constants/theme';
 import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { BigStat, CanvasScreen, Hairline, Section } from '@/components/ui/canvas';
@@ -64,12 +64,7 @@ export default function VideoReview() {
     }, []),
   );
 
-  // Gate check
-  useEffect(() => {
-    if (!canAccess('video_review')) {
-      router.replace('/paywall?feature=video_review' as any);
-    }
-  }, []);
+  useFeatureGate('video_review');
 
   // Auto-request ONCE on mount — but only while Android is still willing to show
   // the OS dialog (canAskAgain). Re-calling request*() after a hard denial is a

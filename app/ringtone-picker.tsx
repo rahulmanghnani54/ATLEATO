@@ -24,7 +24,7 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { personaAccent, personaFromProgramId, styleText } from '@/lib/personaTheme';
 import { Fonts } from '@/constants/theme';
-import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { CanvasScreen, Crown, Hairline, Section } from '@/components/ui/canvas';
 import { PressableScale } from '@/components/ui/motion';
 import { useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
@@ -51,11 +51,7 @@ export default function RingtonePicker() {
   const previewRef = useRef<Audio.Sound | null>(null);
   const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (!canAccess('custom_ringtone')) {
-      router.replace('/paywall?feature=custom_ringtone' as any);
-    }
-  }, []);
+  useFeatureGate('custom_ringtone');
 
   // Load saved preference
   useFocusEffect(useCallback(() => {

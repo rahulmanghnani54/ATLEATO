@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Speech from 'expo-speech';
-import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { useAuthStore } from '@/stores/authStore';
 import { personaAccent, personaFromProgramId, styleText } from '@/lib/personaTheme';
 import type { PersonaId } from '@/lib/personaTheme';
@@ -149,13 +149,12 @@ export default function VoiceSettingsScreen() {
   const [speaking, setSpeaking] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
-  // ── Gate check & load saved overrides ────────────────────────────────────
-  useEffect(() => {
-    if (!canAccess('voice_customization')) {
-      router.replace('/paywall' as any);
-      return;
-    }
+  useFeatureGate('voice_customization');
 
+  // ── Load saved overrides ─────────────────────────────────────────────────
+  // Runs regardless of the gate: a redirected free user has nothing saved
+  // here, and the read is harmless either way.
+  useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
       if (raw) {
         try {

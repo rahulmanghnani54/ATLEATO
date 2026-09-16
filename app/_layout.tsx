@@ -156,6 +156,12 @@ function RootNavigator() {
   useEffect(() => {
     let unsub: (() => void) | undefined;
     (async () => {
+      // Billing first: every paid screen's gate waits on the tier this
+      // hydrates (lib/featureGateDecision.ts), and a cold start can land on a
+      // paid screen before anything below has finished. Notification channels
+      // can wait the few ms a cache read takes; a paywall shown to a paying
+      // customer cannot be taken back.
+      try { await initBilling(); } catch { /* ignore */ }
       try { await setupAndroidChannels(); } catch { /* ignore */ }
       try { await setupCallActionCategory(); } catch { /* ignore */ }
       try { await setupCallChannel(); } catch { /* ignore */ }
@@ -167,8 +173,6 @@ function RootNavigator() {
           } as any);
         });
       } catch { /* ignore */ }
-      // Billing — resolve subscription tier from Google Play
-      try { await initBilling(); } catch { /* ignore */ }
     })();
     // Branch deep-link install attribution (referral reward). No-ops when the
     // native module isn't present (before Branch key + rebuild). Returns an

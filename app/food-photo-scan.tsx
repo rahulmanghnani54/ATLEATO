@@ -24,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import { canAccess } from '@/lib/featureGates';
+import { useFeatureGate } from '@/hooks/useFeatureGate';
 import { Fonts } from '@/constants/theme';
 import { TOKENS, useTheme, useThemedStyles, type SemanticTokens } from '@/lib/theme';
 import { BigStat, CanvasScreen, Hairline, ListRow, Section, StatRow } from '@/components/ui/canvas';
@@ -127,11 +127,7 @@ export default function FoodPhotoScan() {
   const [multiplier, setMultiplier] = useState('1.0');
   const [logging, setLogging] = useState(false);
 
-  useEffect(() => {
-    if (!canAccess('food_scan')) {
-      router.replace('/paywall?feature=food_scan' as any);
-    }
-  }, []);
+  useFeatureGate('food_scan');
 
   // ── image capture / pick ────────────────────────────────────────────────
 
