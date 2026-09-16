@@ -57,6 +57,44 @@ First build takes 5-10 minutes. Subsequent builds are faster.
 - [ ] PRO user can access all PRO features
 - [ ] LEGEND user can access voice settings + video review + snooze recalls
 
+### Technique flow + Form Coach (release smoke test, ~10 min)
+
+`app/` has no jest coverage, so these are the only test these paths get.
+Install the **release** APK (`scripts/build-evulto-js.sh` → `android/app/build/outputs/apk/release/`),
+not a dev build: R8 and the release bundle are what ship.
+
+**Technique screen** (Workouts → today's session → any exercise's "Form" chip)
+- [ ] Bench Press: card says **film from the front / front_45**, not the side
+- [ ] Clip plays a real pictogram — **never colour bars or a test pattern**. If you
+      see colour bars, the bucket manifest is wrong (see `stock/manifest.js`)
+- [ ] Airplane mode ON, open a clip you have not watched → poster + CONTINUE
+      appear (no endless shimmer); **WATCH AGAIN is absent**
+- [ ] Airplane mode OFF, BACK, reopen the same card → clip downloads and plays
+- [ ] Watch to the end → WATCH AGAIN + CONTINUE both present; WATCH AGAIN replays
+- [ ] Open the same clip, BACK immediately, reopen → plays from cache, no second
+      download spinner
+- [ ] Barbell Row / Push-Up / Dips chips say **Coming soon** with the book icon;
+      tapping opens key points with **no camera step and no paywall**
+- [ ] Entering Technique from a finished set ("review") → exit label matches
+      where you came from, and **no paywall** is shown in review mode
+
+**Form Coach pill** (Bench Press card → CONTINUE → camera; a FREE account must
+hit the paywall first, use PRO/LEGEND or `EXPO_PUBLIC_DEV_TIER`)
+- [ ] Only your head in frame → **SETTING UP**, checklist names the missing joints
+- [ ] Step back so the checklist clears but keep one wrist hidden behind your
+      torso → **NO CLEAR VIEW** (amber), not LIVE, not POSITION GOOD
+- [ ] Show both arms fully → **POSITION GOOD** (green) for ~1.5 s → **READY**
+- [ ] Hide a wrist for half a second and show it again while still standing →
+      pill goes NO CLEAR VIEW → **READY**, and does **not** flash POSITION GOOD again
+- [ ] Do rep 1 slowly. During the rep the pill reads **LIVE · ECCENTRIC/CONCENTRIC**;
+      it must never say POSITION GOOD mid-rep, even if a joint drops out briefly
+- [ ] Lying press (bench): rep 1 with a normal arch → **no "shoulders over hips"
+      warning**. Same set with elbows flared wide → **elbow flare fires**
+- [ ] Overhead press: lean back hard on rep 1 → the shoulders-over-hips check
+      **does** fire (upright profile is still live)
+- [ ] After 3 reps: rep counter = 3, last-rep score shown, no spoken line
+      belongs to a different rep than the one it appeared on
+
 ## D. Common Bugs to Watch For
 
 - White screen on launch -> check Metro bundler logs (in terminal)

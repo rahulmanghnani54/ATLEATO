@@ -2,14 +2,16 @@
  * Anti-Charity Stake — REAL $2 USD commitment mechanic (100% opt-in)
  *
  * User stakes REAL $2 per week against an anti-charity (a cause they dislike).
- * Payment via Lemon Squeezy at https://atleato.com/upsell-stake (TODO: LS product).
  * Hit the weekly workout goal → $2 refunded automatically + badge.
  * Miss it → $2 forfeited to the anti-charity fund (settled weekly by cron).
  *
- * V1 scope (this commit): UI + payment redirect + local tracking.
+ * V1 scope (shipped): UI + local tracking; the CTA says "coming soon". There
+ * is NO web checkout: a money-on-the-line stake is an in-app digital purchase,
+ * so Play's Payments policy requires Play Billing, not a Lemon Squeezy link.
  * V2 needed (post-launch):
- *   - LS product 'Anti-Charity Stake — $2' configured in LS dashboard
- *   - supabase/functions/charity-stake-webhook to credit stakes on payment
+ *   - a one-time Play product (via RevenueCat, like the subscriptions in
+ *     lib/billing.ts) for the $2 stake
+ *   - the revenuecat-webhook (or a sibling) crediting the stake on purchase
  *   - supabase/functions/charity-stake-settle weekly cron for refund/forfeit
  *
  * Storage: AsyncStorage `charity_stake:v2`

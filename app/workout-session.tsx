@@ -647,7 +647,8 @@ export default function WorkoutSession() {
                         hidden: gating on coverage would strip the chip from
                         Rack Pull, the default program's Day-1 opener. The
                         label is the honest claim — "Form" only where a
-                        biomechanical profile exists, "How-to" elsewhere. */}
+                        biomechanical profile exists, "Coming soon" elsewhere
+                        (the key points still open; only the camera is absent). */}
                     <PressableScale
                       haptic="light"
                       accessibilityRole="button"
