@@ -44,7 +44,7 @@ Licence (both providers): free commercial use inside a distributed app, no attri
 
 ## Prepared 2026-09-17 — what was actually cut
 
-All 15 downloaded sources were re-examined at 0.5 s / 0.25 s frame resolution before cutting. Nine survived; six were rejected on camera motion or framing that no cut can fix (the automated pass had let them through as "caveats"). Outputs in  (gitignored), sheets alongside; provenance in .
+All 15 downloaded sources were re-examined at 0.5 s / 0.25 s frame resolution before cutting. Nine survived; six were rejected on camera motion or framing that no cut can fix (the automated pass had let them through as "caveats"). Outputs in `scripts/technique-clips/out/stock/` (gitignored), sheets alongside; provenance in `internal/STOCK_FOOTAGE_LICENSES.csv`.
 
 | id | version | source window | crop / pre-process | reps | loop check |
 |---|---|---|---|---|---|
@@ -68,7 +68,7 @@ All 15 downloaded sources were re-examined at 0.5 s / 0.25 s frame resolution be
 - **pullup** 14284164 — steep ground-level angle, lifter ≈ 20 % of frame height, cars/passers-by behind.
 - **rotating_db_press** — not uploaded: the shared seated-press source cannot show the rotation; the pictogram stays until an in-house shot exists.
 
-Sources for the rejects stay in  in case a different cut is ever wanted.
+Sources for the rejects stay in `scripts/technique-clips/raw/` (gitignored) in case a different cut is ever wanted.
 
 ## Per exercise
 
