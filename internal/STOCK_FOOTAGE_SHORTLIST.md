@@ -42,6 +42,34 @@ Licence (both providers): free commercial use inside a distributed app, no attri
 - **Step-Up** (`step_up`) — No landscape, side-on, full-body step-up clip of 8 s or more exists on Pexels or Pixabay. Every genuine step-up on Pexels is either portrait 9:16 (8402107 weighted box step-ups, 6739968, 6739974, 8691…
 - **Sumo Deadlift** (`sumo_deadlift`) — single-rep hero shots with moving cameras or lower-body-only framing; no static 2–3-rep clip.
 
+## Prepared 2026-09-17 — what was actually cut
+
+All 15 downloaded sources were re-examined at 0.5 s / 0.25 s frame resolution before cutting. Nine survived; six were rejected on camera motion or framing that no cut can fix (the automated pass had let them through as "caveats"). Outputs in  (gitignored), sheets alongside; provenance in .
+
+| id | version | source window | crop / pre-process | reps | loop check |
+|---|---|---|---|---|---|
+| bench_press | v3 | 8.0–20.0 s | — | 2 | lockout → lockout ✓ (slow ~6 s tempo; dark) |
+| incline_barbell_press | v2 | 2.5–10.75 s | — | 3 | lockout → lockout ✓ |
+| seated_dumbbell_press | v2 | 3.0–12.0 s | eq gamma 1.45 / brightness +0.06; crop 1600:900:480:0 | 3 | lockout → lockout ✓ |
+| machine_shoulder_press | v2 | 7.4–14.8 s | crop 1600:900:480:180 | 4 | lockout → lockout ✓ (7.4 s: under target, correct loop preferred) |
+| bulgarian_split_squat | v2 | 1.75–9.75 s | — | 4 | standing → standing ✓ |
+| deadlift | v2 | 0.25–9.25 s | (2048×1080 centre-cropped by prep) | 2 | lockout → lockout ✓; head at top edge is the source framing |
+| bicep_curl | v2 | 0.4–8.5 s | — | 2 | rest → rest ✓; hands dip below frame at full extension (source) |
+| tricep_pushdown | v2 | 3.0–11.75 s | — | 2 | rest → rest ✓; hands touch the bottom edge at lockout (source) |
+| hammer_curl | v2 | 0.0–6.5 s | — | 3 | rest → rest ✓ (6.5 s: camera tilts to the face from 7 s) |
+
+**Rejected after frame review (now gaps):**
+
+- **lat_pulldown** 12188783 — three stitched shots (wide side 0–3.5 s, rear push-in, tight rear); no static 8 s.
+- **incline_db_press** 33261217 — zoom runs the whole clip; wall covered in poster text; a second person's head enters bottom-left.
+- **overhead_press** 4745804 — clean-and-press hero shot: one press at ~4 s, camera tilts up to follow the bar.
+- **close_grip_bench_press** 36885361 — very dark wide shot, lifter ≈ ¼ of frame width; usable crop would be a ~2.5× upscale.
+- **cable_curl** 4367638 — handheld move with a blurred foreground upright sweeping across the lifter.
+- **pullup** 14284164 — steep ground-level angle, lifter ≈ 20 % of frame height, cars/passers-by behind.
+- **rotating_db_press** — not uploaded: the shared seated-press source cannot show the rotation; the pictogram stays until an in-house shot exists.
+
+Sources for the rejects stay in  in case a different cut is ever wanted.
+
 ## Per exercise
 
 ### Barbell Back Squat — `barbell_squat` — 🔴 gap
