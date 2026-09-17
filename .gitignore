@@ -66,6 +66,7 @@ build.log
 *.env
 **/*.env
 scripts/technique-clips/out/
+scripts/technique-clips/raw/
 
 # claude-check hook cache (scripts/claude-check.js)
 .claude-check/
