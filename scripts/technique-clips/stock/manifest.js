@@ -52,11 +52,31 @@ function writeManifest(manifest) {
   return MANIFEST_FILE;
 }
 
-function publishManifest({ dryRun = false } = {}) {
+/** The CLI's `storage cp` never overwrites: a second publish answers
+ *  409 KeyAlreadyExists (seen 2026-09-17, the first publish after the manifest
+ *  was created). There is no upsert flag in the CLI, so the overwrite is
+ *  remove-then-copy. The window between the two is well under a second, and a
+ *  client that fetches inside it gets a 400, which lib/tutorialClips treats as
+ *  "keep the last good copy" — never as an empty manifest.
+ *  Exported for tests via the `run` seam. */
+function isAlreadyExists(r) {
+  const text = `${r.stdout || ''}
+${r.stderr || ''}`;
+  return /KeyAlreadyExists|"statusCode":s*"?409|Duplicate|already exists/i.test(text);
+}
+
+function publishManifest({ dryRun = false, run = supabase } = {}) {
   const rel = relFromRoot(MANIFEST_FILE);
-  const r = supabase(['storage', 'cp', rel, `${BUCKET_URI}manifest.json`, '--experimental', '--content-type', 'application/json', '--cache-control', 'public, max-age=60'], { dryRun });
+  const dst = `${BUCKET_URI}manifest.json`;
+  const cp = () => run(['storage', 'cp', rel, dst, '--experimental', '--content-type', 'application/json', '--cache-control', 'public, max-age=60'], { dryRun });
+  let r = cp();
+  if (r.status !== 0 && isAlreadyExists(r)) {
+    const rm = run(['storage', 'rm', dst, '--experimental'], { dryRun });
+    if (rm.status !== 0) throw new Error(`manifest overwrite failed at rm (${rm.status}): ${(rm.stderr || rm.stdout).trim()}`);
+    r = cp();
+  }
   if (r.status !== 0) throw new Error(`manifest upload failed (${r.status}): ${(r.stderr || r.stdout).trim()}`);
-  return `${BUCKET_URI}manifest.json`;
+  return dst;
 }
 
 /** Full refresh: list → write → diff (→ publish). Returns the manifest. Used by prep.js too. */
@@ -104,4 +124,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { buildManifest, diffClips, refresh, publishManifest, writeManifest, readPrevious };
+module.exports = { buildManifest, diffClips, refresh, publishManifest, isAlreadyExists, writeManifest, readPrevious };

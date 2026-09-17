@@ -113,3 +113,43 @@ describe('shot list', () => {
     expect(committed).toMatch(/## HOW TO/);
   });
 });
+
+describe('manifest publish overwrites', () => {
+  const { publishManifest, isAlreadyExists } = require('../manifest');
+  const ok = { status: 0, stdout: '', stderr: '' };
+  const dup = { status: 1, stdout: '', stderr: 'Error status 400: {"statusCode":"409","error":"Duplicate","message":"The resource already exists","code":"KeyAlreadyExists"}' };
+
+  test('recognises the CLI\'s 409 in either stream', () => {
+    expect(isAlreadyExists(dup)).toBe(true);
+    expect(isAlreadyExists({ status: 1, stdout: dup.stderr, stderr: '' })).toBe(true);
+    expect(isAlreadyExists({ status: 1, stdout: '', stderr: 'Error status 401: unauthorized' })).toBe(false);
+  });
+
+  test('a fresh manifest is one cp', () => {
+    const calls = [];
+    const run = (args) => { calls.push(args.slice(0, 2).join(' ')); return ok; };
+    publishManifest({ run });
+    expect(calls).toEqual(['storage cp']);
+  });
+
+  test('an existing manifest is cp → rm → cp, and the second cp must succeed', () => {
+    const calls = [];
+    const run = (args) => { calls.push(args.slice(0, 2).join(' ')); return calls.length === 1 ? dup : ok; };
+    publishManifest({ run });
+    expect(calls).toEqual(['storage cp', 'storage rm', 'storage cp']);
+  });
+
+  test('any other failure is reported, not retried', () => {
+    const calls = [];
+    const run = (args) => { calls.push(args[1]); return { status: 1, stdout: '', stderr: 'Error status 401: unauthorized' }; };
+    expect(() => publishManifest({ run })).toThrow(/manifest upload failed/);
+    expect(calls).toEqual(['cp']);
+  });
+
+  test('a failed rm stops before the second cp', () => {
+    const calls = [];
+    const run = (args) => { calls.push(args[1]); return args[1] === 'cp' ? dup : { status: 1, stdout: '', stderr: 'nope' }; };
+    expect(() => publishManifest({ run })).toThrow(/overwrite failed at rm/);
+    expect(calls).toEqual(['cp', 'rm']);
+  });
+});
