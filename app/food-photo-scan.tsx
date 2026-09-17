@@ -514,6 +514,11 @@ export default function FoodPhotoScan() {
               </View>
             </Section>
 
+            <Text style={styles.aiNote}>
+              AI estimate from your photo — approximate, not a substitute for label data or
+              professional dietary advice. Adjust the portion to match what you ate.
+            </Text>
+
             {/* Log button — the one emerald fill on the light body. */}
             <PressableScale
               style={[styles.ctaPrimary, styles.ctaLog, logging && { opacity: 0.6 }]}
@@ -598,6 +603,10 @@ function makeStyles(t: SemanticTokens) {
     stageHero: {
       fontFamily: Fonts.displayBold, fontSize: 38, lineHeight: 41,
       letterSpacing: -1.71, color: stage.crownText,
+    },
+    aiNote: {
+      fontFamily: Fonts.body, fontSize: 11.5, lineHeight: 16,
+      color: stage.crownTextDim, paddingHorizontal: 22, marginTop: 18, marginBottom: 4,
     },
     stageName: {
       fontFamily: Fonts.displayBold, fontSize: 22, lineHeight: 26,

@@ -70,7 +70,10 @@ Give 3-4 specific, practical nutrition tips for the rest of this day based on th
     if (overQuota) return overQuota;
 
     const advice = await callClaude(
-      'You are a registered dietitian and sports nutritionist helping athletes optimise their diet.',
+      'You are a knowledgeable sports-nutrition coach helping athletes optimise their diet. ' +
+        'You are NOT a registered dietitian, doctor, or licensed professional and must not claim to be one. ' +
+        'Give general educational guidance, and for medical conditions, allergies, eating disorders, or medication ' +
+        'interactions tell the user to consult a qualified professional.',
       [{ role: 'user', content: prompt }],
       500,
     );

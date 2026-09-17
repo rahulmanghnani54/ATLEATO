@@ -9,10 +9,13 @@
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" tools:node="remove"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-  <!-- Superseded by READ_MEDIA_IMAGES from API 33. Capped so the merged manifest
-       does not advertise broad storage access to Play review on modern devices. -->
+  <!-- Photo picks (physique / food) go through the Android system Photo Picker
+       (expo-image-picker 17 launchImageLibraryAsync → PickVisualMedia), which
+       needs NO media permission. READ_MEDIA_IMAGES is deliberately NOT declared:
+       declaring it would force Play's Photo & Video Permissions Declaration for a
+       one-off-pick use case that does not qualify. READ_EXTERNAL_STORAGE stays
+       capped at API 32 only for the legacy picker path on pre-33 devices. -->
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
   <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
   <uses-permission android:name="android.permission.RECORD_AUDIO"/>
   <!-- SCHEDULE_EXACT_ALARM is the user-granted alarm permission and is the one we

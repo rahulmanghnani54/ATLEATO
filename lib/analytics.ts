@@ -56,6 +56,7 @@ export type AnalyticsEvent =
   | 'form_check_started'
   | 'form_check_set_graded'
   | 'coach_message_sent'
+  | 'ai_message_reported'
   | 'paywall_viewed'
   | 'purchase_started'
   | 'purchase_completed'

@@ -364,6 +364,11 @@ export default function PhysiqueCheckin() {
                 <Text style={styles.narrativeText}>{result.narrative}</Text>
               </View>
             </Section>
+
+            <Text style={styles.aiNote}>
+              AI-generated estimate from your photos, for motivation only — not a body-composition
+              measurement or medical assessment.
+            </Text>
           </>
         )}
 
@@ -375,6 +380,10 @@ export default function PhysiqueCheckin() {
 
 const makeStyles = (t: SemanticTokens) => StyleSheet.create({
   body: { paddingHorizontal: BODY_PAD },
+  aiNote: {
+    fontFamily: Fonts.body, fontSize: 11.5, lineHeight: 16, color: t.textTertiary,
+    paddingHorizontal: BODY_PAD, marginTop: 18,
+  },
 
   // ── Cadence ────────────────────────────────────────────────────────────────
   optionList: { gap: 10 },

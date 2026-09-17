@@ -73,7 +73,7 @@ const LEGEND_FEATURES = [
   'Coach Voice Customization',
   'Custom Ringtone Picker',
   '5-Min Snooze Re-Calls',
-  'Advanced Form AI + Video Review',
+  'Live Form Coach (AI) + Video Review',
 ];
 
 export default function PaywallScreen() {
@@ -109,6 +109,14 @@ export default function PaywallScreen() {
 
   const proId = period === 'yearly' ? PRODUCT_IDS.PRO_YEARLY : PRODUCT_IDS.PRO_MONTHLY;
   const legendId = period === 'yearly' ? PRODUCT_IDS.LEGEND_YEARLY : PRODUCT_IDS.LEGEND_MONTHLY;
+
+  // Play Billing is env-gated. Until it is configured no purchase can complete
+  // (the CTAs fall through to the "coming soon" alert), so the buttons must not
+  // read "Subscribe" and the Google-Play auto-renew disclosure must not show —
+  // a priced Subscribe button that can't transact is a Minimum-Functionality /
+  // deceptive-behaviour rejection. When billing goes live this all reverts to
+  // the real subscription UI automatically.
+  const billingLive = isBillingConfigured();
 
   // The pre-billing path, unchanged. We deliberately do NOT link out to a web
   // checkout here: selling digital goods via an external payment flow violates
@@ -308,13 +316,13 @@ export default function PaywallScreen() {
           scaleTo={0.97}
           disabled={!!loading}
           accessibilityRole="button"
-          accessibilityLabel="Subscribe to Pro"
+          accessibilityLabel={billingLive ? 'Subscribe to Pro' : 'Pro plan coming soon'}
           style={[styles.cta, styles.ctaGhost]}
         >
           {loading === proId ? (
             <ActivityIndicator color={tokens.text} />
           ) : (
-            <Text style={[styles.ctaText, styles.ctaGhostText]}>Subscribe to Pro</Text>
+            <Text style={[styles.ctaText, styles.ctaGhostText]}>{billingLive ? 'Subscribe to Pro' : 'Pro — coming soon'}</Text>
           )}
         </PressableScale>
       </View>
@@ -350,13 +358,13 @@ export default function PaywallScreen() {
           scaleTo={0.97}
           disabled={!!loading}
           accessibilityRole="button"
-          accessibilityLabel="Subscribe to Legend"
+          accessibilityLabel={billingLive ? 'Subscribe to Legend' : 'Legend plan coming soon'}
           style={[styles.cta, styles.ctaSolid]}
         >
           {loading === legendId ? (
             <ActivityIndicator color={tokens.accentInk} />
           ) : (
-            <Text style={[styles.ctaText, styles.ctaSolidText]}>Subscribe to Legend</Text>
+            <Text style={[styles.ctaText, styles.ctaSolidText]}>{billingLive ? 'Subscribe to Legend' : 'Legend — coming soon'}</Text>
           )}
         </PressableScale>
       </View>
@@ -378,7 +386,9 @@ export default function PaywallScreen() {
         </PressableScale>
 
         <Text style={styles.legal}>
-          Payment will be charged to your Google Play account. Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period.
+          {billingLive
+            ? 'Payment will be charged to your Google Play account. Subscriptions auto-renew unless cancelled at least 24 hours before the end of the current period. Manage or cancel anytime in Google Play → Subscriptions.'
+            : 'Paid plans are coming soon. You’re on the free plan with full access to your coach, workouts, nutrition, and calls in the meantime — no payment is taken.'}
         </Text>
       </View>
     </CanvasScreen>

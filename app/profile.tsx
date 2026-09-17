@@ -639,7 +639,7 @@ export default function ProfileScreen() {
         <Section label="Founder admin">
           <ListRow
             title="Unlock Legend tier"
-            subtitle="All 5 coaches, AI form, video review, voice tuning — instant"
+            subtitle="All 5 coaches, live Form Coach (AI), video review, voice tuning — instant"
             onPress={async () => {
               const { applyTier } = await import('@/lib/subscriptionManager');
               applyTier('legend');

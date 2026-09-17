@@ -15,7 +15,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TextInput, StyleSheet,
-  KeyboardAvoidingView, Keyboard, Platform, Alert,
+  KeyboardAvoidingView, Keyboard, Platform, Alert, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -217,6 +217,13 @@ export default function CoachHub() {
     bubbleUser: { backgroundColor: t.surfaceAlt, borderBottomRightRadius: 7 },
     bubbleCoach: { borderBottomLeftRadius: 7 },
     bubbleText: { fontFamily: Fonts.body, fontSize: 14.5, lineHeight: 22, color: t.text },
+    reportLink: {
+      fontFamily: Fonts.legacyMono, fontSize: 9, letterSpacing: 0.6, textTransform: 'uppercase',
+      color: t.textTertiary, marginTop: 5, paddingVertical: 2,
+    },
+    aiDisclaimer: {
+      fontFamily: Fonts.body, fontSize: 11.5, lineHeight: 16, color: t.textTertiary, marginTop: 4,
+    },
 
     // ── INPUT BAR ──
     inputRule: { height: 1, backgroundColor: t.border },
@@ -300,6 +307,33 @@ export default function CoachHub() {
       setTimeout(() => chatRef.current?.scrollToEnd({ animated: true }), 100);
     }
   }, [persona.id, chatLoading, messages]);
+
+  // ── Report AI-generated content ────────────────────────────────────────────
+  // Play's Generative AI policy requires an in-app way to report offensive or
+  // unsafe AI output. Confirm, then open a prefilled report to support with the
+  // exact response quoted (mirrors the bug-report path in Profile). Kept simple
+  // and backend-free so it works in a free-tier / offline build.
+  const reportMessage = useCallback((content: string) => {
+    Alert.alert(
+      'Report this response?',
+      'Send this AI-generated message to our team to review. Use this for anything unsafe, offensive, or wrong.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Report',
+          style: 'destructive',
+          onPress: () => {
+            track('ai_message_reported', { persona: persona.id });
+            const body = `I'm reporting this AI response from ${persona.shortName}:\n\n"${content}"\n\nWhat's wrong with it:\n`;
+            Linking.openURL(
+              `mailto:hello@evulto.com?subject=${encodeURIComponent('Evulto — report AI response')}&body=${encodeURIComponent(body)}`,
+            ).catch(() => {});
+            Alert.alert('Thank you', 'This response has been flagged for review.');
+          },
+        },
+      ],
+    );
+  }, [persona.id, persona.shortName]);
 
   // ── Switch coach handler ───────────────────────────────────────────────────
   // Persists the change to profiles.selected_program so EVERY screen
@@ -559,6 +593,12 @@ export default function CoachHub() {
 
               {/* ── CHAT ──────────────────────────────────────────────── */}
               <Section label={`Chat with ${persona.shortName}`} style={{ paddingBottom: 8 }}>
+                {/* Play Generative-AI + Health policy: label the coach as AI and
+                    disclaim professional advice, once, above the thread. */}
+                <Text style={styles.aiDisclaimer}>
+                  AI coach — an AI-generated persona, not a real person. Educational only; not
+                  medical, nutritional, or professional advice. Tap “Report response” on any reply.
+                </Text>
                 {messages.length === 0 ? (
                   <View>
                     <Text style={[styles.lede, { marginBottom: 16 }]}>
@@ -599,6 +639,17 @@ export default function CoachHub() {
                         ]}>
                           <Text style={styles.bubbleText}>{msg.content}</Text>
                         </View>
+                        {!mine && (
+                          <PressableScale
+                            onPress={() => reportMessage(msg.content)}
+                            haptic="light"
+                            scaleTo={0.96}
+                            accessibilityRole="button"
+                            accessibilityLabel="Report this AI response"
+                          >
+                            <Text style={styles.reportLink}>Report response</Text>
+                          </PressableScale>
+                        )}
                       </View>
                     );
                   })

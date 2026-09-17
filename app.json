@@ -56,11 +56,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.USE_FULL_SCREEN_INTENT",
         "android.permission.SCHEDULE_EXACT_ALARM",
-        "android.permission.USE_EXACT_ALARM",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.WAKE_LOCK",
         "android.permission.FOREGROUND_SERVICE"
