@@ -132,11 +132,28 @@ describe('manifest publish overwrites', () => {
     expect(calls).toEqual(['storage cp']);
   });
 
-  test('an existing manifest is cp → rm → cp, and the second cp must succeed', () => {
+  test('an existing manifest is cp → rm --yes → ls (gone) → cp', () => {
     const calls = [];
-    const run = (args) => { calls.push(args.slice(0, 2).join(' ')); return calls.length === 1 ? dup : ok; };
+    const run = (args) => {
+      calls.push(args.slice(0, 2).join(' '));
+      if (args[1] === 'rm') { expect(args).toContain('--yes'); return ok; }
+      if (args[1] === 'ls') return { status: 0, stdout: 'bench_press_v1.mp4\nsquat_v1.mp4\n', stderr: '' };
+      return calls.length === 1 ? dup : ok;
+    };
     publishManifest({ run });
-    expect(calls).toEqual(['storage cp', 'storage rm', 'storage cp']);
+    expect(calls).toEqual(['storage cp', 'storage rm', 'storage ls', 'storage cp']);
+  });
+
+  test('an rm that exits 0 but leaves manifest.json behind is an error, not a second 409', () => {
+    const calls = [];
+    const run = (args) => {
+      calls.push(args[1]);
+      if (args[1] === 'ls') return { status: 0, stdout: 'bench_press_v1.mp4\nmanifest.json\n', stderr: '' };
+      if (args[1] === 'rm') return ok;
+      return dup;
+    };
+    expect(() => publishManifest({ run })).toThrow(/still in the bucket/);
+    expect(calls).toEqual(['cp', 'rm', 'ls']);
   });
 
   test('any other failure is reported, not retried', () => {

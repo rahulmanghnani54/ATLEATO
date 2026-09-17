@@ -71,8 +71,19 @@ function publishManifest({ dryRun = false, run = supabase } = {}) {
   const cp = () => run(['storage', 'cp', rel, dst, '--experimental', '--content-type', 'application/json', '--cache-control', 'public, max-age=60'], { dryRun });
   let r = cp();
   if (r.status !== 0 && isAlreadyExists(r)) {
-    const rm = run(['storage', 'rm', dst, '--experimental'], { dryRun });
+    // --yes: without it the CLI asks for confirmation, reads "no" from a
+    // closed stdin and exits 0 having deleted nothing (2026-09-17: the second
+    // cp then 409'd again). Exit code alone is therefore not proof — list the
+    // bucket and require the object to be gone before copying.
+    const rm = run(['storage', 'rm', dst, '--experimental', '--yes'], { dryRun });
     if (rm.status !== 0) throw new Error(`manifest overwrite failed at rm (${rm.status}): ${(rm.stderr || rm.stdout).trim()}`);
+    if (!dryRun) {
+      const ls = run(['storage', 'ls', BUCKET_URI, '--experimental']);
+      if (ls.status === 0 && /(^|s)manifest.json(s|$)/.test(ls.stdout || '')) {
+        throw new Error(`manifest overwrite: rm reported success but manifest.json is still in the bucket.
+rm output: ${(rm.stderr || rm.stdout).trim() || '(none)'}`);
+      }
+    }
     r = cp();
   }
   if (r.status !== 0) throw new Error(`manifest upload failed (${r.status}): ${(r.stderr || r.stdout).trim()}`);
