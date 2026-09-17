@@ -60,9 +60,8 @@ function writeManifest(manifest) {
  *  "keep the last good copy" — never as an empty manifest.
  *  Exported for tests via the `run` seam. */
 function isAlreadyExists(r) {
-  const text = `${r.stdout || ''}
-${r.stderr || ''}`;
-  return /KeyAlreadyExists|"statusCode":s*"?409|Duplicate|already exists/i.test(text);
+  const text = `${r.stdout || ''}\n${r.stderr || ''}`;
+  return /KeyAlreadyExists|"statusCode":\s*"?409|Duplicate|already exists/i.test(text);
 }
 
 function publishManifest({ dryRun = false, run = supabase } = {}) {
@@ -79,9 +78,8 @@ function publishManifest({ dryRun = false, run = supabase } = {}) {
     if (rm.status !== 0) throw new Error(`manifest overwrite failed at rm (${rm.status}): ${(rm.stderr || rm.stdout).trim()}`);
     if (!dryRun) {
       const ls = run(['storage', 'ls', BUCKET_URI, '--experimental']);
-      if (ls.status === 0 && /(^|s)manifest.json(s|$)/.test(ls.stdout || '')) {
-        throw new Error(`manifest overwrite: rm reported success but manifest.json is still in the bucket.
-rm output: ${(rm.stderr || rm.stdout).trim() || '(none)'}`);
+      if (ls.status === 0 && /(^|\s)manifest\.json(\s|$)/.test(ls.stdout || '')) {
+        throw new Error(`manifest overwrite: rm reported success but manifest.json is still in the bucket.\nrm output: ${(rm.stderr || rm.stdout).trim() || '(none)'}`);
       }
     }
     r = cp();
