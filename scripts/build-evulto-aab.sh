@@ -39,7 +39,11 @@ rm -rf "$PROJ/android/app/build/generated/assets/createBundleReleaseJsAndAssets"
 
 cd "$PROJ/android" || { echo "CD_FAILED" >> "$LOG"; exit 1; }
 
+# arm64 only: gradle.properties now defaults to all four ABIs for store builds
+# (EAS), and the four-way C++ compile does not fit in WSL's memory. A local
+# bundle is for inspection, not upload — the EAS artifact is what ships.
 bash ./gradlew bundleRelease --no-daemon \
+  -PreactNativeArchitectures=arm64-v8a \
   -PEVULTO_UPLOAD_STORE_FILE=/mnt/d/Dev/keystores/evulto-upload.jks >> "$LOG" 2>&1
 echo "AAB_EXIT=$?" >> "$LOG"
 

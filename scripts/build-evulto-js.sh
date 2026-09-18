@@ -47,7 +47,10 @@ rm -rf "$PROJ/android/app/build/generated/assets/createBundleReleaseJsAndAssets"
 
 cd "$PROJ/android" || { echo "CD_FAILED" >> "$LOG"; exit 1; }
 
+# arm64 only (the Pixel test device): gradle.properties defaults to all four
+# ABIs for store builds on EAS, which does not fit in WSL's memory.
 bash ./gradlew assembleRelease --no-daemon \
+  -PreactNativeArchitectures=arm64-v8a \
   -PEVULTO_UPLOAD_STORE_FILE=/mnt/d/Dev/keystores/evulto-upload.jks >> "$LOG" 2>&1
 echo "GRADLE_EXIT=$?" >> "$LOG"
 
