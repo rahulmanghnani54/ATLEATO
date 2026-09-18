@@ -70,3 +70,6 @@ scripts/technique-clips/raw/
 
 # claude-check hook cache (scripts/claude-check.js)
 .claude-check/
+
+# EAS local credentials (keystore passwords) — never commit
+credentials.json

@@ -17,11 +17,23 @@
 const fs = require('fs');
 const path = require('path');
 
+// Two destinations for the one file. The project-root copy is what Expo's
+// `googleServicesFile` plugin would consume during prebuild; but this is a
+// BARE project (android/ is committed), so EAS never runs prebuild and the
+// plugin never copies it into place. The Gradle google-services plugin reads
+// android/app/google-services.json directly — and that path is gitignored, so
+// on an EAS worker it does not exist unless we put it there ourselves.
+// (First EAS build 2026-09-18 failed exactly here.)
 const TARGETS = [
   {
     envVar: 'GOOGLE_SERVICES_JSON',
     destination: path.join(__dirname, '..', 'google-services.json'),
-    label: 'google-services.json (Firebase)',
+    label: 'google-services.json (project root, for Expo plugin)',
+  },
+  {
+    envVar: 'GOOGLE_SERVICES_JSON',
+    destination: path.join(__dirname, '..', 'android', 'app', 'google-services.json'),
+    label: 'android/app/google-services.json (read by the Gradle google-services plugin)',
   },
 ];
 
