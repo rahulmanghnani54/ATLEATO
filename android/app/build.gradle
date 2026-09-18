@@ -141,16 +141,28 @@ android {
     // An .aab exists only to be uploaded to Play, so a debug-signed one is never
     // useful. Refuse at configuration time rather than 45 minutes later at the
     // upload dialog.
-    if (signingConfigs.findByName('release') == null
-            && gradle.startParameter.taskNames.any { it.toLowerCase().contains('bundlerelease') }) {
-        // Triple-quoted: a Groovy single-line string cannot span lines, and a
-        // literal newline inside one is a parse error that breaks EVERY task.
-        throw new GradleException("""
+    //
+    // Checked in afterEvaluate, not inline. EAS Build appends
+    // `apply from: "./eas-build.gradle"` to the END of this file; that script
+    // creates signingConfigs.release from the keystore EAS provisions and points
+    // buildTypes.release at it. An inline check here ran before that line and
+    // refused every cloud build (2026-09-18, EAS build 5). Looking at what the
+    // release build type is finally wired to covers both paths — local
+    // EVULTO_UPLOAD_* properties and EAS injection — and still fails closed when
+    // neither happened.
+    project.afterEvaluate {
+        def bundling = gradle.startParameter.taskNames.any { it.toLowerCase().contains('bundlerelease') }
+        def releaseSigning = android.buildTypes.release.signingConfig
+        if (bundling && (releaseSigning == null || releaseSigning.name == 'debug')) {
+            // Triple-quoted: a Groovy single-line string cannot span lines, and a
+            // literal newline inside one is a parse error that breaks EVERY task.
+            throw new GradleException("""
 Refusing to build a release BUNDLE without the upload key.
   Set EVULTO_UPLOAD_STORE_FILE / _STORE_PASSWORD / _KEY_ALIAS / _KEY_PASSWORD in
   GRADLE_USER_HOME's gradle.properties (see the comment above), or pass
   -PEVULTO_UPLOAD_STORE_FILE=... on the command line.
   Play rejects a debug-signed bundle, so this build could not have shipped.""")
+        }
     }
 
     buildTypes {
