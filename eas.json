@@ -23,7 +23,8 @@
         "buildConfiguration": "Release"
       },
       "autoIncrement": true,
-      "channel": "production"
+      "channel": "production",
+      "environment": "production"
     }
   },
   "submit": {
