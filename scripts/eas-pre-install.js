@@ -61,6 +61,10 @@ for (const t of TARGETS) {
   }
 
   try {
+    // On the worker only the git-tracked subset of android/ exists, so the
+    // destination directory may not (2026-09-18: android/app/ was absent →
+    // ENOENT). copyFileSync does not create parents.
+    fs.mkdirSync(path.dirname(t.destination), { recursive: true });
     fs.copyFileSync(srcPath, t.destination);
     const sizeKB = (fs.statSync(t.destination).size / 1024).toFixed(1);
     console.log(`[pre-install] ${t.label}: copied from $${t.envVar} to project root (${sizeKB} KB)`);

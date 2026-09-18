@@ -9,30 +9,13 @@
   <uses-permission android:name="android.permission.MANAGE_OWN_CALLS" tools:node="remove"/>
   <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-  <!-- Photo picks (physique / food) go through the Android system Photo Picker
-       (expo-image-picker 17 launchImageLibraryAsync → PickVisualMedia), which
-       needs NO media permission. READ_MEDIA_IMAGES is deliberately NOT declared:
-       declaring it would force Play's Photo & Video Permissions Declaration for a
-       one-off-pick use case that does not qualify. READ_EXTERNAL_STORAGE stays
-       capped at API 32 only for the legacy picker path on pre-33 devices. -->
   <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
   <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
   <uses-permission android:name="android.permission.RECORD_AUDIO"/>
-  <!-- SCHEDULE_EXACT_ALARM is the user-granted alarm permission and is the one we
-       actually use: notifeeCallScheduler checks settings.android.alarm and sends the
-       user to openAlarmPermissionSettings() when it is not enabled.
-       USE_EXACT_ALARM was REMOVED deliberately. It is auto-granted with no prompt, and
-       Play restricts it to alarm-clock/calendar/timer apps — a fitness app declaring it
-       is a policy rejection risk, and we do not need it given the runtime flow above.
-       SYSTEM_ALERT_WINDOW was REMOVED too: no code ever requests it (it requires an
-       explicit Settings grant to do anything), so it granted nothing and only widened
-       the permission surface a reviewer has to justify. Lock-screen call takeover comes
-       from USE_FULL_SCREEN_INTENT, which is kept. -->
   <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
   <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT"/>
   <uses-permission android:name="android.permission.VIBRATE"/>
   <uses-permission android:name="android.permission.WAKE_LOCK"/>
-  <!-- Ignored from API 29 (scoped storage). Capped so it is not advertised at all. -->
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
   <queries>
     <intent>
@@ -48,8 +31,6 @@
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_CHECK_ON_LAUNCH" android:value="ALWAYS"/>
     <meta-data android:name="expo.modules.updates.EXPO_UPDATES_LAUNCH_WAIT_MS" android:value="0"/>
     <activity android:name=".MainActivity" android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|uiMode" android:launchMode="singleTask" android:windowSoftInputMode="adjustResize" android:theme="@style/Theme.App.SplashScreen" android:exported="true" android:showWhenLocked="true" android:turnScreenOn="true">
-      <!-- LAUNCHER lives on the activity-aliases below (per-coach app icons).
-           Deep links + Health Connect stay here; MainActivity is always enabled. -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
@@ -60,11 +41,6 @@
         <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE"/>
       </intent-filter>
     </activity>
-
-    <!-- ── Per-coach app icons ─────────────────────────────────────────────
-         One launcher alias per coach; exactly ONE is enabled at a time
-         (AppIconModule.setIcon flips them with DONT_KILL_APP). Default =
-         Sculptor emerald (the brand icon). All target MainActivity. -->
     <activity-alias android:name=".MainActivityDefault" android:enabled="true" android:exported="true" android:targetActivity=".MainActivity" android:label="@string/app_name" android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round">
       <intent-filter>
         <action android:name="android.intent.action.MAIN"/>
