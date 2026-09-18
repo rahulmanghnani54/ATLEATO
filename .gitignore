@@ -73,3 +73,7 @@ scripts/technique-clips/raw/
 
 # EAS local credentials (keystore passwords) — never commit
 credentials.json
+
+# eas build scratch (status json / decoded worker logs)
+eas-build-*.log
+eas-build-*.status.json

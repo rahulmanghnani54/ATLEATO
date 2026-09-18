@@ -1,0 +1,79 @@
+# What `eas build` uploads — READ THIS BEFORE EDITING .gitignore
+#
+# eas-cli does NOT upload what git tracks. It copies the WORKING TREE through
+# its own ignore matcher, and while this file exists it uses it INSTEAD of every
+# .gitignore in the repo (root and android/). Two consequences:
+#
+#   1. `/android` in .gitignore is deliberately ABSENT here. This is a bare
+#      project: android/ is hand-hardened (manifest permissions, R8, signing)
+#      and must reach the worker as-is. With .gitignore in charge the whole
+#      directory was silently dropped, EAS found no gradlew and every cloud
+#      build died in FIX_GRADLEW (2026-09-18, builds 1-4).
+#   2. Every exclusion we still want has to be repeated below, including the
+#      rules that used to live in android/.gitignore.
+#
+# eas-cli always adds `.git` and `node_modules` on top of this list.
+
+# ---- Expo / Metro / TypeScript -------------------------------------------
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+*.tsbuildinfo
+.kotlin/
+
+# ---- native build output (was android/.gitignore) -------------------------
+/ios/
+/android/build/
+/android/app/build/
+/android/.gradle/
+/android/.cxx/
+/android/app/.cxx/
+/android/local.properties
+/android/*.log
+/android/*.hprof
+/android/app/*.hprof
+*.iml
+.idea/
+*.jsbundle
+
+# ---- secrets: never in the upload archive ----------------------------------
+# google-services.json is materialised on the worker by scripts/eas-pre-install.js
+# from the GOOGLE_SERVICES_JSON file secret; EXPO_PUBLIC_* come from the EAS
+# "production" environment (eas env:list --environment production).
+google-services.json
+GoogleService-Info.plist
+credentials.json
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+.env
+.env.*
+**/.env
+*.env
+
+# ---- local tooling / scratch / large media ---------------------------------
+supabase.exe
+supabase/.temp/
+.claude/
+.claude-check/
+.superpowers/
+web/
+*.log
+bundle_check.txt
+bundle_out.txt
+/*.png
+*.bak
+*.orig.*
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.DS_Store
+scripts/technique-clips/out/
+scripts/technique-clips/raw/
+eas-build-*.status.json
+eas-build-*.worker.log
