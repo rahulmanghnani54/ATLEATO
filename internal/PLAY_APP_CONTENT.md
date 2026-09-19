@@ -8,7 +8,7 @@ Nothing here is legal advice; it reflects what the code actually does.
 
 ## 1. Privacy policy
 - **URL to enter:** `https://evulto.com/privacy`
-- ⚠️ **Redeploy evulto.com FIRST.** The corrected policy is committed (`docs/privacy.html`, discloses photos→Anthropic, no location section, names PostHog + Sentry) but the **live page still serves the old "Territory game / GPS" policy**. Entering the URL while it's stale = a privacy policy that doesn't match the app → rejection. Verify after deploy: `curl -s https://evulto.com/privacy | grep -i "unencrypted, over an encrypted connection"` should return a line.
+- ✅ **DEPLOYED 2026-09-18/19.** The corrected policy is live at `https://evulto.com/privacy` (was stale "Territory/GPS" until 2026-09-18). It now discloses photos→Anthropic, coach chat + food scan → Anthropic, the ElevenLabs call briefing, all camera/mic uses, the website analytics (GA4/Clarity), the waitlist drip, and states no location — matching the app. Safe to enter the URL in Play Console. Re-verify if redeployed: `curl -s https://evulto.com/privacy | grep -c "AI coach conversations"` should return 1 and `grep -ci territory` should return 0.
 
 ## 2. App access (sign-in details)
 - The app is **fully gated behind login** — Supabase email/password + Google OAuth (`app/(auth)/signup.tsx`, `lib/socialAuth.ts`, `app/_layout.tsx`). Reviewers cannot see anything without an account.
@@ -65,9 +65,11 @@ Reviewers cross-check this against runtime behaviour, so it must match the SDK i
 | Crash logs (App info & performance) | Yes | Sentry | Crash reporting / diagnostics | — |
 | Diagnostics (App info & performance) | Yes | Sentry/PostHog perf | Diagnostics | — |
 | Device or other IDs | Yes | analytics/crash instance ids | Analytics, crash | — |
+| Other in-app messages / user-generated content (Messages) | **Yes** | coach chat: both sides persisted in `chat_messages` (ai-coach-chat/index.ts:192-199), deleted with the account; sent to Anthropic to generate the reply | App functionality | Optional |
 
-**Explicitly NOT collected (answer No):** Precise/approximate **location** (no location code or permission), **Financial info** (no payments taken yet; when Play Billing goes live, purchase history is handled by Google Play, declare then), **Contacts, Messages, Calendar, Browsing history, Installed apps**, and **Advertising ID** (no `AD_ID`).
-- Coach **chat text**: sent to Anthropic to generate a reply; not shared, not sold. If stored, declare under "Other user-generated content"; if only processed transiently, you may omit — confirm your retention. (Currently the chat is not persisted server-side beyond the request.)
+**Explicitly NOT collected (answer No):** Precise/approximate **location** (no location code or permission), **Financial info** (no payments taken yet; when Play Billing goes live, purchase history is handled by Google Play, declare then), **Contacts, Calendar, Browsing history, Installed apps**, and **Advertising ID** (no `AD_ID`).
+- Coach **chat text**: **CORRECTED 2026-09-19** — it IS persisted server-side. `ai-coach-chat` inserts every user message and assistant reply into `chat_messages` (both sides, keyed to the user id, deleted on account deletion). Declare it as **"Other in-app messages" (Messages) → Collected = Yes, Shared = No, purpose App functionality, deletable** (row added above). It is sent to Anthropic (service provider) to generate the reply and, together with a profile snapshot — name, goal, height/weight, activity, recent training, top lifts — is disclosed in docs/privacy.html §2.9. Not shared, not sold. (The earlier note here — "not persisted server-side beyond the request" — was wrong.)
+- **Website vs app:** GA4 + Microsoft Clarity run on evulto.com only (consent-gated), NOT in the app — Data safety is app-scoped, so they don't change the table above; they are disclosed in docs/privacy.html §4/§6 and the Cookie Policy. Meta Pixel is not enabled (empty ID) and was removed from cookies.html.
 
 ## 7. Government apps
 - **No.** Evulto is not a government app and is not affiliated with or endorsed by any government.

@@ -297,9 +297,22 @@ function CoachCallInner() {
         // know, and which kind of morning this is. The ElevenLabs agent
         // prompt/first-message reference these via {{vars}}. baseVariables is
         // spread LAST so the five original keys always win.
+        // CallContext also carries numeric mirrors (missedDays,
+        // daysSinceLastSession, streakDays, weeklyCompleted, isRestDay) used only
+        // by callFlavour() and the local call UI — lib/callContext.ts documents
+        // them as "NEVER sent to the agent". Spreading the whole ctx shipped them
+        // to ElevenLabs as dynamic variables anyway. Send an explicit ALLOWLIST of
+        // the spoken fragments so a mirror (or any field added later) can't leak.
+        const spokenCtx = ctx && {
+          user_name: ctx.user_name, goal: ctx.goal, coach_name: ctx.coach_name,
+          coach_style: ctx.coach_style, call_purpose: ctx.call_purpose,
+          todays_workout: ctx.todays_workout, last_session: ctx.last_session,
+          recent_pr: ctx.recent_pr, missed_days: ctx.missed_days,
+          recovery: ctx.recovery, streak: ctx.streak,
+        };
         const dynamicVariables = {
           ...UNKNOWN_CONTEXT,
-          ...(ctx ?? {}),
+          ...(spokenCtx || {}),
           ...baseVariables,
           call_flavour: callFlavour(ctx),
         };

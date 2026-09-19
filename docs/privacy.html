@@ -135,7 +135,7 @@
       No dark patterns. No selling your data. No tracking pixels. The shortest
       readable privacy policy we could write while still being legally accurate.
     </p>
-    <div class="updated">LAST UPDATED · 28 AUGUST 2026</div>
+    <div class="updated">LAST UPDATED · 19 SEPTEMBER 2026</div>
   </div>
 </section>
 
@@ -204,22 +204,28 @@
     </p>
 
     <h3>2.6 Camera</h3>
-    <p>
-      The <strong>Form Coach</strong> uses your camera to analyse your exercise form. This runs
-      <strong>entirely on your device</strong> using on-device pose detection — video frames are
-      processed locally in real time and are <strong>never uploaded or stored</strong>. Progress
-      photos are covered separately in 2.4. The camera is used only while a Form Coach or
-      physique-photo session you started is open.
-    </p>
+    <p>Evulto uses your camera only inside features you open, never in the background. Each use is different:</p>
+    <ul>
+      <li><strong>Form Coach</strong> — analyses your exercise form <strong>entirely on your device</strong> with on-device pose detection. Video frames are processed locally in real time and are <strong>never uploaded or stored</strong>.</li>
+      <li><strong>Physique Check-in</strong> — the photo is encrypted on your device and also sent once to Anthropic for scoring (see 2.3).</li>
+      <li><strong>AI food scan</strong> — the meal photo is sent once to Anthropic to identify the food, and is not stored (see 2.10).</li>
+      <li><strong>Daily Selfie</strong> — a short front-camera photo saved <strong>only on your device</strong>; it is never uploaded.</li>
+      <li><strong>Video Review</strong> — records a short workout video, with sound, saved <strong>only on your device</strong>; it is never uploaded.</li>
+    </ul>
 
-    <h3>2.7 Microphone &amp; voice (coach calls)</h3>
+    <h3>2.7 Microphone &amp; voice</h3>
+    <p>The microphone is used in only two features you start, never in the background:</p>
+    <ul>
+      <li><strong>Live coach call</strong> — your microphone audio is streamed in real time to our voice provider, <strong>ElevenLabs</strong>, so the AI coach can hold a two-way conversation. If you have no internet connection, the call falls back to your phone's built-in offline voice and <strong>no audio leaves your device</strong>.</li>
+      <li><strong>Video Review</strong> — the sound is recorded into the clip, which is saved <strong>only on your device</strong> and never uploaded.</li>
+    </ul>
     <p>
-      When you <strong>answer a live coach call</strong>, your microphone audio is streamed in
-      real time to our voice provider, <strong>ElevenLabs</strong>, so the AI coach can hold a
-      two-way conversation. The audio is used only to power that conversation — never to
-      identify you, never sold. If you have no internet connection, the call falls back to your
-      phone's built-in offline voice and <strong>no audio leaves your device</strong>. The
-      microphone is used only during an active call or a Form Coach session you start.
+      The <strong>Form Coach</strong> does <strong>not</strong> use your microphone. So the coach can
+      talk about your training, at the start of each live call we also send ElevenLabs a short briefing
+      built from your own data: your first name, goal, chosen coach, today's planned workout, your last
+      session, your most recent personal record, how many days you've trained recently, your latest
+      recovery score and sleep hours, and your streak. ElevenLabs processes this and your voice only to
+      run the conversation — never to identify you, never sold.
     </p>
 
     <h3>2.8 Health &amp; wearable data (optional)</h3>
@@ -229,6 +235,38 @@
       adjust your training. This is strictly opt-in — we read it only after you grant permission,
       we don't share it with advertisers, and you can revoke access any time in your device's
       Health Connect / Apple Health settings.
+    </p>
+
+    <h3>2.9 AI coach conversations</h3>
+    <p>
+      When you chat with your AI coach, or open the weekly review, we send your messages to our AI
+      provider (<strong>Anthropic</strong>) to generate the reply, together with the recent
+      conversation and a short snapshot of your profile so the advice is specific to you: your name,
+      goal, height and weight, activity level, your recent training (how many sessions in the last
+      week and your last workout date), and your top lifts. The weekly review additionally sends
+      7-day training and nutrition summaries and your average recovery score and sleep hours.
+      Anthropic does <strong>not</strong> use any of this to train its models, and retains it for at
+      most 30 days for automated abuse monitoring before deletion. The messages you and the coach
+      exchange are also <strong>stored with your account</strong> (so the feature can be improved and
+      rate-limited) and are <strong>deleted when you delete your account</strong>.
+    </p>
+
+    <h3>2.10 AI food scan</h3>
+    <p>
+      When you use the AI food scanner, the photo you take or choose is sent <strong>once, over an
+      encrypted connection, to Anthropic</strong> to identify the food and estimate its nutrition.
+      We do <strong>not</strong> store the photo — only the food entry you confirm is saved to your
+      nutrition log. The same no-training and up-to-30-day provider-retention terms described in 2.9
+      apply.
+    </p>
+
+    <h3>2.11 Website waitlist</h3>
+    <p>
+      If you join the waitlist at evulto.com we store your email address, the page and referrer you
+      arrived from, and your browser type, in our database (Supabase). We use these to send you a
+      welcome email and up to three short follow-up emails about the founding "Vanguard" offer, sent
+      via <strong>Resend</strong>. You can unsubscribe from the link in any of those emails, or by
+      replying to ask us to stop, and we delete your waitlist record on request.
     </p>
 
     <h2>3. Product analytics</h2>
@@ -254,10 +292,10 @@
     <h2>4. What we DON'T collect</h2>
     <ul>
       <li>No advertising IDs</li>
-      <li>No advertising or cross-site tracking pixels (Google Analytics, Facebook Pixel, etc.)</li>
+      <li>No advertising or cross-site tracking pixels <strong>in the app</strong>. The evulto.com website uses Google Analytics (in cookieless, consent-denied mode until you accept) and, after you accept analytics, Microsoft Clarity — see our <a href="/cookies">Cookie Policy</a>. Neither runs inside the app.</li>
       <li>No location or GPS data of any kind</li>
       <li>No access to your contact list or full photo library</li>
-      <li>No background microphone or camera access — both are used only during an active coach call or Form Coach session that you start</li>
+      <li>No background microphone or camera access — both are used only inside the features listed in 2.6 and 2.7, while you have them open</li>
       <li>No data from third-party platforms (Instagram, Strava, etc.) unless you connect them</li>
       <li>No card or bank details — our payment processor handles those (see section 6); we never see or store them</li>
     </ul>
@@ -281,11 +319,13 @@
     </p>
     <ul>
       <li><strong>Supabase</strong> — database, authentication, file storage (<a href="https://supabase.com/privacy">privacy</a>)</li>
-      <li><strong>ElevenLabs</strong> — processes your microphone audio during live coach calls to power the AI voice conversation (<a href="https://elevenlabs.io/privacy">privacy</a>)</li>
-      <li><strong>Anthropic (Claude)</strong> — generates written coaching text (<a href="https://www.anthropic.com/legal/privacy">privacy</a>)</li>
-      <li><strong>Resend</strong> — sends account &amp; transactional emails to your address (<a href="https://resend.com/legal/privacy-policy">privacy</a>)</li>
+      <li><strong>ElevenLabs</strong> — processes your microphone audio and a short spoken briefing (see 2.7) during live coach calls to power the AI voice conversation (<a href="https://elevenlabs.io/privacy">privacy</a>)</li>
+      <li><strong>Anthropic (Claude)</strong> — generates written coaching text and analyses the physique photos, meal photos, and coach-chat messages you submit (<a href="https://www.anthropic.com/legal/privacy">privacy</a>)</li>
+      <li><strong>Resend</strong> — sends account, transactional, and waitlist emails to your address (<a href="https://resend.com/legal/privacy-policy">privacy</a>)</li>
       <li><strong>Lemon Squeezy</strong> &amp; <strong>Google Play Billing</strong> — process payments; they receive your payment details, which Evulto never sees or stores (<a href="https://www.lemonsqueezy.com/privacy">privacy</a>)</li>
       <li><strong>Google Firebase</strong> — Cloud Messaging push tokens for notifications &amp; coach calls (<a href="https://firebase.google.com/support/privacy">privacy</a>)</li>
+      <li><strong>Google Analytics</strong> — <em>website only</em> (evulto.com): aggregate, IP-anonymised usage measurement, in cookieless mode until you accept analytics (<a href="https://policies.google.com/privacy">privacy</a>)</li>
+      <li><strong>Microsoft Clarity</strong> — <em>website only</em> (evulto.com), after you accept analytics: aggregate heatmaps and usability analytics (<a href="https://privacy.microsoft.com/privacystatement">privacy</a>)</li>
     </ul>
     <p>
       These are data <strong>processors</strong> acting on our behalf — none of them are permitted

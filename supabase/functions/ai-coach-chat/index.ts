@@ -88,7 +88,7 @@ async function buildUserContext(
     Promise.race([p, new Promise<null>((r) => setTimeout(() => r(null), 1200))]);
   try {
     const [profileRes, workoutsRes, prsRes] = await Promise.all([
-      guard(supabase.from('profiles').select('full_name, goal, weight_kg, height_cm, activity_level, date_of_birth').eq('id', userId).single()),
+      guard(supabase.from('profiles').select('full_name, goal, weight_kg, height_cm, activity_level').eq('id', userId).single()),
       guard(supabase.from('workout_logs').select('date, total_volume_kg').eq('user_id', userId).order('date', { ascending: false }).limit(10)),
       guard(supabase.from('personal_records').select('exercise_name, one_rep_max_kg').eq('user_id', userId).order('one_rep_max_kg', { ascending: false }).limit(3)),
     ]);

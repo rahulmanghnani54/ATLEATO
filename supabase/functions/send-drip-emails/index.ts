@@ -185,9 +185,13 @@ async function sendEmail(to: string, subject: string, text: string, html: string
       subject,
       text,
       html,
+      // A mailto List-Unsubscribe is honoured by support setting waitlist
+      // .unsubscribed_at (migration 030), which drops the address from every
+      // remaining drip step. List-Unsubscribe-Post=One-Click is deliberately
+      // NOT sent: RFC 8058 one-click requires an https POST endpoint, which we
+      // don't have yet, and asserting it over a mailto is malformed.
       headers: {
         'List-Unsubscribe': `<mailto:${REPLY_TO}?subject=unsubscribe>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
       tags: [
         { name: 'category', value: 'waitlist_drip' },
@@ -245,6 +249,7 @@ serve(async (req) => {
       .from('waitlist')
       .select('id, email')
       .is(step.column, null)
+      .is('unsubscribed_at', null)          // honour unsubscribes (migration 030)
       .not('is_vanguard', 'is', true)
       .gte('created_at', lowerIso)
       .lte('created_at', upperIso)
